@@ -32,7 +32,10 @@
 		{@const Icon = icon(source)}
 		{@const detail = byName.get(source)}
 		<Tooltip.Root>
-			<Tooltip.Trigger class="flex h-5 shrink-0 items-center">
+			<Tooltip.Trigger
+				class="flex h-5 shrink-0 items-center"
+				aria-label={SOURCE_LABELS[source] ?? source}
+			>
 				<span
 					class="flex size-5 items-center justify-center rounded border {PASSIVE_SOURCES.has(source)
 						? 'border-border/60 text-muted-foreground'

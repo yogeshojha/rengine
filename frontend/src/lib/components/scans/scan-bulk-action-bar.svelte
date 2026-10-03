@@ -35,7 +35,7 @@
 
 <SelectionActionBar {selectedCount} noun="scan" {onClear}>
 	{#if compareHref}
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" href={compareHref}>
+		<Button variant="ghost" size="sm" class="font-medium" href={compareHref}>
 			<GitCompareArrows class="h-3.5 w-3.5 text-muted-foreground" />
 			Compare runs
 		</Button>
@@ -46,7 +46,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						class="gap-2 font-medium"
+						class="font-medium"
 						disabled
 						aria-label="Compare runs. {compareReason}"
 					>
@@ -59,14 +59,14 @@
 	{/if}
 
 	{#if targetCount > 0}
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onRescan}>
+		<Button variant="ghost" size="sm" class="font-medium" onclick={onRescan}>
 			<Play class="h-3.5 w-3.5 text-muted-foreground" />
 			Re-scan {plural(targetCount, 'target')}
 		</Button>
 	{/if}
 
 	{#if liveCount > 0}
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onCancel}>
+		<Button variant="ghost" size="sm" class="font-medium" onclick={onCancel}>
 			<Ban class="h-3.5 w-3.5 text-muted-foreground" />
 			Cancel {liveCount}
 		</Button>
@@ -75,7 +75,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		class="font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
 		onclick={onDelete}
 	>
 		<Trash2 class="h-3.5 w-3.5" />

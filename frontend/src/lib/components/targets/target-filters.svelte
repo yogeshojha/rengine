@@ -55,8 +55,9 @@
 		<Input
 			id="target-search"
 			type="text"
-			placeholder="Search targets…"
-			class="pl-9 h-9"
+			placeholder="Search targets"
+			aria-label="Search targets"
+			class="h-9 pr-9 pl-9"
 			value={searchQuery}
 			oninput={(e) => onSearchChange(e.currentTarget.value)}
 		/>
@@ -64,10 +65,11 @@
 			<Button
 				variant="ghost"
 				size="icon"
-				class="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+				class="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground"
+				aria-label="Clear search"
 				onclick={() => onSearchChange('')}
 			>
-				<X class="h-3 w-3" />
+				<X class="size-4" />
 			</Button>
 		{/if}
 	</div>
@@ -78,10 +80,7 @@
 				<Button
 					{...props}
 					variant="outline"
-					size="sm"
-					class="h-9 gap-2 {selectedOrganizations.length > 0
-						? 'border-primary/50 bg-primary/5'
-						: ''}"
+					class={selectedOrganizations.length > 0 ? 'border-primary/50 bg-primary/5' : ''}
 				>
 					<Building2 class="h-4 w-4" />
 					<span>Organizations</span>
@@ -95,7 +94,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-56 p-0" align="start">
 			<Command.Root>
-				<Command.Input placeholder="Search organizations…" />
+				<Command.Input placeholder="Search organizations" />
 				<Command.List class="max-h-none overflow-visible">
 					<Command.Empty>No organizations</Command.Empty>
 					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
@@ -117,7 +116,7 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="w-full justify-start gap-2"
+					class="w-full justify-start"
 					onclick={() => manage('organization')}
 				>
 					<Settings2 class="size-4" />
@@ -133,8 +132,7 @@
 				<Button
 					{...props}
 					variant="outline"
-					size="sm"
-					class="h-9 gap-2 {selectedTags.length > 0 ? 'border-primary/50 bg-primary/5' : ''}"
+					class={selectedTags.length > 0 ? 'border-primary/50 bg-primary/5' : ''}
 				>
 					<Tag class="h-4 w-4" />
 					<span>Tags</span>
@@ -148,7 +146,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-56 p-0" align="start">
 			<Command.Root>
-				<Command.Input placeholder="Search tags…" />
+				<Command.Input placeholder="Search tags" />
 				<Command.List class="max-h-none overflow-visible">
 					<Command.Empty>No tags</Command.Empty>
 					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
@@ -171,7 +169,7 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="w-full justify-start gap-2"
+					class="w-full justify-start"
 					onclick={() => manage('tag')}
 				>
 					<Settings2 class="size-4" />

@@ -37,7 +37,7 @@
 
 	$effect(() => {
 		if (!auth.isLoading && !auth.isAuthenticated) {
-			goto(ROUTES.login);
+			goto(ROUTES.loginThen(page.url.pathname + page.url.search));
 		}
 	});
 
@@ -75,7 +75,7 @@
 		const projectId = projectsStore.activeProject?.id;
 		if (!auth.isAuthenticated || auth.isLoading || !projectId) return;
 		untrack(() => {
-			if (notificationStore.isLoading) return;
+			if (notificationStore.isLoading && notificationStore.projectId === projectId) return;
 			if (notificationStore.hasLoaded && notificationStore.projectId === projectId) return;
 			notificationStore.loadNotifications(projectId);
 		});
@@ -152,6 +152,16 @@
 	</div>
 {:else if auth.isAuthenticated}
 	<Sidebar.Provider open={sidebarOpen} class="!h-svh !min-h-0 overflow-hidden">
+		<a
+			href="#content"
+			class="sr-only rounded-md bg-background text-sm font-medium shadow-md ring-2 ring-ring focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-60 focus:px-3 focus:py-2"
+			onclick={(e) => {
+				e.preventDefault();
+				document.getElementById('content')?.focus();
+			}}
+		>
+			Skip to content
+		</a>
 		<AppSidebar variant="inset" />
 		<Sidebar.Inset class="min-w-0">
 			<div class="flex flex-1 flex-col min-h-0 overflow-hidden">
@@ -161,9 +171,13 @@
 					<TopBar {breadcrumbs} />
 					<div class="relative flex flex-1 min-h-0 overflow-hidden">
 						<ScrollArea class="min-h-0 min-w-0 flex-1">
-							<main class="p-6">
+							<div
+								id="content"
+								tabindex="-1"
+								class="p-6 outline-none has-[[data-selection-bar]]:pb-48 sm:has-[[data-selection-bar]]:pb-32"
+							>
 								{@render children()}
-							</main>
+							</div>
 						</ScrollArea>
 						<ActivityPanel />
 					</div>

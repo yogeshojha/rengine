@@ -14,6 +14,7 @@
 	} from '$lib/config/vulnerabilities';
 	import { Evidence, evidenceLabel } from '$lib/config/evidence';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
+	import { epssLabel } from '$lib/config/threat-intel';
 	import type { ScanFindings } from '$lib/types/scan';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import { findingsOf, forgetFindings, findingHref, findingsHref } from './findings';
@@ -46,11 +47,13 @@
 	let total = $state(0);
 	let failed = $state(false);
 	let busy = $state<string | null>(null);
+	let attempt = $state(0);
 	let seq = 0;
 
 	$effect(() => {
 		const sev = shown;
 		const v = version;
+		void attempt;
 		if (!findings?.covered || expected === 0) {
 			items = [];
 			return;
@@ -112,7 +115,7 @@
 			checked={historyPrefs.showMedium}
 			onCheckedChange={(v) => (historyPrefs.showMedium = v === true)}
 		/>
-		<span class="size-2 rounded-full bg-sev-medium"></span>
+		<span class="size-2 rounded-full bg-sev-medium" aria-hidden="true"></span>
 		Show medium
 		{#if findings?.covered}
 			<span class="font-mono text-muted-foreground tabular-nums">{findings.medium}</span>
@@ -138,7 +141,12 @@
 		{/if}
 	</div>
 {:else if failed}
-	<p class="px-1 py-6 text-sm text-muted-foreground">Findings not loaded.</p>
+	<div class="flex items-center gap-3 px-1 py-6 text-sm text-muted-foreground">
+		<span>Findings not loaded.</span>
+		<button type="button" class="text-primary hover:text-primary/80" onclick={() => attempt++}>
+			Retry
+		</button>
+	</div>
 {:else if items === null}
 	<div class="space-y-2 py-3">
 		{#each { length: Math.min(expected, 4) } as _, i (i)}
@@ -149,7 +157,7 @@
 	<div class="flex flex-col">
 		{#each groups as g (g.sev)}
 			<div
-				class="sticky top-0 z-[1] flex items-center gap-2 bg-muted/40 px-3 py-1.5 text-2xs font-semibold tracking-wide uppercase backdrop-blur {SEVERITY_CHIP[
+				class="sticky top-0 z-[1] flex items-center gap-2 bg-muted/40 px-3 py-1.5 text-2xs font-semibold tracking-[0.08em] uppercase backdrop-blur {SEVERITY_CHIP[
 					g.sev
 				].ink}"
 			>
@@ -165,7 +173,9 @@
 					onmouseenter={() => onHover?.(g.sev)}
 					onmouseleave={() => onHover?.(null)}
 				>
-					<span class="absolute inset-y-1.5 left-0 w-[3px] rounded-full {SEVERITY_CHIP[g.sev].edge}"
+					<span
+						class="absolute inset-y-1.5 left-0 w-[3px] rounded-full {SEVERITY_CHIP[g.sev].edge}"
+						aria-hidden="true"
 					></span>
 					<div class="min-w-0 flex-1">
 						<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -181,6 +191,7 @@
 									Evidence.PROVEN
 										? 'bg-foreground/80'
 										: ''}"
+									aria-hidden="true"
 								></span>
 								{evidenceLabel(f.evidence)}
 							</span>
@@ -188,7 +199,7 @@
 								<span
 									class="rounded border border-border px-1 font-mono text-2xs text-muted-foreground"
 								>
-									EPSS {f.epss_score.toFixed(2)}
+									EPSS {epssLabel(f.epss_score)}
 								</span>
 							{/if}
 						</div>

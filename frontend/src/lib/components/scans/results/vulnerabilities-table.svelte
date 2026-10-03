@@ -9,7 +9,6 @@
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import SquareKanban from '@lucide/svelte/icons/square-kanban';
 	import Tags from '@lucide/svelte/icons/tags';
@@ -38,6 +37,8 @@
 	import GroupList from './table/group-list.svelte';
 	import ListHeader from './table/list-header.svelte';
 	import {
+		inPopover,
+		onControl,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -113,7 +114,7 @@
 	import { locationTokensFromUrl } from '$lib/utilities/endpoints';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { afterPause } from '$lib/utilities/debounce';
-	import { topLayer } from '$lib/utilities/layers';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import { UrlSync, onPopSearch } from '$lib/utilities/url-history.svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
 	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
@@ -796,8 +797,8 @@
 				state
 			);
 			applyState(new Set([v.fingerprint]), result.state, result.reason);
-			toast.success(`Marked ${VULN_STATE_LABELS[state].toLowerCase()}`, {
-				description: result.updated > 1 ? `${result.updated} observations updated.` : undefined
+			toast.success(`Finding marked ${VULN_STATE_LABELS[state].toLowerCase()}`, {
+				description: result.updated > 1 ? `${result.updated} observations updated` : undefined
 			});
 			afterTriage();
 		} catch {
@@ -813,10 +814,10 @@
 		bulkBusy = true;
 		try {
 			const result = await vulnerabilitiesApi.triageMany(projectId, scanId, { ...body, state });
-			toast.success(`Marked ${what} ${VULN_STATE_LABELS[state].toLowerCase()}`, {
+			toast.success(`${what} marked ${VULN_STATE_LABELS[state].toLowerCase()}`, {
 				description: `${result.fingerprints.toLocaleString()} ${
 					result.fingerprints === 1 ? 'finding' : 'findings'
-				} updated.`
+				} updated`
 			});
 			if (body.fingerprints) applyState(new Set(body.fingerprints), state);
 			checkedIds.clear();
@@ -915,20 +916,17 @@
 
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		const typing =
-			!!t &&
-			(t.tagName === 'INPUT' ||
-				t.tagName === 'TEXTAREA' ||
-				t.isContentEditable ||
-				!!t.closest('[role=listbox], [role=menu], [role=combobox], [role=dialog] select'));
+		const typing = keyTaken(e.target);
 		if (e.key === '/' && !typing) {
 			e.preventDefault();
 			searchRef?.focus();
 			return;
 		}
-		if (typing) return;
-		if (drawerOpen && topLayer()?.getAttribute('data-slot') !== 'sheet-content') return;
+		if (typing || inPopover(e.target)) return;
+		const top = topLayer();
+		if (top && !(drawerOpen && top.getAttribute('data-slot') === 'sheet-content')) return;
+		const nav = e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowLeft';
+		if (nav && onControl(e.target, '[data-vuln-row-index]')) return;
 		const state = TRIAGE_KEYS[e.key];
 		const target = drawerOpen ? selected : isIssues ? null : (items[cursor] ?? null);
 		if (state && target) {
@@ -1126,6 +1124,7 @@
 		{label}
 		{#if sort.key === key}
 			{#if sort.dir === -1}<ArrowDown class="size-3" />{:else}<ArrowUp class="size-3" />{/if}
+			<span class="sr-only">, sorted {sort.dir === -1 ? 'descending' : 'ascending'}</span>
 		{/if}
 	</button>
 {/snippet}
@@ -1277,9 +1276,7 @@
 			title="Findings not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
-				<RefreshCw class="h-4 w-4" /> Retry
-			</Button>
+			<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
 		</EmptyState>
 	{:else if groupBy}
 		<GroupList
@@ -1306,12 +1303,7 @@
 				title="No findings match"
 				class="rounded-none border-0 bg-transparent py-16"
 			>
-				<Button
-					size="sm"
-					variant="outline"
-					class="gap-2"
-					onclick={() => setQuery(emptyVulnQuery())}
-				>
+				<Button size="sm" variant="outline" onclick={() => setQuery(emptyVulnQuery())}>
 					<X class="h-4 w-4" /> Clear filters
 				</Button>
 			</EmptyState>
@@ -1333,9 +1325,7 @@
 				title="Scan coverage not loaded"
 				class="rounded-none border-0 bg-transparent py-16"
 			>
-				<Button variant="outline" class="gap-2" onclick={() => loadOverview()}>
-					<RefreshCw class="h-4 w-4" /> Retry
-				</Button>
+				<Button size="sm" variant="outline" onclick={() => loadOverview()}>Retry</Button>
 			</EmptyState>
 		{/if}
 	{:else if isIssues}
@@ -1588,13 +1578,7 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="sm"
-						class="gap-2 font-medium"
-						disabled={bulkBusy}
-					>
+					<Button {...props} variant="ghost" size="sm" disabled={bulkBusy}>
 						<Tags class="h-3.5 w-3.5 text-muted-foreground" />
 						Mark as
 					</Button>
@@ -1606,7 +1590,7 @@
 				{/each}
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={fileChecked}>
+		<Button variant="ghost" size="sm" onclick={fileChecked}>
 			<SquareKanban class="h-3.5 w-3.5 text-muted-foreground" />
 			File issues
 		</Button>
@@ -1621,7 +1605,7 @@
 			busy={rescanBusy}
 			onRescan={rescanSelection}
 		/>
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={openRescanOptions}>
+		<Button variant="ghost" size="sm" onclick={openRescanOptions}>
 			<Settings2 class="h-3.5 w-3.5 text-muted-foreground" />
 			Options
 		</Button>

@@ -9,10 +9,12 @@
 
 	interface Props {
 		value: string;
+		label?: string;
 		class?: string;
+		onCopied?: () => void;
 	}
 
-	let { value, class: className = '' }: Props = $props();
+	let { value, label = 'Copy', class: className = '', onCopied }: Props = $props();
 
 	let copied = $state(false);
 	let failed = $state(false);
@@ -22,6 +24,7 @@
 		if (await writeClipboard(value)) {
 			copied = true;
 			setTimeout(() => (copied = false), 2000);
+			onCopied?.();
 		} else {
 			failed = true;
 			setTimeout(() => (failed = false), 2000);
@@ -37,7 +40,7 @@
 				variant="ghost"
 				size="icon"
 				class={cn('size-7 shrink-0', className)}
-				aria-label="Copy"
+				aria-label={copied ? 'Copied' : failed ? 'Copy failed' : label}
 				onclick={(e) => copy(e)}
 			>
 				{#if copied}

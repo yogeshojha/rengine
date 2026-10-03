@@ -56,7 +56,7 @@
 				new_username: newUsername,
 				current_password: currentPassword
 			});
-			await auth.checkAuth();
+			await auth.refreshUser();
 			toast.success('Username changed');
 			usernameSavedAt = new Date();
 			newUsername = '';
@@ -105,13 +105,12 @@
 					id="new-username"
 					type="text"
 					bind:value={newUsername}
-					placeholder="New username"
 					disabled={isChangingUsername}
 					aria-invalid={!!usernameError}
 					onblur={() => (usernameDirty = true)}
 				/>
 				{#if usernameError}
-					<p class="text-xs text-destructive">{usernameError}</p>
+					<p role="alert" class="text-xs text-destructive">{usernameError}</p>
 				{:else}
 					<p class="text-xs text-muted-foreground">At least {MIN_USERNAME_LENGTH} characters</p>
 				{/if}

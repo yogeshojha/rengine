@@ -4,6 +4,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
+	import FormField from '$lib/components/form-field.svelte';
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import X from '@lucide/svelte/icons/x';
@@ -145,41 +146,43 @@
 </script>
 
 {#snippet secretInput(field: SecretField, label: string, ph: string)}
-	<div class="space-y-1.5">
-		<Label class="text-xs">{label}</Label>
-		<div class="flex items-center gap-2">
-			<Input
-				type={show[field] ? 'text' : 'password'}
-				value={local[field] ?? ''}
-				placeholder={secretHint(field) ? 'Stored' : ph}
-				class="h-9 flex-1 font-mono text-xs"
-				autocomplete="off"
-				oninput={(e) => onSecretInput(field, e.currentTarget.value)}
-			/>
-			<Button
-				variant="ghost"
-				size="icon"
-				class="h-9 w-9 shrink-0 text-muted-foreground"
-				onclick={() => (show[field] = !show[field])}
-				aria-label="Toggle visibility"
-			>
-				{#if show[field]}<EyeOff class="h-4 w-4" />{:else}<Eye class="h-4 w-4" />{/if}
-			</Button>
-		</div>
-		{#if secretHint(field)}
+	<FormField {label}>
+		{#snippet children({ id })}
 			<div class="flex items-center gap-2">
-				<p class="text-xs text-muted-foreground">A value is stored.</p>
+				<Input
+					{id}
+					type={show[field] ? 'text' : 'password'}
+					value={local[field] ?? ''}
+					placeholder={secretHint(field) ? 'Stored' : ph}
+					class="h-9 flex-1 font-mono text-xs"
+					autocomplete="off"
+					oninput={(e) => onSecretInput(field, e.currentTarget.value)}
+				/>
 				<Button
 					variant="ghost"
-					size="sm"
-					class="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-					onclick={() => clearSecret(field)}
+					size="icon"
+					class="h-9 w-9 shrink-0 text-muted-foreground"
+					onclick={() => (show[field] = !show[field])}
+					aria-label="Toggle visibility"
 				>
-					Clear
+					{#if show[field]}<EyeOff class="h-4 w-4" />{:else}<Eye class="h-4 w-4" />{/if}
 				</Button>
 			</div>
-		{/if}
-	</div>
+			{#if secretHint(field)}
+				<div class="flex items-center gap-2">
+					<p class="text-sm text-muted-foreground">A value is stored.</p>
+					<Button
+						variant="ghost"
+						size="sm"
+						class="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+						onclick={() => clearSecret(field)}
+					>
+						Clear
+					</Button>
+				</div>
+			{/if}
+		{/snippet}
+	</FormField>
 {/snippet}
 
 <div class="space-y-5">
@@ -204,42 +207,48 @@
 	{:else if local.auth_type === 'bearer'}
 		{@render secretInput('bearer_token', 'Bearer token', SECRET_PLACEHOLDER)}
 	{:else if local.auth_type === 'basic'}
-		<div class="space-y-1.5">
-			<Label class="text-xs">Username</Label>
-			<Input
-				value={local.basic_username ?? ''}
-				placeholder="username"
-				class="h-9 font-mono text-xs"
-				autocomplete="off"
-				oninput={(e) => setField('basic_username', e.currentTarget.value)}
-			/>
-		</div>
+		<FormField label="Username">
+			{#snippet children({ id })}
+				<Input
+					{id}
+					value={local.basic_username ?? ''}
+					placeholder="username"
+					class="h-9 font-mono text-xs"
+					autocomplete="off"
+					oninput={(e) => setField('basic_username', e.currentTarget.value)}
+				/>
+			{/snippet}
+		</FormField>
 		{@render secretInput('basic_password', 'Password', SECRET_PLACEHOLDER)}
 	{:else if local.auth_type === 'header'}
-		<div class="space-y-1.5">
-			<Label class="text-xs">Header name</Label>
-			<Input
-				value={local.header_name ?? ''}
-				placeholder="Authorization"
-				class="h-9 font-mono text-xs"
-				autocomplete="off"
-				oninput={(e) => setField('header_name', e.currentTarget.value)}
-			/>
-		</div>
+		<FormField label="Header name">
+			{#snippet children({ id })}
+				<Input
+					{id}
+					value={local.header_name ?? ''}
+					placeholder="Authorization"
+					class="h-9 font-mono text-xs"
+					autocomplete="off"
+					oninput={(e) => setField('header_name', e.currentTarget.value)}
+				/>
+			{/snippet}
+		</FormField>
 		{@render secretInput('header_value', 'Header value', SECRET_PLACEHOLDER)}
 	{:else if local.auth_type === 'cookie'}
 		{@render secretInput('cookie_value', 'Cookie value', 'session=abc123; token=...')}
 	{:else if local.auth_type === 'api_key'}
-		<div class="space-y-1.5">
-			<Label class="text-xs">Key name</Label>
-			<Input
-				value={local.api_key_name ?? ''}
-				placeholder="X-API-Key"
-				class="h-9 font-mono text-xs"
-				autocomplete="off"
-				oninput={(e) => setField('api_key_name', e.currentTarget.value)}
-			/>
-		</div>
+		<FormField label="Key name">
+			{#snippet children({ id })}
+				<Input
+					{id}
+					value={local.api_key_name ?? ''}
+					placeholder="X-API-Key"
+					class="h-9 font-mono text-xs"
+					autocomplete="off"
+					oninput={(e) => setField('api_key_name', e.currentTarget.value)}
+				/>
+			{/snippet}
+		</FormField>
 		{@render secretInput('api_key_value', 'Key value', SECRET_PLACEHOLDER)}
 	{/if}
 
@@ -252,36 +261,36 @@
 
 	<Separator />
 
-	<div class="space-y-2">
-		<div>
-			<Label class="text-xs">Additional headers</Label>
-			<p class="mt-0.5 text-xs text-muted-foreground">Added to every request.</p>
+	<div class="flex flex-col gap-3">
+		<Label>Additional headers</Label>
+		<div class="space-y-2">
+			{#each headerRows as row, i (i)}
+				<div class="flex items-center gap-2">
+					<Input
+						value={row.name}
+						placeholder="Header-Name"
+						class="h-9 flex-1 font-mono text-xs"
+						oninput={(e) => updateHeader(i, 'name', e.currentTarget.value)}
+					/>
+					<Input
+						value={row.value}
+						placeholder={maskedNames.has(row.name.toLowerCase()) ? 'Stored' : 'value'}
+						class="h-9 flex-1 font-mono text-xs"
+						oninput={(e) => updateHeader(i, 'value', e.currentTarget.value)}
+					/>
+					<Button
+						variant="ghost"
+						size="icon"
+						class="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+						disabled={row.name === '' && row.value === '' && headerRows.length === 1}
+						onclick={() => removeHeader(i)}
+						aria-label="Remove header"
+					>
+						<X class="h-4 w-4" />
+					</Button>
+				</div>
+			{/each}
 		</div>
-		{#each headerRows as row, i (i)}
-			<div class="flex items-center gap-2">
-				<Input
-					value={row.name}
-					placeholder="Header-Name"
-					class="h-9 flex-1 font-mono text-xs"
-					oninput={(e) => updateHeader(i, 'name', e.currentTarget.value)}
-				/>
-				<Input
-					value={row.value}
-					placeholder={maskedNames.has(row.name.toLowerCase()) ? 'Stored' : 'value'}
-					class="h-9 flex-1 font-mono text-xs"
-					oninput={(e) => updateHeader(i, 'value', e.currentTarget.value)}
-				/>
-				<Button
-					variant="ghost"
-					size="icon"
-					class="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
-					disabled={row.name === '' && row.value === '' && headerRows.length === 1}
-					onclick={() => removeHeader(i)}
-					aria-label="Remove header"
-				>
-					<X class="h-4 w-4" />
-				</Button>
-			</div>
-		{/each}
+		<p class="text-sm text-muted-foreground">Added to every request.</p>
 	</div>
 </div>

@@ -5,6 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Button } from '$lib/components/ui/button';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
@@ -264,15 +265,11 @@
 			{#if error}
 				<p class="err">{error}</p>
 			{:else if !engines.length && scanEnginesStore.hasFetched}
-				<p class="empty">No scan engines.</p>
-				<Button
-					variant="outline"
-					size="sm"
-					class="mt-3 gap-1.5"
-					onclick={() => goto(ROUTES.engines)}
-				>
-					Scan engines <ArrowRight size={13} />
-				</Button>
+				<EmptyState title="No scan engines" compact>
+					<Button variant="outline" size="sm" onclick={() => goto(ROUTES.engines)}>
+						Scan engines <ArrowRight size={13} />
+					</Button>
+				</EmptyState>
 			{:else if !plain || !merged}
 				<div class="flex flex-col gap-2">
 					{#each Array(6) as _, i (i)}
@@ -329,13 +326,9 @@
 	.body {
 		padding: 12px 14px 20px;
 	}
-	.empty,
 	.err {
 		font-size: 12px;
 		line-height: 1.55;
-		color: var(--muted-foreground);
-	}
-	.err {
 		color: var(--destructive);
 	}
 	.count {
@@ -351,7 +344,7 @@
 		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.08em;
 		color: var(--muted-foreground);
 		margin: 14px 0 4px;
 	}

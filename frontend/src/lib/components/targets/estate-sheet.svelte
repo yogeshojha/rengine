@@ -3,6 +3,7 @@
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import SignalSheet, { type SheetRow } from '$lib/components/dashboard/signal-sheet.svelte';
 	import { targetsApi } from '$lib/api/targets';
+	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -68,8 +69,10 @@
 		pending = domain;
 		const ok = await addTarget(domain);
 		pending = null;
-		if (ok) toast.success(`Target ${domain} added`);
-		else toast.error(`Target ${domain} not added`);
+		if (ok) {
+			void targetsStore.refresh();
+			toast.success(`Target ${domain} added`);
+		} else toast.error(`Target ${domain} not added`);
 	}
 
 	async function setState(domain: string, next: EstateTriageState) {
@@ -106,8 +109,10 @@
 		let n = 0;
 		for (const d of candidates) if (await addTarget(d.domain)) n += 1;
 		adding = false;
-		if (n) toast.success(`${n} ${n === 1 ? 'target' : 'targets'} added`);
-		else toast.error('Targets not added');
+		if (n) {
+			void targetsStore.refresh();
+			toast.success(`${n} ${n === 1 ? 'target' : 'targets'} added`);
+		} else toast.error('Targets not added');
 	}
 
 	function rowBadge(d: EstateDomain) {
@@ -161,12 +166,14 @@
 				: dismissed
 					? {
 							label: 'Restore',
+							loadingLabel: 'Restoring',
 							doneLabel: 'Restored',
 							pending: triaging === d.domain,
 							onClick: () => setState(d.domain, EstateTriageState.OPEN)
 						}
 					: {
 							label: 'Add',
+							loadingLabel: 'Adding',
 							doneLabel: 'Added',
 							done: added.has(d.domain),
 							pending: pending === d.domain,
@@ -177,6 +184,7 @@
 					? undefined
 					: {
 							label: 'Dismiss',
+							loadingLabel: 'Dismissing',
 							doneLabel: 'Dismissed',
 							pending: triaging === d.domain,
 							onClick: () => setState(d.domain, EstateTriageState.DISMISSED)
@@ -205,7 +213,7 @@
 				primary: n.host,
 				secondary: `${n.subject}${n.provider ? ` · ${n.provider}` : ''}`,
 				meta: `${n.names} names`,
-				group: 'Platform neighbours'
+				group: 'Platform neighbors'
 			});
 		out.push(...dismissed.map(domainRow));
 		return out;

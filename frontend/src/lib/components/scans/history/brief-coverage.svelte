@@ -20,11 +20,13 @@
 
 	let activities = $state<ScanActivityRead[] | null>(null);
 	let error = $state<string | null>(null);
+	let attempt = $state(0);
 	let open = $derived(isOpenStatus(scan.status));
 	let tick = $derived(open ? Math.floor(now / 5000) : 0);
 
 	$effect(() => {
 		void tick;
+		void attempt;
 		const id = scan.id;
 		scansApi
 			.activities(id, projectId)
@@ -34,6 +36,11 @@
 			})
 			.catch((e) => (error = e instanceof Error ? e.message : 'Stages not loaded.'));
 	});
+
+	function retry() {
+		error = null;
+		attempt++;
+	}
 
 	let t0 = $derived(new Date(scan.started_at ?? scan.created_at).getTime());
 	let t1 = $derived(
@@ -82,7 +89,12 @@
 </script>
 
 {#if error}
-	<p class="px-1 py-6 text-sm text-muted-foreground">{error}</p>
+	<div class="flex items-center gap-3 px-1 py-6 text-sm text-muted-foreground">
+		<span>{error}</span>
+		<button type="button" class="text-primary hover:text-primary/80" onclick={() => retry()}>
+			Retry
+		</button>
+	</div>
 {:else if !activities}
 	<div class="space-y-1.5 py-3">
 		{#each { length: 6 } as _, i (i)}

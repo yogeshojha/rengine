@@ -1,26 +1,32 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
-	import { plural } from '$lib/utilities/strings';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import LayoutTemplateIcon from '@lucide/svelte/icons/layout-template';
+	import PaletteIcon from '@lucide/svelte/icons/palette';
+	import TypeIcon from '@lucide/svelte/icons/type';
+	import StampIcon from '@lucide/svelte/icons/stamp';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import XIcon from '@lucide/svelte/icons/x';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
-	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
+	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
 	import ReportRow from '$lib/components/reports/report-row.svelte';
 	import TemplatesPanel from '$lib/components/reports/templates-panel.svelte';
 	import ThemesPanel from '$lib/components/reports/themes-panel.svelte';
@@ -54,12 +60,13 @@
 		id: string;
 		name: string;
 	} | null>(null);
-	let bulkDeleteOpen = $state(false);
-	let bulkDeleting = $state(false);
+	let deleting = $state(false);
 
 	const selectedIds = new SvelteSet<string>();
 
 	const projectId = $derived(projectsStore.activeProject?.id ?? '');
+	const stale = $derived(!!projectId && reportsStore.rowsProjectId !== projectId);
+	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const scanFilter = $derived(page.url.searchParams.get('scan') ?? undefined);
 	const targetFilter = $derived(page.url.searchParams.get('target') ?? undefined);
 
@@ -77,6 +84,30 @@
 	);
 
 	const filtered = $derived(visibleReports.length !== reportsStore.reports.length);
+
+	const subjectChips = $derived.by(() => {
+		const chips: { id: 'scan' | 'target'; label: string }[] = [];
+		if (scanFilter) {
+			const name = reportsStore.reports.find((r) => r.scan_id === scanFilter)?.subject;
+			chips.push({ id: 'scan', label: name ? `Scan ${name}` : 'Selected scan' });
+		}
+		if (targetFilter) {
+			const name = reportsStore.reports.find((r) => r.target_id === targetFilter)?.subject;
+			chips.push({ id: 'target', label: name ? `Target ${name}` : 'Selected target' });
+		}
+		return chips;
+	});
+
+	function clearSubject(param?: 'scan' | 'target') {
+		const url = new URL(location.href);
+		for (const key of param ? [param] : ['scan', 'target']) url.searchParams.delete(key);
+		void goto(`${url.pathname}${url.search}`, {
+			replaceState: true,
+			noScroll: true,
+			keepFocus: true
+		});
+	}
+
 	const selectedCount = $derived(selectedIds.size);
 	const selectableIds = $derived(visibleReports.map((r) => r.id));
 	const selectAllChecked = $derived<boolean | 'indeterminate'>(
@@ -106,18 +137,6 @@
 		selectedIds.clear();
 	}
 
-	async function confirmBulkDelete() {
-		const ids = [...selectedIds];
-		if (!ids.length) return;
-		bulkDeleting = true;
-		const { ok, failed } = await reportsStore.removeMany(projectId, ids);
-		bulkDeleting = false;
-		bulkDeleteOpen = false;
-		selectedIds.clear();
-		if (ok > 0) toast.success(`${plural(ok, 'report')} deleted`);
-		if (failed > 0) toast.error(`${plural(failed, 'report')} not deleted`);
-	}
-
 	$effect(() => {
 		const id = projectId;
 		if (!id) return;
@@ -125,6 +144,13 @@
 			void reportsStore.fetch(id);
 			void reportsStore.fetchTemplates(id);
 			void reportCatalog.fetch();
+		});
+	});
+
+	$effect(() => {
+		const tab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
+		untrack(() => {
+			if (valid.has(tab) && tab !== activeTab) activeTab = tab as ReportTab;
 		});
 	});
 
@@ -179,118 +205,194 @@
 					: `Report ${pendingDelete?.name ?? ''} and its files are removed.`
 	);
 
+	const DELETE_NOUN = {
+		report: 'Report',
+		template: 'Template',
+		theme: 'Theme',
+		typeface: 'Typeface'
+	} as const;
+
 	async function confirmDelete() {
 		if (!pendingDelete) return;
 		const { kind, id } = pendingDelete;
-		if (kind === 'report') await reportsStore.remove(projectId, id);
-		else if (kind === 'template') await reportsStore.removeTemplate(projectId, id);
-		else if (kind === 'theme' || kind === 'typeface') {
+		deleting = true;
+		let ok = false;
+		if (kind === 'report') ok = await reportsStore.remove(projectId, id);
+		else if (kind === 'template') ok = await reportsStore.removeTemplate(projectId, id);
+		else {
 			try {
 				if (kind === 'theme') await reportsApi.deleteTheme(id);
 				else await reportsApi.deleteFont(id);
 				await reportCatalog.fetch(true);
+				ok = true;
 			} catch (e) {
-				toast.error(
-					e instanceof Error ? e.message : `${kind === 'theme' ? 'Theme' : 'Typeface'} not deleted`
-				);
+				toast.error(e instanceof Error ? e.message : `${DELETE_NOUN[kind]} not deleted`);
 			}
 		}
+		deleting = false;
+		if (!ok) return;
+		toast.success(`${DELETE_NOUN[kind]} deleted`);
 		pendingDelete = null;
 	}
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels.reports)}</title></svelte:head>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap items-start justify-between gap-3">
-		<div>
+<div class="flex flex-col gap-6">
+	<div class="flex flex-wrap items-end justify-between gap-3">
+		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.reports}</h1>
 		</div>
-		<Button
-			onclick={() => {
-				generateTemplate = '';
-				generateOpen = true;
-			}}
-			disabled={!projectId}
-		>
-			<PlusIcon class="mr-1.5 size-4" />
-			Generate report
-		</Button>
+		<div class="flex flex-wrap items-center gap-2">
+			<Button
+				size="sm"
+				onclick={() => {
+					generateTemplate = '';
+					generateOpen = true;
+				}}
+				disabled={!projectId}
+			>
+				<PlusIcon class="size-4" />
+				Generate report
+			</Button>
+		</div>
 	</div>
 
 	<Tabs.Root value={activeTab} onValueChange={(v) => v && requestTab(v as ReportTab)}>
 		<div class="flex flex-wrap items-center justify-between gap-3">
-			<ScrollArea orientation="horizontal" class="w-full sm:w-fit">
+			<ScrollArea orientation="horizontal" class="w-full max-w-full sm:w-fit">
 				<Tabs.List class="w-max min-w-full">
-					<Tabs.Trigger value="reports">
+					<Tabs.Trigger value="reports" class="gap-1.5">
+						<FileTextIcon class="size-4" />
 						Reports
-						{#if reportsStore.reports.length}
-							<span class="ml-1.5 text-muted-foreground">{reportsStore.reports.length}</span>
+						{#if reportsStore.reports.length && !stale}
+							<span class="text-muted-foreground tabular-nums">{reportsStore.reports.length}</span>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="templates">
+					<Tabs.Trigger value="templates" class="gap-1.5">
+						<LayoutTemplateIcon class="size-4" />
 						Templates
 						{#if reportsStore.templates.length}
-							<span class="ml-1.5 text-muted-foreground">{reportsStore.templates.length}</span>
+							<span class="text-muted-foreground tabular-nums">{reportsStore.templates.length}</span
+							>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="themes">
+					<Tabs.Trigger value="themes" class="gap-1.5">
+						<PaletteIcon class="size-4" />
 						Themes
 						{#if reportCatalog.themes.length}
-							<span class="ml-1.5 text-muted-foreground">{reportCatalog.themes.length}</span>
+							<span class="text-muted-foreground tabular-nums">{reportCatalog.themes.length}</span>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="typefaces">
+					<Tabs.Trigger value="typefaces" class="gap-1.5">
+						<TypeIcon class="size-4" />
 						Typefaces
 						{#if reportCatalog.catalog?.fonts.length}
-							<span class="ml-1.5 text-muted-foreground">{reportCatalog.catalog.fonts.length}</span>
+							<span class="text-muted-foreground tabular-nums"
+								>{reportCatalog.catalog.fonts.length}</span
+							>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
+					<Tabs.Trigger value="branding" class="gap-1.5">
+						<StampIcon class="size-4" />
+						Branding
+					</Tabs.Trigger>
 				</Tabs.List>
 			</ScrollArea>
 
-			{#if activeTab === 'reports'}
-				<div class="relative w-full sm:w-64">
-					<SearchIcon
-						class="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-					/>
-					<Input bind:value={search} placeholder="Search reports…" class="h-9 pl-8" />
-				</div>
-			{:else if activeTab === 'themes'}
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={!auth.user?.is_superuser}
-					onclick={() => (uploadOpen = true)}
-				>
-					<UploadIcon class="mr-1.5 size-3.5" />
-					Upload theme
-				</Button>
-			{:else if activeTab === 'typefaces'}
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={!auth.user?.is_superuser}
-					onclick={() => (fontUploadOpen = true)}
-				>
-					<UploadIcon class="mr-1.5 size-3.5" />
-					Upload typeface
-				</Button>
+			{#if activeTab === 'themes' || activeTab === 'typefaces'}
+				<Hint text={isAdmin ? null : 'Editable by administrators'}>
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={!isAdmin}
+								onclick={() =>
+									activeTab === 'themes' ? (uploadOpen = true) : (fontUploadOpen = true)}
+							>
+								<UploadIcon class="size-3.5" />
+								{activeTab === 'themes' ? 'Upload theme' : 'Upload typeface'}
+							</Button>
+						</span>
+					{/snippet}
+				</Hint>
 			{/if}
 		</div>
 
-		<Tabs.Content value="reports" class="mt-5">
-			{#if reportsStore.isLoading && !reportsStore.reports.length}
-				<Card.Root class="gap-0 py-0">
+		<Tabs.Content value="reports" class="mt-6">
+			<Card.Root class="gap-0 overflow-hidden py-0">
+				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+					<InputGroup.Root class="h-9 w-auto min-w-[240px] flex-1">
+						<InputGroup.Addon>
+							<SearchIcon />
+						</InputGroup.Addon>
+						<InputGroup.Input
+							bind:value={search}
+							placeholder="Search reports"
+							aria-label="Search reports"
+						/>
+						{#if search}
+							<InputGroup.Addon align="inline-end">
+								<InputGroup.Button
+									size="icon-xs"
+									aria-label="Clear search"
+									onclick={() => (search = '')}
+								>
+									<XIcon />
+								</InputGroup.Button>
+							</InputGroup.Addon>
+						{/if}
+					</InputGroup.Root>
+				</div>
+
+				<FilterChips
+					chips={subjectChips}
+					onRemove={(chip) => clearSubject(chip.id)}
+					onClear={() => clearSubject()}
+				/>
+
+				{#if (reportsStore.isLoading && !reportsStore.reports.length) || (stale && !reportsStore.error)}
 					<RowSkeleton rows={4} avatar="size-8 rounded-md" trailing="h-5 w-20 rounded-full" />
-				</Card.Root>
-			{:else if !visibleReports.length}
-				<EmptyState icon={FileTextIcon} title="No reports" />
-			{:else}
-				<Card.Root class="gap-0 py-0">
+				{:else if reportsStore.error && !reportsStore.reports.length}
+					<div class="p-6">
+						<EmptyState
+							icon={TriangleAlertIcon}
+							title="Reports not loaded"
+							description={reportsStore.error}
+							compact
+						>
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => reportsStore.fetch(projectId, true)}
+							>
+								Retry
+							</Button>
+						</EmptyState>
+					</div>
+				{:else if !visibleReports.length}
+					<div class="p-6">
+						<EmptyState
+							icon={FileTextIcon}
+							title={filtered ? 'No matching reports' : 'No reports'}
+							compact
+						>
+							{#if search.trim()}
+								<Button variant="outline" size="sm" onclick={() => (search = '')}>
+									Clear search
+								</Button>
+							{/if}
+							{#if subjectChips.length}
+								<Button variant="outline" size="sm" onclick={() => clearSubject()}>
+									Show all reports
+								</Button>
+							{/if}
+						</EmptyState>
+					</div>
+				{:else}
 					<div
-						class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
+						class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 					>
 						<Checkbox
 							checked={selectAllChecked === true}
@@ -314,13 +416,16 @@
 							onDelete={(id) => (pendingDelete = { kind: 'report', id, name: report.title })}
 						/>
 					{/each}
-				</Card.Root>
-			{/if}
+				{/if}
+			</Card.Root>
 		</Tabs.Content>
 
-		<Tabs.Content value="templates" class="mt-5">
+		<Tabs.Content value="templates" class="mt-6">
 			<TemplatesPanel
 				templates={reportsStore.templates}
+				loading={reportsStore.templatesLoading}
+				error={reportsStore.templatesError}
+				onRetry={() => reportsStore.fetchTemplates(projectId, true)}
 				onDuplicate={duplicate}
 				onDelete={(t) => (pendingDelete = { kind: 'template', id: t.id, name: t.name })}
 				onGenerate={(t) => {
@@ -330,49 +435,39 @@
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="themes" class="mt-5">
+		<Tabs.Content value="themes" class="mt-6">
 			<ThemesPanel
 				themes={reportCatalog.themes}
 				onDelete={(t) => (pendingDelete = { kind: 'theme', id: t.slug, name: t.name })}
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="typefaces" class="mt-5">
+		<Tabs.Content value="typefaces" class="mt-6">
 			<TypefacesPanel
 				fonts={reportCatalog.catalog?.fonts ?? []}
 				onDelete={(f) => (pendingDelete = { kind: 'typeface', id: f.slug, name: f.name })}
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="branding" class="mt-5">
+		<Tabs.Content value="branding" class="mt-6">
 			<DefaultsPanel onDirtyChange={(v) => (defaultsDirty = v)} />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
 
 {#if activeTab === 'reports'}
-	<SelectionActionBar {selectedCount} noun="report" onClear={clearSelection}>
-		<Button
-			variant="ghost"
-			size="sm"
-			class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
-			onclick={() => (bulkDeleteOpen = true)}
-		>
-			<Trash2Icon class="h-3.5 w-3.5" />
-			Delete
-		</Button>
-	</SelectionActionBar>
+	<SelectionDeleteBar
+		ids={[...selectedIds]}
+		noun="report"
+		removes="files"
+		remove={(id) => reportsApi.remove(projectId, id)}
+		onDone={() => {
+			selectedIds.clear();
+			void reportsStore.fetch(projectId, true);
+		}}
+		onClear={clearSelection}
+	/>
 {/if}
-
-<DeleteConfirmationDialog
-	open={bulkDeleteOpen}
-	onOpenChange={(v) => (bulkDeleteOpen = v)}
-	title={`Delete ${plural(selectedCount, 'report')}`}
-	description="The selected reports and their files are removed."
-	confirmLabel="Delete {selectedCount}"
-	isDeleting={bulkDeleting}
-	onConfirm={confirmBulkDelete}
-/>
 
 <GenerateDialog bind:open={generateOpen} {projectId} template={generateTemplate} />
 <ThemeUploadDialog bind:open={uploadOpen} />
@@ -384,6 +479,7 @@
 	}}
 	title={`Delete ${pendingDelete?.kind ?? 'report'}`}
 	description={deleteDescription}
+	isDeleting={deleting}
 	onConfirm={confirmDelete}
 />
 

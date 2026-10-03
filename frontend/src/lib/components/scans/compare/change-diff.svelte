@@ -3,6 +3,8 @@
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CheckCheck from '@lucide/svelte/icons/check-check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { Button } from '$lib/components/ui/button';
 	import { compareApi } from '$lib/api/compare';
 	import { COMPARE_TAB_ALL } from '$lib/config/compare';
 	import type { ChangeVerb } from '$lib/types/compare';
@@ -21,8 +23,10 @@
 	let text = $state('');
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let attempt = $state(0);
 
 	$effect(() => {
+		void attempt;
 		const args = {
 			projectId,
 			current,
@@ -39,7 +43,7 @@
 				if (live) text = body;
 			})
 			.catch((e) => {
-				if (live) error = e instanceof Error ? e.message : 'Diff not loaded.';
+				if (live) error = e instanceof Error ? e.message : 'Diff not loaded';
 			})
 			.finally(() => {
 				if (live) loading = false;
@@ -55,7 +59,15 @@
 {#if loading}
 	<div class="p-4 sm:p-5"><Skeleton class="h-72" /></div>
 {:else if error}
-	<EmptyState title="Diff not loaded" description={error} class="m-4 sm:m-5" compact />
+	<EmptyState
+		icon={TriangleAlert}
+		title="Diff not loaded"
+		description={error}
+		class="m-4 sm:m-5"
+		compact
+	>
+		<Button variant="outline" size="sm" onclick={() => (attempt += 1)}>Retry</Button>
+	</EmptyState>
 {:else if empty}
 	<EmptyState icon={CheckCheck} title="Nothing changed" class="m-4 sm:m-5" compact />
 {:else}

@@ -7,8 +7,8 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -18,16 +18,17 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { providerAllowed } from '$lib/config/capabilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { externalHref } from '$lib/utilities/links';
 	import type { APIKeyRead, ProviderInfo } from '$lib/types/api-key';
@@ -55,6 +56,7 @@
 	let dialogOpen = $state(false);
 	let keyValue = $state('');
 	let username = $state('');
+	let initialUsername = $state('');
 	let showKey = $state(false);
 	let saving = $state(false);
 	let usernameInput = $state<HTMLInputElement | null>(null);
@@ -89,6 +91,11 @@
 		);
 	});
 	const setCount = $derived(providers.filter((p) => keys.has(p.provider)).length);
+	const dirty = $derived(!!keyValue.trim() || username.trim() !== initialUsername);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (dialogOpen = false)
+	);
 
 	async function load() {
 		loading = true;
@@ -123,6 +130,7 @@
 		editing = provider;
 		keyValue = '';
 		username = String(keys.get(provider.provider)?.key_meta?.username ?? '');
+		initialUsername = username.trim();
 		showKey = false;
 		dialogOpen = true;
 		await tick();
@@ -218,7 +226,7 @@
 			copied = true;
 			setTimeout(() => (copied = false), 2000);
 		} else {
-			toast.error('Copy failed');
+			toast.error('Key not copied');
 		}
 	}
 </script>
@@ -327,7 +335,7 @@
 											{:else if revealFailed}
 												<p class="text-xs text-muted-foreground">Key not loaded.</p>
 											{:else}
-												<div class="flex justify-center py-2"><Spinner class="size-4" /></div>
+												<Skeleton class="h-8 w-full" />
 											{/if}
 										</Popover.Content>
 									</Popover.Root>
@@ -358,9 +366,14 @@
 								<DropdownMenu.Root>
 									<DropdownMenu.Trigger>
 										{#snippet child({ props })}
-											<Button {...props} variant="ghost" size="icon" class="size-7">
-												<MoreVerticalIcon class="size-4" />
-												<span class="sr-only">{provider.name} key actions</span>
+											<Button
+												{...props}
+												variant="ghost"
+												size="icon"
+												class="size-7"
+												aria-label="{provider.name} key actions"
+											>
+												<EllipsisIcon class="size-4" />
 											</Button>
 										{/snippet}
 									</DropdownMenu.Trigger>
@@ -403,7 +416,9 @@
 	</Card.Root>
 {/if}
 
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root
+	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
+>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>
@@ -470,12 +485,7 @@
 				{/snippet}
 			</FormField>
 			<Dialog.Footer>
-				<Button
-					type="button"
-					variant="outline"
-					disabled={saving}
-					onclick={() => (dialogOpen = false)}
-				>
+				<Button type="button" variant="outline" disabled={saving} onclick={() => guard.close()}>
 					Cancel
 				</Button>
 				<LoadingButton type="submit" loading={saving} loadingLabel="Saving" disabled={!canSave}>
@@ -491,10 +501,17 @@
 	title="Remove API key"
 	description={removing ? `The ${removing.name} key is removed.` : ''}
 	confirmLabel="Remove"
+	loadingLabel="Removing"
 	destructive
 	loading={deleting}
 	onOpenChange={(open) => {
 		if (!open) removing = null;
 	}}
 	onConfirm={remove}
+/>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />

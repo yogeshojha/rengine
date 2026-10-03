@@ -21,8 +21,6 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { Spinner } from '$lib/components/ui/spinner';
-	import * as Empty from '$lib/components/ui/empty';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ButtonGroup from '$lib/components/ui/button-group';
 	import * as Kbd from '$lib/components/ui/kbd';
@@ -30,6 +28,7 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -96,7 +95,6 @@
 	let baseline = $state<string>('');
 	let hasUnsavedChanges = $derived.by(() => {
 		if (!draft) return false;
-		if (isNew) return true;
 		return JSON.stringify(draft) !== baseline;
 	});
 
@@ -134,7 +132,9 @@
 		proxyPreset = true;
 		if (fallback && !draft.proxy_id) {
 			untrack(() => {
-				if (draft) draft.proxy_id = fallback;
+				if (!draft) return;
+				draft.proxy_id = fallback;
+				baseline = JSON.stringify({ ...JSON.parse(baseline), proxy_id: fallback });
 			});
 		}
 	});
@@ -213,7 +213,7 @@
 		draft = templateDraft(templateKey);
 		proxyPreset = false;
 		loaded = null;
-		baseline = '';
+		baseline = JSON.stringify(draft);
 		touchedSecrets.clear();
 		seedKey++;
 		if (template) open = { ...open, auth: template.focus === 'auth', [template.focus]: true };
@@ -332,15 +332,11 @@
 	async function handleDuplicate() {
 		const project = projectsStore.activeProject;
 		if (!project || !contextId || isNew || isDuplicating) return;
-		if (hasUnsavedChanges) {
-			toast.warning('Unsaved changes are not included in the duplicate.');
-		}
 		isDuplicating = true;
 		try {
 			const dup = await scanContextsStore.duplicateContext(contextId, project.id);
 			if (dup?.id) {
 				toast.success('Context duplicated');
-				bypassGuard = true;
 				goto(ROUTES.context(dup.id));
 			} else {
 				toast.error(scanContextsStore.error ?? 'Context not duplicated');
@@ -374,7 +370,9 @@
 	}
 </script>
 
-<svelte:head><title>{pageTitle(loaded?.name ?? routeLabels.contexts)}</title></svelte:head>
+<svelte:head>
+	<title>{pageTitle(isNew ? 'New context' : (loaded?.name ?? routeLabels.contexts))}</title>
+</svelte:head>
 
 {#snippet form()}
 	<section class="form">
@@ -409,30 +407,47 @@
 {/snippet}
 
 <div class="ctx-editor">
+	<h1 class="sr-only">{isNew ? 'New context' : (loaded?.name ?? routeLabels.contexts)}</h1>
 	{#if isLoading && !loaded && !isNew}
-		<div class="state">
-			<Skeleton class="h-6 w-56" />
-			<Skeleton class="h-4 w-80" />
+		<div class="flex flex-col gap-4 p-4" aria-busy="true">
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-3">
+					<Skeleton class="size-8 rounded-md" />
+					<Skeleton class="h-6 w-56" />
+				</div>
+				<Skeleton class="h-8 w-28" />
+			</div>
+			<Skeleton class="h-9 w-full" />
+			<div class="flex min-h-0 flex-1 gap-4">
+				<div class="flex min-w-0 flex-1 flex-col gap-3">
+					{#each Array(6) as _, i (i)}
+						<div class="flex flex-col gap-2 rounded-md border p-3">
+							<Skeleton class="h-4 w-40" />
+							<Skeleton class="h-3 w-2/3" />
+						</div>
+					{/each}
+				</div>
+				<div class="hidden min-w-0 flex-1 flex-col gap-2 lg:flex">
+					{#each Array(10) as _, i (i)}
+						<Skeleton class="h-3 {i % 3 === 0 ? 'w-2/3' : i % 3 === 1 ? 'w-5/6' : 'w-1/2'}" />
+					{/each}
+				</div>
+			</div>
 		</div>
 	{:else if loadError}
-		<Empty.Root class="flex-1">
-			<Empty.Header>
-				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
-					<AlertTriangle size={22} class="text-destructive" />
-				</Empty.Media>
-				<Empty.Title>Context not loaded</Empty.Title>
-				<Empty.Description>{loadError}</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<div class="flex items-center gap-2">
-					<Button onclick={retryLoad} disabled={isLoading}>
-						{#if isLoading}<Spinner class="h-3.5 w-3.5" />{/if}
-						Retry
-					</Button>
-					<Button variant="outline" onclick={() => goto(ROUTES.contexts)}>Back to contexts</Button>
-				</div>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState
+			icon={AlertTriangle}
+			title="Context not loaded"
+			description={loadError}
+			class="m-6 flex-none"
+		>
+			<div class="flex flex-wrap items-center justify-center gap-2">
+				<Button variant="outline" size="sm" onclick={retryLoad}>Retry</Button>
+				<Button variant="outline" size="sm" onclick={() => goto(ROUTES.contexts)}>
+					Back to contexts
+				</Button>
+			</div>
+		</EmptyState>
 	{:else if draft}
 		<header class="topbar">
 			<div class="left">
@@ -505,14 +520,16 @@
 							<span {...props} class="inline-flex">
 								<LoadingButton
 									size="sm"
-									variant={hasUnsavedChanges ? 'default' : 'outline'}
+									variant={isNew || hasUnsavedChanges ? 'default' : 'outline'}
 									class="h-8 gap-1.5 text-xs {isNew ? '' : 'rounded-l-none border-l-0'}"
 									loading={isSaving}
-									loadingLabel="Saving…"
-									disabled={!hasUnsavedChanges || !hasName || (!isValid && attemptedSave)}
+									loadingLabel="Saving"
+									disabled={(!isNew && !hasUnsavedChanges) ||
+										!hasName ||
+										(!isValid && attemptedSave)}
 									onclick={handleSave}
 								>
-									{#if hasUnsavedChanges}
+									{#if isNew || hasUnsavedChanges}
 										<Save size={13} />
 										{isNew ? 'Create' : 'Save'}
 										<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
@@ -616,7 +633,7 @@
 		display: block;
 		height: 100%;
 	}
-	:global([data-slot='scroll-area-viewport'] > div > main:has(.ctx-editor)) {
+	:global([data-slot='scroll-area-viewport'] > div > #content:has(.ctx-editor)) {
 		height: 100%;
 		padding: 0;
 	}
@@ -627,13 +644,6 @@
 		height: 100%;
 		min-height: 0;
 		overflow: hidden;
-	}
-
-	.state {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 24px;
 	}
 
 	.topbar {

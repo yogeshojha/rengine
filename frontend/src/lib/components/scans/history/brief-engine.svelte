@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { HTTP_PROTOCOL_LABELS } from '$lib/components/contexts/context-summary';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
@@ -19,7 +20,7 @@
 	let { scan, now }: Props = $props();
 
 	$effect(() => {
-		engineCatalogStore.fetch();
+		untrack(() => engineCatalogStore.fetch());
 	});
 
 	let cfg = $derived(scan.execution_config);
@@ -28,7 +29,7 @@
 		cfg.excluded_subdomains.length + cfg.excluded_paths.length + cfg.excluded_ips.length
 	);
 	let facts = $derived<[string, string][]>([
-		['Scope', scan.scope === 'focused' ? `Focused · ${scan.seed_count} assets` : 'Full'],
+		['Scope', scan.scope === 'focused' ? `Focused · ${plural(scan.seed_count, 'asset')}` : 'Full'],
 		['Context', scan.context_name ?? NO_CONTEXT_LABEL],
 		['Authentication', scan.auth_summary],
 		['Protocol', HTTP_PROTOCOL_LABELS[cfg.http_protocol] ?? cfg.http_protocol],
@@ -53,18 +54,20 @@
 		{#if scan.engine_id}
 			<a
 				href={ROUTES.engine(scan.engine_id)}
-				class="text-xl font-semibold tracking-tight hover:text-primary"
+				class="text-base leading-6 font-semibold hover:text-primary"
 			>
 				{scan.engine_name}
 			</a>
 		{:else}
-			<span class="text-xl font-semibold tracking-tight">{scan.engine_name}</span>
+			<span class="text-base leading-6 font-semibold">{scan.engine_name}</span>
 		{/if}
 		<span class="rounded-full border border-border px-2 py-0.5 text-xs">
 			{INTENSITY_LABELS[cfg.intensity as Intensity] ?? cfg.intensity}
 		</span>
 		{#if stages.length}
-			<span class="text-xs text-muted-foreground">{stages.length} stages</span>
+			<span class="text-xs text-muted-foreground tabular-nums"
+				>{plural(stages.length, 'stage')}</span
+			>
 		{/if}
 	</div>
 	<dl class="grid grid-cols-1 gap-x-8 gap-y-2 px-1 text-sm sm:grid-cols-2 lg:grid-cols-3">

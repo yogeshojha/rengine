@@ -45,6 +45,7 @@
 	let settingsOpen = $state(false);
 	let accounts = $state<UserAccount[]>([]);
 	let blocking = $state<PairingRequest | null>(null);
+	let blockBusy = $state(false);
 
 	const status = $derived(remoteControl.status);
 	const tabs = $derived(views.map((key) => ({ key, label: CHANNEL_VIEW_LABELS[key] })));
@@ -73,7 +74,7 @@
 	});
 
 	$effect(() => {
-		void projectsStore.fetchProjects();
+		untrack(() => void projectsStore.fetchProjects());
 	});
 
 	$effect(() => {
@@ -110,9 +111,12 @@
 
 	async function block() {
 		if (!blocking) return;
-		const code = blocking.code;
-		blocking = null;
-		await remoteControl.block(code);
+		blockBusy = true;
+		try {
+			if (await remoteControl.block(blocking.code)) blocking = null;
+		} finally {
+			blockBusy = false;
+		}
 	}
 </script>
 
@@ -173,7 +177,9 @@
 	title="Block chat"
 	description={blocking ? `Chat ${blocking.display} is blocked. Its messages are ignored.` : ''}
 	confirmLabel="Block"
+	loadingLabel="Blocking"
 	destructive
+	loading={blockBusy}
 	onOpenChange={(v) => {
 		if (!v) blocking = null;
 	}}

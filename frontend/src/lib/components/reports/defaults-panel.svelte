@@ -8,7 +8,9 @@
 	import { SELECT_NONE } from '$lib/constants';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import BrandingPanel from '$lib/components/reports/builder/branding-panel.svelte';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { reportsApi } from '$lib/api/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -28,6 +30,8 @@
 	let snapshot = $state('');
 	let saving = $state(false);
 	let loading = $state(true);
+	let loadError = $state<string | null>(null);
+	let discardOpen = $state(false);
 
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const selectedTheme = $derived(reportCatalog.themes.find((t) => t.slug === theme));
@@ -62,25 +66,39 @@
 		return () => window.removeEventListener('beforeunload', onBeforeUnload);
 	});
 
+	async function load() {
+		loading = true;
+		loadError = null;
+		try {
+			const value = await reportsApi.defaults();
+			defaults = value;
+			branding = {
+				...value.branding,
+				distribution: [...value.branding.distribution],
+				revisions: value.branding.revisions.map((r) => ({ ...r }))
+			};
+			theme = value.theme;
+			snapshot = JSON.stringify({ branding, theme });
+		} catch (e) {
+			loadError = e instanceof Error ? e.message : 'Branding not loaded';
+		} finally {
+			loading = false;
+		}
+	}
+
 	$effect(() => {
 		untrack(() => {
 			void reportCatalog.fetch();
-			reportsApi
-				.defaults()
-				.then((value) => {
-					defaults = value;
-					branding = {
-						...value.branding,
-						distribution: [...value.branding.distribution],
-						revisions: value.branding.revisions.map((r) => ({ ...r }))
-					};
-					theme = value.theme;
-					snapshot = JSON.stringify({ branding, theme });
-				})
-				.catch((e) => toast.error(e instanceof Error ? e.message : 'Branding not loaded'))
-				.finally(() => (loading = false));
+			void load();
 		});
 	});
+
+	function revert() {
+		const previous = JSON.parse(snapshot);
+		branding = previous.branding;
+		theme = previous.theme;
+		discardOpen = false;
+	}
 
 	async function save() {
 		if (!branding || !defaults) return;
@@ -104,13 +122,17 @@
 
 {#if loading}
 	<Skeleton class="h-64 w-full" />
+{:else if loadError}
+	<EmptyState icon={TriangleAlertIcon} title="Branding not loaded" description={loadError}>
+		<Button variant="outline" size="sm" onclick={load}>Retry</Button>
+	</EmptyState>
 {:else if branding}
 	<div class="space-y-5">
-		<Card.Root class="gap-0 py-0">
+		<Card.Root class="gap-0 overflow-hidden py-0">
 			<PanelHead title="Theme" description="Applied when a template sets none">
 				{#if !isAdmin}Read-only{/if}
 			</PanelHead>
-			<div class="px-5 py-4">
+			<div class="p-5">
 				<Select.Root
 					type="single"
 					value={theme || SELECT_NONE}
@@ -141,30 +163,25 @@
 			</div>
 		</Card.Root>
 
-		<Card.Root class="gap-0 py-0">
+		<Card.Root class="gap-0 overflow-hidden py-0">
 			<PanelHead title="Branding" description="Applied to fields a template leaves empty">
 				{#if !isAdmin}Read-only{/if}
 			</PanelHead>
-			<fieldset class="px-5 py-5" disabled={!isAdmin}>
+			<fieldset class="p-5" disabled={!isAdmin}>
 				<BrandingPanel bind:branding />
 			</fieldset>
 		</Card.Root>
 
 		<div class="flex items-center justify-end gap-3">
 			{#if dirty}<span class="text-xs text-muted-foreground">Unsaved changes</span>{/if}
-			<Button
-				variant="outline"
-				disabled={!dirty}
-				onclick={() => {
-					const previous = JSON.parse(snapshot);
-					branding = previous.branding;
-					theme = previous.theme;
-				}}
-			>
+			<Button variant="outline" disabled={!dirty} onclick={() => (discardOpen = true)}>
 				Discard
 			</Button>
-			<LoadingButton loading={saving} disabled={!isAdmin || !dirty} onclick={save}
-				>Save</LoadingButton
+			<LoadingButton
+				loading={saving}
+				loadingLabel="Saving"
+				disabled={!isAdmin || !dirty}
+				onclick={save}>Save</LoadingButton
 			>
 		</div>
 	</div>
@@ -181,4 +198,10 @@
 		pendingNav = null;
 		go?.();
 	}}
+/>
+
+<UnsavedChangesDialog
+	open={discardOpen}
+	onOpenChange={(open) => (discardOpen = open)}
+	onConfirm={revert}
 />

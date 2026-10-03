@@ -9,6 +9,7 @@
 		onSkip?: () => void;
 		nextLabel?: string;
 		nextLoading?: boolean;
+		nextLoadingLabel?: string;
 		nextDisabled?: boolean;
 		canSkip?: boolean;
 		isFirst?: boolean;
@@ -20,6 +21,7 @@
 		onSkip,
 		nextLabel = 'Continue',
 		nextLoading = false,
+		nextLoadingLabel = 'Saving',
 		nextDisabled = false,
 		canSkip = false,
 		isFirst = false
@@ -28,8 +30,8 @@
 
 <div class="flex items-center gap-2">
 	{#if !isFirst}
-		<Button variant="ghost" onclick={onBack}>
-			<ChevronLeftIcon class="mr-1 size-4" />
+		<Button variant="ghost" onclick={onBack} disabled={nextLoading}>
+			<ChevronLeftIcon class="size-4" />
 			Back
 		</Button>
 	{/if}
@@ -45,7 +47,7 @@
 	<LoadingButton
 		onclick={onNext}
 		loading={nextLoading}
-		loadingLabel={nextLabel}
+		loadingLabel={nextLoadingLabel}
 		disabled={nextDisabled}
 	>
 		{nextLabel}

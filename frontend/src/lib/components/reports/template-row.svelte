@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
-	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -129,15 +129,21 @@
 	<div
 		class="col-start-3 row-start-1 flex items-center justify-end gap-1 lg:col-start-auto lg:row-start-auto"
 	>
-		<Button variant="outline" size="sm" class="h-8" onclick={() => onGenerate(template)}>
-			<PlayIcon class="mr-1 size-3.5" />
+		<Button variant="outline" size="sm" onclick={() => onGenerate(template)}>
+			<PlayIcon class="size-3.5" />
 			Generate
 		</Button>
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button variant="ghost" size="icon" class="size-8" {...props} aria-label="Actions">
-						<MoreHorizontalIcon class="size-4" />
+					<Button
+						variant="ghost"
+						size="icon"
+						class="size-7"
+						{...props}
+						aria-label="Actions for {template.name}"
+					>
+						<EllipsisIcon class="size-4" />
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>

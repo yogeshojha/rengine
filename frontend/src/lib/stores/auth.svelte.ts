@@ -75,6 +75,12 @@ function createAuthStore() {
 		}
 	}
 
+	async function refreshUser() {
+		try {
+			state.user = await authApi.me();
+		} catch {}
+	}
+
 	async function login(
 		username: string,
 		password: string
@@ -91,10 +97,10 @@ function createAuthStore() {
 			}
 			await checkAuth();
 			if (!state.isAuthenticated) return { success: false, error: NO_SESSION };
-			toast.success('Signed in');
+			toast.success('Logged in');
 			return { success: true };
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Not signed in';
+			const message = error instanceof Error ? error.message : 'Not logged in';
 			return { success: false, error: message };
 		}
 	}
@@ -164,6 +170,7 @@ function createAuthStore() {
 			return state.isLoading;
 		},
 		checkAuth,
+		refreshUser,
 		login,
 		logout,
 		clearSession

@@ -1,5 +1,8 @@
 <script lang="ts">
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import EvidenceMark from '$lib/components/evidence-mark.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { SEVERITY_CHIP, SEVERITY_LABELS, VULN_STATE_LABELS } from '$lib/config/vulnerabilities';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
@@ -22,8 +25,10 @@
 
 	let rows = $state<VulnerabilityRead[] | null>(null);
 	let failed = $state(false);
+	let attempt = $state(0);
 
 	$effect(() => {
+		void attempt;
 		const key = `${q}|${exclude}`;
 		rows = null;
 		failed = false;
@@ -38,7 +43,14 @@
 </script>
 
 {#if failed}
-	<p class="px-3 py-4 text-xs text-muted-foreground">Findings not loaded.</p>
+	<EmptyState
+		compact
+		icon={TriangleAlert}
+		title="Findings not loaded"
+		class="rounded-none border-0 bg-transparent"
+	>
+		<Button variant="outline" size="sm" onclick={() => attempt++}>Retry</Button>
+	</EmptyState>
 {:else if rows === null}
 	<div class="space-y-2 p-3">
 		{#each { length: 3 } as _, i (i)}
@@ -46,7 +58,7 @@
 		{/each}
 	</div>
 {:else if rows.length === 0}
-	<p class="px-3 py-4 text-xs text-muted-foreground">None</p>
+	<p class="px-3 py-4 text-xs text-muted-foreground">No other findings</p>
 {:else}
 	<ul class="divide-y divide-border/60">
 		{#each rows as f (f.id)}

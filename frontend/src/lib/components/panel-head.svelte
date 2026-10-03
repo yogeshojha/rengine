@@ -25,7 +25,7 @@
 		{/if}
 	</div>
 	{#if children}
-		<div class="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+		<div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
 			{@render children()}
 		</div>
 	{/if}

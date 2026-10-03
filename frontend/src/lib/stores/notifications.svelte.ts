@@ -29,6 +29,7 @@ const state = $state<NotificationState>({
 const toastCallbacks: SvelteSet<(notification: Notification) => void> = new SvelteSet();
 let sseUnsub: (() => void) | null = null;
 let resumeUnsub: (() => void) | null = null;
+let seq = 0;
 
 export const notificationStore = {
 	get notifications() {
@@ -65,51 +66,57 @@ export const notificationStore = {
 	},
 
 	async loadNotifications(projectId?: string) {
+		const my = ++seq;
 		state.isLoading = true;
 		state.error = null;
 		state.projectId = projectId;
 
 		try {
 			const response = await notificationsApi.list(1, 50, projectId);
-			state.notifications = response.items;
-
 			const stats = await notificationsApi.stats(projectId);
+			if (my !== seq) return;
+			state.notifications = response.items;
 			state.unreadCount = stats.unread;
 			state.totalCount = stats.total;
 
 			state.hasLoaded = true;
 		} catch (error) {
+			if (my !== seq) return;
 			state.error = error as Error;
 			console.error('[Notifications] Failed to load notifications:', error);
 		} finally {
-			state.isLoading = false;
+			if (my === seq) state.isLoading = false;
 		}
 	},
 
 	async loadAllNotifications() {
+		const my = ++seq;
+		const projectId = state.projectId;
 		state.isLoading = true;
 		state.error = null;
 
 		try {
-			const stats = await notificationsApi.stats(state.projectId);
+			const stats = await notificationsApi.stats(projectId);
 			const response = await notificationsApi.list(
 				1,
 				Math.min(Math.max(stats.total, 1), MAX_INBOX),
-				state.projectId
+				projectId
 			);
+			if (my !== seq) return;
 			state.notifications = response.items;
 			state.unreadCount = stats.unread;
 			state.totalCount = stats.total;
 		} catch (error) {
+			if (my !== seq) return;
 			state.error = error as Error;
 			console.error('[Notifications] Failed to load all notifications:', error);
 		} finally {
-			state.isLoading = false;
+			if (my === seq) state.isLoading = false;
 		}
 	},
 
-	async markAsRead(id: number) {
-		if (state.notifications.find((n) => n.id === id)?.is_read) return;
+	async markAsRead(id: number): Promise<boolean> {
+		if (state.notifications.find((n) => n.id === id)?.is_read) return true;
 		try {
 			await notificationsApi.markAsRead(id);
 
@@ -118,8 +125,10 @@ export const notificationStore = {
 				notification.is_read = true;
 				state.unreadCount = Math.max(0, state.unreadCount - 1);
 			}
+			return true;
 		} catch (error) {
 			console.error('[Notifications] Failed to mark as read:', error);
+			return false;
 		}
 	},
 
@@ -175,6 +184,7 @@ export const notificationStore = {
 	},
 
 	reset() {
+		seq++;
 		sseUnsub?.();
 		sseUnsub = null;
 		resumeUnsub?.();

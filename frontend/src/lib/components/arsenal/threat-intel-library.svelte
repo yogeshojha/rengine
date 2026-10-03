@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import Flame from '@lucide/svelte/icons/flame';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import * as Card from '$lib/components/ui/card';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
 	import Hint from '$lib/components/hint.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { FEED_STATUS_DOT, FEED_STATUS_TONE } from '$lib/config/threat-intel';
@@ -128,29 +129,37 @@
 {/snippet}
 
 {#snippet group(label: string)}
-	<div class="border-b bg-muted/30 px-6 py-2 text-2xs font-medium text-muted-foreground uppercase">
+	<div
+		class="border-b bg-muted/10 px-4 py-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+	>
 		{label}
 	</div>
 {/snippet}
 
 {#if loading}
-	<Card.Root class="gap-0 py-0">
-		<div class="space-y-3 p-6">
-			<Skeleton class="h-6 w-48" />
-			<Skeleton class="h-14 w-full" />
-			<Skeleton class="h-14 w-full" />
-			<Skeleton class="h-14 w-full" />
-		</div>
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<RowSkeleton rows={6} avatar="size-2 rounded-full" trailing="h-4 w-20 rounded-md" />
 	</Card.Root>
 {:else if !status}
 	<EmptyState
-		icon={Flame}
+		icon={TriangleAlert}
 		title="Threat intel not loaded"
 		description="The API did not respond. Check that the api service is running."
-	/>
+	>
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={() => {
+				loading = true;
+				void load(projectId);
+			}}
+		>
+			Retry
+		</Button>
+	</EmptyState>
 {:else}
-	<Card.Root class="gap-0 py-0">
-		<Card.Header class="border-b py-5">
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<Card.Header class="border-b px-4 py-5">
 			<Card.Title>Sources</Card.Title>
 			{#if lastSynced}
 				<Card.Description>Synced {relativeTime(lastSynced)}</Card.Description>
@@ -165,22 +174,28 @@
 					/>
 					<span class="whitespace-nowrap">Nightly sync</span>
 				</label>
-				<LoadingButton
-					loading={syncing || status.syncing}
-					loadingLabel="Syncing"
-					variant="outline"
-					size="sm"
-					disabled={!isAdmin}
-					onclick={sync}
-				>
-					<RefreshCw class="mr-1.5 size-3.5" />
-					Sync feeds
-				</LoadingButton>
+				<Hint text={isAdmin ? null : 'Editable by administrators'}>
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<LoadingButton
+								loading={syncing || !!status?.syncing}
+								loadingLabel="Syncing"
+								variant="outline"
+								size="sm"
+								disabled={!isAdmin}
+								onclick={sync}
+							>
+								<RefreshCw class="size-4" />
+								Sync feeds
+							</LoadingButton>
+						</span>
+					{/snippet}
+				</Hint>
 			</Card.Action>
 		</Card.Header>
 
 		<div
-			class="hidden gap-4 border-b px-6 py-2.5 text-2xs font-medium text-muted-foreground md:grid {COLUMNS}"
+			class="hidden gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase md:grid {COLUMNS}"
 		>
 			<span>Source</span>
 			<span>Publisher</span>
@@ -192,11 +207,12 @@
 
 		{@render group('Feeds')}
 		{#each feeds as feed (feed.kind)}
-			<div class="border-b px-6 py-4">
+			<div class="border-b px-4 py-3 hover:bg-muted/40">
 				<div class="grid grid-cols-2 items-center gap-x-4 gap-y-3 {COLUMNS}">
 					<div class="col-span-2 flex min-w-0 items-start gap-3 md:col-span-1">
 						<span class="flex h-5 shrink-0 items-center">
-							<span class="size-2 rounded-full {FEED_STATUS_DOT[feed.status]}"></span>
+							<span class="size-2 rounded-full {FEED_STATUS_DOT[feed.status]}" aria-hidden="true"
+							></span>
 						</span>
 						<div class="flex min-w-0 flex-col">
 							<span class="text-sm leading-5 font-medium">{feed.label}</span>
@@ -242,7 +258,7 @@
 		{#if providers.length}
 			{@render group('Lookup APIs')}
 			{#each providers as provider (provider.kind)}
-				<div class="border-b px-6 py-4 last:border-b-0">
+				<div class="border-b px-4 py-3 last:border-b-0 hover:bg-muted/40">
 					<div class="grid grid-cols-2 items-center gap-x-4 gap-y-3 {COLUMNS}">
 						<div class="col-span-2 flex min-w-0 items-start gap-3 md:col-span-1">
 							<span class="flex h-5 shrink-0 items-center">
@@ -250,6 +266,7 @@
 									class="size-2 rounded-full {provider.keyed
 										? 'bg-success'
 										: 'bg-muted-foreground'}"
+									aria-hidden="true"
 								></span>
 							</span>
 							<div class="flex min-w-0 flex-col">

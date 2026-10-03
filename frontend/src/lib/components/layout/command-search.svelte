@@ -10,7 +10,7 @@
 	import Radar from '@lucide/svelte/icons/radar';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-	import { goto } from '$app/navigation';
+	import { goto, onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { setMode, resetMode } from 'mode-watcher';
@@ -77,6 +77,7 @@
 	let validValue = $state<string | null>(null);
 	let cancelTarget = $state<ScanRead | null>(null);
 	let cancelAllOpen = $state(false);
+	let cancelling = $state(false);
 
 	const searchShortcut = IS_MAC ? '⌘K' : 'Ctrl+K';
 
@@ -148,6 +149,7 @@
 		}
 		searching = true;
 		const slug = projectsStore.activeProject?.slug;
+		let stale = false;
 		const t = setTimeout(async () => {
 			try {
 				const [results, check] = await Promise.all([
@@ -156,18 +158,23 @@
 						? Promise.resolve(null)
 						: targetsApi.validate({ target_value: value }).catch(() => null)
 				]);
+				if (stale) return;
 				searchResults = results;
 				validType = check?.valid ? check.target_type : null;
 				validValue = check?.valid ? check.target_value || value : null;
 			} catch {
+				if (stale) return;
 				searchResults = [];
 				validType = null;
 				validValue = null;
 			} finally {
-				searching = false;
+				if (!stale) searching = false;
 			}
 		}, SEARCH_DEBOUNCE_MS);
-		return () => clearTimeout(t);
+		return () => {
+			stale = true;
+			clearTimeout(t);
+		};
 	});
 
 	$effect(() => {
@@ -200,10 +207,25 @@
 		action();
 	}
 
-	function switchProject(project: Project) {
-		projectsStore.setActiveProject(project);
+	let switchTo: Project | null = null;
+
+	onNavigate(() => {
+		if (switchTo) projectsStore.setActiveProject(switchTo);
+		switchTo = null;
+	});
+
+	async function switchProject(project: Project) {
 		const redirect = projectSwitchRedirect(page.url.pathname);
-		if (redirect) void goto(redirect);
+		if (!redirect) {
+			projectsStore.setActiveProject(project);
+			return;
+		}
+		switchTo = project;
+		try {
+			await goto(redirect);
+		} finally {
+			switchTo = null;
+		}
 	}
 
 	async function copyLink() {
@@ -224,21 +246,28 @@
 
 	async function confirmCancel() {
 		const scan = cancelTarget;
-		cancelTarget = null;
 		if (!scan) return;
-		if (await liveScans.cancel(scan)) toast.success('Scan cancelled');
-		else toast.error('Scan not cancelled');
+		cancelling = true;
+		const ok = await liveScans.cancel(scan);
+		cancelling = false;
+		if (ok) {
+			cancelTarget = null;
+			toast.success('Scan cancelled');
+		} else toast.error('Scan not cancelled');
 	}
 
 	async function confirmCancelAll() {
-		cancelAllOpen = false;
 		if (!projectId) return;
+		cancelling = true;
 		try {
 			const { cancelled } = await scansApi.cancelAll(projectId);
 			liveScans.refresh();
+			cancelAllOpen = false;
 			toast.success(`${plural(cancelled, 'scan')} cancelled`);
 		} catch {
 			toast.error('Scans not cancelled');
+		} finally {
+			cancelling = false;
 		}
 	}
 
@@ -259,7 +288,7 @@
 				cancel: (scan) => (cancelTarget = scan),
 				cancelAll: () => (cancelAllOpen = true),
 				copyLink: () => void copyLink(),
-				switchProject,
+				switchProject: (project) => void switchProject(project),
 				setTheme: (mode) => (mode === 'system' ? resetMode() : setMode(mode))
 			}
 		})
@@ -298,16 +327,21 @@
 	);
 </script>
 
-<Button variant="ghost" size="icon" class="@xl/topbar:hidden" onclick={() => (commandOpen = true)}>
+<Button
+	variant="ghost"
+	size="icon"
+	class="@xl/topbar:hidden"
+	aria-label="Search"
+	onclick={() => (commandOpen = true)}
+>
 	<SearchIcon class="h-4 w-4" />
-	<span class="sr-only">Search</span>
 </Button>
 <Button
 	variant="outline"
 	class="relative hidden h-9 justify-start rounded-md text-sm text-muted-foreground @xl/topbar:inline-flex @xl/topbar:w-64 @4xl/topbar:w-80"
 	onclick={() => (commandOpen = true)}
 >
-	<SearchIcon class="mr-2 h-4 w-4" />
+	<SearchIcon class="h-4 w-4" />
 	<span>Search…</span>
 	<kbd
 		class="pointer-events-none absolute right-1.5 top-1.5 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-2xs font-medium opacity-100 sm:flex"
@@ -317,7 +351,7 @@
 </Button>
 
 <Dialog.Root bind:open={commandOpen}>
-	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-[36rem]">
+	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-xl">
 		<Dialog.Header class="sr-only">
 			<Dialog.Title>Search</Dialog.Title>
 			<Dialog.Description>Assets, searches and commands</Dialog.Description>
@@ -354,9 +388,9 @@
 											)}
 									>
 										{#if visit.kind === 'scan'}
-											<Radar class="mr-2 h-4 w-4 shrink-0" />
+											<Radar class="h-4 w-4 shrink-0" />
 										{:else}
-											<Crosshair class="mr-2 h-4 w-4 shrink-0" />
+											<Crosshair class="h-4 w-4 shrink-0" />
 										{/if}
 										<span class="truncate">{visit.label}</span>
 									</Command.Item>
@@ -372,7 +406,7 @@
 										onSelect={() =>
 											run(() => goto(searchHref(entry.dimension, entry.query, scope, 'project')))}
 									>
-										<spec.icon class="mr-2 h-4 w-4 shrink-0" />
+										<spec.icon class="h-4 w-4 shrink-0" />
 										<span class="truncate font-mono text-xs">{entry.query}</span>
 										<Command.Shortcut>{spec.label}</Command.Shortcut>
 									</Command.Item>
@@ -383,7 +417,7 @@
 							<Command.Group heading="Commands">
 								{#each starters as command (command.id)}
 									<Command.Item value={command.id} onSelect={() => run(command.run)}>
-										<command.icon class="mr-2 h-4 w-4 shrink-0" />
+										<command.icon class="h-4 w-4 shrink-0" />
 										<span class="truncate">{command.label}</span>
 										{#if command.hint}
 											<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
@@ -402,7 +436,7 @@
 										value="target:{t.id}"
 										onSelect={() => run(() => goto(ROUTES.target(t.id)))}
 									>
-										<Crosshair class="mr-2 h-4 w-4 shrink-0" />
+										<Crosshair class="h-4 w-4 shrink-0" />
 										<span class="truncate">{t.target_value}</span>
 										<Command.Shortcut>{t.target_type}</Command.Shortcut>
 									</Command.Item>
@@ -417,7 +451,7 @@
 										value="cve:page"
 										onSelect={() => run(() => goto(ROUTES.cve(cveId(term))))}
 									>
-										<ShieldAlert class="mr-2 h-4 w-4 shrink-0" />
+										<ShieldAlert class="h-4 w-4 shrink-0" />
 										<span class="truncate">{cveId(term)}</span>
 										<Command.Shortcut>Exposure</Command.Shortcut>
 									</Command.Item>
@@ -429,7 +463,7 @@
 										onSelect={() =>
 											run(() => goto(searchHref(lookup.dimension, lookup.query, scope, 'project')))}
 									>
-										<spec.icon class="mr-2 h-4 w-4 shrink-0" />
+										<spec.icon class="h-4 w-4 shrink-0" />
 										<span class="truncate">{spec.label}</span>
 										<Command.Shortcut class="truncate font-mono">{lookup.query}</Command.Shortcut>
 									</Command.Item>
@@ -447,7 +481,7 @@
 											onSelect={() =>
 												run(() => goto(searchHref(match.dimension, term, scope, 'here')))}
 										>
-											<spec.icon class="mr-2 h-4 w-4 shrink-0" />
+											<spec.icon class="h-4 w-4 shrink-0" />
 											<span class="truncate">{spec.label}</span>
 											<Command.Shortcut class="truncate">{scope.label}</Command.Shortcut>
 										</Command.Item>
@@ -457,7 +491,7 @@
 										onSelect={() =>
 											run(() => goto(searchHref(match.dimension, term, scope, 'project')))}
 									>
-										<spec.icon class="mr-2 h-4 w-4 shrink-0" />
+										<spec.icon class="h-4 w-4 shrink-0" />
 										<span class="truncate">{spec.label}</span>
 										<Command.Shortcut class="truncate">{activeProject?.name ?? ''}</Command.Shortcut
 										>
@@ -472,7 +506,7 @@
 									value="scan:{validValue}"
 									onSelect={() => run(() => onScan(validValue ?? undefined))}
 								>
-									<Play class="mr-2 h-4 w-4 shrink-0" />
+									<Play class="h-4 w-4 shrink-0" />
 									<span class="truncate">Start scan</span>
 									<Command.Shortcut class="truncate font-mono">{validValue}</Command.Shortcut>
 								</Command.Item>
@@ -480,7 +514,7 @@
 									value="toolbox:{validValue}"
 									onSelect={() => run(() => onToolbox(validValue ?? ''))}
 								>
-									<TOOLBOX_ICON class="mr-2 h-4 w-4 shrink-0" />
+									<TOOLBOX_ICON class="h-4 w-4 shrink-0" />
 									<span class="truncate">Open in Toolbox</span>
 									<Command.Shortcut class="truncate font-mono">{validValue}</Command.Shortcut>
 								</Command.Item>
@@ -491,7 +525,7 @@
 							<Command.Group heading="Commands">
 								{#each matched.slice(0, MAX_COMMANDS) as command (command.id)}
 									<Command.Item value={command.id} onSelect={() => run(command.run)}>
-										<command.icon class="mr-2 h-4 w-4 shrink-0" />
+										<command.icon class="h-4 w-4 shrink-0" />
 										<span class="truncate">{command.label}</span>
 										{#if command.hint}
 											<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
@@ -511,7 +545,7 @@
 							<Command.Group heading={GROUP_LABELS[entry.group]}>
 								{#each entry.items as command (command.id)}
 									<Command.Item value={command.id} onSelect={() => run(command.run)}>
-										<command.icon class="mr-2 h-4 w-4 shrink-0" />
+										<command.icon class="h-4 w-4 shrink-0" />
 										<span class="truncate">{command.label}</span>
 										{#if command.hint}
 											<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
@@ -554,7 +588,10 @@
 	title="Cancel scan"
 	description="The scan stops and is marked cancelled."
 	confirmLabel="Cancel scan"
-	cancelLabel="Keep"
+	cancelLabel="Keep running"
+	destructive
+	loading={cancelling}
+	loadingLabel="Cancelling"
 	onOpenChange={(o) => !o && (cancelTarget = null)}
 	onConfirm={confirmCancel}
 />
@@ -565,6 +602,9 @@
 	description="Running, queued and paused scans stop and are marked cancelled."
 	confirmLabel="Cancel scans"
 	cancelLabel="Keep"
+	destructive
+	loading={cancelling}
+	loadingLabel="Cancelling"
 	onOpenChange={(o) => (cancelAllOpen = o)}
 	onConfirm={confirmCancelAll}
 />

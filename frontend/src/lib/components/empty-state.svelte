@@ -30,7 +30,7 @@
 				<Icon size={compact ? 20 : 28} class="text-muted-foreground" />
 			</Empty.Media>
 		{/if}
-		<Empty.Title class={compact ? '' : 'text-lg font-bold'}>{title}</Empty.Title>
+		<Empty.Title class={compact ? '' : 'text-lg font-semibold'}>{title}</Empty.Title>
 		{#if description}
 			<Empty.Description class="max-w-md">{description}</Empty.Description>
 		{/if}

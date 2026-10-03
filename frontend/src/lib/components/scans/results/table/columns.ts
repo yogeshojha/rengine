@@ -46,6 +46,18 @@ export function pinTone(active: boolean, focused: boolean): string {
 	return focused ? 'bg-muted/40' : 'group-hover:bg-muted/30';
 }
 
+const CONTROL =
+	'a, button, [role=button], [role=checkbox], [role=switch], [role=radio], [role=tab], [role=menuitem]';
+
+export function inPopover(target: EventTarget | null): boolean {
+	return target instanceof Element && target.closest('[data-slot="popover-content"]') !== null;
+}
+
+export function onControl(target: EventTarget | null, row: string): boolean {
+	const control = target instanceof Element ? target.closest(CONTROL) : null;
+	return !!control && !control.matches(row);
+}
+
 const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
 
 export function rowPadding(density: string): string {

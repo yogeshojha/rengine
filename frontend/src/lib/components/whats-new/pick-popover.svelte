@@ -18,10 +18,19 @@
 		options: PickOption[];
 		heading?: PickOption[];
 		placeholder?: string;
+		onQuery?: (query: string) => void;
 		onChange: (value: string) => void;
 	}
 
-	let { label, value, options, heading = [], placeholder = 'Filter', onChange }: Props = $props();
+	let {
+		label,
+		value,
+		options,
+		heading = [],
+		placeholder = 'Filter',
+		onQuery,
+		onChange
+	}: Props = $props();
 
 	let open = $state(false);
 	let current = $derived([...heading, ...options].find((o) => o.value === value));
@@ -38,10 +47,7 @@
 			<Button
 				{...props}
 				variant="outline"
-				size="sm"
-				class="h-8 max-w-64 justify-between gap-2 text-xs font-normal {value
-					? ''
-					: 'text-muted-foreground'}"
+				class="max-w-64 justify-between text-xs font-normal {value ? '' : 'text-muted-foreground'}"
 				aria-label={label}
 			>
 				<span class="truncate {current?.mono ? 'font-mono' : ''}">{current?.label ?? label}</span>
@@ -51,7 +57,11 @@
 	</Popover.Trigger>
 	<Popover.Content class="w-72 p-0" align="start">
 		<Command.Root>
-			<Command.Input {placeholder} class="h-9 text-xs" />
+			<Command.Input
+				{placeholder}
+				class="h-9 text-xs"
+				oninput={(e) => onQuery?.(e.currentTarget.value)}
+			/>
 			<Command.List class="max-h-64">
 				<Command.Empty class="py-4 text-xs">No matches</Command.Empty>
 				{#if heading.length}

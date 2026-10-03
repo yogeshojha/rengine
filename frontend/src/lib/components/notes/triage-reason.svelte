@@ -91,6 +91,6 @@
 		</InputGroup.Addon>
 	</InputGroup.Root>
 	{#if failed}
-		<p class="text-xs text-destructive">{failed}</p>
+		<p role="alert" class="text-xs text-destructive">{failed}</p>
 	{/if}
 </div>

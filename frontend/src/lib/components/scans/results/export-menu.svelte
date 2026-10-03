@@ -42,7 +42,7 @@
 	function ready(row: ExportRead) {
 		pending = false;
 		if (row.status !== ExportStatus.COMPLETED) {
-			toast.error(row.error || 'Export not written.');
+			toast.error(row.error || 'Export not written');
 			return;
 		}
 		const capped = row.capped ? ` of ${row.total_rows.toLocaleString()}` : '';
@@ -75,7 +75,7 @@
 			);
 		} catch (e) {
 			pending = false;
-			toast.error(e instanceof Error ? e.message : 'Export not started.');
+			toast.error(e instanceof Error ? e.message : 'Export not started');
 		}
 	}
 
@@ -90,9 +90,9 @@
 			<Button
 				{...props}
 				variant={compact ? 'ghost' : 'outline'}
-				size="sm"
-				class={compact ? 'gap-2 font-medium' : 'h-9 gap-2'}
+				size={compact ? 'sm' : 'default'}
 				disabled={!projectId}
+				aria-label="Export"
 			>
 				{#if pending || live}
 					<Spinner class={compact ? 'size-3.5' : 'size-4'} />

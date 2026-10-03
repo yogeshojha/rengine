@@ -158,7 +158,9 @@
 				checked={selected}
 				onCheckedChange={onSelect}
 				aria-label="Select {target.target_value}"
-				class="transition-opacity {selected ? '' : 'sm:opacity-0 sm:group-hover:opacity-100'}"
+				class="transition-opacity {selected
+					? ''
+					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
 			/>
 		</div>
 
@@ -172,7 +174,7 @@
 					>
 					<CopyButton
 						value={target.target_value}
-						class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+						class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
 					/>
 				</div>
 				{#if editing}

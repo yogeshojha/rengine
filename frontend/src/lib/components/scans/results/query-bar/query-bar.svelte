@@ -62,6 +62,7 @@
 		countNounPlural
 	}: Props = $props();
 
+	const uid = $props.id();
 	const RECENT_LIMIT = 6;
 	const EXAMPLE_LIMIT = 6;
 	const TEXT = 'font-mono text-sm leading-6';
@@ -250,7 +251,7 @@
 	}
 </script>
 
-<div bind:this={anchor} class="overflow-hidden rounded-t-xl border bg-card">
+<div bind:this={anchor} class="@container/query overflow-hidden rounded-t-xl border bg-card">
 	<div
 		class="flex h-14 items-center gap-3 px-3 transition-colors sm:px-4 {focused
 			? 'bg-card'
@@ -296,6 +297,8 @@
 					? `query-option-${active}`
 					: undefined}
 				aria-label="Search {nounPlural}"
+				aria-invalid={hasError}
+				aria-describedby={notice ? `${uid}-notice` : undefined}
 				autocomplete="off"
 				autocapitalize="off"
 				autocorrect="off"
@@ -323,7 +326,7 @@
 
 		<div class="flex shrink-0 items-center gap-1">
 			{#if countLabel}
-				<span class="px-1.5 text-xs text-muted-foreground tabular-nums max-sm:hidden"
+				<span class="px-1.5 text-xs text-muted-foreground tabular-nums @max-2xl/query:hidden"
 					>{countLabel}</span
 				>
 			{/if}
@@ -334,8 +337,8 @@
 							<Button
 								{...props}
 								variant="ghost"
-								size="icon"
-								class="size-7 text-muted-foreground"
+								size="icon-sm"
+								class="text-muted-foreground"
 								aria-label="Clear search"
 								onclick={() => setQuery('')}
 							>
@@ -360,7 +363,7 @@
 					onclick={openFindings}
 				>
 					<span class="tabular-nums">{findings.length}</span>
-					<span class="max-sm:hidden">{queryWord}</span>
+					<span class="@max-2xl/query:hidden">{queryWord}</span>
 				</Button>
 			{/if}
 			{@render actions?.()}
@@ -372,14 +375,16 @@
 				onclick={openHelp}
 			>
 				<CircleQuestionMark class="size-4" />
-				<span class="max-sm:hidden">Syntax</span>
-				{#if !value}<Kbd class="max-sm:hidden">?</Kbd>{/if}
+				<span class="@max-2xl/query:hidden">Syntax</span>
+				{#if !value}<Kbd class="@max-2xl/query:hidden">?</Kbd>{/if}
 			</Button>
 		</div>
 	</div>
 
 	{#if notice}
 		<div
+			id="{uid}-notice"
+			role="status"
 			class="flex items-start gap-2 border-t px-4 py-1.5 text-xs {notice.level === 'error'
 				? 'border-destructive/20 bg-destructive/5 text-destructive'
 				: 'border-warning/20 bg-warning/5 text-warning'}"

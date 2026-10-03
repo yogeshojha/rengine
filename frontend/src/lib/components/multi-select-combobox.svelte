@@ -86,6 +86,7 @@
 					<button
 						type="button"
 						class="ml-1 rounded-full hover:bg-foreground/10 p-0.5"
+						aria-label="Remove {item.label}"
 						onclick={() => onRemove(item)}
 					>
 						<X class="h-3 w-3" />
@@ -105,7 +106,7 @@
 					role="combobox"
 					class="w-full justify-start text-muted-foreground font-normal h-9"
 				>
-					<Search class="h-4 w-4 mr-2 shrink-0" />
+					<Search class="h-4 w-4 shrink-0" />
 					{placeholder}
 				</Button>
 			{/snippet}

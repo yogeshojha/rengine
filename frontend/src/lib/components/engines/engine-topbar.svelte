@@ -101,7 +101,12 @@
 				placeholder="Engine name…"
 			/>
 		{:else}
-			<button type="button" class="name-btn" onclick={startEdit} aria-label="Rename engine">
+			<button
+				type="button"
+				class="name-btn"
+				onclick={startEdit}
+				aria-label="Rename engine {engine.name || 'Untitled engine'}"
+			>
 				<span class="name">{engine.name || 'Untitled engine'}</span>
 				<Pencil size={11} class="pencil" />
 			</button>
@@ -217,7 +222,7 @@
 				variant={hasUnsavedChanges ? 'default' : 'outline'}
 				class="h-8 gap-1.5 text-xs"
 				loading={isSaving}
-				loadingLabel="Saving…"
+				loadingLabel="Saving"
 				disabled={!hasUnsavedChanges || errorCount > 0}
 				onclick={onSave}
 			>

@@ -7,7 +7,6 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Network from '@lucide/svelte/icons/network';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
@@ -19,7 +18,16 @@
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
+	import {
+		inPopover,
+		onControl,
+		readPref,
+		rowPadding,
+		selectAllState,
+		withTarget,
+		writePref
+	} from './table/columns';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
@@ -435,7 +443,7 @@
 			);
 			const exact = res.items.find((g) => g.ip === ip);
 			if (exact) open(exact);
-			else toast.error('Address not found.');
+			else toast.error('Address not found');
 		} catch {
 			toast.error('Address not loaded');
 		}
@@ -506,15 +514,14 @@
 	}
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		const typing =
-			!!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+		const typing = keyTaken(e.target);
 		if (e.key === '/' && !typing) {
 			e.preventDefault();
 			searchRef?.focus();
 			return;
 		}
-		if (typing || drawerOpen || !items.length) return;
+		if (typing || drawerOpen || topLayer() || inPopover(e.target) || !items.length) return;
+		if (e.key === 'Enter' && onControl(e.target, '[data-ip-row-index]')) return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			cursor = Math.min(cursor + 1, items.length - 1);
@@ -688,9 +695,7 @@
 			title="Addresses not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" class="gap-2" onclick={() => refresh()}>
-				<RefreshCw class="h-4 w-4" /> Retry
-			</Button>
+			<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
 		</EmptyState>
 	{:else if groupBy}
 		<GroupList
@@ -717,7 +722,7 @@
 				title="No addresses match"
 				class="rounded-none border-0 bg-transparent py-16"
 			>
-				<Button size="sm" variant="outline" class="gap-2" onclick={() => setQuery(emptyIpQuery())}>
+				<Button size="sm" variant="outline" onclick={() => setQuery(emptyIpQuery())}>
 					<X class="h-4 w-4" /> Clear filters
 				</Button>
 			</EmptyState>
@@ -810,7 +815,7 @@
 			busy={rescanBusy}
 			onRescan={rescanSelection}
 		/>
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={openRescanOptions}>
+		<Button variant="ghost" size="sm" onclick={openRescanOptions}>
 			<Settings2 class="h-3.5 w-3.5 text-muted-foreground" />
 			Options
 		</Button>

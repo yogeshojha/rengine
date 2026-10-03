@@ -71,7 +71,7 @@
 
 {#snippet heading(label: string)}
 	<p
-		class="px-2 pt-2 pb-1.5 text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase"
+		class="px-2 pt-2 pb-1.5 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
 	>
 		{label}
 	</p>
@@ -102,7 +102,7 @@
 							</Hint>
 							<button
 								type="button"
-								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100"
+								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
 								aria-label="Remove {recent} from recent searches"
 								onclick={() => onForget(recent)}
 							>

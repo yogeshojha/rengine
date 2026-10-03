@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
@@ -20,11 +20,13 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { usersApi, type UserAccount } from '$lib/api/users';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { settingsActions } from '$lib/stores/settings-actions.svelte';
 	import { ROLE_LABELS, roleLabel } from '$lib/config/users';
-	import { formatDate } from '$lib/utilities/dates';
+	import { formatShortDate } from '$lib/utilities/dates';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { BODY_ROW, HEAD_ROW, USER_COL } from './columns';
 
 	const ADMIN = 'admin';
@@ -48,6 +50,11 @@
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const selfId = $derived(auth.user?.id ?? null);
 	const canSave = $derived(!saving && !!username.trim() && !!email.trim() && password.length > 0);
+	const dirty = $derived(!!username.trim() || !!email.trim() || !!password || role !== MEMBER);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (dialogOpen = false)
+	);
 
 	async function load() {
 		loading = true;
@@ -120,7 +127,6 @@
 			removing = null;
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'User not removed');
-			removing = null;
 		} finally {
 			deleting = false;
 		}
@@ -172,7 +178,7 @@
 						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
 							<span class="wrap-anywhere">{user.username}</span>
 							{#if isSelf}
-								<Badge variant="secondary" class="h-5 px-1.5 text-2xs">Signed in</Badge>
+								<Badge variant="secondary" class="h-5 px-1.5 text-2xs">Logged in</Badge>
 							{/if}
 							{#if !user.is_active}
 								<Badge variant="outline" class="h-5 px-1.5 text-2xs">Disabled</Badge>
@@ -189,16 +195,21 @@
 						{/if}
 					</div>
 					<div class="{USER_COL.created} text-xs text-muted-foreground tabular-nums">
-						{formatDate(user.created_at)}
+						{formatShortDate(user.created_at)}
 					</div>
 					<div class={USER_COL.actions}>
 						{#if !isSelf}
 							<DropdownMenu.Root>
 								<DropdownMenu.Trigger>
 									{#snippet child({ props })}
-										<Button {...props} variant="ghost" size="icon" class="size-7">
-											<MoreVerticalIcon class="size-4" />
-											<span class="sr-only">{user.username} actions</span>
+										<Button
+											{...props}
+											variant="ghost"
+											size="icon"
+											class="size-7"
+											aria-label="{user.username} actions"
+										>
+											<EllipsisIcon class="size-4" />
 										</Button>
 									{/snippet}
 								</DropdownMenu.Trigger>
@@ -225,7 +236,9 @@
 	</Card.Root>
 {/if}
 
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root
+	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
+>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Add user</Dialog.Title>
@@ -288,12 +301,7 @@
 				{/snippet}
 			</FormField>
 			<Dialog.Footer>
-				<Button
-					type="button"
-					variant="outline"
-					disabled={saving}
-					onclick={() => (dialogOpen = false)}
-				>
+				<Button type="button" variant="outline" disabled={saving} onclick={() => guard.close()}>
 					Cancel
 				</Button>
 				<LoadingButton type="submit" loading={saving} loadingLabel="Adding" disabled={!canSave}>
@@ -309,10 +317,17 @@
 	title="Remove user"
 	description={removing ? `User ${removing.username} is removed.` : ''}
 	confirmLabel="Remove"
+	loadingLabel="Removing"
 	destructive
 	loading={deleting}
 	onOpenChange={(open) => {
 		if (!open) removing = null;
 	}}
 	onConfirm={remove}
+/>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />

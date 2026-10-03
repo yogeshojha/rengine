@@ -3,10 +3,12 @@
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { onDestroy, untrack } from 'svelte';
 	import { LiveRefresh } from '$lib/utilities/live-results';
+	import { afterPause } from '$lib/utilities/debounce';
 	import Search from '@lucide/svelte/icons/search';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Eye from '@lucide/svelte/icons/eye';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Copy from '@lucide/svelte/icons/copy';
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
@@ -85,6 +87,7 @@
 	let error = $state<string | null>(null);
 	let band = $state(untrack(() => initialBand) || ALL);
 	let q = $state('');
+	let applied = $state('');
 	let sources = $state<string[]>([]);
 	let kinds = $state<string[]>(untrack(() => [...initialKinds]));
 	let sort = $state<string>(INTEREST_SORTS[0].value);
@@ -97,6 +100,7 @@
 	let loaded = false;
 	const picked = new SvelteMap<string, InterestRow>();
 	let dismissing = $state(false);
+	let req = 0;
 
 	let summary = $derived(data?.summary ?? null);
 	let bandTabs = $derived([
@@ -120,8 +124,15 @@
 		untrack(() => interestCatalog.load());
 	});
 
+	$effect(() => {
+		const next = q.trim();
+		return afterPause(() => {
+			if (applied !== next) applied = next;
+		});
+	});
+
 	let signature = $derived(
-		JSON.stringify({ scanId, band, q: q.trim(), sources, kinds, sort, page })
+		JSON.stringify({ scanId, band, q: applied, sources, kinds, sort, page })
 	);
 
 	$effect(() => {
@@ -148,10 +159,11 @@
 	}
 
 	async function run(quiet = false): Promise<void> {
-		loading = !quiet;
+		const my = ++req;
+		if (!quiet) loading = true;
 		try {
 			const filter = {
-				q: q.trim() || null,
+				q: applied || null,
 				bands: band === ALL ? [] : [band],
 				sources,
 				kinds,
@@ -163,6 +175,7 @@
 			const result = projectWide
 				? await interestApi.project(projectId, filter, scope)
 				: await interestApi.scan(scanId, filter);
+			if (my !== req) return;
 			data = result;
 			error = null;
 			onTotal?.(result.summary.total);
@@ -173,9 +186,9 @@
 				}, STALE_RETRY_MS);
 			}
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Exposures not loaded';
+			if (my === req) error = e instanceof Error ? e.message : 'Exposures not loaded';
 		} finally {
-			if (!quiet) loading = false;
+			if (my === req) loading = false;
 		}
 	}
 
@@ -230,7 +243,7 @@
 			);
 			await run();
 		} catch {
-			toast.error('Exposures not dismissed.');
+			toast.error('Exposures not dismissed');
 		} finally {
 			dismissing = false;
 		}
@@ -241,7 +254,7 @@
 		if (!names.length) return;
 		if (await writeClipboard(names.join('\n')))
 			toast.success(`${names.length.toLocaleString()} web assets copied`);
-		else toast.error('Clipboard not available.');
+		else toast.error('Clipboard not available');
 	}
 
 	function pickKind(kind: string): void {
@@ -308,13 +321,7 @@
 						{/snippet}
 					</Hint>
 				{/if}
-				<Button
-					variant="ghost"
-					size="icon"
-					class="size-8"
-					onclick={() => run()}
-					aria-label="Refresh"
-				>
+				<Button variant="ghost" size="icon-sm" onclick={() => run()} aria-label="Refresh">
 					<RefreshCw class="size-3.5 {loading ? 'animate-spin' : ''}" />
 				</Button>
 			</div>
@@ -332,7 +339,7 @@
 			/>
 		</div>
 
-		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2.5">
+		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 			<div class="relative min-w-56 flex-1">
 				<Search
 					class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
@@ -434,6 +441,7 @@
 					class="h-8"
 					onclick={() => {
 						q = '';
+						applied = '';
 						sources = [];
 						kinds = [];
 						page = 1;
@@ -459,14 +467,19 @@
 		{#if loading && !data}
 			<TableSkeleton lead={INTEREST_SKELETON_COLUMNS} header={false} actions={false} rows={6} />
 		{:else if error}
-			<EmptyState icon={Eye} title="Exposures not loaded" description={error} class="py-12">
+			<EmptyState
+				icon={TriangleAlert}
+				title="Exposures not loaded"
+				description={error}
+				class="rounded-none border-0 bg-transparent py-16"
+			>
 				<Button variant="outline" size="sm" onclick={() => run()}>Retry</Button>
 			</EmptyState>
 		{:else if !data?.rows.length}
 			<EmptyState
 				icon={Eye}
 				title={filtered || band !== ALL ? 'No exposures match' : 'No exposures'}
-				class="py-14"
+				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}
 			<div class="divide-y">
@@ -517,7 +530,6 @@
 	<LoadingButton
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium"
 		loading={dismissing}
 		loadingLabel="Dismissing"
 		onclick={dismissPicked}
@@ -525,7 +537,7 @@
 		<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
 		Dismiss
 	</LoadingButton>
-	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={copyPicked}>
+	<Button variant="ghost" size="sm" onclick={copyPicked}>
 		<Copy class="h-3.5 w-3.5 text-muted-foreground" />
 		Copy web assets
 	</Button>

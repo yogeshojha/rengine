@@ -692,7 +692,11 @@
 		>
 			<p class="flex items-center gap-1.5 font-mono font-medium">
 				{#if tip.kind}
-					<span class="size-2 shrink-0 rounded-full" style="background:{tone(tip.kind)}"></span>
+					<span
+						class="size-2 shrink-0 rounded-full"
+						style="background:{tone(tip.kind)}"
+						aria-hidden="true"
+					></span>
 				{/if}
 				<span class="truncate">{tip.title}</span>
 			</p>
@@ -709,11 +713,11 @@
 					{...props}
 					aria-label="Zoom in"
 					variant="outline"
-					size="icon"
-					class="size-7 bg-card/90 backdrop-blur"
+					size="icon-sm"
+					class="bg-card/90 backdrop-blur"
 					onclick={() => zoomAt(1.4, width / 2, height / 2)}
 				>
-					<Plus class="size-3.5" />
+					<Plus />
 				</Button>
 			{/snippet}
 		</Hint>
@@ -723,11 +727,11 @@
 					{...props}
 					aria-label="Zoom out"
 					variant="outline"
-					size="icon"
-					class="size-7 bg-card/90 backdrop-blur"
+					size="icon-sm"
+					class="bg-card/90 backdrop-blur"
 					onclick={() => zoomAt(1 / 1.4, width / 2, height / 2)}
 				>
-					<Minus class="size-3.5" />
+					<Minus />
 				</Button>
 			{/snippet}
 		</Hint>
@@ -737,11 +741,11 @@
 					{...props}
 					aria-label="Fit to view"
 					variant="outline"
-					size="icon"
-					class="size-7 bg-card/90 backdrop-blur"
+					size="icon-sm"
+					class="bg-card/90 backdrop-blur"
 					onclick={fit}
 				>
-					<Maximize class="size-3.5" />
+					<Maximize />
 				</Button>
 			{/snippet}
 		</Hint>
@@ -751,11 +755,11 @@
 					{...props}
 					aria-label="Re-run layout"
 					variant="outline"
-					size="icon"
-					class="size-7 bg-card/90 backdrop-blur"
+					size="icon-sm"
+					class="bg-card/90 backdrop-blur"
 					onclick={relayout}
 				>
-					<Shuffle class="size-3.5" />
+					<Shuffle />
 				</Button>
 			{/snippet}
 		</Hint>

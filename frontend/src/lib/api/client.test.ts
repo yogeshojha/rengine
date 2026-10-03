@@ -21,12 +21,12 @@ describe('isTransient', () => {
 	it('retries the rate limit, a server error and no answer', () => {
 		expect(isTransient(new ApiError('Rate limit exceeded.', 429))).toBe(true);
 		expect(isTransient(new ApiError('Bad gateway', 502))).toBe(true);
-		expect(isTransient(new ApiError('Session not refreshed. Sign in again.', 0))).toBe(true);
+		expect(isTransient(new ApiError('Session not refreshed. Log in again.', 0))).toBe(true);
 		expect(isTransient(new TypeError('Failed to fetch'))).toBe(true);
 	});
 
 	it('does not retry a refused session or a bad request', () => {
-		expect(isTransient(new ApiError('Session expired. Sign in again.', 401))).toBe(false);
+		expect(isTransient(new ApiError('Session expired. Log in again.', 401))).toBe(false);
 		expect(isTransient(new ApiError('Account is inactive', 403))).toBe(false);
 		expect(isTransient(new ApiError('Not found', 404))).toBe(false);
 	});
@@ -40,7 +40,7 @@ describe('retryTransient', () => {
 	});
 
 	it('stops at the first 401', async () => {
-		const call = failing([new ApiError('Session expired. Sign in again.', 401)]);
+		const call = failing([new ApiError('Session expired. Log in again.', 401)]);
 		await expect(retryTransient(call.run, [1, 1], noWait)).rejects.toMatchObject({ status: 401 });
 		expect(call.calls).toBe(1);
 	});

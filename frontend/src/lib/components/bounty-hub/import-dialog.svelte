@@ -9,8 +9,10 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { MAX_IMPORT_TAGS } from '$lib/config/bounty-programs';
 	import type { BountyProgram } from '$lib/types/bounty-program';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
@@ -45,6 +47,16 @@
 	});
 
 	const atTagLimit = $derived(tags.length >= MAX_IMPORT_TAGS);
+	const dirty = $derived(
+		!groupByProgram ||
+			organizationName.trim() !== program.name.trim() ||
+			tags.join('\n') !== program.platform ||
+			draft.trim() !== ''
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => onOpenChange(false)
+	);
 
 	function addTag() {
 		const name = draft.trim().toLowerCase();
@@ -67,7 +79,15 @@
 	}
 </script>
 
-<Dialog.Root {open} {onOpenChange}>
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) onOpenChange(true);
+			else if (!importing) guard.close();
+		}
+	}
+>
 	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>Add {plural(count, 'target')}</Dialog.Title>
@@ -79,14 +99,18 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="flex flex-col gap-5 py-2">
+		<div class="flex flex-col gap-4 py-2">
 			<div class="flex flex-col gap-3">
 				<div class="flex items-center justify-between gap-4">
 					<div class="flex items-center gap-2">
 						<BuildingIcon class="size-4 text-muted-foreground" />
 						<span class="text-sm font-medium">Group as an organization</span>
 					</div>
-					<Switch checked={groupByProgram} onCheckedChange={(v) => (groupByProgram = v)} />
+					<Switch
+						checked={groupByProgram}
+						onCheckedChange={(v) => (groupByProgram = v)}
+						aria-label="Group as an organization"
+					/>
 				</div>
 				{#if groupByProgram}
 					<FormField label="Organization name">
@@ -122,15 +146,17 @@
 					onkeydown={onKeydown}
 					onblur={addTag}
 					disabled={atTagLimit}
+					aria-label="Add a tag"
 					placeholder={atTagLimit ? `${MAX_IMPORT_TAGS} tags maximum` : 'Add a tag'}
 				/>
 			</div>
 		</div>
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
+			<Button variant="outline" disabled={importing} onclick={() => guard.close()}>Cancel</Button>
 			<LoadingButton
 				loading={importing}
+				loadingLabel="Adding"
 				onclick={() =>
 					onConfirm({
 						groupByProgram,
@@ -143,3 +169,9 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

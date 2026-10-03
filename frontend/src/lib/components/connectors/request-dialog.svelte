@@ -6,6 +6,8 @@
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import ProxySend from '$lib/components/scans/results/endpoints/proxy-send.svelte';
@@ -37,7 +39,7 @@
 	let { row, connector, endpointsHref, onClose, onSend, onPreview, onScan, onIgnore }: Props =
 		$props();
 
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
+	const LABEL = 'text-2xs tracking-wide text-muted-foreground uppercase';
 </script>
 
 <Dialog.Root
@@ -46,7 +48,10 @@
 		if (!v) onClose();
 	}}
 >
-	<Dialog.Content class="gap-0 p-0 sm:max-w-2xl" onOpenAutoFocus={(e) => e.preventDefault()}>
+	<Dialog.Content
+		class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+		onOpenAutoFocus={(e) => e.preventDefault()}
+	>
 		{#if row}
 			<Dialog.Header class="gap-2 border-b px-6 py-4">
 				<Dialog.Title class="flex min-w-0 items-center gap-2.5 pr-8 font-mono text-sm">
@@ -55,92 +60,94 @@
 				</Dialog.Title>
 				<div class="flex min-w-0 items-center gap-2">
 					<span class="text-muted-foreground min-w-0 truncate font-mono text-xs">{row.url}</span>
-					<CopyButton value={row.url} class="size-6 shrink-0" />
+					<span class="flex h-6 shrink-0 items-center">
+						<CopyButton value={row.url} class="shrink-0" />
+					</span>
 				</div>
 			</Dialog.Header>
 
-			<div class="flex flex-col gap-5 px-6 py-5">
-				<dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
-					<div>
-						<dt class={LABEL}>Status</dt>
-						<dd class="mt-1 font-mono tabular-nums {httpStatusTextClass(row.status_code)}">
-							{row.status_code ?? '—'}
-						</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>Requests</dt>
-						<dd class="mt-1 tabular-nums">{row.hits.toLocaleString()}</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>Source</dt>
-						<dd class="mt-1">{SOURCE_TOOL_LABELS[row.source_tool] ?? row.source_tool}</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>State</dt>
-						<dd class="mt-1">{CANDIDATE_STATE_LABELS[row.state]}</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>First seen</dt>
-						<dd class="mt-1">{relativeTime(row.first_seen_at)}</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>Last seen</dt>
-						<dd class="mt-1">{relativeTime(row.last_seen_at)}</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>Scans</dt>
-						<dd class="mt-1">{row.known ? 'Recorded' : 'Not recorded'}</dd>
-					</div>
-					<div>
-						<dt class={LABEL}>Session</dt>
-						<dd class="mt-1 flex items-center gap-1.5">
-							{#if row.authenticated}
-								<LockIcon class="text-muted-foreground size-3" /> Present
-							{:else}
-								None
-							{/if}
-						</dd>
-					</div>
-				</dl>
-
-				{#if row.notices.length}
-					<div class="flex flex-col gap-2">
-						<span class={LABEL}>Notices</span>
-						<ul class="flex flex-col gap-1.5">
-							{#each row.notices as item (item)}
-								<li class="text-sm">
-									<span class={noticeTone(item)}>{NOTICE_LABELS[item] ?? item}</span>
-									{#if NOTICE_HELP[item]}
-										<span class="text-muted-foreground"> · {NOTICE_HELP[item]}</span>
-									{/if}
-								</li>
-							{/each}
-						</ul>
-					</div>
-				{/if}
-
-				{#if row.params.length}
-					<div class="flex flex-col gap-2">
-						<span class={LABEL}>Parameters</span>
-						<div class="flex flex-wrap gap-1.5">
-							{#each row.params as param (param)}
-								<code class="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">{param}</code>
-							{/each}
+			<ScrollArea class="min-h-0 flex-1">
+				<div class="flex flex-col gap-5 px-6 py-5">
+					<dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+						<div>
+							<dt class={LABEL}>Status</dt>
+							<dd class="mt-1 font-mono tabular-nums {httpStatusTextClass(row.status_code)}">
+								{row.status_code ?? '—'}
+							</dd>
 						</div>
-					</div>
-				{/if}
+						<div>
+							<dt class={LABEL}>Requests</dt>
+							<dd class="mt-1 tabular-nums">{row.hits.toLocaleString()}</dd>
+						</div>
+						<div>
+							<dt class={LABEL}>Source</dt>
+							<dd class="mt-1">{SOURCE_TOOL_LABELS[row.source_tool] ?? row.source_tool}</dd>
+						</div>
+						<div>
+							<dt class={LABEL}>State</dt>
+							<dd class="mt-1">{CANDIDATE_STATE_LABELS[row.state]}</dd>
+						</div>
+						<div>
+							<dt class={LABEL}>First seen</dt>
+							<dd class="mt-1">{relativeTime(row.first_seen_at)}</dd>
+						</div>
+						<div>
+							<dt class={LABEL}>Last seen</dt>
+							<dd class="mt-1">{relativeTime(row.last_seen_at)}</dd>
+						</div>
+						<div>
+							<dt class={LABEL}>Scans</dt>
+							<dd class="mt-1">{row.known ? 'Recorded' : 'Not recorded'}</dd>
+						</div>
+						<div>
+							<dt class={LABEL}>Session</dt>
+							<dd class="mt-1 flex items-center gap-1.5">
+								{#if row.authenticated}
+									<LockIcon class="text-muted-foreground size-3" /> Present
+								{:else}
+									None
+								{/if}
+							</dd>
+						</div>
+					</dl>
 
-				{#if row.request_sample}
-					<div class="flex flex-col gap-2">
-						<span class={LABEL}>Request</span>
-						<CodeBlock code={row.request_sample} lang="http" maxLines={14} />
-					</div>
-				{/if}
-			</div>
+					{#if row.notices.length}
+						<div class="flex flex-col gap-2">
+							<SectionHead title="Notices" />
+							<ul class="flex flex-col gap-1.5">
+								{#each row.notices as item (item)}
+									<li class="text-sm">
+										<span class={noticeTone(item)}>{NOTICE_LABELS[item] ?? item}</span>
+										{#if NOTICE_HELP[item]}
+											<span class="text-muted-foreground"> · {NOTICE_HELP[item]}</span>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
 
-			<div
-				class="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/30 px-6 py-3.5"
-			>
+					{#if row.params.length}
+						<div class="flex flex-col gap-2">
+							<SectionHead title="Parameters" />
+							<div class="flex flex-wrap gap-1.5">
+								{#each row.params as param (param)}
+									<code class="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">{param}</code>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if row.request_sample}
+						<div class="flex flex-col gap-2">
+							<SectionHead title="Request" />
+							<CodeBlock code={row.request_sample} lang="http" maxLines={14} />
+						</div>
+					{/if}
+				</div>
+			</ScrollArea>
+
+			<div class="flex flex-wrap items-center justify-between gap-2 border-t px-6 py-4">
 				<div class="flex items-center gap-1">
 					{#if endpointsHref}
 						<Button variant="ghost" size="sm" href={endpointsHref}>

@@ -4,7 +4,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import ThemePreview from './theme-preview.svelte';
 	import OriginBadge from './origin-badge.svelte';
 	import { reportsApi } from '$lib/api/reports';
@@ -61,9 +61,9 @@
 							size="icon"
 							class="-mt-1 -mr-1.5 size-7 shrink-0"
 							{...props}
-							aria-label="Actions"
+							aria-label="Actions for {theme.name}"
 						>
-							<MoreHorizontalIcon class="size-4" />
+							<EllipsisIcon class="size-4" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>

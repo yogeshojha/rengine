@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { TONE_DOT } from '$lib/config/toolbox';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -12,10 +14,13 @@
 		limit?: number;
 		error?: string | null;
 		onOpen: (run: ToolRun) => void;
-		onClear: () => void;
+		onClear: () => Promise<void>;
 	}
 
 	let { runs, activeId, limit = 6, error = null, onOpen, onClear }: Props = $props();
+
+	let confirming = $state(false);
+	let clearing = $state(false);
 
 	const shown = $derived.by(() => {
 		const seen: Record<string, true> = {};
@@ -28,6 +33,18 @@
 			})
 			.slice(0, limit);
 	});
+
+	async function clear() {
+		clearing = true;
+		try {
+			await onClear();
+			confirming = false;
+		} catch {
+			toast.error('Runs not cleared');
+		} finally {
+			clearing = false;
+		}
+	}
 </script>
 
 {#if !shown.length && error}
@@ -37,7 +54,7 @@
 {:else if shown.length}
 	<div class="shrink-0 border-t p-2">
 		<div class="flex items-center justify-between px-2 pb-1">
-			<p class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">Recent</p>
+			<p class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Recent</p>
 			<Hint text="Runs are kept for seven days">
 				{#snippet child(props)}
 					<span {...props} class="inline-flex">
@@ -45,7 +62,7 @@
 							variant="ghost"
 							size="sm"
 							class="h-5 px-1.5 text-2xs text-muted-foreground"
-							onclick={onClear}
+							onclick={() => (confirming = true)}
 						>
 							Clear
 						</Button>
@@ -75,3 +92,17 @@
 		{/each}
 	</div>
 {/if}
+
+<ConfirmDialog
+	open={confirming}
+	title="Clear recent runs"
+	description="Toolbox runs and their results are removed."
+	confirmLabel="Clear"
+	destructive
+	loading={clearing}
+	loadingLabel="Clearing"
+	onOpenChange={(next) => {
+		if (!clearing) confirming = next;
+	}}
+	onConfirm={clear}
+/>

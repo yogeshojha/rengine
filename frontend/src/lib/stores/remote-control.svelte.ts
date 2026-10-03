@@ -183,10 +183,10 @@ function createRemoteControlStore() {
 			try {
 				const updated = await remoteControlApi.updateChat(channel, id, body);
 				chats = chats.map((c) => (c.id === id ? updated : c));
-				toast.success('Chat updated');
+				toast.success('Chat saved');
 				return true;
 			} catch (e) {
-				toast.error(message(e, 'Chat not updated'));
+				toast.error(message(e, 'Chat not saved'));
 				return false;
 			}
 		},

@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Label } from '$lib/components/ui/label';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Play from '@lucide/svelte/icons/play';
 	import type { ToolField, ToolSpec } from '$lib/types/toolbox';
 
@@ -55,19 +54,16 @@
 				spellcheck={false}
 				class="h-9 font-mono text-sm"
 			/>
-			<Button
+			<LoadingButton
 				type="submit"
-				size="sm"
-				class="h-9 shrink-0 px-4"
-				disabled={busy || !String(valueOf(primary) ?? '').trim()}
+				class="shrink-0"
+				loading={busy}
+				loadingLabel="Running"
+				disabled={!String(valueOf(primary) ?? '').trim()}
 			>
-				{#if busy}
-					<Spinner class="size-3.5" />
-				{:else}
-					<Play class="size-3.5" />
-				{/if}
+				<Play class="size-3.5" />
 				Run
-			</Button>
+			</LoadingButton>
 		</div>
 	{/if}
 
@@ -81,13 +77,11 @@
 							checked={Boolean(valueOf(field))}
 							onCheckedChange={(v) => onChange(field.name, v)}
 						/>
-						<Label for="tb-{tool.name}-{field.name}" class="text-xs font-normal">
-							{field.title}
-						</Label>
+						<Label for="tb-{tool.name}-{field.name}">{field.title}</Label>
 					</div>
 				{:else if field.type === 'array' && field.options}
 					<div class="flex items-center gap-2">
-						<span class="text-xs text-muted-foreground">{field.title}</span>
+						<Label>{field.title}</Label>
 						<ToggleGroup.Root
 							type="multiple"
 							variant="outline"
@@ -110,9 +104,7 @@
 					</div>
 				{:else if field.type === 'integer' || field.type === 'number'}
 					<div class="flex items-center gap-2">
-						<Label for="tb-{tool.name}-{field.name}" class="text-xs font-normal">
-							{field.title}
-						</Label>
+						<Label for="tb-{tool.name}-{field.name}">{field.title}</Label>
 						<Input
 							id="tb-{tool.name}-{field.name}"
 							type="number"
@@ -125,9 +117,7 @@
 					</div>
 				{:else}
 					<div class="flex items-center gap-2">
-						<Label for="tb-{tool.name}-{field.name}" class="text-xs font-normal">
-							{field.title}
-						</Label>
+						<Label for="tb-{tool.name}-{field.name}">{field.title}</Label>
 						<Input
 							id="tb-{tool.name}-{field.name}"
 							value={String(valueOf(field) ?? '')}

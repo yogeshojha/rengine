@@ -9,6 +9,8 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { interestApi } from '$lib/api/interest';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { RULE_MODE, type InterestRule, type RulePreview } from '$lib/types/interest';
@@ -34,21 +36,57 @@
 	let preview = $state<RulePreview | null>(null);
 	let checking = $state(false);
 
+	let initial = $state({
+		name: '',
+		description: '',
+		query: '',
+		kind: InterestKind.OTHER as string,
+		notify: false,
+		enabled: true
+	});
+
 	let isEdit = $derived(rule !== null);
 	let locked = $derived(rule?.builtin === true);
 	let kinds = $derived(interestCatalog.catalog?.kinds ?? []);
 	let kindLabel = $derived(kinds.find((k) => k.key === kind)?.label ?? 'Select a reason');
+	let ready = $derived(!!name.trim() && (locked || !!query.trim()));
+	let dirty = $derived(
+		name.trim() !== initial.name.trim() ||
+			description.trim() !== initial.description.trim() ||
+			query.trim() !== initial.query.trim() ||
+			kind !== initial.kind ||
+			notify !== initial.notify ||
+			enabled !== initial.enabled
+	);
+
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => onOpenChange(false)
+	);
 
 	$effect(() => {
 		if (!open) return;
-		name = rule?.name ?? '';
-		description = rule?.description ?? '';
-		query = rule?.query ?? '';
-		kind = rule?.kind ?? InterestKind.OTHER;
-		notify = rule?.notify ?? false;
-		enabled = rule?.enabled ?? true;
+		const start = {
+			name: rule?.name ?? '',
+			description: rule?.description ?? '',
+			query: rule?.query ?? '',
+			kind: rule?.kind ?? InterestKind.OTHER,
+			notify: rule?.notify ?? false,
+			enabled: rule?.enabled ?? true
+		};
+		initial = start;
+		name = start.name;
+		description = start.description;
+		query = start.query;
+		kind = start.kind;
+		notify = start.notify;
+		enabled = start.enabled;
 		preview = null;
 	});
+
+	function close() {
+		if (!saving) guard.close();
+	}
 
 	async function check(): Promise<void> {
 		if (!query.trim()) return;
@@ -64,14 +102,7 @@
 	}
 
 	async function save(): Promise<void> {
-		if (!name.trim()) {
-			toast.error('Name is required');
-			return;
-		}
-		if (!locked && !query.trim()) {
-			toast.error('Query is required');
-			return;
-		}
+		if (!ready || saving) return;
 		saving = true;
 		try {
 			const body = {
@@ -96,9 +127,9 @@
 	}
 </script>
 
-<Sheet.Root {open} {onOpenChange}>
-	<Sheet.Content side="right" class="flex w-full flex-col p-0 sm:max-w-lg">
-		<Sheet.Header class="border-b px-5 py-4">
+<Sheet.Root bind:open={() => open, (next) => (next ? onOpenChange(true) : close())}>
+	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
+		<Sheet.Header class="border-b px-5 py-4 pr-12">
 			<Sheet.Title>{isEdit ? rule?.name : 'New rule'}</Sheet.Title>
 			<Sheet.Description>
 				{locked
@@ -128,7 +159,7 @@
 					{/snippet}
 				</FormField>
 
-				<FormField label="Query" description="The Web Assets search language">
+				<FormField label="Query" description="The Web assets search language">
 					{#snippet children(props)}
 						<Textarea
 							{...props}
@@ -174,10 +205,22 @@
 		</ScrollArea.Root>
 
 		<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
-			<Button variant="outline" size="sm" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<LoadingButton size="sm" loading={saving} loadingLabel="Saving" onclick={save}>
+			<Button variant="outline" size="sm" disabled={saving} onclick={close}>Cancel</Button>
+			<LoadingButton
+				size="sm"
+				loading={saving}
+				loadingLabel="Saving"
+				disabled={!ready}
+				onclick={save}
+			>
 				{isEdit ? 'Save' : 'Add rule'}
 			</LoadingButton>
 		</Sheet.Footer>
 	</Sheet.Content>
 </Sheet.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

@@ -7,7 +7,7 @@
 	import { countryName } from '$lib/config/country-geo';
 	import { cn } from '$lib/utils';
 	import type { InsightTally } from '$lib/utilities/scan-insights';
-	import { percentLabel } from '$lib/utilities/strings';
+	import { percentLabel, plural } from '$lib/utilities/strings';
 
 	interface Props {
 		geography: InsightTally[];
@@ -51,13 +51,13 @@
 		{#if dominant}
 			<button
 				type="button"
-				class="group flex w-full items-center gap-2.5 text-left"
+				class="-mx-2 flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted/50"
 				onclick={() => onPick(dominant.name)}
 				onpointerenter={() => (hovered = dominant.name)}
 				onpointerleave={() => (hovered = null)}
 			>
 				<CountryFlag code={dominant.name} showCode={false} />
-				<span class="min-w-0 flex-1 truncate text-sm font-medium group-hover:text-primary">
+				<span class="min-w-0 flex-1 truncate text-sm font-medium">
 					{countryName(dominant.name)}
 				</span>
 				<span class="text-sm font-medium tabular-nums">{dominant.count.toLocaleString()}</span>
@@ -83,11 +83,11 @@
 							onclick={() => onPick(item.name)}
 							onpointerenter={() => (hovered = item.name)}
 							onpointerleave={() => (hovered = null)}
-							aria-label="{countryName(item.name)}, {item.count} addresses"
+							aria-label="{countryName(item.name)}, {plural(item.count, 'address', 'addresses')}"
 						>
 							<CountryFlag code={item.name} showCode={false} />
 							<span>{item.name.toUpperCase()}</span>
-							<span class="text-muted-foreground tabular-nums">{item.count}</span>
+							<span class="text-muted-foreground tabular-nums">{item.count.toLocaleString()}</span>
 						</button>
 					{/each}
 					{#if more > 0}

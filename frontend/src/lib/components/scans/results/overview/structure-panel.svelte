@@ -108,25 +108,17 @@
 			{#if structure.headline}
 				<p class="min-w-0 text-sm">{structure.headline}</p>
 			{/if}
-			<div class="ml-auto flex flex-wrap items-center gap-2">
+			<div class="flex flex-wrap items-center gap-2">
 				{#if structure.with_params && (structure.findings.some((f) => f.kind === 'auth_boundary' || f.kind === 'exposed_file') || structure.shared_paths.length)}
-					<Button
-						variant="outline"
-						size="sm"
-						class="h-7 gap-1.5 text-xs"
-						onclick={() => pick('is:param')}
-					>
+					<Button variant="outline" size="sm" onclick={() => pick('is:param')}>
 						{plural(structure.with_params, 'endpoint takes', 'endpoints take')} input
+						<ChevronRight class="size-3.5" />
 					</Button>
 				{/if}
 				{#if unverified}
-					<Button
-						variant="outline"
-						size="sm"
-						class="h-7 gap-1.5 text-xs"
-						onclick={() => pick('not is:probed')}
-					>
+					<Button variant="outline" size="sm" onclick={() => pick('not is:probed')}>
 						{unverified.toLocaleString()} not checked
+						<ChevronRight class="size-3.5" />
 					</Button>
 				{/if}
 			</div>
@@ -134,64 +126,62 @@
 
 		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
 			{#if findings.length}
-				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">Interest</h3>
-					<ul class="space-y-2.5">
+				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
+					<h3 class="text-sm font-medium">Interest</h3>
+					<ul class="-mx-2 flex flex-col gap-0.5">
 						{#each findings as f (f.kind + f.label)}
 							{@const Icon = FINDING_ICON[f.kind as keyof typeof FINDING_ICON] ?? ShieldAlert}
 							<li>
 								<button
 									type="button"
-									class="group flex w-full gap-2 text-left"
+									class="group flex w-full gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted/50"
 									onclick={() => pick(f.query)}
 								>
 									<span
-										class="flex h-5 shrink-0 items-center {f.kind === 'exposed_file'
+										class="flex h-4 shrink-0 items-center {f.kind === 'exposed_file'
 											? 'text-destructive'
 											: 'text-warning'}"
 									>
 										<Icon class="size-3.5" />
 									</span>
 									<span class="min-w-0 flex-1">
-										<span class="block truncate font-mono text-xs group-hover:text-primary">
-											{f.label}
-										</span>
+										<span class="block truncate font-mono text-xs">{f.label}</span>
 										<span class="block text-xs text-muted-foreground">{f.detail}</span>
 									</span>
-									<ChevronRight
-										class="mt-0.5 size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-									/>
+									<span class="flex h-4 shrink-0 items-center">
+										<ChevronRight
+											class="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+										/>
+									</span>
 								</button>
 							</li>
 						{/each}
 					</ul>
-				</div>
+				</section>
 			{/if}
 
 			{#if shared.length}
-				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">
-						Shared across web assets
-					</h3>
+				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
+					<h3 class="text-sm font-medium">Shared across web assets</h3>
 					<RankedList rows={shared} base={sharedBase} onSelect={pick} />
-				</div>
+				</section>
 			{/if}
 
-			<div class="flex flex-col gap-3 border-t border-l p-5">
-				<h3 class="text-xs font-medium text-muted-foreground uppercase">Endpoint kinds</h3>
+			<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
+				<h3 class="text-sm font-medium">Endpoint kinds</h3>
 				<CompositionBar
 					segments={classes}
 					total={structure.endpoints}
 					label="endpoints by kind"
 					onSelect={pick}
 				/>
-			</div>
+			</section>
 
 			{#if interest.length}
-				<div class="flex flex-col gap-3 border-t border-l p-5">
-					<h3 class="text-xs font-medium text-muted-foreground uppercase">Path interests</h3>
+				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
+					<h3 class="text-sm font-medium">Path interests</h3>
 					<RankedList rows={interest} base={interestBase} onSelect={pick} />
-				</div>
+				</section>
 			{/if}
 		</div>
 	</Card.Root>

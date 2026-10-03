@@ -17,16 +17,16 @@
 
 <Dialog.Root {open} {onOpenChange}>
 	<Dialog.Content
-		class="flex max-h-[88vh] flex-col gap-0 p-0 sm:max-w-5xl"
+		class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
 		onOpenAutoFocus={(e) => e.preventDefault()}
 	>
 		{#if target}
-			<Dialog.Header class="gap-1 border-b px-6 pt-5 pr-12 pb-4">
+			<Dialog.Header class="gap-1 border-b px-6 py-4">
 				<div class="flex items-center gap-2.5">
 					<span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
 						<History class="size-4 text-muted-foreground" />
 					</span>
-					<Dialog.Title class="text-base font-semibold">Scan history</Dialog.Title>
+					<Dialog.Title>Scan history</Dialog.Title>
 				</div>
 				<Dialog.Description class="flex items-center gap-1.5">
 					<code class="truncate font-mono text-xs">{target.target_value}</code>
@@ -35,9 +35,9 @@
 			</Dialog.Header>
 
 			<ScrollArea
-				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(88vh-7rem)]"
+				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-7rem)]"
 			>
-				<div class="p-4">
+				<div class="px-6 py-5">
 					<ScanHistoryTable targetId={target.id} />
 				</div>
 			</ScrollArea>

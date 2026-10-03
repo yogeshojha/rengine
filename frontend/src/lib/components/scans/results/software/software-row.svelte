@@ -20,6 +20,7 @@
 	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
+	import { epssLabel } from '$lib/config/threat-intel';
 	import { SEVERITY_FILL, SEVERITY_TEXT, severityLabel } from '$lib/config/vulnerabilities';
 	import { CAVEAT_HELP, CONFIDENCE_HELP, CONFIDENCE_TEXT, nvdUrl } from '$lib/config/software';
 	import type { SoftwareCve } from '$lib/types/software';
@@ -63,7 +64,7 @@
 
 	let cells = $derived(columns.filter((c) => c.key !== 'target'));
 	let location = $derived(row.host ?? row.ip ?? '');
-	let epss = $derived(row.epss_score == null ? null : Math.round(row.epss_score * 100));
+	let epss = $derived(row.epss_score == null ? null : epssLabel(row.epss_score));
 	let fill = $derived(SEVERITY_FILL[row.severity] ?? SEVERITY_FILL.unknown);
 	let confidenceHint = $derived(
 		[CONFIDENCE_HELP[row.confidence] ?? '', ...row.caveats.map((c) => CAVEAT_HELP[c.kind] ?? '')]
@@ -85,7 +86,7 @@
 <div
 	role="button"
 	tabindex="0"
-	class="group relative flex w-full items-stretch gap-3 pr-0 pl-4 text-left text-sm {rowTone(
+	class="group relative flex w-full cursor-pointer items-stretch gap-3 pr-0 pl-4 text-left text-sm transition-colors {rowTone(
 		selected,
 		false
 	)}"
@@ -127,7 +128,7 @@
 				<HighlightText text={row.cve} {term} />
 			</span>
 			{#if row.is_new}
-				<Badge variant="secondary" class="h-4 px-1 text-2xs">New</Badge>
+				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
 			{/if}
 			{#if row.is_kev}
 				<Badge variant="destructive" class="h-4 px-1 text-2xs">KEV</Badge>
@@ -176,7 +177,7 @@
 				{:else}
 					<Server class="size-3.5 shrink-0 text-muted-foreground" />
 				{/if}
-				<span class="min-w-0 break-all">
+				<span class="min-w-0 font-mono break-all">
 					<HighlightText text={bracketed(location)} {term} />
 					{#if row.port}<span class="text-muted-foreground">:{row.port}</span>{/if}
 				</span>
@@ -191,7 +192,7 @@
 				{/if}
 			{:else if col.key === 'exploitation'}
 				{#if epss != null}
-					<span class="text-xs tabular-nums">{epss}%</span>
+					<span class="text-xs tabular-nums">{epss}</span>
 				{:else}
 					<span class="text-xs text-muted-foreground">Not scored</span>
 				{/if}
@@ -226,7 +227,7 @@
 							onToken(excludeToken('software', row.name));
 						}}
 					>
-						<EyeOff class="size-3.5" />
+						<EyeOff />
 					</Button>
 				{/snippet}
 			</Hint>
@@ -257,11 +258,11 @@
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={() => onToken(excludeToken('software', row.name))}>
-							<EyeOff class="size-3.5" />
+							<EyeOff />
 							<span class="truncate">Hide all {row.name}</span>
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => onToken(excludeToken('cve', row.cve))}>
-							<EyeOff class="size-3.5" /> Hide all {row.cve}
+							<EyeOff /> Hide all {row.cve}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={() => copy(row.cve, 'CVE')}>Copy CVE</DropdownMenu.Item>
@@ -270,7 +271,7 @@
 						<DropdownMenu.Item>
 							{#snippet child({ props })}
 								<a {...props} href={nvdUrl(row.cve)} target="_blank" rel="noreferrer noopener">
-									<ExternalLink class="size-3.5" />
+									<ExternalLink />
 									Open on NVD
 								</a>
 							{/snippet}

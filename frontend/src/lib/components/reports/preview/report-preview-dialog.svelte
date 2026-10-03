@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import Hint from '$lib/components/hint.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import DownloadIcon from '@lucide/svelte/icons/download';
@@ -54,6 +55,7 @@
 	let zoom = $state(1);
 	let view = $state<ReturnType<typeof PdfDocument> | null>(null);
 	let content = $state<HTMLElement | null>(null);
+	let attempt = $state(0);
 	let session = 0;
 
 	const pdfFile = $derived(report.files.find((file) => file.format === ReportFormat.PDF));
@@ -61,6 +63,7 @@
 
 	$effect(() => {
 		if (!open) return;
+		void attempt;
 		const id = report.id;
 		const mine = ++session;
 		loading = true;
@@ -84,7 +87,7 @@
 				outline = contents;
 				page = 1;
 			} catch (err) {
-				if (mine === session) error = err instanceof Error ? err.message : 'Preview not loaded.';
+				if (mine === session) error = err instanceof Error ? err.message : 'Preview not loaded';
 			} finally {
 				if (mine === session) loading = false;
 			}
@@ -136,7 +139,7 @@
 <Dialog.Root bind:open>
 	<Dialog.Content
 		bind:ref={content}
-		class="flex h-[92vh] w-[min(78rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
+		class="flex h-[90vh] w-[min(78rem,96vw)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none"
 		onOpenAutoFocus={(event) => {
 			event.preventDefault();
 			content?.focus();
@@ -147,7 +150,9 @@
 			<div class="min-w-0 flex-1 space-y-0.5">
 				<Dialog.Title class="truncate text-sm font-medium">{report.title}</Dialog.Title>
 				<Dialog.Description class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-					<Badge variant="outline" class="font-mono text-2xs">{report.subject}</Badge>
+					<Badge variant="outline" class="max-w-full font-mono text-2xs break-all whitespace-normal"
+						>{report.subject}</Badge
+					>
 					<span>{report.template_name}</span>
 					{#if sizes.length}<span>{sizes.length} pages</span>{/if}
 					{#if pdfFile}<span>{formatBytes(pdfFile.bytes)}</span>{/if}
@@ -159,8 +164,7 @@
 						<Button
 							{...props}
 							variant="ghost"
-							size="icon"
-							class="size-8"
+							size="icon-sm"
 							href={reportsApi.previewUrl(projectId, report.id)}
 							target="_blank"
 							rel="noreferrer"
@@ -173,24 +177,17 @@
 				<Button
 					variant="outline"
 					size="sm"
-					class="h-8"
 					href={reportsApi.downloadUrl(projectId, report.id, ReportFormat.PDF)}
 					download
 				>
-					<DownloadIcon class="mr-1.5 size-3.5" />
+					<DownloadIcon class="size-3.5" />
 					PDF
 				</Button>
 				{#if otherFiles.length}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon"
-									class="size-8"
-									aria-label="Other formats"
-								>
+								<Button {...props} variant="ghost" size="icon-sm" aria-label="Other formats">
 									<ChevronRightIcon class="size-4 rotate-90" />
 								</Button>
 							{/snippet}
@@ -225,21 +222,30 @@
 				<PdfRail {doc} {sizes} {outline} {page} onPick={(number) => view?.goTo(number)} />
 				<PdfDocument bind:this={view} {doc} {sizes} {fit} {zoom} bind:page bind:scale />
 			{:else}
-				<div class="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+				<div class="flex flex-1 flex-col items-center justify-center p-8">
 					{#if error}
-						<TriangleAlertIcon class="text-destructive size-6" />
-						<p class="text-sm">{error}</p>
-						<Button
-							variant="outline"
-							size="sm"
-							href={reportsApi.downloadUrl(projectId, report.id, ReportFormat.PDF)}
-							download
+						<EmptyState
+							compact
+							icon={TriangleAlertIcon}
+							title="Preview not loaded"
+							description={error}
+							class="w-full max-w-md"
 						>
-							<DownloadIcon class="mr-1.5 size-3.5" />
-							Download PDF
-						</Button>
+							<div class="flex flex-wrap justify-center gap-2">
+								<Button variant="outline" size="sm" onclick={() => (attempt += 1)}>Retry</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									href={reportsApi.downloadUrl(projectId, report.id, ReportFormat.PDF)}
+									download
+								>
+									<DownloadIcon class="size-3.5" />
+									Download PDF
+								</Button>
+							</div>
+						</EmptyState>
 					{:else if loading}
-						<Skeleton class="h-4 w-32" />
+						<Skeleton class="aspect-[1/1.414] w-56" />
 					{/if}
 				</div>
 			{/if}
@@ -248,8 +254,7 @@
 		<div class="flex h-11 shrink-0 items-center gap-1 border-t px-3">
 			<Button
 				variant="ghost"
-				size="icon"
-				class="size-8"
+				size="icon-sm"
 				disabled={page <= 1}
 				onclick={() => step(-1)}
 				aria-label="Previous page"
@@ -261,8 +266,7 @@
 			</span>
 			<Button
 				variant="ghost"
-				size="icon"
-				class="size-8"
+				size="icon-sm"
 				disabled={page >= sizes.length}
 				onclick={() => step(1)}
 				aria-label="Next page"
@@ -274,8 +278,7 @@
 
 			<Button
 				variant="ghost"
-				size="icon"
-				class="size-8"
+				size="icon-sm"
 				disabled={!doc}
 				onclick={zoomOut}
 				aria-label="Zoom out"
@@ -285,14 +288,7 @@
 			<span class="text-muted-foreground min-w-12 text-center text-xs tabular-nums">
 				{#if doc}{Math.round(scale * 100)}%{/if}
 			</span>
-			<Button
-				variant="ghost"
-				size="icon"
-				class="size-8"
-				disabled={!doc}
-				onclick={zoomIn}
-				aria-label="Zoom in"
-			>
+			<Button variant="ghost" size="icon-sm" disabled={!doc} onclick={zoomIn} aria-label="Zoom in">
 				<PlusIcon class="size-4" />
 			</Button>
 			<Separator orientation="vertical" class="mx-1 !h-5" />
@@ -301,8 +297,7 @@
 					<Button
 						{...props}
 						variant="ghost"
-						size="icon"
-						class="size-8"
+						size="icon-sm"
 						disabled={!doc}
 						onclick={() => (fit = fit === 'width' ? 'page' : 'width')}
 						aria-label={fit === 'width' ? 'Fit page' : 'Fit width'}

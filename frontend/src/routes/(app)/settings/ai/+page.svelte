@@ -4,8 +4,8 @@
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import CpuIcon from '@lucide/svelte/icons/cpu';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
@@ -73,7 +73,7 @@
 		<Skeleton class="h-9 w-full" />
 	</Card.Root>
 {:else if !status}
-	<EmptyState compact icon={CpuIcon} title="AI settings not loaded">
+	<EmptyState compact icon={TriangleAlertIcon} title="AI settings not loaded">
 		<Button variant="outline" size="sm" onclick={() => load()}>
 			<RotateCwIcon class="size-3.5" />
 			Retry
@@ -84,13 +84,13 @@
 		<AiProvidersPanel />
 
 		<div id="ai-features" class="scroll-mt-20"></div>
-		<PanelHead title="Features" class="border-t" />
+		<PanelHead title="Features" class="border-t px-4" />
 		{#each catalog?.features ?? [] as feature, i (feature.key)}
 			<SettingRow
 				label={feature.label}
 				help={feature.help}
 				for="ai-feature-{feature.key}"
-				class={i === 0 ? 'border-t-0' : ''}
+				class={i === 0 ? 'border-t-0 px-4' : 'px-4'}
 			>
 				<Switch
 					id="ai-feature-{feature.key}"
@@ -101,7 +101,7 @@
 			</SettingRow>
 		{/each}
 
-		<div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-5 py-3">
+		<div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-4 py-3">
 			<span class="text-sm tabular-nums">{spend}</span>
 			{#if usage?.since}
 				<span class="text-xs text-muted-foreground tabular-nums">
@@ -114,7 +114,7 @@
 			</Button>
 		</div>
 		{#if !isAdmin}
-			<div class="border-t px-5 py-2.5 text-xs text-muted-foreground">
+			<div class="border-t px-4 py-2.5 text-xs text-muted-foreground">
 				Editable by administrators.
 			</div>
 		{/if}

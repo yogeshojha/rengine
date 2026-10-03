@@ -6,6 +6,7 @@ function createWordlistsStore() {
 	let wordlists = $state<Wordlist[]>([]);
 	let isLoading = $state(false);
 	let hasFetched = $state(false);
+	let error = $state<string | null>(null);
 
 	return {
 		get wordlists() {
@@ -16,6 +17,9 @@ function createWordlistsStore() {
 		},
 		get hasFetched() {
 			return hasFetched;
+		},
+		get error() {
+			return error;
 		},
 
 		byKind(kind: string): Wordlist[] {
@@ -28,8 +32,9 @@ function createWordlistsStore() {
 			try {
 				wordlists = await wordlistsApi.list();
 				hasFetched = true;
+				error = null;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Wordlists not loaded');
+				error = e instanceof Error ? e.message : 'Wordlists not loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -38,7 +43,10 @@ function createWordlistsStore() {
 		async upload(body: WordlistUpload): Promise<WordlistUploadResult | null> {
 			try {
 				const result = await wordlistsApi.upload(body);
-				if (result.stored.length) await this.fetch(true);
+				if (result.stored.length) {
+					await this.fetch(true);
+					if (error) toast.error('Wordlists not refreshed');
+				}
 				return result;
 			} catch (e) {
 				toast.error(e instanceof Error ? e.message : 'Wordlists not uploaded');
@@ -61,6 +69,7 @@ function createWordlistsStore() {
 			wordlists = [];
 			isLoading = false;
 			hasFetched = false;
+			error = null;
 		}
 	};
 }

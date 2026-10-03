@@ -2,8 +2,10 @@
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import BellOffIcon from '@lucide/svelte/icons/bell-off';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -28,6 +30,7 @@
 	let total = $state(0);
 	let pageIndex = $state(0);
 	let loading = $state(true);
+	let failed = $state<string | null>(null);
 	let filter = $state('all');
 
 	const TABS = [
@@ -37,7 +40,10 @@
 		{ key: 'went_out_of_scope', label: 'Now out of scope' }
 	];
 
+	let seq = 0;
+
 	async function load(kind: string, index: number) {
+		const mine = ++seq;
 		loading = true;
 		try {
 			const result = await bountyProgramsApi.events(
@@ -45,14 +51,18 @@
 				EVENT_PAGE_SIZE,
 				kind === 'all' ? null : kind
 			);
+			if (mine !== seq) return;
 			events = result.items;
 			total = result.total;
+			failed = null;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Updates not loaded');
+			if (mine !== seq) return;
+			failed = error instanceof Error ? error.message : 'Updates not loaded';
+			toast.error(failed);
 			events = [];
 			total = 0;
 		} finally {
-			loading = false;
+			if (mine === seq) loading = false;
 		}
 	}
 
@@ -72,61 +82,77 @@
 	}
 </script>
 
-<div class="flex flex-col gap-4">
-	<CountTabs tabs={TABS} value={filter} onChange={onFilter} />
+<Card.Root class="gap-0 overflow-hidden py-0">
+	<div class="border-b px-2">
+		<CountTabs tabs={TABS} value={filter} onChange={onFilter} />
+	</div>
 
-	<Card.Root class="gap-0 overflow-hidden py-0">
-		{#if loading}
-			<RowSkeleton rows={6} avatar="size-7 rounded-md" trailing="h-3.5 w-20" />
-		{:else if events.length === 0}
-			<EmptyState icon={BellOffIcon} title="No changes" class="p-12" />
-		{:else}
-			{#each events as event (event.id)}
-				{@const Icon = assetIcon(event.icon)}
-				<div class="flex items-start gap-3 border-b px-4 py-3 last:border-b-0">
-					<span
-						class="flex size-7 shrink-0 items-center justify-center rounded-md {EVENT_TONE_BG[
-							event.tone
-						] ?? 'bg-muted'}"
-					>
-						<Icon class="size-3.5 {EVENT_TONE[event.tone] ?? 'text-muted-foreground'}" />
-					</span>
+	{#if loading}
+		<RowSkeleton rows={6} avatar="size-7 rounded-md" trailing="h-3.5 w-20" />
+	{:else if failed}
+		<EmptyState
+			icon={TriangleAlertIcon}
+			title="Updates not loaded"
+			description={failed}
+			compact
+			class="rounded-none border-0 bg-transparent py-16"
+		>
+			<Button variant="outline" size="sm" onclick={() => load(filter, pageIndex)}>Retry</Button>
+		</EmptyState>
+	{:else if events.length === 0}
+		<EmptyState
+			icon={BellOffIcon}
+			title="No changes"
+			compact
+			class="rounded-none border-0 bg-transparent py-16"
+		/>
+	{:else}
+		{#each events as event (event.id)}
+			{@const Icon = assetIcon(event.icon)}
+			<div class="flex items-start gap-3 border-b px-4 py-3 last:border-b-0">
+				<span
+					aria-hidden="true"
+					class="flex size-7 shrink-0 items-center justify-center rounded-md {EVENT_TONE_BG[
+						event.tone
+					] ?? 'bg-muted'}"
+				>
+					<Icon class="size-3.5 {EVENT_TONE[event.tone] ?? 'text-muted-foreground'}" />
+				</span>
 
-					<div class="flex min-w-0 flex-1 flex-col gap-0.5">
-						<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-							<span class="text-sm font-medium">{event.label}</span>
-							<button
-								type="button"
-								onclick={() => onOpenProgram(event.handle, event.platform)}
-								class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-							>
-								{event.program_name}
-								<ArrowUpRightIcon class="size-3" />
-							</button>
-							{#if event.actionable && event.tone !== 'muted'}
-								<Badge variant={event.tone === 'warning' ? 'warning' : 'info'}>
-									{event.tone === 'warning' ? 'Action needed' : 'Review'}
-								</Badge>
-							{/if}
-						</div>
-
-						{#if event.asset_identifier}
-							<span class="font-mono text-xs break-all text-muted-foreground">
-								{event.asset_identifier}
-							</span>
-						{/if}
-						{#if event.detail}
-							<span class="text-xs text-muted-foreground">{event.detail}</span>
+				<div class="flex min-w-0 flex-1 flex-col gap-0.5">
+					<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+						<span class="text-sm font-medium">{event.label}</span>
+						<button
+							type="button"
+							onclick={() => onOpenProgram(event.handle, event.platform)}
+							class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+						>
+							{event.program_name}
+							<ArrowUpRightIcon class="size-3" />
+						</button>
+						{#if event.actionable && event.tone !== 'muted'}
+							<Badge variant={event.tone === 'warning' ? 'warning' : 'info'}>
+								{event.tone === 'warning' ? 'Action needed' : 'Review'}
+							</Badge>
 						{/if}
 					</div>
 
-					<span class="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
-						{relativeTime(event.created_at)}
-					</span>
+					{#if event.asset_identifier}
+						<span class="font-mono text-xs break-all text-muted-foreground">
+							{event.asset_identifier}
+						</span>
+					{/if}
+					{#if event.detail}
+						<span class="text-xs text-muted-foreground">{event.detail}</span>
+					{/if}
 				</div>
-			{/each}
-		{/if}
-	</Card.Root>
+
+				<span class="shrink-0 text-xs whitespace-nowrap text-muted-foreground">
+					{relativeTime(event.created_at)}
+				</span>
+			</div>
+		{/each}
+	{/if}
 
 	{#if total > EVENT_PAGE_SIZE}
 		<ResultsPagination
@@ -137,4 +163,4 @@
 			onPage={(p) => (pageIndex = p)}
 		/>
 	{/if}
-</div>
+</Card.Root>

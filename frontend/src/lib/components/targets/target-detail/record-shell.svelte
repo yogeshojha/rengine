@@ -1,10 +1,10 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import CircleX from '@lucide/svelte/icons/circle-x';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
@@ -31,7 +31,7 @@
 		refreshing = false,
 		loading = false,
 		empty = false,
-		emptyText = 'No data.',
+		emptyText = 'No data',
 		onRefresh,
 		bar,
 		children
@@ -62,11 +62,7 @@
 				aria-label="Refresh {name}"
 				onclick={onRefresh}
 			>
-				{#if refreshing || pending}
-					<Spinner class="size-3.5" />
-				{:else}
-					<RefreshCw class="size-3.5" />
-				{/if}
+				<RefreshCw class="size-3.5 {refreshing || pending ? 'animate-spin' : ''}" />
 			</Button>
 		</div>
 	</div>
@@ -74,38 +70,25 @@
 	{#if loading}
 		<div class="flex flex-col gap-3 border-t py-4">
 			{#each Array(6) as _, i (i)}
-				<div class="grid grid-cols-[8rem_1fr] gap-4">
+				<div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
 					<Skeleton class="h-3.5 w-16" />
-					<Skeleton class="h-3.5 w-72" />
+					<Skeleton class="h-3.5 w-72 max-w-full" />
 				</div>
 			{/each}
 		</div>
 	{:else if failed}
-		<div
-			class="flex items-start justify-between gap-4 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3"
+		<EmptyState
+			compact
+			icon={TriangleAlert}
+			title="{name} lookup failed"
+			description={error ?? undefined}
 		>
-			<div class="flex items-start gap-2.5">
-				<span class="flex h-5 shrink-0 items-center">
-					<CircleX class="size-4 text-destructive" />
-				</span>
-				<div class="flex flex-col gap-0.5">
-					<p class="text-sm leading-5">{name} lookup failed</p>
-					{#if error}
-						<p class="text-xs leading-4 text-muted-foreground wrap-anywhere">{error}</p>
-					{/if}
-				</div>
-			</div>
-			<Button variant="outline" size="sm" class="shrink-0 gap-2" onclick={onRefresh}>
-				<RefreshCw class="size-3.5" /> Retry
-			</Button>
-		</div>
+			<Button variant="outline" size="sm" onclick={onRefresh}>Retry</Button>
+		</EmptyState>
 	{:else if pending}
-		<div class="flex flex-col items-center justify-center gap-2 border-t py-12">
-			<Spinner class="size-4 text-muted-foreground" />
-			<p class="text-sm text-muted-foreground">Collecting {name.toLowerCase()} data</p>
-		</div>
+		<EmptyState compact title="Collecting {name} data" />
 	{:else if empty}
-		<p class="border-t py-8 text-center text-sm text-muted-foreground">{emptyText}</p>
+		<EmptyState compact title={emptyText} />
 	{:else}
 		{@render children()}
 	{/if}

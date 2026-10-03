@@ -7,7 +7,6 @@
 	import { toast } from 'svelte-sonner';
 	import Check from '@lucide/svelte/icons/check';
 	import Keyboard from '@lucide/svelte/icons/keyboard';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Search from '@lucide/svelte/icons/search';
 	import Newspaper from '@lucide/svelte/icons/newspaper';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
@@ -16,7 +15,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import * as Empty from '$lib/components/ui/empty';
 	import { Input } from '$lib/components/ui/input';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -95,6 +93,7 @@
 	const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 	const RING_LIBRARY = `ring:${ProgramRing.LIBRARY}`;
 	const Q_DEBOUNCE_MS = 250;
+	const TARGET_ROWS = 50;
 
 	const initial = page.url.searchParams;
 	let range = $state<NewWindowKey>(
@@ -132,6 +131,7 @@
 
 	let visual = $state<VisualFeed | null>(null);
 	let visualLoading = $state(false);
+	let visualError = $state<string | null>(null);
 	let silentOnly = $state(false);
 	let minDistance = $state(1);
 	let visualCursor = $state(-1);
@@ -163,6 +163,9 @@
 	let sheetOpen = $state(false);
 	let opening = $state<string | null>(null);
 	let catchingUp = $state(false);
+	const targetPool = new SvelteMap<string, string>();
+	let poolFor = '';
+	let targetSearchTimer: ReturnType<typeof setTimeout> | undefined;
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let projectSlug = $derived(projectsStore.activeProject?.slug ?? '');
@@ -194,7 +197,7 @@
 				? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
 				: dayLabel(dayFrom);
 		}
-		return `${formatShortDate(feed.since)} ${formatClock(feed.since)}`;
+		return `${formatShortDate(feed.since)}, ${formatClock(feed.since)}`;
 	});
 	let periodLabel = $derived.by(() => {
 		if (!feed) return '';
@@ -278,8 +281,8 @@
 
 	let targetOptions = $derived.by<PickOption[]>(() => {
 		const seen = new SvelteMap<string, PickOption>();
-		for (const t of targetsStore.targets) {
-			seen.set(t.id, { value: t.id, label: t.target_value, mono: true });
+		for (const [id, label] of targetPool) {
+			seen.set(id, { value: id, label, mono: true });
 		}
 		for (const g of feed?.groups ?? []) {
 			const s = g.subject;
@@ -412,7 +415,9 @@
 			if (cursor >= rowCount) cursor = rowCount - 1;
 		} catch (e) {
 			if (my !== reqId) return;
-			error = e instanceof Error ? e.message : 'Feed not loaded';
+			const message = e instanceof Error ? e.message : 'Feed not loaded';
+			if (silent && feed) toast.error(message);
+			else error = message;
 		} finally {
 			if (my === reqId) loading = false;
 		}
@@ -432,9 +437,12 @@
 			});
 			if (my !== visualReq) return;
 			visual = res;
+			visualError = null;
 		} catch (e) {
 			if (my !== visualReq) return;
-			toast.error(e instanceof Error ? e.message : 'Visual changes not loaded');
+			const message = e instanceof Error ? e.message : 'Visual changes not loaded';
+			if (visual) toast.error(message);
+			else visualError = message;
 		} finally {
 			if (my === visualReq) visualLoading = false;
 		}
@@ -478,6 +486,7 @@
 				loadedFor = id;
 				feed = null;
 				visual = null;
+				visualError = null;
 				selection.clear();
 				expanded.clear();
 				cursor = -1;
@@ -504,7 +513,11 @@
 		const slug = projectSlug;
 		if (!id) return;
 		untrack(() => {
-			if (slug) void targetsStore.fetchAll(slug);
+			if (slug && poolFor !== slug) {
+				poolFor = slug;
+				targetPool.clear();
+				void loadTargetPool(slug);
+			}
 			if (bounty) {
 				void bountyVocabulary.load();
 				if (watchesStore.fetchedProjectId !== id) void watchesStore.fetch(id);
@@ -529,6 +542,30 @@
 			});
 		}
 	});
+
+	async function loadTargetPool(slug: string, search = '') {
+		try {
+			const res = await targetsApi.list({
+				project_slug: slug,
+				search: search || undefined,
+				sort_by: 'name',
+				sort_dir: 'asc',
+				size: TARGET_ROWS
+			});
+			if (slug !== poolFor) return;
+			for (const t of res.items) targetPool.set(t.id, t.target_value);
+		} catch {
+			// ignore
+		}
+	}
+
+	function searchTargets(text: string) {
+		clearTimeout(targetSearchTimer);
+		const value = text.trim();
+		const slug = projectSlug;
+		if (!value || !slug) return;
+		targetSearchTimer = setTimeout(() => void loadTargetPool(slug, value), Q_DEBOUNCE_MS);
+	}
 
 	function setRange(next: NewWindowKey) {
 		dayFrom = null;
@@ -643,7 +680,9 @@
 	}
 
 	async function muteHosts(items: NewItem[]) {
-		const wanted = items.filter((i) => i.kind === NewKind.CERT_HOST && i.watch_id && i.host_id);
+		const wanted = items.filter(
+			(i) => i.kind === NewKind.CERT_HOST && i.watch_id && i.host_id && !busy.has(i.id)
+		);
 		if (!wanted.length || !projectId) return;
 		for (const i of wanted) busy.add(i.id);
 		try {
@@ -675,16 +714,16 @@
 		const item = removeFor;
 		if (!item?.target_id) return;
 		removing = true;
-		try {
-			await targetsApi.delete(item.target_id);
-			toast.success('Target removed');
-			removeFor = null;
-			void load(true);
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Target not removed');
-		} finally {
-			removing = false;
+		const ok = await targetsStore.deleteTarget(item.target_id);
+		removing = false;
+		if (!ok) {
+			toast.error('Target not deleted');
+			return;
 		}
+		toast.success('Target deleted');
+		targetPool.delete(item.target_id);
+		removeFor = null;
+		void load(true);
 	}
 
 	function watchProgram() {
@@ -953,6 +992,7 @@
 				options={targetOptions}
 				heading={[{ value: '', label: 'All targets' }]}
 				placeholder="Target"
+				onQuery={searchTargets}
 				onChange={(v) => (targetId = v)}
 			/>
 			{#if bounty && sourceOn !== NewSource.TARGETS && tab !== NewTab.VISUAL}
@@ -1005,7 +1045,7 @@
 							{...props}
 							variant="outline"
 							size="icon"
-							class="hidden size-9 sm:inline-flex"
+							class="hidden sm:inline-flex"
 							aria-label="Keyboard shortcuts"
 							onclick={() => (shortcutsOpen = true)}
 						>
@@ -1014,7 +1054,6 @@
 					{/snippet}
 				</Hint>
 				<LoadingButton
-					class="h-9 gap-2"
 					loading={catchingUp}
 					loadingLabel="Marking"
 					onclick={caughtUp}
@@ -1055,13 +1094,23 @@
 
 		{#if tab === NewTab.VISUAL}
 			<div class="p-4">
-				{#if visual && !visualLoading && visualPairs.length === 0}
+				{#if visualError && !visual && !visualLoading}
+					<EmptyState
+						icon={TriangleAlert}
+						title="Visual changes not loaded"
+						description={visualError}
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button variant="outline" size="sm" onclick={() => loadVisual()}>Retry</Button>
+					</EmptyState>
+				{:else if visual && !visualLoading && visualPairs.length === 0}
 					<EmptyState
 						icon={Newspaper}
 						title={silentOnly
 							? `No silent redeploys ${periodLabel}`
 							: `No visual changes ${periodLabel}`}
 						description="A web asset counts once both runs captured it and the screenshots differ."
+						class="rounded-none border-0 bg-transparent py-16"
 					/>
 				{:else if visual}
 					<div class="transition-opacity {visualLoading ? 'opacity-60' : ''}">
@@ -1080,28 +1129,22 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-3">
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(min(21rem,100%),1fr))] gap-3">
 						{#each { length: 6 } as _, i (i)}
-							<Skeleton class="h-52 rounded-xl" />
+							<Skeleton class="h-52 rounded-lg" />
 						{/each}
 					</div>
 				{/if}
 			</div>
 		{:else if error}
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-						<TriangleAlert class="size-6 text-destructive" />
-					</Empty.Media>
-					<Empty.Title>What's new not loaded</Empty.Title>
-					<Empty.Description class="max-w-md">{error}</Empty.Description>
-				</Empty.Header>
-				<Empty.Content>
-					<Button variant="outline" class="gap-2" onclick={() => load()}>
-						<RefreshCw class="size-4" /> Retry
-					</Button>
-				</Empty.Content>
-			</Empty.Root>
+			<EmptyState
+				icon={TriangleAlert}
+				title="{routeLabels['whats-new']} not loaded"
+				description={error}
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => load()}>Retry</Button>
+			</EmptyState>
 		{:else if !feed}
 			<div class="flex flex-col" aria-busy="true">
 				<div class="border-b bg-muted/20 px-4 py-2"><Skeleton class="h-3 w-40" /></div>
@@ -1119,7 +1162,11 @@
 				{/each}
 			</div>
 		{:else if entries.length === 0}
-			<EmptyState icon={Newspaper} title={emptyTitle} />
+			<EmptyState
+				icon={Newspaper}
+				title={emptyTitle}
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
 		{:else}
 			<div class="flex flex-col pb-2 transition-opacity {loading ? 'opacity-60' : ''}">
 				{#each days as day (day.key)}
@@ -1133,7 +1180,7 @@
 							{#each day.rows as { entry, index } (entry.id)}
 								{#if index === markIndex}
 									<li
-										class="grid grid-cols-[1rem_minmax(0,1fr)] sm:grid-cols-[3rem_1rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-1.5"
+										class="grid grid-cols-[1rem_minmax(0,1fr)] sm:grid-cols-[4rem_1rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-1.5"
 									>
 										<span class="hidden sm:block"></span>
 										<span class="flex justify-center"
@@ -1188,12 +1235,18 @@
 
 <SelectionActionBar selectedCount={selection.size} noun="row" onClear={() => selection.clear()}>
 	{#if pickedAddable.length}
-		<Button size="sm" class="h-7 text-xs" onclick={() => addTargets(pickedAddable)}>
+		<Button variant="ghost" size="sm" class="font-medium" onclick={() => addTargets(pickedAddable)}>
 			Add {pickedAddable.length === 1 ? 'target' : `${pickedAddable.length} targets`}
 		</Button>
 	{/if}
 	{#if pickedHosts.length}
-		<Button variant="ghost" size="sm" class="h-7 text-xs" onclick={() => muteHosts(pickedHosts)}>
+		<Button
+			variant="ghost"
+			size="sm"
+			class="font-medium"
+			disabled={pickedHosts.some((h) => busy.has(h.id))}
+			onclick={() => muteHosts(pickedHosts)}
+		>
 			{pickedHosts.every((h) => h.muted) ? 'Unmute' : 'Mute'}
 			{pickedHosts.length === 1 ? 'host' : `${pickedHosts.length} hosts`}
 		</Button>
@@ -1283,12 +1336,12 @@
 
 <ConfirmDialog
 	open={removeFor !== null}
-	title="Remove {removeFor?.target_value ?? removeFor?.value ?? 'target'}"
+	title="Delete target"
 	description="Target {removeFor?.target_value ??
 		removeFor?.value ??
 		''} and its scans and findings are removed."
-	confirmLabel="Remove"
-	loadingLabel="Removing"
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	destructive
 	loading={removing}
 	onOpenChange={(v) => {

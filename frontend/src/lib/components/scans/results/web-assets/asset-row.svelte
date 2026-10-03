@@ -43,7 +43,7 @@
 	import { stopProp } from '$lib/utilities';
 	import { plural } from '$lib/utilities/strings';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
+	import { formatDateTime, formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import {
 		formatResponseTime,
 		httpStatusClass,
@@ -253,6 +253,7 @@
 	aria-label="Open {s.name}"
 	onclick={() => onOpen(s)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onOpen(s);
@@ -354,7 +355,7 @@
 			{#if s.is_wildcard}
 				<span class="flex h-5 shrink-0 items-center">
 					<Badge variant="outline" class="px-1 text-2xs font-normal text-muted-foreground">
-						wildcard
+						Wildcard
 					</Badge>
 				</span>
 			{/if}
@@ -364,7 +365,7 @@
 						{#snippet child({ props })}
 							<span
 								class="flex h-5 shrink-0 items-center text-2xs text-muted-foreground/70"
-								{...props}>no DNS</span
+								{...props}>No DNS answer</span
 							>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -374,7 +375,7 @@
 			<span class="hidden h-5 shrink-0 items-center sm:flex">
 				<CopyButton
 					value={s.name}
-					class="size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+					class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
 				/>
 			</span>
 		</div>
@@ -457,7 +458,7 @@
 			<div class="flex flex-wrap items-center gap-1.5 pt-0.5">
 				{#if cert === 'expired'}
 					{@render signal(
-						'Cert expired',
+						'Certificate expired',
 						expiry ? `Expired ${expiry} · cert:expired` : 'Expired · cert:expired',
 						'cert:expired',
 						'border-destructive/30 text-destructive',
@@ -465,7 +466,7 @@
 					)}
 				{:else if cert === 'expiring'}
 					{@render signal(
-						`Cert expires in ${daysUntilExpiry(s)}d`,
+						`Certificate expires in ${daysUntilExpiry(s)}d`,
 						`Expires ${expiry} · cert:expiring`,
 						'cert:expiring',
 						'border-warning/30 text-warning',
@@ -473,7 +474,7 @@
 					)}
 				{:else if cert === 'self-signed'}
 					{@render signal(
-						'Self-signed cert',
+						'Self-signed certificate',
 						'Self-signed certificate · cert:self-signed',
 						'cert:self-signed',
 						'border-warning/30 text-warning',
@@ -482,7 +483,7 @@
 				{/if}
 				{#if internalIp}
 					{@render signal(
-						'Internal IP',
+						'Private address',
 						`Resolves to private address ${internalIp}`,
 						filterToken('ip', internalIp),
 						'border-warning/30 text-warning',
@@ -491,7 +492,7 @@
 				{/if}
 				{#if s.waf}
 					{@render signal(
-						`WAF ${s.waf}`,
+						`WAF · ${s.waf}`,
 						'Web application firewall · is:waf',
 						'is:waf',
 						'border-border text-muted-foreground',
@@ -755,7 +756,7 @@
 					/>
 				</div>
 			{:else if col.key === 'discovered'}
-				<Hint text={s.discovered_at}>
+				<Hint text={formatDateTime(s.discovered_at)}>
 					{#snippet child(props)}
 						<div {...props} class="text-xs text-muted-foreground">
 							{relativeTime(s.discovered_at)}

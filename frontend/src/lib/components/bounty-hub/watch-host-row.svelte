@@ -13,10 +13,11 @@
 
 	interface Props {
 		host: WatchHost;
+		muting?: boolean;
 		onMute: (host: WatchHost) => void;
 	}
 
-	let { host, onMute }: Props = $props();
+	let { host, muting = false, onMute }: Props = $props();
 
 	const MAX_TECH = 4;
 	const muted = $derived(host.state === WatchHostState.Muted);
@@ -29,7 +30,7 @@
 </script>
 
 <div
-	class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b px-4 py-3 last:border-b-0"
+	class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b px-5 py-3 last:border-b-0"
 >
 	<div class="flex min-w-0 gap-3">
 		{#if host.screenshot_path}
@@ -90,8 +91,7 @@
 						{...props}
 						href={ROUTES.scan(host.scan_id ?? '')}
 						variant="ghost"
-						size="icon"
-						class="size-8"
+						size="icon-sm"
 						aria-label="Open the probe"
 					>
 						<ScanSearchIcon class="size-4" />
@@ -105,9 +105,9 @@
 					<Button
 						{...props}
 						variant="ghost"
-						size="icon"
-						class="size-8"
+						size="icon-sm"
 						aria-label={muted ? 'Unmute host' : 'Mute host'}
+						disabled={muting}
 						onclick={() => onMute(host)}
 					>
 						{#if muted}

@@ -10,10 +10,12 @@
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import LadderPick from '$lib/components/access/ladder-pick.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { SELECT_NONE } from '$lib/constants';
 	import { CONNECT_POLL_MS, callsOf, parseClient } from '$lib/utilities/mcp';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import {
 		MCP_CAPABILITIES,
 		MCP_DEFAULT_GRANTS,
@@ -38,12 +40,13 @@
 	let { open = $bindable(), status, editing, titles }: Props = $props();
 
 	const DEFAULT_EXPIRY = '30';
+	const DEFAULT_LEVEL = ladderLevel(MCP_DEFAULT_GRANTS);
 
 	let client = $state('');
 	let name = $state('');
 	let named = $state(false);
 	let projectId = $state<string>(SELECT_NONE);
-	let level = $state(ladderLevel(MCP_DEFAULT_GRANTS));
+	let level = $state(DEFAULT_LEVEL);
 	let expiry = $state(DEFAULT_EXPIRY);
 	let saving = $state(false);
 	let created = $state<McpTokenCreated | null>(null);
@@ -74,6 +77,23 @@
 		return own.length ? own[own.length - 1] : null;
 	});
 	const snippet = $derived(created?.clients.find((c) => c.key === shownClient) ?? null);
+	const dirty = $derived.by(() => {
+		if (created) return false;
+		if (editing) {
+			return (
+				projectId !== (editing.project_id ?? SELECT_NONE) ||
+				level !== ladderLevel(editing.capabilities)
+			);
+		}
+		return (
+			!!client ||
+			!!name.trim() ||
+			projectId !== SELECT_NONE ||
+			level !== DEFAULT_LEVEL ||
+			expiry !== DEFAULT_EXPIRY
+		);
+	});
+	const guard = new DiscardGuard(() => dirty, close);
 
 	$effect(() => {
 		if (!open) return;
@@ -102,7 +122,7 @@
 		name = '';
 		named = false;
 		projectId = SELECT_NONE;
-		level = ladderLevel(MCP_DEFAULT_GRANTS);
+		level = DEFAULT_LEVEL;
 		expiry = DEFAULT_EXPIRY;
 		created = null;
 		shownClient = '';
@@ -137,13 +157,16 @@
 </script>
 
 <Sheet.Root
-	{open}
-	onOpenChange={(v) => {
-		if (!v) close();
-	}}
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!saving) guard.close();
+		}
+	}
 >
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
-		<Sheet.Header class="border-b px-5 py-4">
+		<Sheet.Header class="border-b px-5 py-4 pr-12">
 			<Sheet.Title>
 				{editing
 					? `Edit access · ${editing.name}`
@@ -217,6 +240,7 @@
 								<LoadingButton
 									size="sm"
 									loading={mcp.isSaving}
+									loadingLabel="Starting"
 									onclick={() => mcp.setRunning(true)}
 								>
 									Start server
@@ -329,15 +353,29 @@
 			{/if}
 		</ScrollArea>
 
-		<div class="flex justify-end gap-2 border-t bg-muted/30 px-5 py-3">
+		<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
 			{#if created}
-				<Button onclick={close}>Done</Button>
+				<Button size="sm" onclick={close}>Done</Button>
 			{:else}
-				<Button variant="outline" onclick={close}>Cancel</Button>
-				<LoadingButton loading={saving} disabled={!editing && !name.trim()} onclick={submit}>
+				<Button size="sm" variant="outline" disabled={saving} onclick={() => guard.close()}>
+					Cancel
+				</Button>
+				<LoadingButton
+					size="sm"
+					loading={saving}
+					loadingLabel={editing ? 'Saving' : 'Creating'}
+					disabled={!editing && !name.trim()}
+					onclick={submit}
+				>
 					{editing ? 'Save' : 'Create key'}
 				</LoadingButton>
 			{/if}
-		</div>
+		</Sheet.Footer>
 	</Sheet.Content>
 </Sheet.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

@@ -89,7 +89,7 @@
 
 	<div class="flex flex-wrap gap-2">
 		{#if currentId}
-			<Button variant="outline" size="sm" href={ROUTES.scan(currentId)} class="gap-1.5">
+			<Button variant="outline" size="sm" href={ROUTES.scan(currentId)}>
 				Open run <ArrowUpRight class="size-3.5" />
 			</Button>
 		{/if}

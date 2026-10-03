@@ -8,6 +8,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CopyButton from '$lib/components/copy-button.svelte';
@@ -52,14 +53,14 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="flex max-h-[88vh] flex-col gap-0 p-0 sm:max-w-3xl">
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
 		{#if f}
-			<Dialog.Header class="gap-2 border-b px-6 pt-6 pr-12 pb-4">
+			<Dialog.Header class="border-b px-6 py-4 pr-8">
 				<div class="flex items-center gap-2">
 					<Badge variant={f.confidence === 'high' ? 'warning' : 'outline'} class="font-normal">
 						{f.confidence === 'high' ? 'High confidence' : 'Medium confidence'}
 					</Badge>
-					<Dialog.Title class="text-base font-semibold">
+					<Dialog.Title>
 						{FINDING_TITLE[f.kind] ?? f.kind}
 					</Dialog.Title>
 				</div>
@@ -69,7 +70,7 @@
 			</Dialog.Header>
 
 			<ScrollArea class="min-h-0 flex-1">
-				<div class="flex flex-col gap-6 p-6">
+				<div class="flex flex-col gap-6 px-6 py-5">
 					<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-[1fr_auto_1fr]">
 						{@render side(
 							bypass ? `Behind ${cdn}` : 'By hostname',
@@ -94,14 +95,21 @@
 					</div>
 
 					<section class="flex flex-col gap-2">
-						<h3 class="text-2xs tracking-wide text-muted-foreground uppercase">Evidence</h3>
+						<SectionHead title="Evidence" />
 						<dl class="flex flex-col divide-y divide-border/60 rounded-lg border">
 							{#each f.evidence as e (e.kind)}
-								<div class="grid grid-cols-[10rem_1fr] items-baseline gap-3 px-3 py-2">
+								<div
+									class="grid grid-cols-[7rem_minmax(0,1fr)] items-baseline gap-3 px-3 py-2 sm:grid-cols-[10rem_minmax(0,1fr)]"
+								>
 									<dt class="text-xs text-muted-foreground">{e.label}</dt>
 									<Hint text={e.value}>
 										{#snippet child(props)}
-											<dd {...props} class="min-w-0 truncate font-mono text-xs">{e.value}</dd>
+											<dd
+												{...props}
+												class="min-w-0 truncate font-mono text-xs max-sm:whitespace-normal max-sm:wrap-anywhere"
+											>
+												{e.value}
+											</dd>
 										{/snippet}
 									</Hint>
 								</div>
@@ -111,9 +119,7 @@
 
 					{#if f.open_ports.length}
 						<section class="flex flex-col gap-2">
-							<h3 class="text-2xs tracking-wide text-muted-foreground uppercase">
-								Open on {f.exposed.ip}
-							</h3>
+							<SectionHead title="Open on {f.exposed.ip}" />
 							<div class="flex flex-wrap items-center gap-1">
 								{#each f.open_ports as p (p)}
 									<Badge
@@ -137,9 +143,7 @@
 
 					{#if bypass && f.fronted.length > 1}
 						<section class="flex flex-col gap-2">
-							<h3 class="text-2xs tracking-wide text-muted-foreground uppercase">
-								Hostnames serving the same application
-							</h3>
+							<SectionHead title="Hostnames serving the same application" />
 							<ul class="flex flex-wrap gap-1">
 								{#each f.fronted as s (s.url)}
 									<li>
@@ -150,7 +154,7 @@
 								{/each}
 								{#if f.fronted_total > f.fronted.length}
 									<li class="self-center text-xs text-muted-foreground">
-										+{f.fronted_total - f.fronted.length} more
+										+{(f.fronted_total - f.fronted.length).toLocaleString()} more
 									</li>
 								{/if}
 							</ul>

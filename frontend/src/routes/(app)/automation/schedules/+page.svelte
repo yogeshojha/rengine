@@ -6,15 +6,15 @@
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Alert from '$lib/components/ui/alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import ScheduleListCard from '$lib/components/schedules/schedule-list-card.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
@@ -36,6 +36,11 @@
 	let scheduleToDelete = $state<ScanScheduleRead | null>(null);
 	let showDeleteDialog = $state(false);
 	let isDeleting = $state(false);
+	let loaded = $derived(
+		projectsStore.activeProject
+			? scanSchedulesStore.fetchedProjectId === projectsStore.activeProject.id
+			: projectsStore.hasFetched
+	);
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
@@ -120,11 +125,7 @@
 		isRefreshing = true;
 		try {
 			await scanSchedulesStore.fetchSchedules(project.id);
-			if (scanSchedulesStore.error) {
-				toast.error(scanSchedulesStore.error);
-			} else {
-				toast.success('Refreshed');
-			}
+			if (scanSchedulesStore.error) toast.error(scanSchedulesStore.error);
 		} finally {
 			isRefreshing = false;
 		}
@@ -133,53 +134,55 @@
 
 <svelte:head><title>{pageTitle(routeLabels.schedules)}</title></svelte:head>
 
-<div class="space-y-6">
-	<div class="flex items-start justify-between">
-		<div>
+<div class="flex flex-col gap-6">
+	<div class="flex flex-wrap items-end justify-between gap-3">
+		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">Schedules</h1>
 		</div>
-		<div class="flex items-center gap-2">
-			<Button
-				variant="outline"
-				size="icon"
-				class="h-9 w-9"
-				aria-label="Refresh"
-				onclick={handleRefresh}
-				disabled={isRefreshing}
-			>
-				<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-			</Button>
-			<Button onclick={handleNew} class="gap-2">
-				<Plus class="h-4 w-4" />
+		<div class="flex flex-wrap items-center gap-2">
+			<Hint text="Refresh">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="outline"
+						size="icon-sm"
+						aria-label="Refresh"
+						onclick={handleRefresh}
+						disabled={isRefreshing}
+					>
+						<RefreshCw class="size-4 {isRefreshing ? 'animate-spin' : ''}" />
+					</Button>
+				{/snippet}
+			</Hint>
+			<Button size="sm" onclick={handleNew}>
+				<Plus class="size-4" />
 				New schedule
 			</Button>
 		</div>
 	</div>
 
-	{#if scanSchedulesStore.error && !scanSchedulesStore.isLoading && scanSchedulesStore.fetchedProjectId !== projectsStore.activeProject?.id}
-		<Alert.Root variant="destructive">
-			<AlertCircle />
-			<Alert.Title>Schedules not loaded</Alert.Title>
-			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
-				<span>{scanSchedulesStore.error}</span>
-				<Button
-					variant="outline"
-					size="sm"
-					class="gap-1.5"
-					onclick={handleRefresh}
-					disabled={isRefreshing}
-				>
-					<RefreshCw class="h-3.5 w-3.5 {isRefreshing ? 'animate-spin' : ''}" />
-					Retry
-				</Button>
-			</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	{#if scanSchedulesStore.isLoading}
+	{#if !loaded && scanSchedulesStore.error && !scanSchedulesStore.isLoading}
+		<EmptyState
+			icon={TriangleAlert}
+			title="Schedules not loaded"
+			description={scanSchedulesStore.error}
+		>
+			<Button size="sm" variant="outline" onclick={handleRefresh} disabled={isRefreshing}>
+				Retry
+			</Button>
+		</EmptyState>
+	{:else if !loaded}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
-				<Skeleton class="h-[170px] rounded-lg" />
+				<div class="flex flex-col gap-3 rounded-xl border border-border p-4">
+					<Skeleton class="h-5 w-40" />
+					<Skeleton class="h-3.5 w-3/5" />
+					<div class="flex gap-1.5">
+						<Skeleton class="h-5 w-16" />
+						<Skeleton class="h-5 w-24" />
+					</div>
+					<Skeleton class="mt-2 h-3.5 w-full" />
+				</div>
 			{/each}
 		</div>
 	{:else if scanSchedulesStore.schedules.length === 0}
@@ -188,8 +191,8 @@
 			title="No schedules"
 			description="One-off, hourly, daily or cron."
 		>
-			<Button onclick={handleNew} class="gap-2">
-				<Plus size={15} />
+			<Button size="sm" onclick={handleNew}>
+				<Plus class="size-4" />
 				Schedule a scan
 			</Button>
 		</EmptyState>

@@ -3,7 +3,9 @@
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import SettingsIcon from '@lucide/svelte/icons/settings-2';
 	import CircleStopIcon from '@lucide/svelte/icons/circle-stop';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -81,10 +83,17 @@
 	let eventPage = $state(0);
 	let eventFilter = $state<WatchEventFilter>(WATCH_EVENT_ALL);
 	let loading = $state(false);
+	let hostsError = $state<string | null>(null);
+	let eventsLoading = $state(false);
+	let eventsError = $state<string | null>(null);
 	let busy = $state(false);
 	let settingsOpen = $state(false);
 	let stopOpen = $state(false);
 	let seenAt = $state<string | null>(null);
+	let hostSeq = 0;
+	let eventSeq = 0;
+	let shownFor = '';
+	const muting = new SvelteSet<string>();
 
 	const platformLabel = $derived(watch ? bountyVocabulary.label(watch.platform) : '');
 	const paused = $derived(watch?.status === WatchStatus.Paused);
@@ -92,6 +101,7 @@
 
 	async function loadHosts() {
 		if (!watch) return;
+		const seq = ++hostSeq;
 		loading = true;
 		try {
 			const [page, c] = await Promise.all([
@@ -104,18 +114,24 @@
 				}),
 				watchesApi.hostCounts(watch.id, projectId, since)
 			]);
+			if (seq !== hostSeq) return;
 			hosts = page.items;
 			hostTotal = page.total;
 			counts = c;
+			hostsError = null;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Hosts not loaded');
+			if (seq !== hostSeq) return;
+			hostsError = error instanceof Error ? error.message : 'Hosts not loaded';
+			toast.error(hostsError);
 		} finally {
-			loading = false;
+			if (seq === hostSeq) loading = false;
 		}
 	}
 
 	async function loadEvents() {
 		if (!watch) return;
+		const seq = ++eventSeq;
+		eventsLoading = true;
 		try {
 			const page = await watchesApi.events(watch.id, projectId, {
 				page: eventPage + 1,
@@ -123,10 +139,16 @@
 				kind: eventFilter === WATCH_EVENT_SCOPE ? WATCH_EVENT_SCOPE : null,
 				since: eventFilter === WATCH_EVENT_SCOPE && sinceSeen ? seenAt : null
 			});
+			if (seq !== eventSeq) return;
 			events = page.items;
 			eventTotal = page.total;
+			eventsError = null;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Activity not loaded');
+			if (seq !== eventSeq) return;
+			eventsError = error instanceof Error ? error.message : 'Activity not loaded';
+			toast.error(eventsError);
+		} finally {
+			if (seq === eventSeq) eventsLoading = false;
 		}
 	}
 
@@ -140,6 +162,14 @@
 			search = '';
 			hostPage = 0;
 			eventPage = 0;
+			if (shownFor !== id) {
+				shownFor = id;
+				hosts = [];
+				hostTotal = 0;
+				counts = null;
+				events = [];
+				eventTotal = 0;
+			}
 			seenAt = w.seen_at;
 			eventFilter = initialTab === 'activity' ? WATCH_EVENT_SCOPE : WATCH_EVENT_ALL;
 			sinceSeen =
@@ -207,12 +237,15 @@
 	}
 
 	async function mute(host: WatchHost) {
-		if (!watch) return;
+		if (!watch || muting.has(host.id)) return;
+		muting.add(host.id);
 		try {
 			const updated = await watchesApi.muteHost(watch.id, host.id, projectId);
 			hosts = hosts.map((h) => (h.id === updated.id ? updated : h));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Host not updated');
+		} finally {
+			muting.delete(host.id);
 		}
 	}
 
@@ -233,7 +266,7 @@
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
 		{#if watch}
-			<Sheet.Header class="gap-2 border-b p-4">
+			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
 				<Sheet.Title class="flex flex-wrap items-center gap-2">
 					<span class="min-w-0 truncate">{watch.program_name}</span>
 					{#if paused}
@@ -272,26 +305,28 @@
 					{#if paused}
 						<LoadingButton
 							loading={busy}
+							loadingLabel="Resuming"
 							size="sm"
 							variant="outline"
 							onclick={() => setStatus(WatchStatus.Active)}
 						>
-							<PlayIcon class="mr-1.5 size-3.5" />
+							<PlayIcon class="size-3.5" />
 							Resume
 						</LoadingButton>
 					{:else}
 						<LoadingButton
 							loading={busy}
+							loadingLabel="Pausing"
 							size="sm"
 							variant="outline"
 							onclick={() => setStatus(WatchStatus.Paused)}
 						>
-							<PauseIcon class="mr-1.5 size-3.5" />
+							<PauseIcon class="size-3.5" />
 							Pause
 						</LoadingButton>
 					{/if}
 					<Button size="sm" variant="outline" onclick={() => (settingsOpen = true)}>
-						<SettingsIcon class="mr-1.5 size-3.5" />
+						<SettingsIcon class="size-3.5" />
 						Settings
 					</Button>
 					<Button
@@ -300,13 +335,13 @@
 						class="text-muted-foreground"
 						onclick={() => (stopOpen = true)}
 					>
-						<CircleStopIcon class="mr-1.5 size-3.5" />
+						<CircleStopIcon class="size-3.5" />
 						Stop watching
 					</Button>
 				</div>
 			</Sheet.Header>
 
-			<div class="border-b px-4">
+			<div class="border-b px-2">
 				<CountTabs
 					tabs={[
 						{ key: 'hosts', label: 'Hosts' },
@@ -319,7 +354,7 @@
 			</div>
 
 			{#if tab === 'hosts'}
-				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+				<div class="flex flex-wrap items-center gap-2 border-b px-5 py-2">
 					{#each HOST_FILTERS as f (f.key)}
 						<Toggle
 							size="sm"
@@ -346,37 +381,52 @@
 							value={search}
 							oninput={(e) => onSearch((e.currentTarget as HTMLInputElement).value)}
 							placeholder="Filter hosts"
+							aria-label="Filter hosts"
 							class="h-7 w-40 text-xs"
 						/>
 					</div>
 				</div>
 				<ScrollArea.Root class="min-h-0 flex-1">
 					{#if loading && hosts.length === 0}
-						<RowSkeleton rows={6} avatar="size-4 rounded" trailing="h-5 w-20 rounded-full" />
+						<RowSkeleton
+							rows={6}
+							avatar="size-4 rounded"
+							trailing="h-5 w-20 rounded-full"
+							padding="px-5"
+						/>
+					{:else if hostsError && hosts.length === 0}
+						<EmptyState
+							icon={TriangleAlertIcon}
+							title="Hosts not loaded"
+							description={hostsError}
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
+						>
+							<Button variant="outline" size="sm" onclick={() => loadHosts()}>Retry</Button>
+						</EmptyState>
 					{:else if hosts.length === 0}
 						<EmptyState
 							title={counts?.all === 0 ? 'No certificates' : 'No hosts match'}
-							class="p-10"
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
 						/>
 					{:else}
 						{#each hosts as host (host.id)}
-							<WatchHostRow {host} onMute={mute} />
+							<WatchHostRow {host} muting={muting.has(host.id)} onMute={mute} />
 						{/each}
 					{/if}
 				</ScrollArea.Root>
 				{#if hostTotal > WATCH_HOST_PAGE_SIZE}
-					<div class="border-t px-4 py-2">
-						<ResultsPagination
-							page={hostPage}
-							pageSize={WATCH_HOST_PAGE_SIZE}
-							total={hostTotal}
-							noun="host"
-							onPage={(p) => (hostPage = p)}
-						/>
-					</div>
+					<ResultsPagination
+						page={hostPage}
+						pageSize={WATCH_HOST_PAGE_SIZE}
+						total={hostTotal}
+						noun="host"
+						onPage={(p) => (hostPage = p)}
+					/>
 				{/if}
 			{:else}
-				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+				<div class="flex flex-wrap items-center gap-2 border-b px-5 py-2">
 					{#each EVENT_FILTERS as f (f.key)}
 						<Toggle
 							size="sm"
@@ -406,18 +456,31 @@
 					{/if}
 				</div>
 				<ScrollArea.Root class="min-h-0 flex-1">
-					{#if events.length === 0}
+					{#if eventsLoading && events.length === 0}
+						<RowSkeleton rows={6} avatar="size-4 rounded" trailing="h-3 w-16" padding="px-5" />
+					{:else if eventsError && events.length === 0}
+						<EmptyState
+							icon={TriangleAlertIcon}
+							title="Activity not loaded"
+							description={eventsError}
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
+						>
+							<Button variant="outline" size="sm" onclick={() => loadEvents()}>Retry</Button>
+						</EmptyState>
+					{:else if events.length === 0}
 						<EmptyState
 							title={eventFilter === WATCH_EVENT_SCOPE ? 'No scope changes' : 'No activity'}
-							class="p-10"
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
 						/>
 					{:else}
 						{#each events as event (event.id)}
 							{@const Icon = EVENT_ICONS[event.kind]}
 							<div
-								class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b px-4 py-3 last:border-b-0"
+								class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 border-b px-5 py-3 last:border-b-0"
 							>
-								<span class="flex h-5 items-center">
+								<span class="flex h-5 items-center" aria-hidden="true">
 									<Icon class="size-4 {EVENT_TONE_CLASS[event.kind] ?? 'text-muted-foreground'}" />
 								</span>
 								<div class="flex min-w-0 flex-col gap-0.5">
@@ -439,18 +502,16 @@
 					{/if}
 				</ScrollArea.Root>
 				{#if eventTotal > WATCH_EVENT_PAGE_SIZE}
-					<div class="border-t px-4 py-2">
-						<ResultsPagination
-							page={eventPage}
-							pageSize={WATCH_EVENT_PAGE_SIZE}
-							total={eventTotal}
-							noun="event"
-							onPage={(p) => {
-								eventPage = p;
-								void loadEvents();
-							}}
-						/>
-					</div>
+					<ResultsPagination
+						page={eventPage}
+						pageSize={WATCH_EVENT_PAGE_SIZE}
+						total={eventTotal}
+						noun="event"
+						onPage={(p) => {
+							eventPage = p;
+							void loadEvents();
+						}}
+					/>
 				{/if}
 			{/if}
 		{/if}
@@ -476,6 +537,7 @@
 		title="Stop watching {watch.program_name}"
 		description="The watch, its certificate ledger, its baseline schedule and its scan context are removed."
 		confirmLabel="Stop watching"
+		loadingLabel="Stopping"
 		destructive
 		loading={busy}
 		onOpenChange={(v) => (stopOpen = v)}

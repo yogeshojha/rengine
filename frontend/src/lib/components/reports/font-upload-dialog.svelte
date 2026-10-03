@@ -7,6 +7,9 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { toast } from 'svelte-sonner';
@@ -19,14 +22,40 @@
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	const WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+	const DEFAULT_ROLE = 'sans';
 	const ROLES = $derived(reportCatalog.catalog?.font_roles ?? []);
 
 	let name = $state('');
-	let role = $state('sans');
+	let role = $state(DEFAULT_ROLE);
 	let note = $state('');
 	let faces = $state<(FontFaceUpload & { filename: string; size: number })[]>([]);
 	let busy = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
+
+	const dirty = $derived(
+		name.trim() !== '' || note.trim() !== '' || role !== DEFAULT_ROLE || faces.length > 0
+	);
+	const ready = $derived(name.trim() !== '' && faces.length > 0);
+
+	function reset() {
+		name = '';
+		role = DEFAULT_ROLE;
+		note = '';
+		faces = [];
+	}
+
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => {
+			reset();
+			open = false;
+		}
+	);
+
+	function requestOpen(next: boolean) {
+		if (next) open = true;
+		else if (!busy) guard.close();
+	}
 
 	function guessWeight(filename: string): number {
 		const lower = filename.toLowerCase();
@@ -74,14 +103,7 @@
 	}
 
 	async function upload() {
-		if (!name.trim()) {
-			toast.error('Family name is required.');
-			return;
-		}
-		if (!faces.length) {
-			toast.error('Add at least one font file.');
-			return;
-		}
+		if (!ready) return;
 		busy = true;
 		try {
 			const family = await reportsApi.uploadFont({
@@ -93,9 +115,7 @@
 			toast.success(`${family.name} uploaded`);
 			await reportCatalog.fetch(true);
 			open = false;
-			name = '';
-			note = '';
-			faces = [];
+			reset();
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Typeface not uploaded');
 		} finally {
@@ -104,51 +124,54 @@
 	}
 </script>
 
-<Dialog.Root bind:open>
-	<Dialog.Content class="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-2xl">
+<Dialog.Root bind:open={() => open, requestOpen}>
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a typeface</Dialog.Title>
 		</Dialog.Header>
 
 		<ScrollArea
-			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-13rem)]"
+			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-13rem)]"
 		>
-			<div class="space-y-5 px-6 py-5">
+			<div class="flex flex-col gap-4 px-6 py-5">
 				<div class="grid gap-4 sm:grid-cols-2">
-					<div class="space-y-1.5">
-						<Label class="text-xs" for="font-name">Family name</Label>
-						<Input id="font-name" bind:value={name} placeholder="Acme Grotesk" class="h-9" />
-					</div>
-					<div class="space-y-1.5">
-						<Label class="text-xs">Role</Label>
-						<Select.Root type="single" bind:value={role}>
-							<Select.Trigger class="h-9 w-full">
-								{catalogLabel(ROLES, role)}
-							</Select.Trigger>
-							<Select.Content>
-								{#each ROLES as item (item.key)}
-									<Select.Item value={item.key}>{item.label}</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
+					<FormField label="Family name">
+						{#snippet children({ id })}
+							<Input {id} bind:value={name} placeholder="Acme Grotesk" class="h-9" />
+						{/snippet}
+					</FormField>
+					<FormField label="Role">
+						{#snippet children({ id })}
+							<Select.Root type="single" bind:value={role}>
+								<Select.Trigger {id} class="h-9 w-full">
+									{catalogLabel(ROLES, role)}
+								</Select.Trigger>
+								<Select.Content>
+									{#each ROLES as item (item.key)}
+										<Select.Item value={item.key}>{item.label}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						{/snippet}
+					</FormField>
 				</div>
 
-				<div class="space-y-1.5">
-					<Label class="text-xs" for="font-note">Note</Label>
-					<Input
-						id="font-note"
-						bind:value={note}
-						placeholder="Licensed for client deliverables"
-						class="h-9"
-					/>
-				</div>
+				<FormField label="Note">
+					{#snippet children({ id })}
+						<Input
+							{id}
+							bind:value={note}
+							placeholder="Licensed for client deliverables"
+							class="h-9"
+						/>
+					{/snippet}
+				</FormField>
 
-				<div class="space-y-2">
+				<div class="space-y-3">
 					<div class="flex items-center justify-between">
-						<Label class="text-xs">Faces</Label>
+						<Label>Faces</Label>
 						<Button variant="outline" size="sm" onclick={() => fileInput?.click()}>
-							<UploadIcon class="mr-1.5 size-3.5" />
+							<UploadIcon class="size-3.5" />
 							Add files
 						</Button>
 						<input
@@ -162,7 +185,7 @@
 					</div>
 
 					{#if faces.length}
-						<div class="overflow-hidden rounded-md border">
+						<div class="overflow-hidden rounded-lg border">
 							{#each faces as face, index (index)}
 								<div class="flex items-center gap-3 border-b px-3 py-2 last:border-b-0">
 									<span class="min-w-0 flex-1 truncate font-mono text-xs">{face.filename}</span>
@@ -174,7 +197,9 @@
 										value={String(face.weight)}
 										onValueChange={(v) => v && (faces[index].weight = Number(v))}
 									>
-										<Select.Trigger class="h-8 w-20 shrink-0">{face.weight}</Select.Trigger>
+										<Select.Trigger class="h-8 w-20 shrink-0" aria-label="Weight of {face.filename}"
+											>{face.weight}</Select.Trigger
+										>
 										<Select.Content>
 											{#each WEIGHTS as weight (weight)}
 												<Select.Item value={String(weight)}>{weight}</Select.Item>
@@ -186,14 +211,15 @@
 										<Switch
 											checked={face.italic}
 											onCheckedChange={(v) => (faces[index].italic = v)}
+											aria-label="Italic {face.filename}"
 										/>
 									</div>
 									<Button
 										variant="ghost"
-										size="icon"
-										class="size-7 shrink-0 text-destructive"
+										size="icon-sm"
+										class="shrink-0 text-destructive"
 										onclick={() => (faces = faces.filter((_, i) => i !== index))}
-										aria-label="Remove"
+										aria-label="Remove {face.filename}"
 									>
 										<Trash2Icon class="size-3.5" />
 									</Button>
@@ -205,7 +231,7 @@
 						</p>
 					{:else}
 						<p
-							class="rounded-md border border-dashed px-3 py-6 text-center text-xs text-muted-foreground"
+							class="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground"
 						>
 							WOFF2, WOFF, TrueType or OpenType, one file per weight.
 						</p>
@@ -215,8 +241,16 @@
 		</ScrollArea>
 
 		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={busy} onclick={upload}>Upload</LoadingButton>
+			<Button variant="outline" disabled={busy} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton loading={busy} loadingLabel="Uploading" disabled={!ready} onclick={upload}
+				>Upload</LoadingButton
+			>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

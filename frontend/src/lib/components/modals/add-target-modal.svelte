@@ -10,6 +10,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
@@ -65,6 +66,7 @@
 	let scanPending = $state(false);
 
 	let validateTimeout: ReturnType<typeof setTimeout>;
+	let validateSeq = 0;
 
 	let seedLines = $derived(
 		seedText
@@ -79,9 +81,11 @@
 
 	function validateValue(value: string) {
 		clearTimeout(validateTimeout);
+		const seq = ++validateSeq;
 
 		if (!value.trim()) {
 			validationResult = null;
+			isValidating = false;
 			return;
 		}
 
@@ -89,11 +93,12 @@
 		validateTimeout = setTimeout(async () => {
 			try {
 				const result = await targetsApi.validate({ target_value: value });
-				validationResult = result;
+				if (seq === validateSeq) validationResult = result;
 			} catch {
-				validationResult = { valid: false, target_type: null, error: 'Target not validated' };
+				if (seq === validateSeq)
+					validationResult = { valid: false, target_type: null, error: 'Target not validated' };
 			} finally {
-				isValidating = false;
+				if (seq === validateSeq) isValidating = false;
 			}
 		}, 400);
 	}
@@ -182,7 +187,7 @@
 						);
 					}
 				} catch {
-					toast.error('Target added. Seed assets not stored.');
+					toast.error('Target added. Seed assets not stored');
 				}
 			}
 
@@ -207,13 +212,13 @@
 
 			if (scans && scans.length > 0) {
 				if (plan) rememberQuickScanChoice(plan, context === SELECT_NONE ? null : context, presets);
-				toast.success('Target added. Scan queued.');
+				toast.success('Target added. Scan queued');
 				goto(ROUTES.scan(scans[0].id));
 			} else {
 				toast.error(
 					scansStore.error
 						? `Target added. Scan not queued. ${scansStore.error}`
-						: 'Target added. Scan not queued.'
+						: 'Target added. Scan not queued'
 				);
 			}
 		} catch {
@@ -232,6 +237,7 @@
 
 	function resetForm() {
 		clearTimeout(validateTimeout);
+		validateSeq++;
 		targetValue = '';
 		displayName = '';
 		seedText = '';
@@ -311,7 +317,7 @@
 			e.preventDefault();
 			targetInput?.focus();
 		}}
-		class="grid max-h-[90vh] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-[500px]"
+		class="grid max-h-[85vh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-lg"
 	>
 		<button
 			type="button"
@@ -321,17 +327,18 @@
 		>
 			<X class="size-4" />
 		</button>
-		<Dialog.Header class="p-6 pb-4">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Add target</Dialog.Title>
-			<Dialog.Description>Domain, IP, CIDR range, URL, or ASN.</Dialog.Description>
+			<Dialog.Description>Domain, IP address, CIDR range, URL or ASN.</Dialog.Description>
 		</Dialog.Header>
 
-		<Separator />
-
-		<form onsubmit={handleSubmit} class="grid min-h-0 grid-rows-[minmax(0,1fr)]">
+		<form
+			onsubmit={handleSubmit}
+			class="grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)]"
+		>
 			<ScrollArea class="min-h-0">
-				<div class="space-y-5 p-6">
-					<div class="space-y-2">
+				<div class="space-y-4 px-6 py-5">
+					<div class="space-y-3">
 						<Label for="target-value">Target value <span class="text-destructive">*</span></Label>
 						<div class="relative">
 							<Input
@@ -364,18 +371,18 @@
 										{formatTargetType(validationResult.target_type)}
 									</Badge>
 								{:else if validationResult.error}
-									<span class="text-destructive">{validationResult.error}</span>
+									<span role="alert" class="text-destructive">{validationResult.error}</span>
 								{/if}
 							</div>
 						{/if}
 					</div>
 
-					<div class="space-y-2">
+					<div class="space-y-3">
 						<Label for="display-name">Display name</Label>
 						<Input id="display-name" type="text" placeholder="Optional" bind:value={displayName} />
 					</div>
 
-					<div class="space-y-2">
+					<div class="space-y-3">
 						<Label for="target-seeds">Seed assets</Label>
 						<Textarea
 							id="target-seeds"
@@ -389,7 +396,7 @@
 						</p>
 					</div>
 
-					<div class="space-y-2">
+					<div class="space-y-3">
 						<Label>Organizations</Label>
 						<MultiSelectCombobox
 							items={targetsStore.organizationItems}
@@ -402,7 +409,7 @@
 						/>
 					</div>
 
-					<div class="space-y-2">
+					<div class="space-y-3">
 						<Label>Tags</Label>
 						<TagMultiSelect
 							items={targetsStore.tagItems}
@@ -430,9 +437,7 @@
 				disabled={isSubmitting}
 			/>
 
-			<Separator />
-
-			<div class="flex items-center justify-end gap-2 p-4 bg-muted/30">
+			<div class="flex flex-wrap items-center justify-end gap-2 border-t px-6 py-4">
 				<Button
 					type="button"
 					variant="ghost"
@@ -446,16 +451,14 @@
 				<Button type="button" variant="outline" onclick={requestClose} disabled={isSubmitting}>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={!canSubmit}>
-					{#if isSubmitting}
-						<Spinner class="h-4 w-4 mr-2" />
-						{scanArmed ? 'Queuing' : 'Adding'}
-					{:else if scanArmed}
-						Add & scan
-					{:else}
-						Add target
-					{/if}
-				</Button>
+				<LoadingButton
+					type="submit"
+					loading={isSubmitting}
+					loadingLabel={scanArmed ? 'Queuing' : 'Adding'}
+					disabled={!canSubmit}
+				>
+					{scanArmed ? 'Add & scan' : 'Add target'}
+				</LoadingButton>
 			</div>
 		</form>
 	</Dialog.Content>

@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { toast } from 'svelte-sonner';
-	import Copy from '@lucide/svelte/icons/copy';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import CopyButton from '$lib/components/copy-button.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import { wordlistsApi } from '$lib/api/wordlists';
-	import { writeClipboard } from '$lib/utilities/clipboard';
 	import {
 		WORDLIST_KIND_LABELS,
 		WORDLIST_ORIGIN_BADGE,
@@ -42,7 +42,10 @@
 		try {
 			words = await wordlistsApi.preview(id, PREVIEW);
 		} catch (e) {
-			failed = e instanceof Error ? e.message : 'Wordlist not loaded';
+			failed =
+				e instanceof Error
+					? e.message
+					: 'The API did not respond. Check that the api service is running.';
 		} finally {
 			loading = false;
 		}
@@ -50,10 +53,10 @@
 </script>
 
 <Sheet.Root open={!!wordlist} {onOpenChange}>
-	<Sheet.Content class="flex w-full flex-col p-0 sm:max-w-xl">
+	<Sheet.Content class="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
 		{#if wordlist}
-			<Sheet.Header class="space-y-2 border-b px-6 py-5">
-				<Sheet.Title>{wordlist.name}</Sheet.Title>
+			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
+				<Sheet.Title class="wrap-anywhere">{wordlist.name}</Sheet.Title>
 				{#if wordlist.description}
 					<Sheet.Description>{wordlist.description}</Sheet.Description>
 				{/if}
@@ -66,53 +69,52 @@
 						{wordlist.words.toLocaleString()} words
 					</span>
 				</div>
-				<div class="flex items-center gap-2 pt-1">
-					<code class="rounded border bg-muted/60 px-1.5 py-0.5 font-mono text-xs">
+				<div class="flex items-center gap-1">
+					<code class="rounded-md border bg-muted/60 px-1.5 py-0.5 font-mono text-xs">
 						{wordlist.slug}
 					</code>
-					<Button
-						variant="ghost"
-						size="icon"
-						class="size-7"
-						aria-label="Copy name"
-						onclick={async () => {
-							if (await writeClipboard(wordlist.slug)) toast.success('Name copied');
-						}}
-					>
-						<Copy class="size-3.5" />
-					</Button>
+					<CopyButton value={wordlist.slug} />
 				</div>
 			</Sheet.Header>
 
-			<div class="min-h-0 flex-1">
+			<ScrollArea class="min-h-0 flex-1">
 				{#if loading}
-					<div class="space-y-2 p-6">
+					<div class="flex flex-col gap-2 px-5 py-4" aria-busy="true">
 						<Skeleton class="h-4 w-2/3" />
 						<Skeleton class="h-4 w-1/2" />
 						<Skeleton class="h-4 w-3/5" />
 					</div>
 				{:else if failed}
-					<p class="p-6 text-sm text-destructive">{failed}</p>
+					<div class="px-5 py-4">
+						<EmptyState
+							compact
+							icon={TriangleAlert}
+							title="Wordlist not loaded"
+							description={failed}
+						>
+							<Button size="sm" variant="outline" onclick={() => wordlist && load(wordlist.id)}
+								>Retry</Button
+							>
+						</EmptyState>
+					</div>
 				{:else}
-					<ScrollArea class="h-full [&_[data-slot=scroll-area-viewport]]:max-h-[calc(100vh-14rem)]">
-						<ol class="divide-y font-mono text-xs">
-							{#each words as word, index (index)}
-								<li class="flex gap-4 px-6 py-1.5">
-									<span class="w-8 shrink-0 text-right tabular-nums text-muted-foreground"
-										>{index + 1}</span
-									>
-									<span class="min-w-0 break-all">{word}</span>
-								</li>
-							{/each}
-						</ol>
-						{#if wordlist.words > words.length}
-							<p class="px-6 py-3 text-xs text-muted-foreground">
-								First {words.length} of {wordlist.words.toLocaleString()}
-							</p>
-						{/if}
-					</ScrollArea>
+					<ol class="divide-y font-mono text-xs">
+						{#each words as word, index (index)}
+							<li class="flex gap-4 px-5 py-1.5">
+								<span class="w-8 shrink-0 text-right tabular-nums text-muted-foreground"
+									>{index + 1}</span
+								>
+								<span class="min-w-0 break-all">{word}</span>
+							</li>
+						{/each}
+					</ol>
+					{#if wordlist.words > words.length}
+						<p class="px-5 py-3 text-xs text-muted-foreground">
+							First {words.length} of {wordlist.words.toLocaleString()}
+						</p>
+					{/if}
 				{/if}
-			</div>
+			</ScrollArea>
 		{/if}
 	</Sheet.Content>
 </Sheet.Root>

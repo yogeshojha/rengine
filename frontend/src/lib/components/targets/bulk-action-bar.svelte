@@ -36,7 +36,7 @@
 </script>
 
 <SelectionActionBar {selectedCount} noun="target" {onClear}>
-	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={onScan}>
+	<Button variant="ghost" size="sm" class="font-medium" onclick={onScan}>
 		<Play class="h-3.5 w-3.5 text-muted-foreground" />
 		Scan
 	</Button>
@@ -44,7 +44,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+				<Button {...props} variant="ghost" size="sm" class="font-medium">
 					<RefreshCw class="h-3.5 w-3.5 text-muted-foreground" />
 					Enrich
 				</Button>
@@ -60,7 +60,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+				<Button {...props} variant="ghost" size="sm" class="font-medium">
 					<Tag class="h-3.5 w-3.5 text-muted-foreground" />
 					Tag
 				</Button>
@@ -86,7 +86,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+				<Button {...props} variant="ghost" size="sm" class="font-medium">
 					<Building2 class="h-3.5 w-3.5 text-muted-foreground" />
 					Organization
 				</Button>
@@ -110,7 +110,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		class="font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
 		onclick={onDelete}
 	>
 		<Trash2 class="h-3.5 w-3.5" />

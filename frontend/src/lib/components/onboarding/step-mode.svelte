@@ -86,7 +86,7 @@
 	</RadioGroup.Root>
 
 	<p class="flex items-start gap-2 text-xs text-muted-foreground">
-		<InfoIcon class="mt-px size-4 shrink-0" />
+		<InfoIcon class="mt-px size-3.5 shrink-0" />
 		<span>One mode is active at a time. The mode can be changed in Settings.</span>
 	</p>
 </div>

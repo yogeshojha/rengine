@@ -4,6 +4,7 @@
 	import Tag from '@lucide/svelte/icons/tag';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import * as HoverCard from '$lib/components/ui/hover-card';
@@ -62,18 +63,22 @@
 	let hasOverflow = $derived(overflowTags.length > 0);
 
 	async function toggleTag(tag: TagSummary) {
+		if (isUpdating) return;
 		const previous = [...currentTags];
 		const isApplied = appliedIds.has(tag.id);
 		const newTags = isApplied ? previous.filter((t) => t.id !== tag.id) : [...previous, tag];
 		const newTagNames = newTags.map((t) => t.name);
 
 		applyPatch({ tags: newTags });
+		isUpdating = true;
 
 		try {
 			await targetsApi.update(targetId, { tag_names: newTagNames });
 		} catch {
 			applyPatch({ tags: previous });
 			toast.error('Tags not updated');
+		} finally {
+			isUpdating = false;
 		}
 	}
 
@@ -141,7 +146,7 @@
 		{#each visibleTags as tag (tag.id)}
 			<Badge
 				class="text-xs font-normal border shrink-0"
-				style="background-color: {tag.color}10; color: {tag.color}; border-color: {tag.color}30;"
+				style="background-color: {tag.color}10; color: color-mix(in oklch, {tag.color} 55%, var(--foreground)); border-color: {tag.color}30;"
 			>
 				{tag.name}
 			</Badge>
@@ -159,7 +164,7 @@
 						{#each overflowTags as tag (tag.id)}
 							<Badge
 								class="text-xs font-normal border"
-								style="background-color: {tag.color}10; color: {tag.color}; border-color: {tag.color}30;"
+								style="background-color: {tag.color}10; color: color-mix(in oklch, {tag.color} 55%, var(--foreground)); border-color: {tag.color}30;"
 							>
 								{tag.name}
 							</Badge>
@@ -198,10 +203,13 @@
 					<p class="text-sm font-medium truncate">
 						Color for "<span class="text-primary">{searchValue}</span>"
 					</p>
-					<div class="flex flex-wrap gap-2">
+					<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Color">
 						{#each TAG_COLORS as color (color)}
 							<button
 								type="button"
+								role="radio"
+								aria-checked={selectedColor === color}
+								aria-label={color}
 								class="h-6 w-6 rounded-full border-2 {selectedColor === color
 									? 'border-foreground'
 									: 'border-transparent'}"
@@ -218,16 +226,21 @@
 						<Button variant="ghost" size="sm" onclick={handleCancelCreate} disabled={isUpdating}>
 							Cancel
 						</Button>
-						<Button size="sm" onclick={handleConfirmCreate} disabled={isUpdating} class="gap-1.5">
+						<LoadingButton
+							size="sm"
+							onclick={handleConfirmCreate}
+							loading={isUpdating}
+							loadingLabel="Creating"
+						>
 							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {selectedColor}"
 							></span>
 							Create & apply
-						</Button>
+						</LoadingButton>
 					</div>
 				</div>
 			{:else}
 				<Command.Root shouldFilter={false}>
-					<Command.Input placeholder="Search or create tags…" bind:value={searchValue} />
+					<Command.Input placeholder="Search or create tags" bind:value={searchValue} />
 					<Command.List class="max-h-none overflow-visible">
 						<Command.Empty>
 							{#if !showCreateOption}

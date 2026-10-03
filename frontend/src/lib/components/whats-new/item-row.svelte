@@ -178,7 +178,7 @@
 		{#if mono}
 			<CopyButton
 				value={item.value}
-				class="size-7 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100"
+				class="size-7 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 max-sm:opacity-100"
 			/>
 		{/if}
 		{#if item.kind === NewKind.SCOPE && item.importable && !item.target_exists}
@@ -270,10 +270,10 @@
 					size="sm"
 					class="h-7 px-2 text-xs text-destructive hover:text-destructive"
 					loading={busy}
-					loadingLabel="Removing"
+					loadingLabel="Deleting"
 					onclick={() => onRemoveTarget?.(item)}
 				>
-					Remove target
+					Delete target
 				</LoadingButton>
 			{/if}
 		{/if}

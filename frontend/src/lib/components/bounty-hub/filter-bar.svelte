@@ -126,7 +126,7 @@
 	);
 </script>
 
-<div class="flex flex-wrap items-center gap-2">
+<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 	<div class="relative min-w-56 flex-1">
 		<SearchIcon
 			class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
@@ -135,6 +135,7 @@
 			value={draft}
 			oninput={(e) => onSearch(e.currentTarget.value)}
 			placeholder="Search programs"
+			aria-label="Search programs"
 			class="pl-8"
 		/>
 	</div>
@@ -158,7 +159,9 @@
 		value={filters.state ?? SELECT_NONE}
 		onValueChange={(v) => patch({ state: v === SELECT_NONE ? null : (v as ProgramState) })}
 	>
-		<Select.Trigger class="w-40">{label(STATE, filters.state ?? SELECT_NONE)}</Select.Trigger>
+		<Select.Trigger class="w-40" aria-label="Program state"
+			>{label(STATE, filters.state ?? SELECT_NONE)}</Select.Trigger
+		>
 		<Select.Content>
 			{#each STATE as option (option.value)}
 				<Select.Item value={option.value}>{option.label}</Select.Item>
@@ -171,7 +174,7 @@
 		value={rewardValue}
 		onValueChange={(v) => patch({ bounty: v === SELECT_NONE ? null : v === 'bounty' })}
 	>
-		<Select.Trigger class="w-36">{label(REWARD, rewardValue)}</Select.Trigger>
+		<Select.Trigger class="w-36" aria-label="Reward">{label(REWARD, rewardValue)}</Select.Trigger>
 		<Select.Content>
 			{#each REWARD as option (option.value)}
 				<Select.Item value={option.value}>{option.label}</Select.Item>
@@ -184,7 +187,7 @@
 		value={filters.submission ?? SELECT_NONE}
 		onValueChange={(v) => patch({ submission: v === SELECT_NONE ? null : (v as SubmissionState) })}
 	>
-		<Select.Trigger class="w-40">
+		<Select.Trigger class="w-40" aria-label="Submission">
 			{label(SUBMISSION, filters.submission ?? SELECT_NONE)}
 		</Select.Trigger>
 		<Select.Content>
@@ -199,7 +202,9 @@
 		value={filters.scope ?? SELECT_NONE}
 		onValueChange={(v) => patch({ scope: v === SELECT_NONE ? null : (v as 'importable' | 'none') })}
 	>
-		<Select.Trigger class="w-48">{label(SCOPE, filters.scope ?? SELECT_NONE)}</Select.Trigger>
+		<Select.Trigger class="w-48" aria-label="Scope"
+			>{label(SCOPE, filters.scope ?? SELECT_NONE)}</Select.Trigger
+		>
 		<Select.Content>
 			{#each SCOPE as option (option.value)}
 				<Select.Item value={option.value}>{option.label}</Select.Item>
@@ -232,7 +237,7 @@
 		value={filters.sort ?? DEFAULT_PROGRAM_SORT}
 		onValueChange={(v) => patch({ sort: v })}
 	>
-		<Select.Trigger class="w-36">
+		<Select.Trigger class="w-36" aria-label="Sort programs">
 			{PROGRAM_SORTS.find((s) => s.value === (filters.sort ?? DEFAULT_PROGRAM_SORT))?.label}
 		</Select.Trigger>
 		<Select.Content>
@@ -243,10 +248,10 @@
 	</Select.Root>
 
 	{#if activeCount > 0}
-		<Button variant="ghost" size="sm" class="h-9" onclick={clearAll}>
-			<XIcon class="mr-1 size-3.5" />
+		<Button variant="ghost" onclick={clearAll}>
+			<XIcon class="size-3.5" />
 			Clear
-			<Badge variant="secondary" class="ml-1.5 h-5 px-1.5 text-xs">{activeCount}</Badge>
+			<Badge variant="secondary" class="h-5 px-1.5 text-xs tabular-nums">{activeCount}</Badge>
 		</Button>
 	{/if}
 </div>

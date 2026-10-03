@@ -46,21 +46,24 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content
-		class="grid max-h-[88vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
-	>
-		<Dialog.Header class="gap-1 border-b p-5">
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Matched queries</Dialog.Title>
 		</Dialog.Header>
 
-		<ScrollArea class="min-h-0">
-			<div class="flex flex-col gap-5 p-5">
+		<ScrollArea class="min-h-0 flex-1">
+			<div class="flex flex-col gap-5 px-6 py-5">
 				{#if sections.length === 0}
-					<EmptyState icon={SearchX} title="No queries matched" class="border-0 bg-transparent" />
+					<EmptyState
+						icon={SearchX}
+						title="No queries matched"
+						compact
+						class="border-0 bg-transparent"
+					/>
 				{/if}
 				{#each sections as section (section.name)}
 					<section class="flex flex-col gap-2">
-						<h3 class="text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase">
+						<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 							{section.name}
 						</h3>
 						<div class="grid gap-2 sm:grid-cols-2">
@@ -73,13 +76,11 @@
 			</div>
 		</ScrollArea>
 
-		<div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-5 py-3">
+		<div class="flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4">
 			<span class="text-xs text-muted-foreground">{scope}</span>
 			<div class="flex items-center gap-2">
 				<Switch id="findings-show-empty" bind:checked={showEmpty} />
-				<Label for="findings-show-empty" class="text-xs font-normal text-muted-foreground">
-					Show queries with no matches
-				</Label>
+				<Label for="findings-show-empty">Show queries with no matches</Label>
 			</div>
 		</div>
 	</Dialog.Content>

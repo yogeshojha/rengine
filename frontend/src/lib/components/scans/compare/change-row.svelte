@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Flame from '@lucide/svelte/icons/flame';
 	import { cn } from '$lib/utils';
+	import { Badge } from '$lib/components/ui/badge';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import VerbRail from './verb-rail.svelte';
 	import { SIGNAL_TONE_CLASS, signalSpec } from '$lib/config/compare';
@@ -39,18 +40,12 @@
 			{/if}
 			<span class="min-w-0 font-mono text-sm break-all">{row.title}</span>
 			{#if row.is_kev}
-				<span
-					class="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 text-2xs font-medium text-destructive"
-				>
+				<Badge variant="destructive" class="px-1.5 py-0 text-2xs">
 					<Flame class="size-2.5" /> KEV
-				</span>
+				</Badge>
 			{/if}
 			{#if row.sensitive}
-				<span
-					class="shrink-0 rounded border border-warning/30 bg-warning/10 px-1.5 text-2xs font-medium text-warning"
-				>
-					sensitive
-				</span>
+				<Badge variant="warning" class="px-1.5 py-0 text-2xs">sensitive</Badge>
 			{/if}
 
 			{#if row.verb !== CHANGE_VERB.UNCHANGED}

@@ -9,6 +9,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SEVERITY_CHIP, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import {
@@ -153,7 +154,7 @@
 		</div>
 		<div class={RCOL.state}>
 			<div class="flex items-center gap-1.5 text-sm">
-				<span class="flex h-5 items-center">
+				<span class="flex h-5 items-center" aria-hidden="true">
 					<span class="size-1.5 rounded-full" style="background: {REPORT_STAGE_FILL[report.stage]}"
 					></span>
 				</span>
@@ -230,8 +231,8 @@
 		<div
 			class="grid gap-3 px-4 pt-1 pb-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]"
 		>
-			<section class="rounded-md border bg-card p-3">
-				<h4 class="mb-2 text-2xs tracking-wide text-muted-foreground uppercase">Timeline</h4>
+			<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
+				<SectionHead title="Timeline" />
 				<ol class="flex flex-col">
 					{#each steps as s, i (i)}
 						<li class="relative flex gap-3 pb-2.5 last:pb-0">
@@ -239,7 +240,7 @@
 								<span class="absolute top-4 bottom-0 left-[3px] w-px bg-border" aria-hidden="true"
 								></span>
 							{/if}
-							<span class="flex h-5 items-center">
+							<span class="flex h-5 items-center" aria-hidden="true">
 								<span class="size-[7px] rounded-full" style="background: {s.tone}"></span>
 							</span>
 							<span class="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm">
@@ -252,14 +253,14 @@
 					{/each}
 				</ol>
 				{#if report.last_program_activity_at}
-					<p class="mt-2 border-t pt-2 text-2xs text-muted-foreground">
+					<p class="border-t pt-2 text-2xs text-muted-foreground">
 						Last program activity {relativeTime(report.last_program_activity_at)}
 					</p>
 				{/if}
 			</section>
 
-			<section class="flex flex-col gap-2 rounded-md border bg-card p-3">
-				<h4 class="text-2xs tracking-wide text-muted-foreground uppercase">Program</h4>
+			<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
+				<SectionHead title="Program" />
 				{#if report.program_handle}
 					<div class="flex min-w-0 flex-col">
 						{#if programHref}
@@ -286,13 +287,13 @@
 						<Button
 							size="sm"
 							variant="outline"
-							class="h-7 gap-1.5 text-xs"
+							class="h-7 text-xs"
 							onclick={() => onProgram(report.program_handle!)}
 						>
 							<Filter class="size-3" /> Filter to this program
 						</Button>
 						{#if report.program_in_hub && programHref}
-							<Button size="sm" variant="outline" class="h-7 gap-1.5 text-xs" href={programHref}>
+							<Button size="sm" variant="outline" class="h-7 text-xs" href={programHref}>
 								<Award class="size-3" /> Open program
 							</Button>
 						{/if}
@@ -302,8 +303,8 @@
 				{/if}
 			</section>
 
-			<section class="flex flex-col gap-2 rounded-md border bg-card p-3">
-				<h4 class="text-2xs tracking-wide text-muted-foreground uppercase">Finding</h4>
+			<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
+				<SectionHead title="Finding" />
 				<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
 					{#if report.weakness}
 						<dt class="text-muted-foreground">Weakness</dt>
@@ -338,7 +339,7 @@
 				<div class="mt-auto">
 					<Button
 						size="sm"
-						class="h-7 gap-1.5 text-xs"
+						class="h-7 text-xs"
 						href={externalHref(report.url)}
 						target="_blank"
 						rel="noopener noreferrer"

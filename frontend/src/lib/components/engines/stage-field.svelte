@@ -46,10 +46,10 @@
 	}
 </script>
 
-<Field.Field orientation="horizontal" class="gap-6 py-2.5">
-	<Field.Content class="gap-0.5">
+<Field.Field orientation="horizontal" class="flex-wrap gap-x-6 gap-y-2 py-2.5">
+	<Field.Content class="min-w-40 gap-0.5">
 		<span class="flex items-center gap-1.5">
-			<Field.Label for={id} class="text-sm font-normal">{field.title}</Field.Label>
+			<Field.Label for={id}>{field.title}</Field.Label>
 			{#if modified}
 				<Tooltip.Root>
 					<Tooltip.Trigger>
@@ -57,11 +57,12 @@
 							<Button
 								{...props}
 								variant="ghost"
-								size="icon-sm"
-								class="h-5 w-5 text-primary hover:text-primary"
+								size="icon"
+								class="-my-1.5 size-7 text-primary hover:text-primary"
+								aria-label="Reset {field.title} to default"
 								onclick={() => onChange(field.default)}
 							>
-								<RotateCcw size={11} />
+								<RotateCcw class="size-3.5" />
 							</Button>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -77,7 +78,7 @@
 		{/if}
 	</Field.Content>
 
-	<div class="shrink-0">
+	<div class="max-w-full min-w-0 shrink-0">
 		{#if field.type === 'boolean'}
 			<Switch {id} checked={boolValue} onCheckedChange={(v) => onChange(v)} />
 		{:else if field.widget === 'custom_templates'}
@@ -112,7 +113,7 @@
 		{:else if field.type === 'array'}
 			<Input
 				{id}
-				class="h-8 w-[240px] text-sm"
+				class="h-8 w-[240px] max-w-full text-sm"
 				value={listValue.join(', ')}
 				placeholder="Comma separated"
 				onchange={(e) => onChange(parseCsv(e.currentTarget.value))}
@@ -157,7 +158,7 @@
 		{:else}
 			<Input
 				{id}
-				class="h-8 w-[240px] font-mono text-xs"
+				class="h-8 w-[240px] max-w-full font-mono text-xs"
 				value={String(value ?? field.default ?? '')}
 				oninput={(e) => onChange(e.currentTarget.value)}
 				autocomplete="off"

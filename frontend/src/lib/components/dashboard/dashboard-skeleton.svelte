@@ -23,7 +23,7 @@
 	</section>
 {/snippet}
 
-<div class="flex flex-col gap-4" aria-busy="true">
+<div class="flex flex-col gap-6" aria-busy="true">
 	<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
 		{#if show('surface-risk')}{@render cell('surface-risk', 'col-span-12 xl:col-span-8')}{/if}
 		{#if show('geo')}{@render cell('geo', 'col-span-12 lg:col-span-6 xl:col-span-4')}{/if}
@@ -47,7 +47,7 @@
 	</div>
 
 	<div class="overflow-hidden rounded-xl border bg-card">
-		<div class="grid grid-cols-[repeat(auto-fit,minmax(22rem,1fr))]">
+		<div class="grid grid-cols-[repeat(auto-fit,minmax(min(22rem,100%),1fr))]">
 			{#if show('runs')}{@render cell('runs', '')}{/if}
 			{#if show('software')}{@render cell('software', '', 5)}{/if}
 		</div>

@@ -17,7 +17,11 @@
 		{#each chips as chip (chip.id)}
 			<Badge variant="outline" class="gap-1 bg-background font-normal">
 				{#if chip.color}
-					<span class="size-2 rounded-full" style="background-color: {chip.color}"></span>
+					<span
+						class="size-2 rounded-full"
+						style="background-color: {chip.color}"
+						aria-hidden="true"
+					></span>
 				{/if}
 				{chip.label}
 				<Hint text="Remove filter {chip.label}">

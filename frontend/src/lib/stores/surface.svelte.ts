@@ -3,6 +3,7 @@ import type { SurfaceCoverage, SurfaceOverview } from '$lib/types/surface';
 
 function createSurfaceStore() {
 	let overview = $state<SurfaceOverview | null>(null);
+	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let inflight: Promise<void> | null = null;
 	let inflightId: string | null = null;
@@ -13,6 +14,7 @@ function createSurfaceStore() {
 		wanted = projectId;
 		if (!force && fetchedProjectId === projectId) return;
 		if (inflight && inflightId === projectId) return inflight;
+		error = null;
 		const pending: Promise<void> = surfaceApi
 			.overview(projectId)
 			.then((data) => {
@@ -20,8 +22,13 @@ function createSurfaceStore() {
 				overview = data;
 				fetchedProjectId = projectId;
 			})
-			.catch(() => {
-				if (wanted === projectId && fetchedProjectId !== projectId) overview = null;
+			.catch((e) => {
+				if (wanted !== projectId) return;
+				error = e instanceof Error ? e.message : 'Coverage not loaded';
+				if (fetchedProjectId !== projectId) {
+					overview = null;
+					fetchedProjectId = null;
+				}
 			})
 			.finally(() => {
 				if (inflight !== pending) return;
@@ -37,6 +44,9 @@ function createSurfaceStore() {
 		get overview() {
 			return overview;
 		},
+		get error() {
+			return error;
+		},
 		coverage(dimension: string): SurfaceCoverage | null {
 			return overview?.dimensions.find((d) => d.dimension === dimension) ?? null;
 		},
@@ -47,6 +57,7 @@ function createSurfaceStore() {
 		load,
 		reset() {
 			overview = null;
+			error = null;
 			fetchedProjectId = null;
 			inflight = null;
 			inflightId = null;

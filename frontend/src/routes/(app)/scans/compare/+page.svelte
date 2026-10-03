@@ -62,6 +62,7 @@
 	let rows = $state<ChangeRow[]>([]);
 	let rowTotal = $state(0);
 	let rowsLoading = $state(false);
+	let rowsError = $state<string | null>(null);
 	let digest = $state(false);
 
 	let sheetOpen = $state(false);
@@ -189,9 +190,11 @@
 		if (!activeVerbs.length) {
 			rows = [];
 			rowTotal = 0;
+			rowsError = null;
 			return;
 		}
 		rowsLoading = true;
+		rowsError = null;
 		const baseline = comparison.baseline.scan_id;
 		try {
 			if (activeTab === COMPARE_TAB_ALL) {
@@ -233,7 +236,7 @@
 		} catch (e) {
 			rows = [];
 			rowTotal = 0;
-			toast.error(e instanceof Error ? e.message : 'Changes not loaded.');
+			rowsError = e instanceof Error ? e.message : 'Changes not loaded';
 		} finally {
 			rowsLoading = false;
 		}
@@ -297,8 +300,8 @@
 	}
 
 	async function copyLink() {
-		await writeClipboard(window.location.href);
-		toast.success('Link copied');
+		if (await writeClipboard(window.location.href)) toast.success('Link copied');
+		else toast.error('Link not copied');
 	}
 
 	function onKey(event: KeyboardEvent) {
@@ -404,7 +407,7 @@
 				variant="ghost"
 				size="sm"
 				href={ROUTES.scan(comparison.current.scan_id)}
-				class="-ml-2 gap-1.5"
+				class="-ml-2"
 			>
 				<ArrowLeft class="size-4" />
 				Back to run
@@ -417,7 +420,6 @@
 				<ToggleGroup.Root
 					type="single"
 					variant="outline"
-					size="sm"
 					value={mode}
 					onValueChange={(v) => v && setMode(v as CompareMode)}
 					aria-label="View"
@@ -429,12 +431,12 @@
 					{/each}
 				</ToggleGroup.Root>
 				{#if rescanSeed}
-					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => (rescanOpen = true)}>
+					<Button variant="outline" size="sm" onclick={() => (rescanOpen = true)}>
 						<Play class="size-3.5" />
 						Rescan {plural(rescanAssets.length, 'asset')}
 					</Button>
 				{/if}
-				<Button variant="outline" size="sm" class="gap-1.5" onclick={copyLink}>
+				<Button variant="outline" size="sm" onclick={copyLink}>
 					<Link2 class="size-3.5" />
 					Copy link
 				</Button>
@@ -453,7 +455,7 @@
 		</div>
 
 		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-4 pb-3 sm:px-5">
-			<h1 class="text-xl font-semibold tracking-tight">{comparison.headline}</h1>
+			<h1 class="text-2xl font-semibold tracking-tight">{comparison.headline}</h1>
 			<span class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
 				{#if apart}<span class="tabular-nums">{apart}</span>{/if}
 			</span>
@@ -486,6 +488,8 @@
 				page={pageNumber}
 				size={COMPARE_PAGE_SIZE}
 				loading={rowsLoading}
+				error={rowsError}
+				onRetry={() => void loadRows()}
 				{digest}
 				showDimension={activeTab === COMPARE_TAB_ALL}
 				{covered}

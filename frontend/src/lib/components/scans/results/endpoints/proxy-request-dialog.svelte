@@ -126,7 +126,7 @@
 
 		<div class="flex justify-end gap-2 border-t bg-muted/30 px-6 py-3.5">
 			<Button variant="outline" onclick={requestClose}>Cancel</Button>
-			<LoadingButton loading={sending} onclick={() => submit()}>
+			<LoadingButton loading={sending} loadingLabel="Sending" onclick={() => submit()}>
 				Send
 				<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
 					<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">{MOD_KEY}</Kbd.Root>

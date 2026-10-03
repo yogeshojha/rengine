@@ -10,10 +10,10 @@ export const SECRET_SORTS: SortOption[] = [
 ];
 
 export const SECRET_WIDTHS = {
-	target: 'hidden w-[150px] shrink-0 lg:flex',
-	kind: 'hidden w-[190px] shrink-0 md:flex',
+	target: 'hidden w-[150px] shrink-0 @7xl/secrets:flex',
+	kind: 'hidden w-[190px] shrink-0 @3xl/secrets:flex',
 	state: 'flex w-[100px] shrink-0',
-	asset: 'hidden w-[220px] shrink-0 lg:flex',
+	asset: 'hidden w-[220px] shrink-0 @5xl/secrets:flex',
 	seen: 'hidden w-[90px] shrink-0 justify-end sm:flex',
 	actions: 'flex w-8 shrink-0 justify-end gap-0.5 sm:w-[3.75rem]'
 } as const;

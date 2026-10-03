@@ -76,7 +76,7 @@
 	<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 		{#each totals as t (t.key)}
 			<span class="flex items-center gap-1.5">
-				<span class="size-2.5 rounded-full" style="background:{t.color}"></span>
+				<span class="size-2.5 rounded-[2px]" style="background:{t.color}"></span>
 				{t.label}
 				<span class="font-medium text-foreground tabular-nums">{t.count.toLocaleString()}</span>
 			</span>

@@ -7,7 +7,7 @@
 </script>
 
 <div class="p-6">
-	<EmptyState icon={FileTextIcon} {title}>
+	<EmptyState icon={FileTextIcon} {title} compact>
 		{#if onClear}
 			<Button variant="outline" size="sm" onclick={onClear}>Clear filters</Button>
 		{/if}

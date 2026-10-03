@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ROUTES } from '$lib/config/routes';
+	import { epssLabel } from '$lib/config/threat-intel';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { TIER_HELP, TIER_LABELS, TIER_ORDER, TIER_QUERY } from '$lib/config/dashboard';
 	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
@@ -120,7 +121,7 @@
 										{/if}
 										{#if epss(f) !== null}
 											<span class="ml-auto flex items-center gap-1.5 tabular-nums">
-												{epss(f)}%
+												{epssLabel(f.epss_score)}
 												<span class="h-1 w-10 overflow-hidden rounded-full bg-muted">
 													<span class="block h-full bg-series" style="width:{epss(f)}%"></span>
 												</span>
@@ -146,11 +147,11 @@
 								<dd>
 									{severityLabel(
 										f.severity
-									)}{#if f.cvss_score !== null}{` · CVSS ${f.cvss_score}`}{/if}
+									)}{#if f.cvss_score !== null}{` · CVSS ${f.cvss_score.toFixed(1)}`}{/if}
 								</dd>
 								{#if f.epss_score !== null}
 									<dt class="text-muted-foreground">EPSS</dt>
-									<dd class="tabular-nums">{(f.epss_score * 100).toFixed(1)}%</dd>
+									<dd class="tabular-nums">{epssLabel(f.epss_score)}</dd>
 								{/if}
 								{#if f.cve_ids.length}
 									<dt class="text-muted-foreground">CVE</dt>
@@ -172,7 +173,7 @@
 					</HoverCard.Root>
 				{/each}
 				{#if !col.cards.length}
-					<span class="px-1 text-xs text-muted-foreground">None</span>
+					<span class="px-1 text-xs text-muted-foreground">No findings</span>
 				{/if}
 			</div>
 		{/each}

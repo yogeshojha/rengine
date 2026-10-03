@@ -2,8 +2,9 @@
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Alert, AlertDescription, AlertTitle } from '$lib/components/ui/alert';
 	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import SectionHead from '$lib/components/section-head.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Terminal from '@lucide/svelte/icons/terminal';
 	import { phaseLabel, type ToolOption } from '$lib/types/scan-engine';
@@ -31,7 +32,7 @@
 </script>
 
 <Sheet.Root {open} {onOpenChange}>
-	<Sheet.Content side="right" class="flex w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-lg">
+	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title class="flex items-center gap-2 text-base">
 				<Terminal size={16} class="text-muted-foreground" />
@@ -51,32 +52,31 @@
 				</Alert>
 
 				{#each phases as phase (phase)}
-					<div class="space-y-3">
-						<h4 class="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
-							{phaseLabel(phase)}
-						</h4>
+					<section class="flex flex-col gap-4">
+						<SectionHead title={phaseLabel(phase)} />
 						{#each tools.filter((t) => t.phase === phase) as tool (tool.name)}
-							<div class="space-y-1.5">
-								<Label for="tool-opt-{tool.name}" class="text-sm">{tool.label}</Label>
-								<Input
-									id="tool-opt-{tool.name}"
-									value={options[tool.name] ?? ''}
-									{readonly}
-									oninput={(e) => handleInput(tool.name, e.currentTarget.value)}
-									placeholder={tool.example}
-									class="font-mono text-xs"
-									autocomplete="off"
-									autocapitalize="off"
-									spellcheck={false}
-								/>
-							</div>
+							<FormField label={tool.label}>
+								{#snippet children({ id })}
+									<Input
+										{id}
+										value={options[tool.name] ?? ''}
+										{readonly}
+										oninput={(e) => handleInput(tool.name, e.currentTarget.value)}
+										placeholder={tool.example}
+										class="font-mono text-xs"
+										autocomplete="off"
+										autocapitalize="off"
+										spellcheck={false}
+									/>
+								{/snippet}
+							</FormField>
 						{/each}
-					</div>
+					</section>
 				{/each}
 			</div>
 		</ScrollArea>
 		{#if readonly}
-			<p class="border-t px-5 py-2.5 text-xs text-muted-foreground">Editable by administrators.</p>
+			<p class="border-t px-5 py-3 text-xs text-muted-foreground">Editable by administrators.</p>
 		{/if}
 	</Sheet.Content>
 </Sheet.Root>

@@ -8,7 +8,7 @@
 	import Pause from '@lucide/svelte/icons/pause';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Play from '@lucide/svelte/icons/play';
-	import Rocket from '@lucide/svelte/icons/rocket';
+	import Radar from '@lucide/svelte/icons/radar';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Hint from '$lib/components/hint.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -53,7 +53,7 @@
 	}
 </script>
 
-<div class="flex flex-col rounded-lg border border-border bg-card p-4">
+<div class="flex flex-col rounded-xl border border-border bg-card p-4">
 	<div class="mb-2 flex items-start justify-between gap-2">
 		<div class="flex min-w-0 flex-1 items-center gap-2">
 			{#if onCheck}
@@ -64,7 +64,7 @@
 					class="shrink-0"
 				/>
 			{/if}
-			<h3 class="truncate text-sm font-bold text-foreground">{schedule.name}</h3>
+			<h3 class="truncate text-sm leading-5 font-semibold text-foreground">{schedule.name}</h3>
 			<Badge
 				variant={isPaused ? 'outline' : 'secondary'}
 				class={isPaused
@@ -90,7 +90,7 @@
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content align="end" class="w-44">
 				<DropdownMenu.Item onclick={() => onRunNow?.()} class="gap-2">
-					<Rocket class="h-4 w-4" /> Run now
+					<Radar class="h-4 w-4" /> Run now
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => onEdit?.()} class="gap-2">
 					<Pencil class="h-4 w-4" /> Edit
@@ -105,10 +105,7 @@
 					</DropdownMenu.Item>
 				{/if}
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item
-					onclick={() => onDelete?.()}
-					class="gap-2 text-destructive focus:text-destructive"
-				>
+				<DropdownMenu.Item variant="destructive" onclick={() => onDelete?.()}>
 					<Trash2 class="h-4 w-4" /> Delete
 				</DropdownMenu.Item>
 			</DropdownMenu.Content>

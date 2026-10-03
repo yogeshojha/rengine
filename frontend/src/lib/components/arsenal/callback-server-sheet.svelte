@@ -10,9 +10,14 @@
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { oastApi } from '$lib/api/oast';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -32,10 +37,12 @@
 	interface Props {
 		open: boolean;
 		settings: OastRead | null;
+		failed?: boolean;
+		onRetry?: () => void;
 		onSaved: (row: OastRead) => void;
 	}
 
-	let { open = $bindable(), settings, onSaved }: Props = $props();
+	let { open = $bindable(), settings, failed = false, onRetry, onSaved }: Props = $props();
 
 	let mode = $state<OastMode>(OastMode.OFF);
 	let server = $state('');
@@ -55,6 +62,10 @@
 				server.trim() !== (settings.server ?? '') ||
 				wait !== settings.wait_seconds ||
 				acknowledged !== settings.public_acknowledged)
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
 	);
 	const blocked = $derived(
 		mode === OastMode.SELF_HOSTED && !server.trim()
@@ -145,7 +156,15 @@
 	}
 </script>
 
-<Sheet.Root bind:open>
+<Sheet.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!saving) guard.close();
+		}
+	}
+>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-md">
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title>{CALLBACK_SERVER}</Sheet.Title>
@@ -199,7 +218,7 @@
 								class="font-mono text-xs"
 							/>
 							{#if serverError}
-								<p class="text-xs text-destructive">{serverError}</p>
+								<p role="alert" class="text-xs text-destructive">{serverError}</p>
 							{/if}
 							<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
 								<span class="text-muted-foreground">Token</span>
@@ -282,34 +301,44 @@
 				</div>
 			</ScrollArea>
 
-			<div class="flex flex-wrap items-center gap-2 border-t px-5 py-3">
-				<LoadingButton
-					loading={saving}
-					loadingLabel="Saving"
-					disabled={!isAdmin || !dirty || !!blocked}
-					onclick={save}
-				>
-					Save
-				</LoadingButton>
-				<LoadingButton
-					variant="outline"
-					loading={testing}
-					loadingLabel="Testing"
-					disabled={!isAdmin || !canTest}
-					onclick={test}
-				>
-					Test server
-				</LoadingButton>
-				<span class="flex-1"></span>
+			<Sheet.Footer class="flex-row items-center justify-between gap-2 border-t px-5 py-3">
 				<Button
 					variant="ghost"
+					size="sm"
 					class="text-muted-foreground"
 					disabled={!isAdmin || !canReset}
 					onclick={() => (resetOpen = true)}
 				>
 					Reset
 				</Button>
-			</div>
+				<div class="flex items-center gap-2">
+					<Hint text={isAdmin && dirty ? 'Unsaved changes' : null}>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<LoadingButton
+									variant="outline"
+									size="sm"
+									loading={testing}
+									loadingLabel="Testing"
+									disabled={!isAdmin || !canTest}
+									onclick={test}
+								>
+									Test server
+								</LoadingButton>
+							</span>
+						{/snippet}
+					</Hint>
+					<LoadingButton
+						size="sm"
+						loading={saving}
+						loadingLabel="Saving"
+						disabled={!isAdmin || !dirty || !!blocked}
+						onclick={save}
+					>
+						Save
+					</LoadingButton>
+				</div>
+			</Sheet.Footer>
 			{#if blocked && dirty}
 				<p class="border-t px-5 py-2.5 text-xs text-muted-foreground">{blocked}</p>
 			{:else if !isAdmin}
@@ -317,15 +346,41 @@
 					Editable by administrators.
 				</p>
 			{/if}
+		{:else if failed}
+			<div class="px-5 py-4">
+				<EmptyState
+					compact
+					icon={TriangleAlertIcon}
+					title="{CALLBACK_SERVER} not loaded"
+					description="The API did not respond. Check that the api service is running."
+				>
+					{#if onRetry}
+						<Button size="sm" variant="outline" onclick={onRetry}>Retry</Button>
+					{/if}
+				</EmptyState>
+			</div>
+		{:else}
+			<div class="flex flex-col gap-2.5 px-5 py-5" aria-busy="true">
+				<Skeleton class="h-3 w-16" />
+				<Skeleton class="h-9 w-64 max-w-full" />
+				<Skeleton class="h-3 w-48" />
+			</div>
 		{/if}
 	</Sheet.Content>
 </Sheet.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>
 
 <ConfirmDialog
 	open={resetOpen}
 	title="Reset {CALLBACK_SERVER.toLowerCase()}"
 	description="The server, the token and the public-server acceptance are removed."
 	confirmLabel="Reset"
+	loadingLabel="Resetting"
 	destructive
 	loading={resetting}
 	onOpenChange={(v) => (resetOpen = v)}

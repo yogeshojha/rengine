@@ -12,7 +12,7 @@
 	import type { Target } from '$lib/types/target';
 	import * as Card from '$lib/components/ui/card';
 	import * as Pagination from '$lib/components/ui/pagination';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Upload from '@lucide/svelte/icons/upload';
 	import Play from '@lucide/svelte/icons/play';
@@ -78,27 +78,29 @@
 
 	let urlReady = $state(false);
 
-	function parseQuery(params: URLSearchParams) {
+	function parseQuery(params: URLSearchParams, whole = false) {
 		const n = (v: string | null) => {
 			const parsed = parseInt(v ?? '', 10);
 			return Number.isFinite(parsed) ? parsed : undefined;
 		};
+		const list = (key: string) => (whole || params.has(key) ? params.getAll(key) : undefined);
 		const size = n(params.get('size'));
 		return {
 			search: params.get('q') ?? undefined,
 			activeTab: params.get('type') ?? undefined,
-			signalFilter: (params.get('signal') as SignalFilter) || null,
+			signalFilter:
+				whole || params.has('signal') ? (params.get('signal') as SignalFilter) || null : undefined,
 			sortKey: (params.get('sort') as SortKey) || undefined,
 			sortDir: (params.get('dir') as SortDir) || undefined,
-			selectedOrganizations: params.getAll('org'),
-			selectedTags: params.getAll('tag'),
+			selectedOrganizations: list('org'),
+			selectedTags: list('tag'),
 			page: n(params.get('page')),
 			pageSize: size !== undefined && size >= 1 && size <= 100 ? size : undefined
 		};
 	}
 
 	function handleApplyView(query: string) {
-		targetsStore.applyQueryState(parseQuery(new URLSearchParams(query)));
+		targetsStore.applyQueryState(parseQuery(new URLSearchParams(query), true));
 		targetsStore.reload();
 	}
 
@@ -150,11 +152,15 @@
 		const hasFetched = projectsStore.hasFetched;
 		if (activeProject && hasFetched) {
 			untrack(() => {
+				let changed = false;
 				if (!urlReady) {
-					targetsStore.applyQueryState(parseQuery(page.url.searchParams));
+					const before = targetsStore.toQueryString();
+					const otherProject = targetsStore.filters.projectSlug !== activeProject.slug;
+					targetsStore.applyQueryState(parseQuery(page.url.searchParams, otherProject));
+					changed = targetsStore.toQueryString() !== before;
 					urlReady = true;
 				}
-				targetsStore.fetchAll(activeProject.slug);
+				targetsStore.fetchAll(activeProject.slug, undefined, changed && targetsStore.hasFetched);
 			});
 		}
 	});
@@ -311,6 +317,8 @@
 		return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 	}
 
+	const ROW_KEYS = new Set(['Enter', 'o', 's', 'x']);
+
 	function onKey(e: KeyboardEvent) {
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
 		if (e.key === '/' && !typing(e)) {
@@ -319,6 +327,11 @@
 			return;
 		}
 		if (typing(e) || document.querySelector('[role=dialog],[role=menu]')) return;
+		if (
+			ROW_KEYS.has(e.key) &&
+			(e.target as HTMLElement | null)?.closest('a,button,[role=button],[role=option]')
+		)
+			return;
 		const idx = rows.findIndex((t) => t.id === focusId);
 		const focused = idx >= 0 ? rows[idx] : null;
 		const move = (d: number) => {
@@ -503,9 +516,13 @@
 	}
 
 	async function handleSelectAllMatching() {
-		const ids = await targetsStore.getMatchingIds();
-		setSelection(ids);
-		toast.success(`${ids.length} target${ids.length !== 1 ? 's' : ''} selected`);
+		try {
+			const ids = await targetsStore.getMatchingIds();
+			setSelection(ids);
+			toast.success(`${ids.length} target${ids.length !== 1 ? 's' : ''} selected`);
+		} catch {
+			toast.error('Targets not selected');
+		}
 	}
 
 	function handleOpenScanHistory(target: Target) {
@@ -601,8 +618,10 @@
 			if (ok) toast.success(`${ok} target${ok !== 1 ? 's' : ''} deleted`);
 			if (fail) toast.error(`${fail} target${fail !== 1 ? 's' : ''} not deleted`);
 
-			showDeleteDialog = false;
-			setSelection();
+			if (ok) {
+				showDeleteDialog = false;
+				setSelection();
+			}
 		}
 	}
 
@@ -611,7 +630,6 @@
 		await targetsStore.refresh();
 		isRefreshing = false;
 		if (targetsStore.error) toast.error(`Targets not refreshed. ${targetsStore.error}`);
-		else toast.success('Targets refreshed');
 	}
 
 	async function handleTabChange(tab: string) {
@@ -741,13 +759,7 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="outline"
-								size="icon"
-								class="size-9"
-								aria-label="Columns and density"
-							>
+							<Button {...props} variant="outline" size="icon" aria-label="Columns and density">
 								<Columns3 class="size-4" />
 							</Button>
 						{/snippet}
@@ -784,7 +796,6 @@
 							{...props}
 							variant="outline"
 							size="icon"
-							class="size-9"
 							aria-label="Refresh"
 							onclick={handleRefresh}
 							disabled={isRefreshing}
@@ -799,7 +810,7 @@
 							{...props}
 							variant="outline"
 							size="icon"
-							class="hidden size-9 sm:inline-flex"
+							class="hidden sm:inline-flex"
 							aria-label="Keyboard shortcuts"
 							onclick={() => (shortcutsOpen = true)}
 						>
@@ -807,15 +818,15 @@
 						</Button>
 					{/snippet}
 				</Hint>
-				{#if !targetsStore.isLoading && rows.length > 0}
-					<Button variant="outline" class="h-9 gap-2" onclick={handleScanAll}>
+				{#if targetsStore.hasFetched && rows.length > 0}
+					<Button variant="outline" onclick={handleScanAll}>
 						<Play class="size-4" /> Scan {rows.length}
 					</Button>
 				{/if}
-				<Button variant="outline" class="h-9 gap-2" onclick={() => (showImportModal = true)}>
+				<Button variant="outline" onclick={() => (showImportModal = true)}>
 					<Upload class="size-4" /> Import
 				</Button>
-				<Button class="h-9 gap-2" onclick={() => (showAddModal = true)}>
+				<Button onclick={() => (showAddModal = true)}>
 					<Plus class="size-4" /> Add target
 				</Button>
 			</div>
@@ -827,23 +838,18 @@
 			onClear={handleClearFilters}
 		/>
 
-		{#if targetsStore.isLoading || !targetsStore.hasFetched}
+		{#if !targetsStore.hasFetched || (targetsStore.isLoading && rows.length === 0)}
 			<TargetsSkeleton />
 		{:else if targetsStore.error && rows.length === 0}
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-						<TriangleAlert class="size-6 text-destructive" />
-					</Empty.Media>
-					<Empty.Title>Targets not loaded</Empty.Title>
-					<Empty.Description class="max-w-md">{targetsStore.error}</Empty.Description>
-				</Empty.Header>
-				<Empty.Content>
-					<Button variant="outline" class="gap-2" onclick={() => targetsStore.reload()}>
-						<RefreshCw class="size-4" /> Retry
-					</Button>
-				</Empty.Content>
-			</Empty.Root>
+			<EmptyState
+				compact
+				icon={TriangleAlert}
+				title="Targets not loaded"
+				description={targetsStore.error}
+				class="border-0 bg-transparent py-16"
+			>
+				<Button size="sm" variant="outline" onclick={() => targetsStore.reload()}>Retry</Button>
+			</EmptyState>
 		{:else if rows.length === 0}
 			<TargetEmptyState
 				hasFilters={targetsStore.hasActiveFilters}
@@ -914,8 +920,8 @@
 			</div>
 
 			<div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
-				<div class="flex items-center gap-4">
-					<span class="text-xs text-muted-foreground">
+				<div class="flex flex-wrap items-center gap-4">
+					<span class="text-xs text-muted-foreground tabular-nums">
 						{rows.length} of {targetsStore.pagination.totalItems}
 						{targetsStore.pagination.totalItems === 1 ? 'target' : 'targets'}
 					</span>
@@ -939,6 +945,7 @@
 						perPage={targetsStore.pagination.pageSize}
 						page={targetsStore.pagination.currentPage}
 						onPageChange={(p) => handlePageChange(p)}
+						class="mx-0 w-auto"
 					>
 						{#snippet children({ pages, currentPage })}
 							<Pagination.Content>

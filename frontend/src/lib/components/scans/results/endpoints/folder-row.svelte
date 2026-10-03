@@ -33,6 +33,7 @@
 		SENSITIVE_INTEREST
 	} from '$lib/config/endpoints';
 	import { whyReasons, type TreeNode } from '$lib/utilities/endpoints';
+	import { plural } from '$lib/utilities/strings';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
 	interface Props {
@@ -94,7 +95,9 @@
 			: (FOLDER_GLYPH_TONE[glyph] ?? 'text-muted-foreground')
 	);
 	let reason = $derived(whyReasons(node.interest, 1)[0] ?? '');
-	let hostNote = $derived(merged && !isGroup && node.hosts > 1 ? `on ${node.hosts} hosts` : '');
+	let hostNote = $derived(
+		merged && !isGroup && node.hosts > 1 ? `on ${plural(node.hosts, 'web asset')}` : ''
+	);
 	let noun = $derived(isGroup ? 'group' : 'folder');
 	let attrs = $derived({
 		[OUTLINE_ROW_ATTR]: node.key,
@@ -242,7 +245,7 @@
 						class="hidden size-7 sm:inline-flex"
 						onclick={onCopy}
 					>
-						<Copy class="size-3.5" />
+						<Copy class="size-4" />
 					</Button>
 				{/snippet}
 			</Hint>
@@ -250,29 +253,29 @@
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
 						<Button {...props} variant="ghost" size="icon" class="size-7" aria-label="More actions">
-							<Ellipsis class="size-3.5" />
+							<Ellipsis class="size-4" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-60">
 					{#if onSelectBranch}
 						<DropdownMenu.Item onclick={onSelectBranch}>
-							<SquareCheck class="size-3.5" /> Select this {noun}
+							<SquareCheck class="size-4" /> Select this {noun}
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />
 					{/if}
 					<DropdownMenu.Item onclick={onOnly}>
-						<Filter class="size-3.5" /> Only this {noun}
+						<Filter class="size-4" /> Only this {noun}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={onList}>
-						<Rows3 class="size-3.5" /> Show in list
+						<Rows3 class="size-4" /> Show in list
 					</DropdownMenu.Item>
 					{#if (onVerify && unverified > 0) || (onSend && connectors.length)}
 						<DropdownMenu.Separator />
 					{/if}
 					{#if onVerify && unverified > 0}
 						<DropdownMenu.Item onclick={onVerify}>
-							<ShieldCheck class="size-3.5" />
+							<ShieldCheck class="size-4" />
 							Verify this {noun}
 							<span class="ml-auto text-xs tabular-nums text-muted-foreground">
 								{unverified.toLocaleString()} unchecked
@@ -284,10 +287,10 @@
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={onCopy}>
-						<Copy class="size-3.5" /> Copy URLs in branch
+						<Copy class="size-4" /> Copy URLs in branch
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={onWordlist}>
-						<ListOrdered class="size-3.5" /> Copy paths as wordlist
+						<ListOrdered class="size-4" /> Copy paths as wordlist
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

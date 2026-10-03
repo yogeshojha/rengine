@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { toast } from 'svelte-sonner';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -160,34 +159,34 @@
 		{#each PROVIDERS as meta (meta.provider)}
 			{@const d = drafts[meta.provider]}
 			{@const Icon = meta.icon}
-			<Card.Root class={d.enabled ? 'ring-1 ring-border' : 'border-dashed'}>
-				<Card.Content class="p-5">
-					<div class="flex items-center justify-between gap-3">
-						<div class="flex items-center gap-3">
-							<div
-								class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted {d.enabled
-									? 'border-primary text-foreground'
-									: 'text-muted-foreground'}"
-							>
-								<Icon class="size-[18px]" />
-							</div>
-							<h4 class="text-sm font-medium">{meta.name}</h4>
+			<div class="rounded-lg border p-4 {d.enabled ? 'ring-1 ring-border' : 'border-dashed'}">
+				<div class="flex items-center justify-between gap-3">
+					<div class="flex items-center gap-3">
+						<div
+							class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted {d.enabled
+								? 'border-primary text-foreground'
+								: 'text-muted-foreground'}"
+						>
+							<Icon class="size-[18px]" />
 						</div>
-						<Switch
-							checked={d.enabled}
-							onCheckedChange={(v) => (drafts[meta.provider].enabled = v)}
-							disabled={busy}
-						/>
+						<h4 class="text-sm font-medium">{meta.name}</h4>
 					</div>
+					<Switch
+						checked={d.enabled}
+						onCheckedChange={(v) => (drafts[meta.provider].enabled = v)}
+						disabled={busy}
+						aria-label={meta.name}
+					/>
+				</div>
 
-					{#if d.enabled}
-						<Separator class="my-4" />
-						<div class="space-y-3">
-							{#each meta.fields as field (field.key)}
-								<div class="space-y-1.5">
-									<Label class="text-xs" for="{meta.provider}-{field.key}">{field.label}</Label>
+				{#if d.enabled}
+					<Separator class="my-4" />
+					<div class="space-y-4">
+						{#each meta.fields as field (field.key)}
+							<FormField label={field.label}>
+								{#snippet children({ id })}
 									<Input
-										id="{meta.provider}-{field.key}"
+										{id}
 										value={d.config[field.key] ?? ''}
 										placeholder={field.placeholder}
 										autocomplete="off"
@@ -195,37 +194,36 @@
 										disabled={busy}
 										oninput={(e) => setField(meta.provider, field.key, e.currentTarget.value)}
 									/>
-								</div>
-							{/each}
-						</div>
-						{#if meta.provider === SHARED_BOT_PROVIDER}
-							<p class="mt-3 text-xs text-muted-foreground">
-								The bot token is saved as the {meta.name} API key. Remote control uses the same bot.
-							</p>
-						{/if}
-						<div class="mt-4">
-							<Button
-								variant="outline"
-								size="sm"
-								class="h-8 text-xs"
-								disabled={d.testing || busy || !isConfigured(meta.provider)}
-								onclick={() => handleTest(meta.provider)}
-							>
-								{#if d.testing}
-									<Spinner class="mr-1.5 size-4" />
-									Testing…
-								{:else if d.tested}
-									<CheckIcon class="mr-1.5 size-4" />
-									Tested
-								{:else}
-									<FlaskConicalIcon class="mr-1.5 size-4" />
-									Send test
-								{/if}
-							</Button>
-						</div>
+								{/snippet}
+							</FormField>
+						{/each}
+					</div>
+					{#if meta.provider === SHARED_BOT_PROVIDER}
+						<p class="mt-3 text-xs text-muted-foreground">
+							The bot token is saved as the {meta.name} API key. Remote control uses the same bot.
+						</p>
 					{/if}
-				</Card.Content>
-			</Card.Root>
+					<div class="mt-4">
+						<LoadingButton
+							variant="outline"
+							size="sm"
+							class="h-8 text-xs"
+							loading={d.testing}
+							loadingLabel="Testing"
+							disabled={busy || !isConfigured(meta.provider)}
+							onclick={() => handleTest(meta.provider)}
+						>
+							{#if d.tested}
+								<CheckIcon class="size-4" />
+								Tested
+							{:else}
+								<FlaskConicalIcon class="size-4" />
+								Send test
+							{/if}
+						</LoadingButton>
+					</div>
+				{/if}
+			</div>
 		{/each}
 
 		<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
@@ -235,48 +233,49 @@
 	</div>
 
 	{#if anyEnabled}
-		<Card.Root>
-			<Card.Content class="space-y-4 p-5">
-				<div class="space-y-2">
-					<Label class="text-xs">Event categories</Label>
-					<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-						{#each categories as cat (cat.type)}
-							<Label
-								class="flex cursor-pointer items-start gap-2 rounded-md border border-input px-2.5 py-2 text-xs data-[active=true]:border-primary data-[active=true]:bg-muted"
-								data-active={pref.types.includes(cat.type)}
-							>
-								<Checkbox
-									checked={pref.types.includes(cat.type)}
-									onCheckedChange={(v) => toggleCategory(cat.type, v === true)}
-									class="mt-0.5"
-								/>
-								<span class="min-w-0">
-									<span class="block font-medium">{cat.label}</span>
-									<span class="block text-muted-foreground">{cat.hint}</span>
-								</span>
-							</Label>
-						{/each}
-					</div>
+		<div class="space-y-4 rounded-lg border p-4">
+			<div class="space-y-3">
+				<Label>Event categories</Label>
+				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+					{#each categories as cat (cat.type)}
+						<Label
+							class="flex cursor-pointer items-start gap-3 rounded-md border border-input px-3 py-2.5 data-[active=true]:border-primary data-[active=true]:bg-muted"
+							data-active={pref.types.includes(cat.type)}
+						>
+							<Checkbox
+								checked={pref.types.includes(cat.type)}
+								onCheckedChange={(v) => toggleCategory(cat.type, v === true)}
+								class="mt-0.5"
+							/>
+							<span class="min-w-0 space-y-0.5">
+								<span class="block text-sm font-medium">{cat.label}</span>
+								<span class="block text-xs text-muted-foreground">{cat.hint}</span>
+							</span>
+						</Label>
+					{/each}
 				</div>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Minimum severity</Label>
+			</div>
+			<FormField
+				label="Minimum severity"
+				description="Applies to every channel above. Adjustable per channel in Settings."
+			>
+				{#snippet children({ id })}
 					<Select.Root
 						type="single"
 						value={pref.min_severity}
 						onValueChange={(v) => (pref = { ...pref, min_severity: v ?? DEFAULT_CHANNEL_LEVEL })}
 					>
-						<Select.Trigger class="h-9 w-full text-sm sm:max-w-xs">{severityLabel}</Select.Trigger>
+						<Select.Trigger {id} class="h-9 w-full text-sm sm:max-w-xs"
+							>{severityLabel}</Select.Trigger
+						>
 						<Select.Content>
 							{#each CHANNEL_LEVELS as s (s.value)}
 								<Select.Item value={s.value} label={s.label}>{s.label}</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>
-					<p class="text-xs text-muted-foreground">
-						Applies to every channel above. Adjustable per channel in Settings.
-					</p>
-				</div>
-			</Card.Content>
-		</Card.Root>
+				{/snippet}
+			</FormField>
+		</div>
 	{/if}
 </div>

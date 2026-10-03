@@ -5,6 +5,7 @@
 	import SignalSheet, { type SheetRow } from './signal-sheet.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { EXPIRING_DAYS, STALE_DAYS } from '$lib/config/dashboard';
 	import { MS_PER_DAY, relativeTime } from '$lib/utilities/dates';
@@ -49,6 +50,7 @@
 		try {
 			await targetsApi.create({ target_value: domain, project_slug: slug });
 			added.add(domain);
+			void targetsStore.refresh();
 			toast.success(`${domain} added`);
 		} catch {
 			toast.error(`${domain} not added`);
@@ -71,6 +73,7 @@
 				secondary: `${plural(d.hostname_count, 'hostname', 'hostnames')} on certificates of ${on}`,
 				action: {
 					label: 'Add target',
+					loadingLabel: 'Adding',
 					doneLabel: 'Added',
 					done: added.has(d.domain),
 					pending: pending === d.domain,

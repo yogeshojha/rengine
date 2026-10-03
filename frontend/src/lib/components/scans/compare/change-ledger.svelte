@@ -2,7 +2,9 @@
 	import CheckCheck from '@lucide/svelte/icons/check-check';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ListFilter from '@lucide/svelte/icons/list-filter';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import ChangeRowItem from './change-row.svelte';
@@ -15,6 +17,8 @@
 		page: number;
 		size: number;
 		loading: boolean;
+		error?: string | null;
+		onRetry?: () => void;
 		digest: boolean;
 		showDimension: boolean;
 		covered: boolean;
@@ -33,6 +37,8 @@
 		page,
 		size,
 		loading,
+		error = null,
+		onRetry,
 		digest,
 		showDimension,
 		covered,
@@ -52,6 +58,18 @@
 			<Skeleton class="h-14" />
 		{/each}
 	</div>
+{:else if error}
+	<EmptyState
+		icon={TriangleAlert}
+		title="Changes not loaded"
+		description={error}
+		class="m-4 sm:m-5"
+		compact
+	>
+		{#if onRetry}
+			<Button variant="outline" size="sm" onclick={onRetry}>Retry</Button>
+		{/if}
+	</EmptyState>
 {:else if !covered}
 	<EmptyState
 		icon={EyeOff}

@@ -14,6 +14,7 @@
 	import { BarChart } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart';
 	import { formatDay } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		data: DailyPoint[];
@@ -35,10 +36,15 @@
 		data.map((d) => d.date).filter((_, i) => (data.length - 1 - i) % every === 0)
 	);
 	const fmtValue = (v: unknown) => (typeof v === 'number' ? v.toLocaleString() : String(v ?? ''));
+	let summary = $derived(
+		`${series.map((s) => `${s.label} ${data.reduce((n, d) => n + (Number(d[s.key]) || 0), 0).toLocaleString()}`).join(', ')} in ${plural(data.length, 'day')}`
+	);
 </script>
 
 <Chart.Container
 	{config}
+	role="img"
+	aria-label={summary}
 	class="aspect-auto w-full [&_.lc-highlight-rect]:fill-muted/40"
 	style="height:{height}px"
 >

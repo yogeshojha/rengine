@@ -113,6 +113,7 @@
 	let asset = $derived(v.asset);
 	let path = $derived(locationLabel(v));
 	let origin = $derived(originLabel(v));
+	let prefix = $derived(path.startsWith('/') ? origin : '');
 	let signals = $derived((v.intel_kinds ?? []).filter((k) => ROW_SIGNALS.includes(k)).slice(0, 2));
 	let onHost = $derived(
 		SEVERITY_ORDER.map((s) => ({ sev: s, n: v.host_findings?.[s] ?? 0 })).filter((c) => c.n > 0)
@@ -155,7 +156,9 @@
 				{checked}
 				onCheckedChange={onCheck}
 				aria-label="Select {v.template_name}"
-				class="transition-opacity {checked ? '' : 'sm:opacity-0 sm:group-hover:opacity-100'}"
+				class="transition-opacity {checked
+					? ''
+					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
 			/>
 		</div>
 
@@ -254,14 +257,16 @@
 							class="min-w-0 truncate text-left font-mono text-foreground/80 hover:text-primary"
 							onclick={(e) => pivot(e, filterToken('location', path))}
 						>
-							<span class={NARROW.origin}>{origin}</span><HighlightText text={path} {term} />
+							<span class={NARROW.origin}>{prefix}</span><HighlightText text={path} {term} />
 						</button>
 					{/snippet}
 				</Hint>
-				<CopyButton
-					value={v.matched_at}
-					class="size-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-				/>
+				<span class="flex h-5 shrink-0 items-center">
+					<CopyButton
+						value={v.matched_at}
+						class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+					/>
+				</span>
 			</div>
 			{#if hostTotal > 1}
 				<div class="flex items-center gap-1 text-2xs text-muted-foreground {NARROW.related}">
@@ -559,43 +564,43 @@
 					<DropdownMenu.Item onclick={() => onOpen(v)}>Open finding</DropdownMenu.Item>
 					{#if v.url}
 						<DropdownMenu.Item onclick={() => openExternal(v.matched_at)}>
-							<ExternalLink class="mr-2 size-3.5" /> Open location
+							<ExternalLink class="size-3.5" /> Open location
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Item onclick={() => copy(v.matched_at)}>
-						<Copy class="mr-2 size-3.5" /> Copy location
+						<Copy class="size-3.5" /> Copy location
 					</DropdownMenu.Item>
 					{#if v.curl_command}
 						<DropdownMenu.Item onclick={() => copy(v.curl_command ?? '')}>
-							<Terminal class="mr-2 size-3.5" /> Copy curl command
+							<Terminal class="size-3.5" /> Copy curl command
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => onFilter(templateToken)}>
-						<Filter class="mr-2 size-3.5" /> All findings from this check
+						<Filter class="size-3.5" /> All findings from this check
 					</DropdownMenu.Item>
 					{#if v.host}
 						<DropdownMenu.Item onclick={() => onFilter(hostToken)}>
-							<Filter class="mr-2 size-3.5" /> All findings on this {WEB.noun}
+							<Filter class="size-3.5" /> All findings on this {WEB.noun}
 						</DropdownMenu.Item>
 						<DropdownMenu.Item onclick={() => onTab(WEB.tab, hostToken)}>
-							<Globe class="mr-2 size-3.5" /> Open in {WEB.nounPlural}
+							<Globe class="size-3.5" /> Open in {WEB.nounPlural}
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Item onclick={() => onRescan(v)}>Rescan this finding</DropdownMenu.Item>
 					{#if onFileIssue && !v.tickets?.length}
 						<DropdownMenu.Item onclick={() => onFileIssue(v)}>
-							<SquareKanban class="mr-2 size-3.5" /> File issue
+							<SquareKanban class="size-3.5" /> File issue
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => onFilter(excludeToken('template', v.template_id))}>
-						<EyeOff class="mr-2 size-3.5" />
+						<EyeOff class="size-3.5" />
 						<span class="truncate">Hide {v.template_name}</span>
 					</DropdownMenu.Item>
 					{#if v.host}
 						<DropdownMenu.Item onclick={() => onFilter(excludeToken('host', v.host ?? ''))}>
-							<EyeOff class="mr-2 size-3.5" />
+							<EyeOff class="size-3.5" />
 							<span class="truncate">Hide {v.host}</span>
 						</DropdownMenu.Item>
 					{/if}

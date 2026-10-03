@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
@@ -74,9 +74,14 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button {...props} variant="ghost" size="icon" class="size-7">
-								<MoreVerticalIcon class="size-4" />
-								<span class="sr-only">Issue actions</span>
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="size-7"
+								aria-label="Issue actions"
+							>
+								<EllipsisIcon class="size-4" />
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
@@ -102,7 +107,9 @@
 							<DropdownMenu.Item onSelect={() => onRefresh(issue)}>Refresh status</DropdownMenu.Item
 							>
 						{/if}
-						<DropdownMenu.Separator />
+						{#if issue.url || issue.state === FilingState.FAILED || issue.state === FilingState.FILED}
+							<DropdownMenu.Separator />
+						{/if}
 						<DropdownMenu.Item variant="destructive" onSelect={() => onUnlink(issue)}>
 							Unlink
 						</DropdownMenu.Item>

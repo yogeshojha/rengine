@@ -2,7 +2,11 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import Activity from '@lucide/svelte/icons/activity';
+	import { Button } from '$lib/components/ui/button';
+	import Hint from '$lib/components/hint.svelte';
 	import ActivityGlance from '$lib/components/activity/activity-glance.svelte';
+	import { activityFeed } from '$lib/stores/activity-feed.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import CommandSearch from '$lib/components/layout/command-search.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -39,7 +43,10 @@
 	<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 
 	{#if breadcrumbs.length > 0}
-		<nav class="flex min-w-0 items-center gap-1.5 text-sm whitespace-nowrap">
+		<nav
+			aria-label="Breadcrumb"
+			class="flex min-w-0 items-center gap-1.5 text-sm whitespace-nowrap"
+		>
 			{#each breadcrumbs as crumb, i (`${i}:${crumb.href ?? crumb.label}`)}
 				{@const last = i === breadcrumbs.length - 1}
 				{#if i > 0}
@@ -51,15 +58,16 @@
 				{#if crumb.href && !last}
 					<a
 						href={safeHref(crumb.href)}
-						class="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground @3xl/topbar:inline"
+						class="hidden max-w-48 min-w-0 truncate text-muted-foreground transition-colors hover:text-foreground @3xl/topbar:inline"
 					>
 						{crumb.label}
 					</a>
 				{:else}
 					<span
+						aria-current={last ? 'page' : undefined}
 						class={[
 							'font-medium text-foreground',
-							last ? 'truncate' : 'hidden shrink-0 @3xl/topbar:inline'
+							last ? 'truncate' : 'hidden max-w-48 min-w-0 truncate @3xl/topbar:inline'
 						]}>{crumb.label}</span
 					>
 				{/if}
@@ -75,6 +83,22 @@
 
 	<CommandSearch onAddTarget={handleAddTarget} onScan={handleScan} onToolbox={handleToolbox} />
 	<ToolboxMenu bind:open={toolbox.dialogOpen} />
+	<Hint text="Activity">
+		{#snippet child(props)}
+			<Button
+				{...props}
+				variant="ghost"
+				size="icon"
+				class="@5xl/topbar:hidden"
+				aria-label="Activity"
+				aria-expanded={activityFeed.open}
+				data-activity-glance
+				onclick={() => activityFeed.toggle()}
+			>
+				<Activity class="size-4" />
+			</Button>
+		{/snippet}
+	</Hint>
 	<NotificationsMenu />
 	<QuickActionsMenu onAddTarget={handleAddTarget} />
 </header>

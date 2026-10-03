@@ -20,10 +20,12 @@
 	let data = $state<ScanComparison | null>(null);
 	let error = $state<string | null>(null);
 	let baseline = $state<string | null>(null);
+	let attempt = $state(0);
 
 	$effect(() => {
 		const id = scan.id;
 		const against = baseline;
+		void attempt;
 		if (scan.is_first_scan) return;
 		let live = true;
 		data = null;
@@ -47,7 +49,12 @@
 {#if scan.is_first_scan}
 	<p class="px-1 py-6 text-sm text-muted-foreground">First run</p>
 {:else if error}
-	<p class="px-1 py-6 text-sm text-muted-foreground">{error}</p>
+	<div class="flex items-center gap-3 px-1 py-6 text-sm text-muted-foreground">
+		<span>{error}</span>
+		<button type="button" class="text-primary hover:text-primary/80" onclick={() => attempt++}>
+			Retry
+		</button>
+	</div>
 {:else if !data}
 	<div class="space-y-2 py-3">
 		{#each { length: 4 } as _, i (i)}
@@ -97,7 +104,7 @@
 				{#each data.run_diff.filter((d) => d.material) as d (d.key)}
 					<div>
 						<span class="font-medium">{d.label}:</span>
-						{d.baseline ?? 'none'} then {d.current ?? 'none'}
+						{d.baseline ?? 'none'} → {d.current ?? 'none'}
 					</div>
 				{/each}
 			</div>
@@ -105,13 +112,13 @@
 		<ScrollArea orientation="horizontal">
 			<table class="w-full min-w-[520px] text-xs">
 				<thead>
-					<tr class="text-left text-2xs text-muted-foreground">
-						<th class="py-1.5 pr-3 font-normal">Dimension</th>
-						<th class="w-40 py-1.5 pr-3 font-normal"></th>
-						<th class="py-1.5 pr-3 text-right font-normal">Appeared</th>
-						<th class="py-1.5 pr-3 text-right font-normal">Changed</th>
-						<th class="py-1.5 pr-3 text-right font-normal">Gone</th>
-						<th class="py-1.5 text-right font-normal">Now</th>
+					<tr class="text-left text-2xs tracking-wide text-muted-foreground uppercase">
+						<th class="py-1.5 pr-3 font-medium">Dimension</th>
+						<th class="w-40 py-1.5 pr-3 font-medium"></th>
+						<th class="py-1.5 pr-3 text-right font-medium">Appeared</th>
+						<th class="py-1.5 pr-3 text-right font-medium">Changed</th>
+						<th class="py-1.5 pr-3 text-right font-medium">Gone</th>
+						<th class="py-1.5 text-right font-medium">Now</th>
 					</tr>
 				</thead>
 				<tbody>

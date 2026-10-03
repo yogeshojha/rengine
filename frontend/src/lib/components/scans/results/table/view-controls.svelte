@@ -72,8 +72,8 @@
 					<Button
 						{...props}
 						variant="outline"
-						size="sm"
-						class="h-9 gap-2 {groupBy ? 'border-primary/50 bg-primary/5' : ''}"
+						class={groupBy ? 'border-primary/50 bg-primary/5' : ''}
+						aria-label="Group by"
 					>
 						<Layers class="h-4 w-4" />
 						<span class="hidden sm:inline">{groupLabel}</span>
@@ -101,7 +101,7 @@
 			<Button
 				variant="outline"
 				size="icon"
-				class="h-9 w-9 border-primary/50 bg-primary/5 text-muted-foreground hover:text-foreground"
+				class="border-primary/50 bg-primary/5 text-muted-foreground hover:text-foreground"
 				aria-label="Clear grouping"
 				onclick={() => onGroupBy('')}
 			>
@@ -119,7 +119,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="outline" size="sm" class="h-9 gap-2">
+				<Button {...props} variant="outline" aria-label="Columns">
 					<Columns3 class="h-4 w-4" />
 					<span class="hidden sm:inline">Columns</span>
 				</Button>
@@ -166,7 +166,6 @@
 <Button
 	variant="outline"
 	size="icon"
-	class="h-9 w-9"
 	aria-label="Refresh"
 	onclick={() => onRefresh()}
 	disabled={refreshing}

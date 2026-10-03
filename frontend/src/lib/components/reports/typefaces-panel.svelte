@@ -39,14 +39,14 @@
 	}
 </script>
 
-<Card.Root class="gap-0 py-0">
+<Card.Root class="gap-0 overflow-hidden py-0">
 	<LibraryToolbar bind:tab bind:search {counts} placeholder="Search typefaces">
 		<FacetFilter label="Role" options={roleOptions} bind:selected={roles} />
 	</LibraryToolbar>
 
 	{#if visible.length}
 		<div
-			class="hidden gap-4 border-b bg-muted/30 px-4 py-2 text-2xs font-medium text-muted-foreground uppercase lg:grid {TYPEFACE_COLUMNS}"
+			class="hidden gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase lg:grid {TYPEFACE_COLUMNS}"
 		>
 			<span>Typeface</span>
 			<span>Role</span>

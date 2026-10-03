@@ -80,7 +80,7 @@
 					class="rounded-sm transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 					onclick={onLeave}
 				>
-					Hosts
+					Web assets
 				</button>
 			</Breadcrumb.Item>
 			<Breadcrumb.Separator />
@@ -92,7 +92,7 @@
 								{...props}
 								type="button"
 								class="flex min-w-0 items-center gap-1.5 rounded-md border bg-card px-2 py-1 font-mono text-sm font-medium text-foreground hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-								aria-label="Switch host"
+								aria-label="Switch web asset"
 							>
 								<span class="truncate">{host}</span>
 								<ChevronDown class="size-3.5 shrink-0 text-muted-foreground" />
@@ -101,7 +101,7 @@
 					</Popover.Trigger>
 					<Popover.Content class="w-96 p-0" align="start">
 						<Command.Root shouldFilter={false}>
-							<Command.Input placeholder="Find a host…" bind:value={term} />
+							<Command.Input placeholder="Find a web asset…" bind:value={term} />
 							<Command.List class="max-h-none overflow-visible">
 								<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
 									{#if searching}
@@ -111,7 +111,7 @@
 											{/each}
 										</div>
 									{:else if options.length === 0}
-										<Command.Empty>No host matches.</Command.Empty>
+										<Command.Empty>No web asset matches</Command.Empty>
 									{/if}
 									<Command.Group>
 										{#each options as n (n.key)}
@@ -141,14 +141,14 @@
 				{position.toLocaleString()} of {total.toLocaleString()}
 			</span>
 		{/if}
-		<Hint text="Previous host  [">
+		<Hint text="Previous web asset  [">
 			{#snippet child(props)}
 				<Button
 					{...props}
 					variant="ghost"
 					size="icon"
 					class="size-7"
-					aria-label="Previous host"
+					aria-label="Previous web asset"
 					disabled={position <= 1}
 					onclick={() => onStep(-1)}
 				>
@@ -156,14 +156,14 @@
 				</Button>
 			{/snippet}
 		</Hint>
-		<Hint text="Next host  ]">
+		<Hint text="Next web asset  ]">
 			{#snippet child(props)}
 				<Button
 					{...props}
 					variant="ghost"
 					size="icon"
 					class="size-7"
-					aria-label="Next host"
+					aria-label="Next web asset"
 					disabled={position === 0 || position >= total}
 					onclick={() => onStep(1)}
 				>

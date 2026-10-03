@@ -27,7 +27,7 @@
 		onFileSelect,
 		onFileRemove,
 		onTextChange,
-		placeholder = 'Enter data…',
+		placeholder = 'Enter data',
 		mode = $bindable('text'),
 		showTextInput = true
 	}: Props = $props();
@@ -136,8 +136,8 @@
 
 		<Button
 			variant="ghost"
-			size="icon"
-			class="h-8 w-8 flex-shrink-0"
+			size="icon-sm"
+			class="shrink-0"
 			aria-label="Remove file"
 			onclick={handleRemoveFile}
 		>

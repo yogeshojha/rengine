@@ -13,6 +13,7 @@
 		PROBE_COVERAGE_SOURCE
 	} from '$lib/config/endpoints';
 	import type { EndpointCoverageRead, EndpointSummary } from '$lib/utilities/endpoints';
+	import { plural, pluralWord } from '$lib/utilities/strings';
 
 	interface Props {
 		coverage: EndpointCoverageRead[];
@@ -73,9 +74,7 @@
 		const parts: string[] = [];
 		if (summary) {
 			parts.push(
-				`${n(summary.total)} ${summary.total === 1 ? 'endpoint' : 'endpoints'} across ${n(
-					summary.hosts
-				)} ${summary.hosts === 1 ? 'host' : 'hosts'}`
+				`${plural(summary.total, 'endpoint')} across ${plural(summary.hosts, 'web asset')}`
 			);
 			parts.push(`${n(summary.probed)} verified`);
 			if (noAnswer) parts.push(`${n(noAnswer)} no answer`);
@@ -108,7 +107,7 @@
 			class="rounded-sm text-primary hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowRootOnly}
 		>
-			{n(rootOnly)} root-only {rootOnly === 1 ? 'host' : 'hosts'} hidden
+			{n(rootOnly)} root-only {pluralWord(rootOnly, 'web asset')} hidden
 		</button>
 	{/if}
 	{#if summary?.new && onShowNew}
@@ -139,13 +138,13 @@
 						{...props}
 						variant="ghost"
 						size="sm"
-						class="h-6 gap-1 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
+						class="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
 					>
 						<Info class="size-3" /> What ran
 					</Button>
 				{/snippet}
 			</Popover.Trigger>
-			<Popover.Content class="w-[26rem] p-0" align="start">
+			<Popover.Content class="w-[26rem] max-w-[calc(100vw-2rem)] p-0" align="start">
 				<div class="border-b px-3 py-2">
 					<p class="text-sm font-medium">Source coverage</p>
 					<p class="text-xs text-muted-foreground">Blank counts were not reported.</p>

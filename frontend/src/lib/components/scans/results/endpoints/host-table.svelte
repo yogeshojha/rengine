@@ -9,6 +9,10 @@
 	import type { TableColumn } from '../table/columns';
 	import type { FolderChip, HostPage, TreeNode } from '$lib/utilities/endpoints';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
+	import { plural, pluralWord } from '$lib/utilities/strings';
+
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 
 	interface Props {
 		page: HostPage | null;
@@ -106,8 +110,8 @@
 	>
 		{#if page.root_only > 0 && onShowRootOnly}
 			<span>
-				{page.root_only.toLocaleString()}
-				{page.root_only === 1 ? 'host has' : 'hosts have'} only a root page.
+				{plural(page.root_only, WEB.noun, WEB.nounPlural)}
+				{pluralWord(page.root_only, 'has', 'have')} only a root page.
 			</span>
 			<button
 				type="button"
@@ -123,8 +127,8 @@
 					total={page.total}
 					page={page.page - 1}
 					pageSize={page.size}
-					noun="host"
-					plural="hosts"
+					noun={WEB.noun}
+					plural={WEB.nounPlural}
 					onPage={(p) => onPage(p + 1)}
 				/>
 			</div>

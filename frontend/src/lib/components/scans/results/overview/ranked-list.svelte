@@ -36,9 +36,29 @@
 
 	const share = (n: number) => (base > 0 ? (n / base) * 100 : 0);
 	const shareLabel = (n: number) => percentLabel(share(n));
+
+	let list = $state<HTMLElement | null>(null);
+	let clipped = $state<Record<string, boolean>>({});
+
+	$effect(() => {
+		void rows;
+		const el = list;
+		if (!el) return;
+		const measure = () => {
+			const next: Record<string, boolean> = {};
+			for (const node of el.querySelectorAll<HTMLElement>('[data-ranked-label]')) {
+				next[node.dataset.rankedLabel ?? ''] = node.scrollWidth > node.clientWidth + 1;
+			}
+			clipped = next;
+		};
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(el);
+		return () => observer.disconnect();
+	});
 </script>
 
-<ul class="-mx-2 flex flex-col gap-0.5">
+<ul bind:this={list} class="-mx-2 flex flex-col gap-0.5">
 	{#each rows as r (r.key)}
 		{@const clickable = !!r.filter && !!onSelect}
 		<li>
@@ -57,10 +77,11 @@
 						</span>
 					{/if}
 					<span class="flex min-w-0 flex-1 flex-col">
-						<Hint text={r.hint ?? r.label}>
+						<Hint text={r.hint ?? (clipped[r.key] ? r.label : null)}>
 							{#snippet child(props)}
 								<span
 									{...props}
+									data-ranked-label={r.key}
 									class="truncate leading-5 {r.mono ? 'font-mono text-xs' : 'text-sm'}"
 								>
 									{r.label}

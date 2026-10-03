@@ -30,8 +30,6 @@
 	}: Props = $props();
 
 	const uid = $props.id();
-	const SPIN_SECONDS = 20;
-	const MAX_FRAME_MS = 100;
 	const MIN_R = 2.25;
 	const MAX_R = 5.5;
 	const HIT_R = 9;
@@ -39,9 +37,9 @@
 	const DEFAULT_VIEW: [number, number] = [-20, 25];
 	const RING_STEP = 3;
 	const RINGS = [
-		{ inc: 24, precess: 96 },
-		{ inc: 58, precess: -132 },
-		{ inc: -38, precess: 168 }
+		{ inc: 24, node: 96 },
+		{ inc: 58, node: -132 },
+		{ inc: -38, node: 168 }
 	];
 
 	const ringLine = (inc: number, node: number): GeoPermissibleObjects => {
@@ -66,33 +64,20 @@
 			.filter((e): e is GlobeEntry & { geo: NonNullable<ReturnType<typeof countryGeo>> } => !!e.geo)
 	);
 	let peak = $derived(Math.max(1, ...plotted.map((p) => p.count)));
-	let anchor = $derived<[number, number]>(plotted[0]?.geo.lonLat ?? DEFAULT_VIEW);
+	let lead = $derived(
+		plotted.reduce<(typeof plotted)[number] | undefined>(
+			(top, p) => (!top || p.count > top.count ? p : top),
+			undefined
+		)
+	);
+	let anchor = $derived<[number, number]>(lead?.geo.lonLat ?? DEFAULT_VIEW);
 	let tilt = $derived(
 		plotted.length
 			? plotted.reduce((n, p) => n + p.geo.lonLat[1], 0) / plotted.length / 2
 			: DEFAULT_VIEW[1]
 	);
 
-	let clock = $state(0);
-	let seconds = 0;
-
-	$effect(() => {
-		if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-		let frame = 0;
-		let last = performance.now();
-		const step = (now: number) => {
-			seconds += Math.min(now - last, MAX_FRAME_MS) / 1000;
-			last = now;
-			clock = seconds;
-			frame = requestAnimationFrame(step);
-		};
-		frame = requestAnimationFrame(step);
-		return () => cancelAnimationFrame(frame);
-	});
-
-	let spin = $derived(((clock / SPIN_SECONDS) * 360) % 360);
-
-	let rotate = $derived<[number, number]>([-anchor[0] + spin, -tilt]);
+	let rotate = $derived<[number, number]>([-anchor[0], -tilt]);
 	let projection = $derived(
 		geoOrthographic()
 			.rotate(rotate)
@@ -135,7 +120,7 @@
 	let rings = $derived(
 		RINGS.map((r, i) => ({
 			i,
-			d: draw(ringLine(r.inc, -spin + (((clock / r.precess) * 360) % 360))) ?? ''
+			d: draw(ringLine(r.inc, anchor[0] + r.node)) ?? ''
 		})).filter((r) => r.d)
 	);
 </script>
@@ -149,8 +134,8 @@
 >
 	<defs>
 		<radialGradient id="{uid}-sea" cx="36%" cy="30%" r="74%">
-			<stop offset="0%" stop-color="var(--primary)" stop-opacity="0.2" />
-			<stop offset="100%" stop-color="var(--primary)" stop-opacity="0.04" />
+			<stop offset="0%" stop-color="var(--series)" stop-opacity="0.2" />
+			<stop offset="100%" stop-color="var(--series)" stop-opacity="0.04" />
 		</radialGradient>
 	</defs>
 
@@ -159,7 +144,7 @@
 		cy={mid}
 		r={radius + 6}
 		fill="none"
-		stroke="var(--primary)"
+		stroke="var(--series)"
 		stroke-width="4"
 		opacity="0.05"
 	/>
@@ -168,7 +153,7 @@
 		cy={mid}
 		r={radius + 2.5}
 		fill="none"
-		stroke="var(--primary)"
+		stroke="var(--series)"
 		stroke-width="3"
 		opacity="0.1"
 	/>

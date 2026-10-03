@@ -24,7 +24,7 @@
 				<Button
 					{...props}
 					variant="outline"
-					class="h-9 gap-1.5 {selected.length ? 'border-primary/50 bg-primary/5' : ''}"
+					class={selected.length ? 'border-primary/50 bg-primary/5' : ''}
 				>
 					{label}
 					{#if selected.length}

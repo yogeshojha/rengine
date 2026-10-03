@@ -24,7 +24,7 @@
 			<Sheet.Title>Templates</Sheet.Title>
 		</Sheet.Header>
 		<ScrollArea class="min-h-0 flex-1">
-			<div class="px-5 py-5">
+			<div class="px-5 py-4">
 				{#if catalog}
 					<TemplateGrid
 						templates={catalog.templates}

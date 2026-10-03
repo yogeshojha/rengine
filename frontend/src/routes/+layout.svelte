@@ -8,6 +8,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { SESSION_EXPIRED_EVENT } from '$lib/api/client';
 	import { ROUTES } from '$lib/config/routes';
+	import { markSessionExpired } from '$lib/components/auth/login';
 
 	let { children } = $props();
 
@@ -16,7 +17,10 @@
 
 		function handleSessionExpired() {
 			auth.clearSession();
-			goto(ROUTES.login);
+			const { pathname, search } = window.location;
+			if (pathname === ROUTES.login) return;
+			markSessionExpired();
+			goto(ROUTES.loginThen(pathname + search));
 		}
 
 		window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);

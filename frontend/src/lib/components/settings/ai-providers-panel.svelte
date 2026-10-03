@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import CpuIcon from '@lucide/svelte/icons/cpu';
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
@@ -77,7 +77,7 @@
 		deleting = true;
 		try {
 			if (await ai.remove(row.id)) {
-				toast.success('Provider deleted');
+				toast.success('Provider removed');
 				removing = null;
 			}
 		} finally {
@@ -109,7 +109,7 @@
 {/snippet}
 
 <div id="ai-connection" class="scroll-mt-20"></div>
-<PanelHead title="Providers">
+<PanelHead title="Providers" class="px-4">
 	{#if rows.length && !inUse}
 		<span class="text-warning">No provider in use</span>
 	{/if}
@@ -209,9 +209,14 @@
 							<DropdownMenu.Root>
 								<DropdownMenu.Trigger>
 									{#snippet child({ props })}
-										<Button {...props} variant="ghost" size="icon" class="size-7">
-											<MoreVerticalIcon class="size-4" />
-											<span class="sr-only">{row.name} actions</span>
+										<Button
+											{...props}
+											variant="ghost"
+											size="icon"
+											class="size-7"
+											aria-label="{row.name} actions"
+										>
+											<EllipsisIcon class="size-4" />
 										</Button>
 									{/snippet}
 								</DropdownMenu.Trigger>
@@ -225,7 +230,7 @@
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item variant="destructive" onSelect={() => (removing = row)}>
-										Delete
+										Remove
 									</DropdownMenu.Item>
 								</DropdownMenu.Content>
 							</DropdownMenu.Root>
@@ -241,9 +246,10 @@
 
 <ConfirmDialog
 	open={removing !== null}
-	title="Delete provider"
+	title="Remove provider"
 	description={removing ? `Provider ${removing.name} is removed.` : ''}
-	confirmLabel="Delete"
+	confirmLabel="Remove"
+	loadingLabel="Removing"
 	destructive
 	loading={deleting}
 	onOpenChange={(open) => {

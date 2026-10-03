@@ -8,6 +8,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import IssuePreview from './issue-preview.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import DestinationPicker from './destination-picker.svelte';
@@ -52,6 +54,7 @@
 	let destination = $state('');
 	let grouping = $state<Grouping>(Grouping.AUTO);
 	let title = $state('');
+	let planTitle = $state('');
 	let plan = $state<FilingPlan | null>(null);
 	let planning = $state(false);
 	let failure = $state<string | null>(null);
@@ -74,6 +77,13 @@
 	const trackerLabel = $derived(
 		chosen?.name ?? (plan?.tracker_name ? `By route · ${plan.tracker_name}` : 'By route')
 	);
+	const dirty = $derived(
+		trackerId !== SELECT_NONE || grouping !== Grouping.AUTO || title.trim() !== planTitle.trim()
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
+	);
 
 	$effect(() => {
 		if (!open) return;
@@ -82,6 +92,7 @@
 		destination = '';
 		grouping = Grouping.AUTO;
 		title = '';
+		planTitle = '';
 		plan = null;
 		failure = null;
 	});
@@ -104,7 +115,10 @@
 				if (my !== req) return;
 				plan = next;
 				failure = null;
-				if (next.new_issues === 1 && next.issues[0] && !title) title = next.issues[0].title;
+				if (next.new_issues === 1 && next.issues[0] && !title) {
+					title = next.issues[0].title;
+					planTitle = title;
+				}
 			} catch (e) {
 				if (my === req) failure = e instanceof Error ? e.message : 'Preview not loaded';
 			} finally {
@@ -148,7 +162,7 @@
 	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : !filing && guard.close())}>
 	<Dialog.Content class="flex max-h-[85vh] flex-col gap-4 sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>{several ? 'File issues' : 'File issue'}</Dialog.Title>
@@ -162,7 +176,7 @@
 				<a href={ROUTES.issueTrackers('trackers')} class="text-primary">Issue trackers</a>
 			</p>
 		{:else if tooMany}
-			<p class="text-sm text-destructive">Select up to {MAX_FILE_CHECKS} checks.</p>
+			<p class="text-sm text-destructive" role="alert">Select up to {MAX_FILE_CHECKS} checks.</p>
 		{:else}
 			<div class="grid gap-3 sm:grid-cols-2">
 				<FormField label="Tracker">
@@ -218,9 +232,9 @@
 			{/if}
 
 			{#if failure}
-				<p class="text-sm text-destructive">{failure}</p>
+				<p class="text-sm text-destructive" role="alert">{failure}</p>
 			{:else if plan?.refusal}
-				<p class="text-sm text-destructive">{plan.refusal}</p>
+				<p class="text-sm text-destructive" role="alert">{plan.refusal}</p>
 			{:else if !plan}
 				<div class="flex flex-col gap-2">
 					<Skeleton class="h-5 w-1/2" />
@@ -258,7 +272,7 @@
 					{/if}
 				{:else if plan.issues.length}
 					<ScrollArea
-						class="min-h-0 flex-1 rounded-md border [&_[data-slot=scroll-area-viewport]]:max-h-80"
+						class="min-h-0 flex-1 rounded-lg border [&_[data-slot=scroll-area-viewport]]:max-h-80"
 					>
 						<div class="divide-y">
 							{#each plan.issues.slice(0, SHOWN_ISSUES) as issue, i (i)}
@@ -289,8 +303,8 @@
 		{/if}
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={filing} disabled={!ready} onclick={file}>
+			<Button variant="outline" disabled={filing} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton loading={filing} loadingLabel="Filing" disabled={!ready} onclick={file}>
 				{plan && plan.new_issues > 1
 					? `File ${plan.new_issues} issues`
 					: several
@@ -300,3 +314,9 @@
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

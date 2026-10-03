@@ -34,6 +34,7 @@ import {
 import { countryName } from '$lib/config/country-geo';
 import { isPrivateIp } from '$lib/utilities/scan-correlation';
 import {
+	formatExpirationLabel,
 	getExpirationUrgency,
 	getDomainAge,
 	formatShortDate,
@@ -269,13 +270,12 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			sub: getDomainAge(registrationDate)
 		});
 	if (expirationDate) {
-		const days = daysUntil(expirationDate);
 		const urgency = getExpirationUrgency(expirationDate);
 		registration.rows.push({
 			key: 'expires',
 			label: 'Expires',
 			value: formatShortDate(expirationDate),
-			sub: days < 0 ? `${plural(-days, 'day', 'days')} ago` : `in ${plural(days, 'day', 'days')}`,
+			sub: formatExpirationLabel(expirationDate),
 			tone:
 				urgency === 'expired'
 					? 'bad'

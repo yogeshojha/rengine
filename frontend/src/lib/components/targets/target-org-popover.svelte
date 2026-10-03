@@ -57,18 +57,22 @@
 	let hasOverflow = $derived(overflowOrgs.length > 0);
 
 	async function toggleOrg(org: OrganizationSummary) {
+		if (isUpdating) return;
 		const previous = [...currentOrgs];
 		const isApplied = appliedIds.has(org.id);
 		const newOrgs = isApplied ? previous.filter((o) => o.id !== org.id) : [...previous, org];
 		const newOrgNames = newOrgs.map((o) => o.name);
 
 		applyPatch({ organizations: newOrgs });
+		isUpdating = true;
 
 		try {
 			await targetsApi.update(targetId, { organization_names: newOrgNames });
 		} catch {
 			applyPatch({ organizations: previous });
 			toast.error('Organizations not updated');
+		} finally {
+			isUpdating = false;
 		}
 	}
 
@@ -168,7 +172,7 @@
 		</Popover.Trigger>
 		<Popover.Content class="w-[240px] p-0" align="start">
 			<Command.Root shouldFilter={false}>
-				<Command.Input placeholder="Search or create organizations…" bind:value={searchValue} />
+				<Command.Input placeholder="Search or create organizations" bind:value={searchValue} />
 				<Command.List class="max-h-none overflow-visible">
 					<Command.Empty>
 						{#if !showCreateOption}

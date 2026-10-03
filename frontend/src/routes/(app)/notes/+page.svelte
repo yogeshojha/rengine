@@ -4,9 +4,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Search from '@lucide/svelte/icons/search';
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import X from '@lucide/svelte/icons/x';
 	import * as Card from '$lib/components/ui/card';
 	import * as InputGroup from '$lib/components/ui/input-group';
@@ -281,7 +281,7 @@
 <svelte:head><title>{pageTitle(routeLabels.notes)}</title></svelte:head>
 <svelte:window onkeydown={onKey} />
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
 	<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
@@ -337,14 +337,12 @@
 			<RowSkeleton rows={6} avatar={null} trailing="h-3.5 w-20" />
 		{:else if failed}
 			<EmptyState
-				icon={StickyNote}
+				icon={TriangleAlert}
 				title="Notes not loaded"
 				description={failed}
 				class="rounded-none border-0 bg-transparent py-16"
 			>
-				<Button variant="outline" class="gap-2" onclick={() => notes.touch()}>
-					<RefreshCw class="size-4" /> Retry
-				</Button>
+				<Button variant="outline" size="sm" onclick={() => notes.touch()}>Retry</Button>
 			</EmptyState>
 		{:else if items.length === 0}
 			<EmptyState
@@ -353,7 +351,7 @@
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				{#if filtered}
-					<Button variant="outline" onclick={clearFilters}>Clear filters</Button>
+					<Button variant="outline" size="sm" onclick={clearFilters}>Clear filters</Button>
 				{/if}
 			</EmptyState>
 		{:else}

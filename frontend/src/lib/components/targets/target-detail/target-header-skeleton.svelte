@@ -18,11 +18,11 @@
 
 <div class="flex flex-col gap-5" aria-busy="true">
 	<div class="flex items-start justify-between gap-4">
-		<div class="flex items-start gap-3">
-			<Skeleton class="size-10 rounded-lg" />
-			<div class="flex flex-col gap-2">
-				<Skeleton class="h-6 w-56" />
-				<Skeleton class="h-4 w-80" />
+		<div class="flex min-w-0 items-start gap-3">
+			<Skeleton class="size-10 shrink-0 rounded-lg" />
+			<div class="flex min-w-0 flex-col gap-2">
+				<Skeleton class="h-6 w-56 max-w-full" />
+				<Skeleton class="h-4 w-80 max-w-full" />
 			</div>
 		</div>
 		<div class="flex gap-2">

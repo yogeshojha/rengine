@@ -10,12 +10,19 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
-	import { Toggle } from '$lib/components/ui/toggle';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import FileX from '@lucide/svelte/icons/file-x';
+	import ListOrderedIcon from '@lucide/svelte/icons/list-ordered';
+	import PaletteIcon from '@lucide/svelte/icons/palette';
+	import StampIcon from '@lucide/svelte/icons/stamp';
+	import PenLineIcon from '@lucide/svelte/icons/pen-line';
+	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import SectionList from '$lib/components/reports/builder/section-list.svelte';
@@ -55,6 +62,7 @@
 	let narrative = $state<NarrativeOptions | null>(null);
 	let loadedId = $state('');
 	let saving = $state(false);
+	let duplicating = $state(false);
 	let generateOpen = $state(false);
 	let leaveTo = $state<string | null>(null);
 	let allowNav = false;
@@ -104,7 +112,13 @@
 			revisions: found.branding.revisions.map((r) => ({ ...r }))
 		};
 		narrative = { ...found.narrative };
-		breadcrumbStore.set(found.id, found.name);
+	});
+
+	$effect(() => {
+		const current = template;
+		if (!current) return;
+		breadcrumbStore.set(current.id, current.name);
+		return () => breadcrumbStore.remove(current.id);
 	});
 
 	const dirty = $derived(
@@ -138,16 +152,8 @@
 		)
 	);
 
-	function toggleFormat(value: string) {
-		formats = formats.includes(value) ? formats.filter((f) => f !== value) : [...formats, value];
-	}
-
 	async function save() {
-		if (!template || !style || !branding || !narrative) return;
-		if (!formats.length) {
-			toast.error('Select at least one format');
-			return;
-		}
+		if (!template || !style || !branding || !narrative || !formats.length) return;
 		saving = true;
 		const ok = await reportsStore.saveTemplate(projectId, template.id, {
 			name,
@@ -167,6 +173,7 @@
 
 	async function saveAsCopy() {
 		if (!template || !style || !branding || !narrative) return;
+		duplicating = true;
 		const created = await reportsStore.createTemplate(projectId, {
 			name: `${name} copy`,
 			description,
@@ -180,6 +187,7 @@
 			narrative,
 			formats
 		});
+		duplicating = false;
 		if (created) {
 			toast.success(`Template ${created.name} created`);
 			allowNav = true;
@@ -192,9 +200,23 @@
 
 {#if !template && projectId && reportsStore.templatesProjectId === projectId}
 	<EmptyState icon={FileX} title="Template not found">
-		<Button variant="outline" href={ROUTES.reports('templates')}>
-			<ArrowLeftIcon class="mr-1.5 size-3.5" />
+		<Button variant="outline" size="sm" href={ROUTES.reports('templates')}>
+			<ArrowLeftIcon class="size-3.5" />
 			Templates
+		</Button>
+	</EmptyState>
+{:else if !template && reportsStore.templatesError && !reportsStore.templatesLoading}
+	<EmptyState
+		icon={TriangleAlertIcon}
+		title="Template not loaded"
+		description={reportsStore.templatesError}
+	>
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={() => reportsStore.fetchTemplates(projectId, true)}
+		>
+			Retry
 		</Button>
 	</EmptyState>
 {:else if !template}
@@ -204,7 +226,7 @@
 	</div>
 {:else if style && branding && narrative}
 	<div class="space-y-5">
-		<div class="flex flex-wrap items-start justify-between gap-3">
+		<div class="flex flex-wrap items-end justify-between gap-3">
 			<div class="min-w-0 space-y-1">
 				<Button
 					variant="ghost"
@@ -212,7 +234,7 @@
 					class="-ml-2 h-7 text-xs"
 					href={ROUTES.reports('templates')}
 				>
-					<ArrowLeftIcon class="mr-1 size-3" />
+					<ArrowLeftIcon class="size-3" />
 					Templates
 				</Button>
 				<div class="flex flex-wrap items-center gap-2">
@@ -221,15 +243,26 @@
 				</div>
 				<p class="text-sm text-muted-foreground">{description}</p>
 			</div>
-			<div class="flex items-center gap-2">
-				<Button variant="outline" onclick={() => (generateOpen = true)}>
-					<PlayIcon class="mr-1.5 size-3.5" />
+			<div class="flex flex-wrap items-center gap-2">
+				<Button variant="outline" size="sm" onclick={() => (generateOpen = true)}>
+					<PlayIcon class="size-3.5" />
 					Generate report
 				</Button>
 				{#if template.is_builtin}
-					<Button onclick={saveAsCopy}>Duplicate template</Button>
+					<LoadingButton
+						size="sm"
+						loading={duplicating}
+						loadingLabel="Duplicating"
+						onclick={saveAsCopy}>Duplicate template</LoadingButton
+					>
 				{:else}
-					<LoadingButton loading={saving} disabled={!dirty} onclick={save}>Save</LoadingButton>
+					<LoadingButton
+						size="sm"
+						loading={saving}
+						loadingLabel="Saving"
+						disabled={!dirty || !formats.length}
+						onclick={save}>Save</LoadingButton
+					>
 				{/if}
 			</div>
 		</div>
@@ -241,18 +274,33 @@
 		{/if}
 
 		<Tabs.Root value="sections">
-			<ScrollArea orientation="horizontal" class="w-full sm:w-fit">
+			<ScrollArea orientation="horizontal" class="w-full max-w-full sm:w-fit">
 				<Tabs.List>
-					<Tabs.Trigger value="sections">Sections</Tabs.Trigger>
-					<Tabs.Trigger value="look">Look</Tabs.Trigger>
-					<Tabs.Trigger value="branding">Branding</Tabs.Trigger>
-					<Tabs.Trigger value="narrative">Narrative</Tabs.Trigger>
-					<Tabs.Trigger value="document">Document</Tabs.Trigger>
+					<Tabs.Trigger value="sections" class="gap-1.5">
+						<ListOrderedIcon class="size-4" />
+						Sections
+					</Tabs.Trigger>
+					<Tabs.Trigger value="look" class="gap-1.5">
+						<PaletteIcon class="size-4" />
+						Look
+					</Tabs.Trigger>
+					<Tabs.Trigger value="branding" class="gap-1.5">
+						<StampIcon class="size-4" />
+						Branding
+					</Tabs.Trigger>
+					<Tabs.Trigger value="narrative" class="gap-1.5">
+						<PenLineIcon class="size-4" />
+						Narrative
+					</Tabs.Trigger>
+					<Tabs.Trigger value="document" class="gap-1.5">
+						<FileTextIcon class="size-4" />
+						Document
+					</Tabs.Trigger>
 				</Tabs.List>
 			</ScrollArea>
 
 			<div
-				class="mt-5"
+				class="mt-6"
 				class:pointer-events-none={template.is_builtin}
 				class:opacity-70={template.is_builtin}
 			>
@@ -261,38 +309,52 @@
 				<Tabs.Content value="branding"><BrandingPanel bind:branding /></Tabs.Content>
 				<Tabs.Content value="narrative"><NarrativePanel bind:narrative /></Tabs.Content>
 				<Tabs.Content value="document">
-					<div class="max-w-xl space-y-4">
-						<div class="space-y-1.5">
-							<Label class="text-xs">Template name</Label>
-							<Input bind:value={name} class="h-9" />
-						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Description</Label>
-							<Input bind:value={description} class="h-9" />
-						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Document title</Label>
-							<Input bind:value={title} class="h-9" placeholder="Security Assessment Report" />
-						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Document subtitle</Label>
-							<Input bind:value={subtitle} class="h-9" />
-						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Formats</Label>
-							<div class="flex flex-wrap gap-2">
+					<div class="flex max-w-xl flex-col gap-4">
+						<FormField label="Template name">
+							{#snippet children({ id })}
+								<Input {id} bind:value={name} class="h-9" />
+							{/snippet}
+						</FormField>
+						<FormField label="Description">
+							{#snippet children({ id })}
+								<Input {id} bind:value={description} class="h-9" />
+							{/snippet}
+						</FormField>
+						<FormField label="Document title">
+							{#snippet children({ id })}
+								<Input
+									{id}
+									bind:value={title}
+									class="h-9"
+									placeholder="Security Assessment Report"
+								/>
+							{/snippet}
+						</FormField>
+						<FormField label="Document subtitle">
+							{#snippet children({ id })}
+								<Input {id} bind:value={subtitle} class="h-9" />
+							{/snippet}
+						</FormField>
+						<div class="space-y-3">
+							<Label>Formats</Label>
+							<ToggleGroup.Root
+								type="multiple"
+								variant="outline"
+								size="sm"
+								bind:value={
+									() => formats,
+									(v) => {
+										if (Array.isArray(v) && v.length) formats = v;
+									}
+								}
+								class="justify-start"
+							>
 								{#each Object.entries(FORMAT_LABELS) as [value, label] (value)}
-									<Toggle
-										size="sm"
-										variant="outline"
-										class="h-8 px-2.5 text-xs"
-										pressed={formats.includes(value)}
-										onPressedChange={() => toggleFormat(value)}
+									<ToggleGroup.Item {value} aria-label={label} class="px-3"
+										>{label}</ToggleGroup.Item
 									>
-										{label}
-									</Toggle>
 								{/each}
-							</div>
+							</ToggleGroup.Root>
 						</div>
 					</div>
 				</Tabs.Content>

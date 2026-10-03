@@ -23,7 +23,7 @@
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="outline" size="sm" class="h-9 gap-2">
+			<Button {...props} variant="outline" aria-label="Sort">
 				<ArrowUpDown class="h-4 w-4" />
 				<span class="hidden sm:inline">{activeLabel}</span>
 				{#if sortDir === 1}

@@ -46,7 +46,7 @@
 		{/each}
 	</div>
 {:else}
-	<ul class="divide-y divide-border/50 overflow-clip rounded-md border bg-card">
+	<ul class="divide-y divide-border/50 overflow-clip rounded-lg border bg-card">
 		{#each items as v (v.id)}
 			<li>
 				<button

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import RadarIcon from '@lucide/svelte/icons/radar';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
@@ -16,12 +17,14 @@
 	interface Props {
 		watches: Watch[];
 		loading: boolean;
+		error: string | null;
 		stream: StreamStatus | null;
 		onOpen: (watch: Watch, filter?: WatchHostFilter, tab?: 'hosts' | 'activity') => void;
+		onRetry: () => void;
 		onBrowsePrograms: () => void;
 	}
 
-	let { watches, loading, stream, onOpen, onBrowsePrograms }: Props = $props();
+	let { watches, loading, error, stream, onOpen, onRetry, onBrowsePrograms }: Props = $props();
 
 	const COLS = 'sm:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,1fr))_auto]';
 
@@ -56,7 +59,7 @@
 
 {#snippet header()}
 	<div
-		class="hidden {COLS} gap-3 border-b px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
+		class="hidden {COLS} gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
 	>
 		<span>Program</span>
 		<span>New hosts</span>
@@ -69,7 +72,7 @@
 <div class="flex flex-col gap-3">
 	{#if stream}
 		<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-			<span class="flex h-5 items-center">
+			<span class="flex h-5 items-center" aria-hidden="true">
 				<span
 					class="size-2 rounded-full {stream.running
 						? 'bg-success'
@@ -120,8 +123,23 @@
 					</div>
 				{/each}
 			</div>
+		{:else if error && watches.length === 0}
+			<EmptyState
+				icon={TriangleAlertIcon}
+				title="Watched programs not loaded"
+				description={error}
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => onRetry()}>Retry</Button>
+			</EmptyState>
 		{:else if watches.length === 0}
-			<EmptyState icon={RadarIcon} title="No watched programs" class="p-12">
+			<EmptyState
+				icon={RadarIcon}
+				title="No watched programs"
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
 				<Button variant="outline" size="sm" onclick={onBrowsePrograms}>Programs</Button>
 			</EmptyState>
 		{:else}

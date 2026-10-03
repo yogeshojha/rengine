@@ -7,9 +7,9 @@
 	import OtpInput from '$lib/components/onboarding/otp-input.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
-	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -134,7 +134,7 @@
 			twoFactorEnabled = res.enabled;
 			backupCodes = res.backup_codes;
 			backupCodesSaved = false;
-			await auth.checkAuth();
+			await auth.refreshUser();
 			toast.success('Two-factor authentication enabled');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Invalid code');
@@ -174,7 +174,7 @@
 			disableOpen = false;
 			disableCode = '';
 			disableUseBackupCode = false;
-			await auth.checkAuth();
+			await auth.refreshUser();
 			toast.success('Two-factor authentication disabled');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Invalid code');
@@ -190,7 +190,7 @@
 			backupCodesSaved = true;
 			setTimeout(() => (copiedBackup = false), 2000);
 		} else {
-			toast.error('Copy failed');
+			toast.error('Backup codes not copied');
 		}
 	}
 
@@ -224,7 +224,7 @@
 						{/if}
 					{/if}
 				</div>
-				<Card.Description>Require a time-based one-time code at sign-in.</Card.Description>
+				<Card.Description>Require a time-based one-time code at login.</Card.Description>
 			</div>
 		</div>
 	</Card.Header>
@@ -267,8 +267,10 @@
 							bind:value={disableCode}
 						/>
 					{:else}
+						<Label for="disable-otp" class="sr-only">Authentication code</Label>
 						<div bind:this={disableOtpWrap}>
 							<OtpInput
+								id="disable-otp"
 								value={disableCode}
 								onValueChange={(v) => (disableCode = v)}
 								disabled={isDisabling}
@@ -324,7 +326,7 @@
 				<Alert.Root>
 					<TriangleAlertIcon class="size-4" />
 					<Alert.Title>Backup codes</Alert.Title>
-					<Alert.Description>Shown once. Each code is valid for one sign-in.</Alert.Description>
+					<Alert.Description>Shown once. Each code is valid for one login.</Alert.Description>
 				</Alert.Root>
 				<div class="rounded-md border-l-2 border-warning bg-muted p-3">
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-sm">
@@ -336,15 +338,15 @@
 				<div class="flex flex-wrap items-center gap-2">
 					<Button variant="outline" onclick={copyBackupCodes}>
 						{#if copiedBackup}
-							<CheckIcon class="size-4 mr-2 text-foreground" />
+							<CheckIcon class="size-4 text-foreground" />
 							Copied
 						{:else}
-							<CopyIcon class="size-4 mr-2" />
+							<CopyIcon class="size-4" />
 							Copy codes
 						{/if}
 					</Button>
 					<Button variant="outline" onclick={downloadBackupCodes}>
-						<DownloadIcon class="size-4 mr-2" />
+						<DownloadIcon class="size-4" />
 						Download codes
 					</Button>
 					<Button onclick={handleDone}>Done</Button>
@@ -356,15 +358,15 @@
 							<img src={setupQr} alt="2FA QR code" class="size-40 rounded-md border bg-white p-2" />
 						{/if}
 					</div>
-					<div class="space-y-3">
+					<div class="space-y-4">
 						<div class="space-y-1">
 							<p class="text-sm font-medium">Scan the QR code</p>
 							<p class="text-xs text-muted-foreground">
 								Scan the code with an authenticator app or enter the setup key manually.
 							</p>
 						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Setup key</Label>
+						<div class="flex flex-col gap-3">
+							<Label>Setup key</Label>
 							<div class="flex items-center gap-1.5">
 								<code
 									class="block flex-1 text-xs font-mono bg-muted px-3 py-2 rounded-md break-all select-all"
@@ -374,16 +376,18 @@
 								<CopyButton value={setupSecret} />
 							</div>
 						</div>
-						<div class="space-y-1.5">
-							<Label class="text-xs">Verification code</Label>
-							<div bind:this={setupOtpWrap}>
-								<OtpInput
-									value={setupCode}
-									onValueChange={(v) => (setupCode = v)}
-									disabled={isVerifying}
-								/>
-							</div>
-						</div>
+						<FormField label="Verification code">
+							{#snippet children({ id })}
+								<div bind:this={setupOtpWrap}>
+									<OtpInput
+										{id}
+										value={setupCode}
+										onValueChange={(v) => (setupCode = v)}
+										disabled={isVerifying}
+									/>
+								</div>
+							{/snippet}
+						</FormField>
 						<div class="flex items-center gap-2 pt-1">
 							<LoadingButton
 								onclick={handleVerify}
@@ -391,7 +395,7 @@
 								loadingLabel="Verifying"
 								disabled={setupCode.length !== TOTP_DIGITS}
 							>
-								Verify &amp; enable
+								Verify and enable
 							</LoadingButton>
 							<Button variant="ghost" onclick={closeSetup} disabled={isVerifying}>Cancel</Button>
 						</div>
@@ -406,17 +410,18 @@
 					handleStartSetup();
 				}}
 			>
-				<div class="space-y-2">
-					<Label for="setup-password">Current password</Label>
-					<Input
-						id="setup-password"
-						type="password"
-						autocomplete="current-password"
-						class="max-w-72"
-						disabled={isSettingUp}
-						bind:value={setupPassword}
-					/>
-				</div>
+				<FormField label="Current password">
+					{#snippet children({ id })}
+						<Input
+							{id}
+							type="password"
+							autocomplete="current-password"
+							class="max-w-72"
+							disabled={isSettingUp}
+							bind:value={setupPassword}
+						/>
+					{/snippet}
+				</FormField>
 				<LoadingButton
 					type="submit"
 					loading={isSettingUp}
@@ -430,18 +435,18 @@
 	</Card.Content>
 </Card.Root>
 
-<AlertDialog.Root bind:open={confirmCloseCodes}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Backup codes not saved</AlertDialog.Title>
-			<AlertDialog.Description>The codes are shown once.</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel>Back</AlertDialog.Cancel>
-			<AlertDialog.Action onclick={closeSetup}>Close without saving</AlertDialog.Action>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
+<UnsavedChangesDialog
+	open={confirmCloseCodes}
+	title="Backup codes not saved"
+	description="The codes are shown once."
+	confirmLabel="Close without saving"
+	cancelLabel="Back"
+	onOpenChange={(o) => (confirmCloseCodes = o)}
+	onConfirm={() => {
+		confirmCloseCodes = false;
+		closeSetup();
+	}}
+/>
 
 <UnsavedChangesDialog
 	bind:open={showLeaveDialog}

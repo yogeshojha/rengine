@@ -8,7 +8,6 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Waypoints from '@lucide/svelte/icons/waypoints';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import History from '@lucide/svelte/icons/history';
 
 	import * as Card from '$lib/components/ui/card';
@@ -19,7 +18,15 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
-	import { readPref, rowPadding, selectAllState, writePref } from './table/columns';
+	import {
+		inPopover,
+		onControl,
+		readPref,
+		rowPadding,
+		selectAllState,
+		writePref
+	} from './table/columns';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
@@ -191,10 +198,12 @@
 	let groupReq = 0;
 	let tree = $state<EndpointTree | null>(null);
 	let treeLoading = $state(false);
+	let treeFailed = $state(false);
 	let treeReq = 0;
 	let hosts = $state<HostPage | null>(null);
 	let hostPage = $state(1);
 	let hostsLoading = $state(false);
+	let hostsFailed = $state(false);
 	let hostsReq = 0;
 	let hostCursor = $state(-1);
 	let pendingHost: 'first' | 'last' | null = null;
@@ -207,6 +216,7 @@
 	let goneLens = $state(false);
 	let gonePage = $state<GonePage | null>(null);
 	let goneLoading = $state(false);
+	let goneFailed = $state(false);
 	let goneIndex = $state(0);
 	let goneReq = 0;
 	let headEl = $state<HTMLElement | null>(null);
@@ -298,9 +308,12 @@
 	$effect(() => writePref(STORAGE_KEYS.endpointsHideRootOnly, hideRootOnly));
 
 	$effect(() => {
-		if (!seen || !projectId) return;
-		void connectorStore.load(projectId);
-		void connectorStore.loadCatalog();
+		const id = projectId;
+		if (!seen || !id) return;
+		untrack(() => {
+			void connectorStore.load(id);
+			void connectorStore.loadCatalog();
+		});
 	});
 
 	$effect(() => {
@@ -355,7 +368,7 @@
 	async function rescanAllMatching() {
 		if (rescanBusy) return;
 		rescanBusy = true;
-		await startRescan(projectId, querySelection(), 'host', 'hosts');
+		await startRescan(projectId, querySelection(), WEB.noun, WEB.nounPlural);
 		rescanBusy = false;
 	}
 
@@ -433,10 +446,14 @@
 				isMerged ? 'merged' : 'host',
 				treeFilter
 			);
-			if (my === treeReq) tree = res;
+			if (my === treeReq) {
+				tree = res;
+				treeFailed = false;
+			}
 		} catch {
 			if (my === treeReq) {
 				tree = null;
+				treeFailed = true;
 				loadedTreeSig = '';
 			}
 		} finally {
@@ -462,6 +479,7 @@
 			const res = await endpointsApi.treeHosts(projectId, scanId, hostsFilter);
 			if (my !== hostsReq) return;
 			hosts = res;
+			hostsFailed = false;
 			if (pendingHost) {
 				const pick = pendingHost === 'first' ? res.items[0] : res.items.at(-1);
 				pendingHost = null;
@@ -470,6 +488,7 @@
 		} catch {
 			if (my === hostsReq) {
 				hosts = null;
+				hostsFailed = true;
 				loadedHostsSig = '';
 			}
 		} finally {
@@ -532,7 +551,7 @@
 					: `${rows.length.toLocaleString()} ${rows.length === 1 ? 'endpoint' : 'endpoints'} selected`
 			);
 		} catch {
-			toast.error('Branch not selected.');
+			toast.error('Branch not selected');
 		}
 	}
 	let leadFilter = $derived(compiled({ ...query, search: '' }, 'path', 1, 1, 1));
@@ -799,10 +818,10 @@
 				return;
 			}
 			toast.success(
-				`Verification queued for ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}.`
+				`Verification queued for ${res.queued.toLocaleString()} ${res.queued === 1 ? 'endpoint' : 'endpoints'} under ${where}`
 			);
 		} catch {
-			toast.error('Verification not queued.');
+			toast.error('Verification not queued');
 		}
 	}
 	function handoff(connectorId: string, body: HandoffRequest) {
@@ -880,10 +899,14 @@
 		goneLoading = true;
 		try {
 			const res = await endpointsApi.gone(projectId, scanId, goneFilter);
-			if (my === goneReq) gonePage = res;
+			if (my === goneReq) {
+				gonePage = res;
+				goneFailed = false;
+			}
 		} catch {
 			if (my === goneReq) {
 				gonePage = null;
+				goneFailed = true;
 				loadedGoneSig = '';
 			}
 		} finally {
@@ -1012,15 +1035,13 @@
 	}
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		const typing =
-			!!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+		const typing = keyTaken(e.target);
 		if (e.key === '/' && !typing) {
 			e.preventDefault();
 			searchRef?.focus();
 			return;
 		}
-		if (typing || drawerOpen) return;
+		if (typing || drawerOpen || topLayer() || inPopover(e.target)) return;
 		if (inHost) {
 			if (e.key === '[') {
 				e.preventDefault();
@@ -1037,6 +1058,8 @@
 		if (atEstate) {
 			const rows = hosts?.items ?? [];
 			if (!rows.length) return;
+			const drill = e.key === 'Enter' || e.key === 'ArrowRight';
+			if (drill && onControl(e.target, '[data-host-row]')) return;
 			if (e.key === 'j' || e.key === 'ArrowDown') {
 				e.preventDefault();
 				hostCursor = Math.min(hostCursor + 1, rows.length - 1);
@@ -1058,6 +1081,8 @@
 			return;
 		}
 		if (!isList || !items.length) return;
+		if (e.key === 'Enter' && onControl(e.target, '[data-endpoint-row-index] > [role=button]'))
+			return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			cursor = Math.min(cursor + 1, items.length - 1);
@@ -1106,7 +1131,7 @@
 			class="absolute inset-x-0 top-full flex h-8 items-center gap-1 overflow-hidden border-x border-b bg-card/95 px-4 text-xs shadow-sm backdrop-blur"
 		>
 			{#each crumbs as crumb, i (crumb.key)}
-				{#if i > 0}<span class="text-muted-foreground/60">›</span>{/if}
+				{#if i > 0}<span class="text-muted-foreground/60" aria-hidden="true">›</span>{/if}
 				<button
 					type="button"
 					class="max-w-64 truncate font-mono text-muted-foreground hover:text-foreground"
@@ -1130,7 +1155,7 @@
 	{:else if filtered || (hideStatic && scanTotal > 0)}
 		<EmptyState
 			icon={SearchX}
-			title={atEstate ? 'No host matches' : 'No endpoints match'}
+			title={atEstate ? 'No web asset matches' : 'No endpoints match'}
 			description={hideStatic && !filtered ? 'All matching endpoints are static files.' : undefined}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
@@ -1138,7 +1163,6 @@
 				<Button
 					size="sm"
 					variant="outline"
-					class="gap-2"
 					onclick={() => setQuery({ ...emptyEndpointQuery(), host: query.host })}
 				>
 					<X class="h-4 w-4" /> Clear filters
@@ -1153,11 +1177,11 @@
 		<EmptyState
 			icon={Waypoints}
 			title="Root pages only"
-			description="Every host has only its root page."
+			description="Every web asset has only its root page."
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button size="sm" variant="outline" onclick={() => (hideRootOnly = false)}>
-				Show root-only hosts
+				Show root-only web assets
 			</Button>
 		</EmptyState>
 	{:else}
@@ -1175,9 +1199,7 @@
 		title="Endpoints not loaded"
 		class="rounded-none border-0 bg-transparent py-16"
 	>
-		<Button variant="outline" class="gap-2" onclick={() => refresh()}>
-			<RefreshCw class="h-4 w-4" /> Retry
-		</Button>
+		<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
 	</EmptyState>
 {/snippet}
 
@@ -1306,7 +1328,7 @@
 						: 'the previous run'}
 					not found in this scan.
 				</span>
-			{:else}
+			{:else if goneLoading || !goneFailed}
 				<Skeleton class="h-3.5 w-52" />
 			{/if}
 			<button
@@ -1328,6 +1350,14 @@
 					rows={5}
 				/>
 			</ScrollArea>
+		{:else if !gonePage && goneFailed}
+			<EmptyState
+				icon={TriangleAlert}
+				title="Retired endpoints not loaded"
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button size="sm" variant="outline" onclick={() => loadGone()}>Retry</Button>
+			</EmptyState>
 		{:else if gonePage && gonePage.items.length === 0}
 			<EmptyState
 				icon={History}
@@ -1383,7 +1413,7 @@
 				description={hosts.error.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
-		{:else if errored && !hosts}
+		{:else if !hosts && !hostsLoading && (errored || hostsFailed)}
 			{@render retryState()}
 		{:else if !hostsLoading && hosts && hosts.items.length === 0}
 			{@render emptyStates()}
@@ -1421,7 +1451,7 @@
 				description={tree.error.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
-		{:else if errored && !tree}
+		{:else if !tree && !treeLoading && (errored || treeFailed)}
 			{@render retryState()}
 		{:else if !treeLoading && tree && tree.nodes.length === 0}
 			{@render emptyStates()}

@@ -13,6 +13,8 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import QueryBar from '$lib/components/scans/results/query-bar/query-bar.svelte';
 	import { QUERY_SCHEMAS } from '$lib/stores/query-schema.svelte';
 	import { loadTripwireFacets } from '$lib/utilities/tripwire-facets';
@@ -118,6 +120,7 @@
 	let facets = $state<Record<string, Facet[]>>({});
 	let facetsFor = $state('');
 	let nameError = $state('');
+	let initial = $state('');
 
 	let catalog = $derived(tripwiresStore.catalog);
 	let isEdit = $derived(tripwire !== null);
@@ -149,6 +152,28 @@
 	let channelNames = $derived(
 		channelIds.map((id) => tripwiresStore.channelName(id)).filter((n): n is string => !!n)
 	);
+	let dirty = $derived(snapshot() !== initial);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => onOpenChange(false)
+	);
+
+	function snapshot(): string {
+		return JSON.stringify([
+			name.trim(),
+			dimension,
+			query.trim(),
+			trigger,
+			fireOn,
+			scope,
+			notifyOn,
+			channelIds,
+			scanOn,
+			stages,
+			enabled
+		]);
+	}
+
 	let actionLines = $derived.by((): FlowAction[] => {
 		const out: FlowAction[] = [];
 		if (notifyOn) {
@@ -198,6 +223,7 @@
 			facets = {};
 			facetsFor = '';
 			nameError = '';
+			initial = snapshot();
 		});
 	});
 
@@ -294,13 +320,21 @@
 	}
 </script>
 
-<Dialog.Root {open} {onOpenChange}>
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) onOpenChange(true);
+			else if (!saving) guard.close();
+		}
+	}
+>
 	<Dialog.Content
-		class="flex h-[min(92vh,800px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+		class="flex h-[min(90vh,800px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
 		onkeydown={onKeydown}
 		onOpenAutoFocus={(e) => e.preventDefault()}
 	>
-		<Dialog.Header class="gap-4 border-b px-6 pt-6 pb-4">
+		<Dialog.Header class="gap-4 border-b py-4 pr-12 pl-6">
 			<div class="flex items-start justify-between gap-4">
 				<div class="flex flex-col gap-1">
 					<Dialog.Title>{isEdit ? tripwire?.name : 'New tripwire'}</Dialog.Title>
@@ -502,7 +536,7 @@
 			</div>
 		</ScrollArea>
 
-		<div class="flex items-center gap-2 border-t bg-muted/30 px-6 py-3">
+		<div class="flex items-center gap-2 border-t px-6 py-4">
 			{#if step > 0}
 				<Button variant="ghost" size="sm" onclick={back}>
 					<ChevronLeft class="size-4" />
@@ -512,7 +546,9 @@
 			<div class="min-w-0 flex-1 truncate text-xs text-muted-foreground" aria-live="polite">
 				{blocker ?? ''}
 			</div>
-			<Button variant="outline" size="sm" onclick={() => onOpenChange(false)}>Cancel</Button>
+			<Button variant="outline" size="sm" disabled={saving} onclick={() => guard.close()}>
+				Cancel
+			</Button>
 			{#if step < STEPS.length - 1}
 				<Button size="sm" disabled={!stepReady[step]} onclick={next}>Continue</Button>
 			{:else}
@@ -529,3 +565,9 @@
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

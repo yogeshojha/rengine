@@ -90,7 +90,9 @@
 		<div class="min-w-0 flex-1">
 			{#if multi}
 				<button
+					type="button"
 					onclick={() => (expanded = !expanded)}
+					aria-expanded={expanded}
 					class="-ml-1 w-[calc(100%+4px)] cursor-pointer rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-accent/50"
 				>
 					<div class="flex items-start justify-between gap-3">
@@ -146,6 +148,7 @@
 			{:else}
 				<svelte:element
 					this={primary.target_id ? 'button' : 'div'}
+					type={primary.target_id ? 'button' : undefined}
 					role={primary.target_id ? 'button' : undefined}
 					onclick={() => navigate(primary.target_id)}
 					class="group/single -ml-1 flex w-[calc(100%+4px)] items-start justify-between gap-3 rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-accent/50 {primary.target_id

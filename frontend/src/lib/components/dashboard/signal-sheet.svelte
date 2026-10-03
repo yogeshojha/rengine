@@ -1,6 +1,7 @@
 <script lang="ts" module>
 	export interface SheetRowAction {
 		label: string;
+		loadingLabel?: string;
 		doneLabel: string;
 		done?: boolean;
 		pending?: boolean;
@@ -53,6 +54,7 @@
 		loading?: boolean;
 		error?: string | null;
 		action?: SheetAction | null;
+		onRetry?: () => void;
 	}
 
 	let {
@@ -64,7 +66,8 @@
 		noun = 'Rows',
 		loading = false,
 		error = null,
-		action = null
+		action = null,
+		onRetry
 	}: Props = $props();
 
 	const TONE = { warn: 'text-warning', bad: 'text-destructive' };
@@ -132,7 +135,11 @@
 					title="{noun} not loaded"
 					description={error}
 					class="m-3 border-dashed"
-				/>
+				>
+					{#if onRetry}
+						<Button variant="outline" size="sm" onclick={() => onRetry()}>Retry</Button>
+					{/if}
+				</EmptyState>
 			{:else if rows.length === 0}
 				<EmptyState compact title="No {noun.toLowerCase()}" class="m-3 border-dashed" />
 			{/if}
@@ -140,7 +147,7 @@
 				{#each groups as g, gi (`${gi}:${g.label ?? ''}`)}
 					{#if g.label}
 						<span
-							class="flex items-center justify-between px-3 pt-4 pb-1 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+							class="flex items-center justify-between px-3 pt-4 pb-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
 						>
 							{g.label}
 							<span class="tabular-nums">{g.rows.length}</span>
@@ -165,6 +172,7 @@
 														size="sm"
 														class="h-6 px-2 text-xs text-muted-foreground"
 														loading={r.quietAction.pending}
+														loadingLabel={r.quietAction.loadingLabel}
 														onclick={r.quietAction.onClick}
 													>
 														{r.quietAction.label}
@@ -175,6 +183,7 @@
 													size="sm"
 													class="h-6 px-2 text-xs"
 													loading={r.action.pending}
+													loadingLabel={r.action.loadingLabel}
 													onclick={r.action.onClick}
 												>
 													{r.action.label}
@@ -204,7 +213,7 @@
 			</div>
 		</ScrollArea>
 		{#if action}
-			<Sheet.Footer class="border-t px-5 py-4 sm:flex-row sm:justify-start">
+			<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
 				<Button size="sm" onclick={action.onClick}>{action.label}</Button>
 			</Sheet.Footer>
 		{/if}

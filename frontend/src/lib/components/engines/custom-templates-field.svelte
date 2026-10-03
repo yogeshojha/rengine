@@ -47,9 +47,9 @@
 </script>
 
 {#if loaded && failed}
-	<p class="w-[280px] text-right text-2xs text-destructive">Templates not loaded.</p>
+	<p class="w-[280px] max-w-full text-right text-2xs text-destructive">Templates not loaded.</p>
 {:else if loaded && templates.length === 0}
-	<div class="w-[280px] text-right">
+	<div class="w-[280px] max-w-full text-right">
 		<p class="text-2xs text-muted-foreground">No uploaded templates.</p>
 		{#if isAdmin}
 			<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>
@@ -58,7 +58,7 @@
 		{/if}
 	</div>
 {:else}
-	<div class="w-[280px] space-y-1">
+	<div class="w-[280px] max-w-full space-y-1">
 		<MultiSelectCombobox
 			{id}
 			{items}

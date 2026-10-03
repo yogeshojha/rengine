@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Search from '@lucide/svelte/icons/search';
 	import Layers from '@lucide/svelte/icons/layers';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Button } from '$lib/components/ui/button';
@@ -71,7 +72,7 @@
 
 <Sheet.Root bind:open>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-		<Sheet.Header class="border-b px-6 py-5">
+		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title class="flex items-center gap-2">
 				<Layers class="size-4 text-muted-foreground" />
 				Technology stack
@@ -80,7 +81,7 @@
 				{total.toLocaleString()} technologies across {hosts.toLocaleString()} web assets.
 			</Sheet.Description>
 		</Sheet.Header>
-		<div class="border-b px-6 py-4">
+		<div class="border-b px-5 py-3">
 			<InputGroup.Root>
 				<InputGroup.Addon><Search class="size-4" /></InputGroup.Addon>
 				<InputGroup.Input
@@ -91,11 +92,11 @@
 			</InputGroup.Root>
 		</div>
 		<ScrollArea class="min-h-0 flex-1">
-			<div class="px-6 py-3">
+			<div class="px-5 py-4">
 				{#if loading && !items.length}
 					<CellSkeleton shape="ranked" rows={8} />
 				{:else if errored}
-					<EmptyState compact title="Technologies not loaded">
+					<EmptyState compact icon={TriangleAlert} title="Technologies not loaded">
 						<Button variant="outline" size="sm" onclick={() => fetchList(query)}>Retry</Button>
 					</EmptyState>
 				{:else if !items.length}

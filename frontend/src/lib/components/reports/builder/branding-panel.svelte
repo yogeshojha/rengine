@@ -5,17 +5,18 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import FormField from '$lib/components/form-field.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import XIcon from '@lucide/svelte/icons/x';
-	import { toast } from 'svelte-sonner';
 	import { MAX_EMBEDDED_IMAGE_KB, readEmbeddedImage } from '$lib/config/reports';
 	import type { ReportBranding } from '$lib/types/report';
 
 	let { branding = $bindable() }: { branding: ReportBranding } = $props();
 
 	let logoInput = $state<HTMLInputElement | null>(null);
+	let logoError = $state('');
 	let distributionDraft = $state('');
 
 	async function pickLogo(event: Event) {
@@ -25,9 +26,10 @@
 		if (!file) return;
 		const logo = await readEmbeddedImage(file);
 		if (logo === null) {
-			toast.error(`Logo exceeds ${MAX_EMBEDDED_IMAGE_KB} KB. Choose a smaller file.`);
+			logoError = `Logo exceeds ${MAX_EMBEDDED_IMAGE_KB} KB. Choose a smaller file.`;
 			return;
 		}
+		logoError = '';
 		branding.company_logo = logo;
 	}
 
@@ -46,16 +48,14 @@
 	}
 </script>
 
-{#snippet group(title: string)}
-	<h3 class="text-sm font-medium">{title}</h3>
-{/snippet}
-
 <div class="space-y-6">
 	<section class="space-y-4">
-		{@render group('Organization')}
+		<SectionHead title="Organization" />
 		<div class="flex flex-wrap items-center gap-3">
 			<div
-				class="flex h-14 w-40 items-center justify-center rounded-md border border-dashed bg-muted/30"
+				class="flex h-14 w-40 items-center justify-center rounded-md border border-dashed {branding.company_logo
+					? 'bg-white'
+					: 'bg-muted/30'}"
 			>
 				{#if branding.company_logo}
 					<img src={branding.company_logo} alt="Logo" class="max-h-12 max-w-36 object-contain" />
@@ -66,7 +66,7 @@
 			<div class="flex flex-col gap-1">
 				<div class="flex gap-2">
 					<Button variant="outline" size="sm" onclick={() => logoInput?.click()}>
-						<UploadIcon class="mr-1.5 size-3.5" />
+						<UploadIcon class="size-3.5" />
 						{branding.company_logo ? 'Replace logo' : 'Upload logo'}
 					</Button>
 					{#if branding.company_logo}
@@ -75,9 +75,13 @@
 						</Button>
 					{/if}
 				</div>
-				<span class="text-xs text-muted-foreground"
-					>PNG, JPEG, SVG or WebP. {MAX_EMBEDDED_IMAGE_KB} KB maximum.</span
-				>
+				{#if logoError}
+					<span role="alert" class="text-xs text-destructive">{logoError}</span>
+				{:else}
+					<span class="text-xs text-muted-foreground"
+						>PNG, JPEG, SVG or WebP. {MAX_EMBEDDED_IMAGE_KB} KB maximum.</span
+					>
+				{/if}
 			</div>
 			<input
 				bind:this={logoInput}
@@ -115,7 +119,7 @@
 	<Separator />
 
 	<section class="space-y-4">
-		{@render group('Engagement')}
+		<SectionHead title="Engagement" />
 		<div class="grid gap-4 sm:grid-cols-2">
 			<FormField label="Client name">
 				{#snippet children({ id })}
@@ -153,7 +157,7 @@
 	<Separator />
 
 	<section class="space-y-4">
-		{@render group('Document')}
+		<SectionHead title="Document" />
 		<div class="grid gap-4 sm:grid-cols-3">
 			<FormField label="Classification">
 				{#snippet children({ id })}
@@ -183,13 +187,7 @@
 							class="h-9"
 							onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), addRecipient())}
 						/>
-						<Button
-							variant="outline"
-							size="sm"
-							class="h-9"
-							disabled={!distributionDraft.trim()}
-							onclick={addRecipient}
-						>
+						<Button variant="outline" disabled={!distributionDraft.trim()} onclick={addRecipient}>
 							Add
 						</Button>
 					</div>
@@ -215,18 +213,18 @@
 			{/snippet}
 		</FormField>
 
-		<div class="space-y-2">
+		<div class="space-y-3">
 			<div class="flex items-center justify-between">
 				<span class="text-sm font-medium">Revision history</span>
-				<Button variant="outline" size="sm" class="h-8" onclick={addRevision}>
-					<PlusIcon class="mr-1 size-3.5" />
+				<Button variant="outline" size="sm" onclick={addRevision}>
+					<PlusIcon class="size-3.5" />
 					Add revision
 				</Button>
 			</div>
 			{#if branding.revisions.length}
-				<div class="rounded-md border">
+				<div class="rounded-lg border">
 					<div
-						class="hidden grid-cols-[5rem_9rem_10rem_minmax(0,1fr)_2.25rem] gap-2 border-b bg-muted/30 px-2 py-1.5 text-2xs font-medium text-muted-foreground uppercase sm:grid"
+						class="hidden grid-cols-[5rem_9rem_10rem_minmax(0,1fr)_2.25rem] gap-2 border-b bg-muted/20 px-2 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
 					>
 						<span>Version</span>
 						<span>Date</span>
@@ -260,7 +258,7 @@
 							<Button
 								variant="ghost"
 								size="icon"
-								class="size-9 text-muted-foreground hover:text-destructive"
+								class="text-muted-foreground hover:text-destructive"
 								onclick={() =>
 									(branding.revisions = branding.revisions.filter((_, i) => i !== index))}
 								aria-label="Remove revision"
@@ -277,7 +275,7 @@
 	<Separator />
 
 	<section class="space-y-4">
-		{@render group('Legal')}
+		<SectionHead title="Legal" />
 		<FormField label="Confidentiality statement">
 			{#snippet children({ id })}
 				<Textarea {id} bind:value={branding.confidentiality_statement} rows={3} class="text-sm" />

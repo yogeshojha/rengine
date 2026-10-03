@@ -36,7 +36,7 @@
 		}}
 	>
 		{#if notification && TypeIcon}
-			<Sheet.Header class="gap-3 border-b border-border px-5 pt-5 pr-12 pb-4">
+			<Sheet.Header class="gap-3 border-b px-5 py-4 pr-12">
 				<div class="flex items-start gap-3">
 					<div
 						class={cn(
@@ -47,7 +47,7 @@
 						<TypeIcon class="size-4" />
 					</div>
 					<div class="min-w-0 flex-1">
-						<Sheet.Title class="text-base leading-snug font-medium">
+						<Sheet.Title class="leading-snug wrap-anywhere">
 							{notification.title}
 						</Sheet.Title>
 						<Sheet.Description class="mt-0.5">
@@ -63,7 +63,7 @@
 				<ScrollArea class="min-h-0 flex-1">
 					<div class="divide-y divide-border px-5">
 						{#each lines as line, i (i)}
-							<p class="py-2.5 text-sm text-foreground">{line}</p>
+							<p class="py-2.5 text-sm text-foreground wrap-anywhere">{line}</p>
 						{/each}
 					</div>
 				</ScrollArea>
@@ -72,8 +72,8 @@
 			{/if}
 
 			{#if meta?.url}
-				<Sheet.Footer class="border-t border-border px-5 py-4">
-					<Button onclick={onOpen}>
+				<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
+					<Button size="sm" onclick={onOpen}>
 						Open
 						<ArrowUpRight class="size-4" />
 					</Button>

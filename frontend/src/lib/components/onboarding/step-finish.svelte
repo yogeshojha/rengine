@@ -17,6 +17,7 @@
 			onNext: handleNext,
 			nextLabel: 'Finish setup',
 			nextLoading: busy,
+			nextLoadingLabel: 'Creating',
 			nextDisabled: nameInvalid
 		});
 	});
@@ -31,9 +32,7 @@
 			await projectsApi.create({ name: projectName.trim() });
 			next();
 		} catch (e) {
-			toast.error(
-				e instanceof Error ? `Project not created. ${e.message}` : 'Project not created.'
-			);
+			toast.error(e instanceof Error ? `Project not created. ${e.message}` : 'Project not created');
 		} finally {
 			busy = false;
 		}
@@ -42,8 +41,8 @@
 
 <div class="space-y-6">
 	<section class="space-y-5">
-		<div class="space-y-1.5">
-			<Label for="project-name" class="text-xs">
+		<div class="flex flex-col gap-3">
+			<Label for="project-name">
 				Name <span class="text-destructive">*</span>
 			</Label>
 			<Input
@@ -51,7 +50,7 @@
 				bind:value={projectName}
 				placeholder="Acme Bug Bounty"
 				disabled={busy}
-				aria-invalid={nameInvalid}
+				aria-invalid={nameInvalid && projectName.length > 0}
 				class="h-9 text-sm"
 			/>
 		</div>

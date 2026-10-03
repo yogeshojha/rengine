@@ -106,7 +106,9 @@
 				checked={selected}
 				onCheckedChange={onSelect}
 				aria-label="Select run of {scan.execution_config.target_value}"
-				class="transition-opacity {selected ? '' : 'sm:opacity-0 sm:group-hover:opacity-100'}"
+				class="transition-opacity {selected
+					? ''
+					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
 			/>
 		</div>
 		<div class={COL.target}>
@@ -212,9 +214,13 @@
 					</Button>
 				{/if}
 				{#if scan.status === 'running'}
-					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onPause}>
-						<Pause class="size-3.5" /> Pause
-					</Button>
+					<Hint text="Running stages restart on resume.">
+						{#snippet child(props)}
+							<Button {...props} size="sm" variant="outline" class="h-8 gap-1.5" onclick={onPause}>
+								<Pause class="size-3.5" /> Pause
+							</Button>
+						{/snippet}
+					</Hint>
 				{:else if scan.status === 'paused'}
 					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onResume}>
 						<Play class="size-3.5" /> Resume

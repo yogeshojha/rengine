@@ -22,7 +22,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels.profile)}</title></svelte:head>
 
-<div class="container max-w-5xl mx-auto space-y-6">
+<div class="flex flex-col gap-6">
 	<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
 
 	<Card.Root class="overflow-hidden">

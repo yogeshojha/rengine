@@ -8,6 +8,7 @@
 	import { toast } from 'svelte-sonner';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SquareKanbanIcon from '@lucide/svelte/icons/square-kanban';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -172,28 +173,29 @@
 	}
 
 	async function confirm() {
-		if (!pending) return;
+		const asking = pending;
+		if (!asking) return;
 		removing = true;
 		try {
-			if (pending.kind === 'tracker') {
-				await issueTrackersApi.remove(pending.tracker.id);
-				issueTrackers.drop(pending.tracker.id);
-				toast.success(`${pending.tracker.name} removed`);
-			} else if (pending.kind === 'route') {
-				await issueTrackersApi.removeRoute(pending.route.id);
-				issueTrackers.dropRoute(pending.route.id);
+			if (asking.kind === 'tracker') {
+				await issueTrackersApi.remove(asking.tracker.id);
+				issueTrackers.drop(asking.tracker.id);
+				toast.success(`${asking.tracker.name} removed`);
+			} else if (asking.kind === 'route') {
+				await issueTrackersApi.removeRoute(asking.route.id);
+				issueTrackers.dropRoute(asking.route.id);
 				toast.success('Route removed');
 			} else {
-				await issueTrackersApi.unlink(pending.issue.id);
-				issueTrackers.dropIssue(pending.issue.id);
+				await issueTrackersApi.unlink(asking.issue.id);
+				issueTrackers.dropIssue(asking.issue.id);
 				toast.success('Issue unlinked');
 			}
 			pending = null;
 		} catch (e) {
 			const fallback =
-				pending?.kind === 'tracker'
+				asking.kind === 'tracker'
 					? 'Tracker not removed'
-					: pending?.kind === 'route'
+					: asking.kind === 'route'
 						? 'Route not removed'
 						: 'Issue not unlinked';
 			toast.error(e instanceof Error ? e.message : fallback);
@@ -208,12 +210,13 @@
 	});
 
 	const confirmCopy = $derived.by(() => {
-		if (!asked) return { title: '', body: '', label: '' };
+		if (!asked) return { title: '', body: '', label: '', busy: '' };
 		if (asked.kind === 'tracker') {
 			return {
 				title: 'Remove tracker',
 				body: `Tracker ${asked.tracker.name}, its routes and its issue links are removed.`,
-				label: 'Remove'
+				label: 'Remove',
+				busy: 'Removing'
 			};
 		}
 		if (asked.kind === 'route') {
@@ -221,21 +224,23 @@
 			return {
 				title: 'Remove route',
 				body: `Route for ${scope} is removed.`,
-				label: 'Remove'
+				label: 'Remove',
+				busy: 'Removing'
 			};
 		}
 		const i = asked.issue;
 		return {
 			title: 'Unlink issue',
 			body: `Link between ${i.external_key ?? i.title} and ${plural(i.findings, 'finding')} is removed.`,
-			label: 'Unlink'
+			label: 'Unlink',
+			busy: 'Unlinking'
 		};
 	});
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels['issue-trackers'])}</title></svelte:head>
 
-<div class="flex flex-col gap-5">
+<div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels['issue-trackers']}</h1>
@@ -264,7 +269,7 @@
 
 	{#if !issueTrackers.loaded && issueTrackers.error}
 		<EmptyState
-			icon={SquareKanbanIcon}
+			icon={TriangleAlertIcon}
 			title="Issue trackers not loaded"
 			description={issueTrackers.error}
 		>
@@ -299,11 +304,21 @@
 			{#if tab === 'issues'}
 				{#if issueTrackers.issuesError}
 					<EmptyState
-						icon={SquareKanbanIcon}
+						icon={TriangleAlertIcon}
 						title="Issues not loaded"
 						description={issueTrackers.issuesError}
-						compact
-					/>
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						{#if project}
+							<Button
+								size="sm"
+								variant="outline"
+								onclick={() => issueTrackers.loadProject(project.id, true)}
+							>
+								Retry
+							</Button>
+						{/if}
+					</EmptyState>
 				{:else if issueTrackers.issuesLoading && !issueTrackers.issues.length}
 					<div class="flex flex-col gap-2 p-4">
 						<Skeleton class="h-10 w-full" />
@@ -316,7 +331,11 @@
 						onClear={() => (trackerFilter = null)}
 					/>
 					{#if !shownIssues.length}
-						<EmptyState icon={SquareKanbanIcon} title="No issues filed" compact />
+						<EmptyState
+							icon={SquareKanbanIcon}
+							title="No issues filed"
+							class="rounded-none border-0 bg-transparent py-16"
+						/>
 					{:else}
 						<IssuesTable
 							issues={shownIssues}
@@ -340,7 +359,11 @@
 					onOpenIssues={openIssues}
 				/>
 			{:else if !issueTrackers.routes.length}
-				<EmptyState icon={SquareKanbanIcon} title="No routes" compact>
+				<EmptyState
+					icon={SquareKanbanIcon}
+					title="No routes"
+					class="rounded-none border-0 bg-transparent py-16"
+				>
 					{#if canAdmin}
 						<Button size="sm" variant="outline" onclick={() => openRoute(null)}>
 							<PlusIcon class="size-4" />
@@ -372,6 +395,7 @@
 	title={confirmCopy.title}
 	description={confirmCopy.body}
 	confirmLabel={confirmCopy.label}
+	loadingLabel={confirmCopy.busy}
 	destructive
 	loading={removing}
 	onOpenChange={(v) => {

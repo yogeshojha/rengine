@@ -27,5 +27,5 @@
 	{/each}
 </div>
 {#if selected.length === 0}
-	<p class="text-xs text-destructive">Choose at least one stage.</p>
+	<p class="text-xs text-destructive" role="alert">Choose at least one stage.</p>
 {/if}

@@ -34,7 +34,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="outline" size="sm" class="h-9 gap-2">
+				<Button {...props} variant="outline" aria-label="Sort by {activeLabel}">
 					<ArrowUpDown class="h-4 w-4" />
 					<span class="hidden sm:inline">{activeLabel}</span>
 					{#if sortDir === 'asc'}
@@ -77,7 +77,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button {...props} variant="outline" size="sm" class="h-9 gap-2" disabled={exportDisabled}>
+				<Button {...props} variant="outline" aria-label="Export" disabled={exportDisabled}>
 					<Download class="h-4 w-4" />
 					<span class="hidden sm:inline">Export</span>
 				</Button>

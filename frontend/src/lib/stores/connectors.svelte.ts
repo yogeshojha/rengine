@@ -16,6 +16,8 @@ function createConnectorsStore() {
 	let isLoading = $state(false);
 	let queueLoading = $state(false);
 	let error = $state<string | null>(null);
+	let queueError = $state<string | null>(null);
+	let discoveredError = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let loadedAt = 0;
 	let queueSeq = 0;
@@ -42,6 +44,12 @@ function createConnectorsStore() {
 		},
 		get error() {
 			return error;
+		},
+		get queueError() {
+			return queueError;
+		},
+		get discoveredError() {
+			return discoveredError;
 		},
 		get fetchedProjectId() {
 			return fetchedProjectId;
@@ -87,12 +95,17 @@ function createConnectorsStore() {
 
 		async loadQueue(id: string, projectId: string, params: CandidateQuery = {}, quiet = false) {
 			const seq = ++queueSeq;
-			if (!quiet) queueLoading = true;
+			if (!quiet) {
+				queueLoading = true;
+				queueError = null;
+			}
 			try {
 				const next = await connectorsApi.candidates(id, projectId, params);
-				if (seq === queueSeq) queue = next;
+				if (seq !== queueSeq) return;
+				queue = next;
+				queueError = null;
 			} catch (e) {
-				if (seq === queueSeq) error = message(e, 'Queue not loaded');
+				if (seq === queueSeq) queueError = message(e, 'Requests not loaded');
 			} finally {
 				if (seq === queueSeq) queueLoading = false;
 			}
@@ -101,8 +114,9 @@ function createConnectorsStore() {
 		async loadDiscovered(id: string, projectId: string) {
 			try {
 				discovered = await connectorsApi.discovered(id, projectId);
+				discoveredError = null;
 			} catch (e) {
-				error = message(e, 'Discovered domains not loaded');
+				discoveredError = message(e, 'Domains not loaded');
 			}
 		},
 
@@ -117,7 +131,9 @@ function createConnectorsStore() {
 			queueSeq++;
 			queue = null;
 			queueLoading = false;
+			queueError = null;
 			discovered = [];
+			discoveredError = null;
 		},
 
 		reset() {
@@ -129,6 +145,8 @@ function createConnectorsStore() {
 			isLoading = false;
 			queueLoading = false;
 			error = null;
+			queueError = null;
+			discoveredError = null;
 			fetchedProjectId = null;
 			loadedAt = 0;
 		}

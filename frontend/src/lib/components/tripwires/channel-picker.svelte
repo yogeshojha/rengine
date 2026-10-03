@@ -21,8 +21,11 @@
 {#if channels.length === 0}
 	<p class="text-xs text-muted-foreground">
 		No notification channel is set up.
-		<a href={ROUTES.settings('notifications')} class="text-foreground hover:text-primary"
-			>Notifications</a
+		<a
+			href={ROUTES.settings('notifications')}
+			target="_blank"
+			rel="noreferrer noopener"
+			class="text-foreground hover:text-primary">Notifications</a
 		>
 	</p>
 {:else}

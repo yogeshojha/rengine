@@ -7,9 +7,11 @@
 	import { Button } from '$lib/components/ui/button';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import TokenForm from './token-form.svelte';
 	import { CHANNEL_META, RATE_LIMIT_MAX, RATE_LIMIT_MIN } from '$lib/config/channels';
 	import { externalHref } from '$lib/utilities/links';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { remoteControl } from '$lib/stores/remote-control.svelte';
 	import type { ChannelStatus } from '$lib/types/remote-control';
 	import type { McpCapability } from '$lib/types/mcp';
@@ -23,10 +25,18 @@
 
 	let rateDraft = $state<string | null>(null);
 	let changing = $state(false);
+	let typedToken = $state('');
 	let confirmDisconnect = $state(false);
 
 	const meta = $derived(CHANNEL_META[status.channel]);
 	const rate = $derived(rateDraft ?? String(status.rate_limit_per_minute));
+	const guard = new DiscardGuard(() => changing && !!typedToken.trim(), close);
+
+	function close() {
+		open = false;
+		changing = false;
+		typedToken = '';
+	}
 
 	async function setCeiling(key: McpCapability, value: boolean) {
 		await remoteControl.save({ ceiling: { ...status.ceiling, [key]: value } });
@@ -59,12 +69,21 @@
 	);
 
 	async function disconnect() {
+		if (!(await remoteControl.disconnect())) return;
 		confirmDisconnect = false;
-		if (await remoteControl.disconnect()) open = false;
+		close();
 	}
 </script>
 
-<Sheet.Root bind:open>
+<Sheet.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!remoteControl.isSaving) guard.close();
+		}
+	}
+>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-md">
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title>{status.label} settings</Sheet.Title>
@@ -87,7 +106,12 @@
 						<span class="font-mono text-xs text-muted-foreground">{status.secret_masked}</span>
 					</div>
 					{#if changing}
-						<TokenForm channel={status.channel} action="Save" onDone={() => (changing = false)} />
+						<TokenForm
+							channel={status.channel}
+							action="Save"
+							bind:token={typedToken}
+							onDone={() => (changing = false)}
+						/>
 						{#if status.chats_total}
 							<span class="text-xs text-muted-foreground">
 								A token for a different bot removes the {status.chats_total} paired chat{status.chats_total ===
@@ -98,7 +122,14 @@
 						{/if}
 					{/if}
 					<div class="flex flex-wrap gap-2">
-						<Button variant="outline" size="sm" onclick={() => (changing = !changing)}>
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => {
+								changing = !changing;
+								typedToken = '';
+							}}
+						>
 							{changing ? 'Cancel' : 'Change bot'}
 						</Button>
 						<Button
@@ -163,11 +194,18 @@
 	</Sheet.Content>
 </Sheet.Root>
 
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>
+
 <ConfirmDialog
 	bind:open={confirmDisconnect}
 	title="Disconnect bot"
 	description={disconnectText}
 	confirmLabel="Disconnect"
+	loadingLabel="Disconnecting"
 	destructive
 	loading={remoteControl.isSaving}
 	onOpenChange={(v) => (confirmDisconnect = v)}

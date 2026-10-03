@@ -33,20 +33,20 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="flex max-h-[88vh] flex-col gap-0 p-0 sm:max-w-5xl">
+	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
 		{#if host}
-			<Dialog.Header class="gap-1 border-b px-6 pt-5 pr-12 pb-4">
+			<Dialog.Header class="gap-1 border-b px-6 py-4 pr-8">
 				<div class="flex items-center gap-2.5">
 					<span class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
 						<FolderTree class="size-4" />
 					</span>
-					<Dialog.Title class="font-mono text-base font-semibold break-all">{host}</Dialog.Title>
+					<Dialog.Title class="font-mono break-all">{host}</Dialog.Title>
 				</div>
 				<Dialog.Description class="tabular-nums">{line}</Dialog.Description>
 			</Dialog.Header>
 
 			<ScrollArea
-				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(88vh-12rem)]"
+				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(90vh-12rem)]"
 			>
 				<HostStructure
 					{host}
@@ -62,9 +62,9 @@
 				/>
 			</ScrollArea>
 
-			<div class="flex items-center justify-end gap-2 border-t px-6 py-3">
-				<Button variant="outline" size="sm" onclick={() => onOpenChange(false)}>Done</Button>
-			</div>
+			<Dialog.Footer class="border-t px-6 py-4">
+				<Button variant="outline" onclick={() => onOpenChange(false)}>Close</Button>
+			</Dialog.Footer>
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>

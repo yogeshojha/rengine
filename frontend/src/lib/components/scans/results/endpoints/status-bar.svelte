@@ -14,7 +14,7 @@
 </script>
 
 <Tooltip.Root>
-	<Tooltip.Trigger class="block w-full">
+	<Tooltip.Trigger class="block w-full" aria-label="Status codes">
 		<span class="flex h-1 w-full overflow-hidden rounded-full bg-muted">
 			{#each parts as p (p.k)}
 				<span

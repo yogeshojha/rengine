@@ -40,9 +40,8 @@
 		{/snippet}
 	</DropdownMenu.Trigger>
 	<DropdownMenu.Content align="end" class="max-h-none w-60 overflow-visible">
-		<DropdownMenu.Label class="text-2xs font-mono tracking-[0.1em] text-muted-foreground uppercase">
-			Tabs
-		</DropdownMenu.Label>
+		<DropdownMenu.Label>Tabs</DropdownMenu.Label>
+		<DropdownMenu.Separator />
 		<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
 			{#each rows.filter((r) => !PINNED_SCAN_TABS.includes(r.key)) as row (row.key)}
 				<DropdownMenu.CheckboxItem

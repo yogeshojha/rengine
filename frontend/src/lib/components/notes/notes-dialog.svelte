@@ -1,10 +1,15 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import NoteCard from './note-card.svelte';
 	import NoteComposer from './note-composer.svelte';
 	import { holdSheetKeys } from './keys';
@@ -33,8 +38,14 @@
 	let error = $state<string | null>(null);
 	let reqId = 0;
 	let composer = $state<ReturnType<typeof NoteComposer> | null>(null);
+	const dirtyNotes = new SvelteSet<string>();
 
 	let showThread = $derived(items.length > 0 || !!error || (!loaded && expected > 0));
+
+	const guard = new DiscardGuard(
+		() => (composer?.dirty() ?? false) || dirtyNotes.size > 0,
+		() => (open = false)
+	);
 
 	async function load() {
 		if (!projectId || !dimension || !assetKey) return;
@@ -72,9 +83,9 @@
 	});
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : guard.close())}>
 	<Dialog.Content
-		class="flex max-h-[90vh] flex-col gap-4 sm:max-w-xl"
+		class="flex max-h-[85vh] flex-col gap-4 sm:max-w-xl"
 		onOpenAutoFocus={(e) => {
 			e.preventDefault();
 			requestAnimationFrame(() => composer?.focus());
@@ -98,12 +109,15 @@
 			<div class="flex min-h-0 flex-col">
 				<Separator />
 				{#if error}
-					<div class="flex items-center justify-between gap-3 pt-3">
-						<p class="min-w-0 text-xs text-destructive">{error}</p>
-						<Button variant="outline" size="sm" class="h-7 shrink-0" onclick={() => void load()}>
-							Retry
-						</Button>
-					</div>
+					<EmptyState
+						compact
+						icon={TriangleAlert}
+						title="Notes not loaded"
+						description={error}
+						class="border-0 bg-transparent"
+					>
+						<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
+					</EmptyState>
 				{:else if !loaded}
 					<div class="flex flex-col gap-5 pt-4" aria-busy="true">
 						{#each Array(2) as _, i (i)}
@@ -115,11 +129,16 @@
 					</div>
 				{:else}
 					<ScrollArea
-						class="-mx-6 -mb-3 min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[min(28rem,calc(90vh-20rem))]"
+						class="-mx-6 -mb-3 min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[min(28rem,calc(85vh-20rem))]"
 					>
 						<div class="divide-y px-6">
 							{#each items as note (note.id)}
-								<NoteCard {note} showAnchor={false} />
+								<NoteCard
+									{note}
+									showAnchor={false}
+									onDirty={(dirty) =>
+										dirty ? dirtyNotes.add(note.id) : dirtyNotes.delete(note.id)}
+								/>
 							{/each}
 						</div>
 						{#if total > items.length}
@@ -133,3 +152,9 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

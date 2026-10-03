@@ -4,6 +4,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import { compareApi } from '$lib/api/compare';
 	import ChangeBar from '$lib/components/scans/compare/change-bar.svelte';
 	import { COMPARABILITY_LABEL } from '$lib/config/compare';
@@ -23,22 +25,28 @@
 	let { projectId, current, baseline, onClose }: Props = $props();
 
 	let data = $state<ScanComparison | null>(null);
-	let error = $state<string | null>(null);
+	let failed = $state(false);
+	let error = $state<string | undefined>(undefined);
+	let attempt = $state(0);
 
 	$effect(() => {
 		const c = current;
 		const b = baseline;
+		void attempt;
 		if (!c) return;
 		let live = true;
 		data = null;
-		error = null;
+		failed = false;
+		error = undefined;
 		compareApi
 			.comparison(projectId, c, b)
 			.then((r) => {
 				if (live) data = r;
 			})
 			.catch((e) => {
-				if (live) error = e instanceof Error ? e.message : 'Comparison not loaded.';
+				if (!live) return;
+				failed = true;
+				error = e instanceof Error ? e.message : undefined;
 			});
 		return () => {
 			live = false;
@@ -73,8 +81,15 @@
 		</Sheet.Header>
 		<ScrollArea class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(70vh-9rem)]">
 			<div class="px-4 py-3">
-				{#if error}
-					<p class="text-sm text-muted-foreground">{error}</p>
+				{#if failed}
+					<EmptyState
+						compact
+						icon={TriangleAlert}
+						title="Comparison not loaded"
+						description={error}
+					>
+						<Button size="sm" variant="outline" onclick={() => attempt++}>Retry</Button>
+					</EmptyState>
 				{:else if !data}
 					<div class="space-y-2">
 						{#each { length: 5 } as _, i (i)}<Skeleton class="h-6 rounded" />{/each}
@@ -100,13 +115,13 @@
 					<ScrollArea orientation="horizontal">
 						<table class="w-full min-w-[560px] text-xs">
 							<thead>
-								<tr class="text-left text-2xs text-muted-foreground">
-									<th class="py-1.5 pr-3 font-normal">Dimension</th>
-									<th class="py-1.5 pr-3 text-right font-normal">Earlier</th>
-									<th class="py-1.5 pr-3 text-right font-normal">Later</th>
-									<th class="py-1.5 pr-3 text-right font-normal">Delta</th>
-									<th class="w-40 py-1.5 pr-3 font-normal"></th>
-									<th class="py-1.5 font-normal">Note</th>
+								<tr class="text-left text-2xs tracking-wide text-muted-foreground uppercase">
+									<th class="py-1.5 pr-3 font-medium">Dimension</th>
+									<th class="py-1.5 pr-3 text-right font-medium">Earlier</th>
+									<th class="py-1.5 pr-3 text-right font-medium">Later</th>
+									<th class="py-1.5 pr-3 text-right font-medium">Delta</th>
+									<th class="w-40 py-1.5 pr-3 font-medium"></th>
+									<th class="py-1.5 font-medium">Note</th>
 								</tr>
 							</thead>
 							<tbody>

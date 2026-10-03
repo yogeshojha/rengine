@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { PROJECT_NAME_MAX } from '$lib/constants';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
@@ -66,13 +66,13 @@
 					bind:value={name}
 					placeholder="Example Corp"
 					disabled={isSubmitting}
-					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
+					aria-invalid={isOverLimit || !!error}
 				/>
 				<div class="flex justify-between text-xs">
 					{#if error}
-						<span class="text-destructive">{error}</span>
+						<span role="alert" class="text-destructive">{error}</span>
 					{:else if isOverLimit}
-						<span class="text-destructive">Name is too long</span>
+						<span role="alert" class="text-destructive">Name is too long</span>
 					{/if}
 					<span
 						class="ml-auto {nameLength > PROJECT_NAME_MAX
@@ -93,14 +93,14 @@
 				>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={!isValid || isSubmitting}>
-					{#if isSubmitting}
-						<Spinner class="mr-2 size-4" />
-						Creating
-					{:else}
-						Create project
-					{/if}
-				</Button>
+				<LoadingButton
+					type="submit"
+					loading={isSubmitting}
+					loadingLabel="Creating"
+					disabled={!isValid}
+				>
+					Create project
+				</LoadingButton>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>

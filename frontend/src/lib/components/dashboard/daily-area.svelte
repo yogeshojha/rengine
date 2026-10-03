@@ -117,7 +117,7 @@
 									<span class="font-mono tabular-nums">{row.runs}</span>
 								</span>
 							{:else}
-								<span class="text-muted-foreground">No run</span>
+								<span class="text-muted-foreground">No runs</span>
 							{/if}
 						</div>
 					{/if}

@@ -16,8 +16,11 @@
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import SearchX from '@lucide/svelte/icons/search-x';
 
 	import { scansApi } from '$lib/api/scans';
+	import { ApiError } from '$lib/api/client';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { exportsStore } from '$lib/stores/exports.svelte';
 	import { BUNDLE } from '$lib/config/exports';
@@ -31,7 +34,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Empty from '$lib/components/ui/empty';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -112,6 +114,7 @@
 	let historyLoaded = $state(false);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let missing = $state(false);
 	let showRescan = $state(false);
 	let cancelOpen = $state(false);
 	let reportOpen = $state(false);
@@ -318,7 +321,7 @@
 	async function copyTarget() {
 		if (!scan) return;
 		const ok = await writeClipboard(scan.execution_config.target_value);
-		if (ok) toast.success('Copied');
+		if (ok) toast.success('Target copied');
 	}
 
 	$effect(() => {
@@ -529,12 +532,15 @@
 	});
 
 	async function loadPipeline(projectId: string) {
+		const id = scanId;
 		try {
-			activities = await scansApi.activities(scanId, projectId);
+			const rows = await scansApi.activities(id, projectId);
+			if (id === scanId) activities = rows;
 		} catch {}
 	}
 
 	async function loadHistory(projectId: string, targetId: string) {
+		const id = scanId;
 		try {
 			const res = await scansApi.list(projectId, {
 				target_id: targetId,
@@ -542,23 +548,42 @@
 				sort_by: 'started',
 				sort_dir: 'desc'
 			});
-			history = res.items;
+			if (id === scanId) history = res.items;
 		} catch {
 			// ignore
 		} finally {
-			historyLoaded = true;
+			if (id === scanId) historyLoaded = true;
 		}
+	}
+
+	async function adoptProject(id: string, current: string): Promise<boolean> {
+		for (const other of projectsStore.projects) {
+			if (other.id === current) continue;
+			try {
+				await scansApi.get(id, other.id);
+			} catch {
+				continue;
+			}
+			if (id === scanId) projectsStore.setActiveProject(other);
+			return true;
+		}
+		return false;
 	}
 
 	let lastStatus: string | null = null;
 	async function load(silent = false) {
 		const project = projectsStore.activeProject;
-		if (!project || !scanId) return;
+		const id = scanId;
+		if (!project || !id) return;
 		if (!silent) loading = true;
 		error = null;
+		missing = false;
 		const before = countsOf(scan);
+		let adopted = false;
 		try {
-			scan = await scansApi.get(scanId, project.id);
+			const next = await scansApi.get(id, project.id);
+			if (id !== scanId) return;
+			scan = next;
 			bumpChangedDimensions(before, scan);
 			if (!silent)
 				breadcrumbStore.setTrail(scanId, [
@@ -575,9 +600,16 @@
 				statusChanged || !historyLoaded ? loadHistory(project.id, scan.target_id) : null
 			]);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Scan not loaded';
+			if (id !== scanId) return;
+			if (!silent && e instanceof ApiError && e.status === 404) {
+				adopted = scan?.id !== id && (await adoptProject(id, project.id));
+				if (!adopted && id === scanId) missing = true;
+				return;
+			}
+			if (!silent || scan?.id !== scanId)
+				error = e instanceof Error ? e.message : 'Scan not loaded';
 		} finally {
-			if (!silent) loading = false;
+			if (!silent && !adopted && id === scanId) loading = false;
 		}
 	}
 
@@ -618,8 +650,8 @@
 		cancelling = true;
 		const ok = await liveScans.cancel(scan);
 		cancelling = false;
-		cancelOpen = false;
 		if (ok) {
+			cancelOpen = false;
 			toast.success('Scan cancelled');
 			load(true);
 		} else toast.error('Scan not cancelled');
@@ -686,7 +718,7 @@
 				(row: ExportRead) => {
 					bundling = false;
 					if (row.status !== 'completed') {
-						toast.error(row.error || 'Export not written.');
+						toast.error(row.error || 'Export not written');
 						return;
 					}
 					toast.success(`${row.row_count.toLocaleString()} rows exported`);
@@ -696,7 +728,7 @@
 			toast.success('Export started');
 		} catch (e) {
 			bundling = false;
-			toast.error(e instanceof Error ? e.message : 'Export not started.');
+			toast.error(e instanceof Error ? e.message : 'Export not started');
 		}
 	}
 </script>
@@ -732,19 +764,38 @@
 	{/if}
 
 	{#if loading && !scan}
-		<Skeleton class="h-16 w-2/3" />
-		<Skeleton class="h-10 w-96" />
-		<Skeleton class="h-96 w-full" />
+		<div class="flex flex-col gap-5" aria-busy="true">
+			<div class="flex items-start justify-between gap-4">
+				<div class="flex min-w-0 flex-1 items-start gap-3">
+					<Skeleton class="size-10 shrink-0 rounded-lg" />
+					<div class="flex min-w-0 flex-1 flex-col gap-2">
+						<Skeleton class="h-6 w-full max-w-56" />
+						<Skeleton class="h-4 w-full max-w-96" />
+					</div>
+				</div>
+				<div class="hidden shrink-0 gap-2 sm:flex">
+					<Skeleton class="h-8 w-24" />
+					<Skeleton class="size-8" />
+				</div>
+			</div>
+			<div class="flex gap-4 border-b border-border pb-2.5">
+				{#each Array(6) as _, i (i)}
+					<Skeleton class="h-4 w-20" />
+				{/each}
+			</div>
+			<Skeleton class="h-96 w-full rounded-xl" />
+		</div>
 	{:else if error}
-		<Empty.Root class="rounded-lg border border-dashed py-20">
-			<Empty.Header>
-				<Empty.Title class="text-sm">Scan not loaded</Empty.Title>
-				<Empty.Description>{error}</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState icon={TriangleAlert} title="Scan not loaded" description={error}>
+			<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
+		</EmptyState>
+	{:else if missing}
+		<EmptyState icon={SearchX} title="Scan not found">
+			<Button size="sm" variant="outline" href={ROUTES.scans}>
+				<ArrowLeft class="size-3.5" />
+				{routeLabels.scans}
+			</Button>
+		</EmptyState>
 	{:else if scan}
 		<header bind:this={headerEl} class="flex flex-wrap items-start justify-between gap-4">
 			<div class="flex min-w-0 items-start gap-3">
@@ -791,7 +842,7 @@
 										size="sm"
 										class="gap-1.5"
 										loading={pausing}
-										loadingLabel="Pausing…"
+										loadingLabel="Pausing"
 										onclick={() => pause()}
 									>
 										<Pause class="size-3.5" />
@@ -810,7 +861,7 @@
 						size="sm"
 						class="gap-1.5"
 						loading={resuming}
-						loadingLabel="Resuming…"
+						loadingLabel="Resuming"
 						onclick={() => resume()}
 					>
 						<Play class="size-3.5" />
@@ -855,7 +906,7 @@
 					</Button>
 					<Button size="sm" class="gap-1.5" onclick={() => (showRescan = true)}>
 						<Play class="size-3.5" />
-						Re-scan
+						Rescan
 					</Button>
 				{/if}
 				<DropdownMenu.Root>
@@ -920,19 +971,17 @@
 
 		{#snippet unscanned(tab: string)}
 			{@const spec = tabSpec(tab)}
-			<EmptyState icon={spec?.icon} title="Not scanned" class="mt-6" />
+			<EmptyState icon={spec?.icon} title="Not scanned" />
 		{/snippet}
 
 		{#snippet tabFailed(err: unknown, reset: () => void)}
-			<Empty.Root class="rounded-lg border border-dashed py-20">
-				<Empty.Header>
-					<Empty.Title class="text-sm">Tab not rendered</Empty.Title>
-					<Empty.Description>{err instanceof Error ? err.message : String(err)}</Empty.Description>
-				</Empty.Header>
-				<Empty.Content>
-					<Button size="sm" variant="outline" onclick={() => reset()}>Retry</Button>
-				</Empty.Content>
-			</Empty.Root>
+			<EmptyState
+				icon={TriangleAlert}
+				title="Tab not rendered"
+				description={err instanceof Error ? err.message : String(err)}
+			>
+				<Button size="sm" variant="outline" onclick={() => reset()}>Retry</Button>
+			</EmptyState>
 		{/snippet}
 
 		<Tabs.Root value={activeTab} onValueChange={setTab} style="--scan-tabs-h: {tabsHeight}px">
@@ -964,7 +1013,7 @@
 									class="h-7 gap-1.5 text-xs"
 									onclick={() => (showRescan = true)}
 								>
-									<RefreshCw class="size-3.5" /> Re-scan
+									<Play class="size-3.5" /> Rescan
 								</Button>
 								{#if comparable}
 									<Button
@@ -1194,7 +1243,6 @@
 							<NotePanel
 								anchor={{ targetId: scan.target_id, scanId: scan.id }}
 								filter={{ scan_id: scan.id }}
-								emptyTitle="No notes on this run"
 								onCount={(n) => (notesTotal = n)}
 							/>
 						</div>
@@ -1284,9 +1332,10 @@
 		title="Cancel scan"
 		description="The scan is marked cancelled. Finished stages keep their results."
 		confirmLabel="Cancel scan"
+		cancelLabel="Keep running"
 		destructive
 		loading={cancelling}
-		loadingLabel="Cancelling…"
+		loadingLabel="Cancelling"
 		onOpenChange={(o) => (cancelOpen = o)}
 		onConfirm={confirmCancel}
 	/>

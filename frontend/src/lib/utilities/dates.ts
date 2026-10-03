@@ -95,8 +95,12 @@ export function formatDay(isoDate: string, weekday = false): string {
 	});
 }
 
-export function formatClock(date: string | Date): string {
-	return new Date(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+export function formatClock(date: string | Date, seconds = false): string {
+	return new Date(date).toLocaleTimeString('en-US', {
+		hour: 'numeric',
+		minute: '2-digit',
+		...(seconds ? { second: '2-digit' } : {})
+	});
 }
 
 export function formatDateTime(date: string | Date): string {

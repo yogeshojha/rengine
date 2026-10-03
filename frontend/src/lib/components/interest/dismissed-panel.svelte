@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Undo2 from '@lucide/svelte/icons/undo-2';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
@@ -17,6 +19,7 @@
 	let rows = $state<InterestDismissal[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	const restoring = new SvelteSet<string>();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 
@@ -43,12 +46,15 @@
 	}
 
 	async function restore(row: InterestDismissal): Promise<void> {
+		restoring.add(row.id);
 		try {
 			await interestApi.restore(row.id);
 			rows = rows.filter((r) => r.id !== row.id);
 			toast.success(`${row.host} restored`);
 		} catch {
 			toast.error('Dismissal not restored');
+		} finally {
+			restoring.delete(row.id);
 		}
 	}
 </script>
@@ -65,7 +71,14 @@
 			{/each}
 		</div>
 	{:else if error}
-		<EmptyState icon={EyeOff} title="Dismissals not loaded" description={error} class="py-12" />
+		<EmptyState
+			icon={TriangleAlert}
+			title="Dismissals not loaded"
+			description={error}
+			class="py-12"
+		>
+			<Button variant="outline" size="sm" onclick={() => void load(projectId)}>Retry</Button>
+		</EmptyState>
 	{:else if !rows.length}
 		<EmptyState icon={EyeOff} title="No dismissed assets" class="py-12" />
 	{:else}
@@ -83,6 +96,7 @@
 						variant="ghost"
 						size="sm"
 						class="h-7 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+						disabled={restoring.has(row.id)}
 						onclick={() => restore(row)}
 					>
 						<Undo2 class="size-3.5" />

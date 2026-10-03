@@ -92,7 +92,7 @@
 	});
 
 	$effect(() => {
-		if (liveScans.hasLive) engineCatalogStore.fetch();
+		if (liveScans.hasLive) untrack(() => engineCatalogStore.fetch());
 	});
 
 	$effect(() => {
@@ -168,9 +168,10 @@
 		cancelling = true;
 		const ok = await liveScans.cancel(scan);
 		cancelling = false;
-		cancelTarget = null;
-		if (ok) toast.success('Scan cancelled');
-		else toast.error('Scan not cancelled');
+		if (ok) {
+			cancelTarget = null;
+			toast.success('Scan cancelled');
+		} else toast.error('Scan not cancelled');
 	}
 </script>
 
@@ -192,7 +193,7 @@
 		: `absolute inset-y-0 right-0 z-30 shadow-2xl transition-transform duration-300 ease-out ${activityFeed.open ? 'translate-x-0' : 'translate-x-full'}`}"
 	style="width: min({PANEL_W}px, 100vw)"
 >
-	<div class="flex shrink-0 items-center justify-between gap-2 px-3 py-2.5">
+	<div class="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 				Activity
@@ -230,11 +231,11 @@
 						<Button
 							{...props}
 							variant="ghost"
-							size="icon-sm"
+							size="icon"
 							onclick={() => activityFeed.setPinned(!activityFeed.pinned)}
 							aria-label={activityFeed.pinned ? 'Unpin panel' : 'Pin panel'}
 							aria-pressed={activityFeed.pinned}
-							class="size-6 {activityFeed.pinned
+							class="size-7 {activityFeed.pinned
 								? 'text-foreground'
 								: 'text-muted-foreground hover:text-foreground'}"
 						>
@@ -249,10 +250,10 @@
 			{/if}
 			<Button
 				variant="ghost"
-				size="icon-sm"
+				size="icon"
 				onclick={() => activityFeed.setOpen(false)}
 				aria-label="Close"
-				class="size-6 text-muted-foreground hover:text-foreground"
+				class="size-7 text-muted-foreground hover:text-foreground"
 			>
 				<X class="size-3.5" />
 			</Button>
@@ -415,6 +416,9 @@
 					isLoading={activityFeed.initialLoad}
 					isEmpty={!activityFeed.initialLoad && activityFeed.filtered.length === 0}
 					onRescan={rescan}
+					onRetry={() => {
+						if (projectId) activityFeed.load(projectId, 1);
+					}}
 				/>
 
 				{#if activityFeed.loading && !activityFeed.initialLoad}

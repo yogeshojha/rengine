@@ -20,7 +20,6 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Empty from '$lib/components/ui/empty';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
@@ -85,7 +84,8 @@
 	let shortcutsOpen = $state(false);
 	let listSeq = 0;
 	let countSeq = 0;
-	let refreshing = $state(false);
+	let refreshingFor = $state<string | null>(null);
+	const refreshing = $derived(refreshingFor === platform);
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	let compact = $state(false);
 	let searchEl = $state<HTMLInputElement | null>(null);
@@ -262,29 +262,35 @@
 	});
 
 	async function refresh() {
-		refreshing = true;
+		const p = platform;
+		refreshingFor = p;
 		const before = summary?.synced_at ?? null;
 		const beforeError = summary?.error ?? null;
 		try {
-			await bountyReportsApi.sync(platform);
+			await bountyReportsApi.sync(p);
 			let done = false;
 			for (let i = 0; i < REFRESH_POLLS && !done; i++) {
 				await new Promise((r) => setTimeout(r, REFRESH_POLL_MS));
-				const next = await bountyReportsApi.summary(platform).catch(() => null);
+				if (platform !== p) return;
+				const next = await bountyReportsApi.summary(p).catch(() => null);
+				if (platform !== p) return;
 				if (next && (next.synced_at !== before || (next.error && next.error !== beforeError))) {
 					summary = next;
 					done = true;
 				}
 			}
-			programs = await bountyReportsApi.programs(platform);
-			await loadList(platform, filters, pageIndex, pageSize);
-			loadCounts(platform, filters);
+			const progs = await bountyReportsApi.programs(p);
+			if (platform !== p) return;
+			programs = progs;
+			await loadList(p, filters, pageIndex, pageSize);
+			loadCounts(p, filters);
 			if (summary?.error) toast.error(summary.error);
 			else toast.success(done ? 'Reports refreshed' : 'Refresh running');
 		} catch (error) {
+			if (platform !== p) return;
 			toast.error(error instanceof Error ? error.message : 'Refresh not started');
 		} finally {
-			refreshing = false;
+			if (refreshingFor === p) refreshingFor = null;
 		}
 	}
 
@@ -420,48 +426,42 @@
 	<h1 class="sr-only">{label}</h1>
 
 	{#if spec && !spec.tracks_reports}
-		<Card.Root class="py-0">
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Title>{label} has no report API</Empty.Title>
-				</Empty.Header>
-				<Empty.Content>
-					<Button variant="outline" href={ROUTES.bountyHub()}>Bounty Hub</Button>
-				</Empty.Content>
-			</Empty.Root>
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<EmptyState
+				title="{label} has no report API"
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" href={ROUTES.bountyHub()}>
+					{routeLabels['bounty-hub']}
+				</Button>
+			</EmptyState>
 		</Card.Root>
 	{:else if accountFailed}
-		<Card.Root class="py-0">
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-						<TriangleAlert class="size-6 text-destructive" />
-					</Empty.Media>
-					<Empty.Title>Reports not loaded</Empty.Title>
-					<Empty.Description class="max-w-md">{accountFailed}</Empty.Description>
-				</Empty.Header>
-				<Empty.Content>
-					<Button variant="outline" class="gap-2" onclick={() => loadAccount(platform)}>
-						<RefreshCw class="size-4" /> Retry
-					</Button>
-				</Empty.Content>
-			</Empty.Root>
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<EmptyState
+				icon={TriangleAlert}
+				title="Reports not loaded"
+				description={accountFailed}
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => loadAccount(platform)}>Retry</Button>
+			</EmptyState>
 		</Card.Root>
 	{:else if connected === false}
-		<Card.Root class="py-0">
-			<Empty.Root class="py-16">
-				<Empty.Header>
-					<Empty.Media variant="icon" class="size-14 rounded-2xl bg-muted text-muted-foreground/60">
-						<KeyRound />
-					</Empty.Media>
-					<Empty.Title>{label} not connected</Empty.Title>
-				</Empty.Header>
-				<Empty.Content>
-					<Button href={ROUTES.settings('api-keys')} class="gap-2">
-						<KeyRound class="size-4" /> Add API key
-					</Button>
-				</Empty.Content>
-			</Empty.Root>
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<EmptyState
+				icon={KeyRound}
+				title="{label} not connected"
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button size="sm" href={ROUTES.settings('api-keys')}>
+					<KeyRound class="size-4" />
+					Add API key
+				</Button>
+			</EmptyState>
 		</Card.Root>
 	{:else}
 		<Card.Root class="gap-0 overflow-hidden py-0">
@@ -484,13 +484,28 @@
 						</a>
 					{/if}
 					{#if summary?.reputation != null}
-						<span>Reputation <b class="font-mono text-foreground">{summary.reputation}</b></span>
+						<span>
+							Reputation
+							<span class="font-mono font-medium text-foreground tabular-nums"
+								>{summary.reputation}</span
+							>
+						</span>
 					{/if}
 					{#if summary?.signal != null}
-						<span>Signal <b class="font-mono text-foreground">{summary.signal.toFixed(2)}</b></span>
+						<span>
+							Signal
+							<span class="font-mono font-medium text-foreground tabular-nums"
+								>{summary.signal.toFixed(2)}</span
+							>
+						</span>
 					{/if}
 					{#if summary?.impact != null}
-						<span>Impact <b class="font-mono text-foreground">{summary.impact.toFixed(2)}</b></span>
+						<span>
+							Impact
+							<span class="font-mono font-medium text-foreground tabular-nums"
+								>{summary.impact.toFixed(2)}</span
+							>
+						</span>
 					{/if}
 					{#if summary?.synced_at}
 						<Hint text={formatShortDate(summary.synced_at)}>
@@ -500,19 +515,19 @@
 						</Hint>
 					{/if}
 				</div>
-				<Hint text="Refresh reports">
+				<Hint text={isAdmin ? 'Refresh reports' : 'Refreshed by administrators'}>
 					{#snippet child(props)}
-						<Button
-							{...props}
-							variant="outline"
-							size="icon"
-							class="size-8"
-							aria-label="Refresh reports"
-							disabled={refreshing || !isAdmin}
-							onclick={() => refresh()}
-						>
-							<RefreshCw class="size-4 {refreshing ? 'animate-spin' : ''}" />
-						</Button>
+						<span {...props} class="inline-flex">
+							<Button
+								variant="outline"
+								size="icon-sm"
+								aria-label="Refresh reports"
+								disabled={refreshing || !isAdmin}
+								onclick={() => refresh()}
+							>
+								<RefreshCw class="size-4 {refreshing ? 'animate-spin' : ''}" />
+							</Button>
+						</span>
 					{/snippet}
 				</Hint>
 			</div>
@@ -526,7 +541,7 @@
 			{/if}
 
 			<!-- strip -->
-			<div class="grid gap-x-8 gap-y-4 border-b px-4 py-4 lg:grid-cols-[auto_minmax(0,1fr)]">
+			<div class="grid gap-x-8 gap-y-4 border-b px-4 py-4 xl:grid-cols-[auto_minmax(18rem,1fr)]">
 				{#if !summary}
 					<div class="flex flex-wrap gap-x-8 gap-y-3" aria-busy="true">
 						{#each ['w-16', 'w-14', 'w-16', 'w-24'] as w, i (i)}
@@ -683,7 +698,7 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button {...props} variant="outline" class="h-9 gap-1.5">
+								<Button {...props} variant="outline">
 									Program
 									{#if filters.programs.length}
 										<span class="font-mono text-2xs text-muted-foreground"
@@ -713,7 +728,7 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button {...props} variant="outline" class="h-9 gap-1.5">
+								<Button {...props} variant="outline">
 									State
 									{#if filters.states.length}
 										<span class="font-mono text-2xs text-muted-foreground"
@@ -739,13 +754,7 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="outline"
-									size="icon"
-									class="size-9"
-									aria-label="Density"
-								>
+								<Button {...props} variant="outline" size="icon" aria-label="Density">
 									<Rows3 class="size-4" />
 								</Button>
 							{/snippet}
@@ -766,7 +775,7 @@
 								{...props}
 								variant="outline"
 								size="icon"
-								class="hidden size-9 sm:inline-flex"
+								class="hidden sm:inline-flex"
 								aria-label="Keyboard shortcuts"
 								onclick={() => (shortcutsOpen = true)}
 							>
@@ -878,19 +887,26 @@
 					actions={false}
 				/>
 			{:else if failed && reports.length === 0}
-				<Empty.Root class="py-16">
-					<Empty.Header>
-						<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-							<TriangleAlert class="size-6 text-destructive" />
-						</Empty.Media>
-						<Empty.Title>Reports not loaded</Empty.Title>
-						<Empty.Description class="max-w-md">{failed}</Empty.Description>
-					</Empty.Header>
-				</Empty.Root>
+				<EmptyState
+					icon={TriangleAlert}
+					title="Reports not loaded"
+					description={failed}
+					compact
+					class="border-0 bg-transparent py-16"
+				>
+					<Button
+						size="sm"
+						variant="outline"
+						onclick={() => loadList(platform, filters, pageIndex, pageSize)}
+					>
+						Retry
+					</Button>
+				</EmptyState>
 			{:else if reports.length === 0 && (hasFilters || filters.tab !== ALL_TAB)}
 				<EmptyState title="No reports match" compact class="border-0 bg-transparent py-16">
-					<Button size="sm" variant="outline" class="gap-2" onclick={clearFilters}>
-						<X class="size-4" /> Clear filters
+					<Button size="sm" variant="outline" onclick={clearFilters}>
+						<X class="size-4" />
+						Clear filters
 					</Button>
 				</EmptyState>
 			{:else if reports.length === 0}
@@ -900,9 +916,16 @@
 					compact
 					class="border-0 bg-transparent py-16"
 				>
-					<Button class="gap-2" onclick={() => refresh()} disabled={refreshing || !isAdmin}>
-						<RefreshCw class="size-4" /> Refresh reports
-					</Button>
+					<Hint text={isAdmin ? null : 'Refreshed by administrators'}>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<Button size="sm" onclick={() => refresh()} disabled={refreshing || !isAdmin}>
+									<RefreshCw class="size-4" />
+									Refresh reports
+								</Button>
+							</span>
+						{/snippet}
+					</Hint>
 				</EmptyState>
 			{:else}
 				<ScrollArea orientation="horizontal">

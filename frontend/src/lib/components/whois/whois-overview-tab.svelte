@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { whoisLookupLabel, type WhoisRecordRead, type WhoisLookupType } from '$lib/types/whois';
-	import { getLookupTypeIcon } from '$lib/config/icons';
+	import type { WhoisRecordRead } from '$lib/types/whois';
 	import {
 		formatShortDate,
 		getExpirationUrgency,
@@ -12,7 +11,8 @@
 	import Hint from '$lib/components/hint.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
-	import CopyButton from '$lib/components/copy-button.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import Server from '@lucide/svelte/icons/server';
 	import Network from '@lucide/svelte/icons/network';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
@@ -38,10 +38,6 @@
 
 	let { record, onCorrelationClick }: Props = $props();
 
-	let lookupType = $derived(record.lookup_type as WhoisLookupType);
-
-	let LookupIcon = $derived(getLookupTypeIcon(lookupType));
-
 	let urgency = $derived<ExpirationUrgency>(
 		record.expiration_date ? getExpirationUrgency(record.expiration_date) : 'none'
 	);
@@ -62,6 +58,23 @@
 
 	let hasStatuses = $derived(record.domain_status && record.domain_status.length > 0);
 
+	let hasDnssec = $derived(record.dnssec != null);
+
+	let hasFields = $derived(
+		!!(
+			record.registrant_name ||
+			record.registrar_name ||
+			record.network_cidr ||
+			record.country ||
+			record.registration_date ||
+			record.last_changed_date ||
+			record.expiration_date ||
+			record.whois_server ||
+			record.rir
+		) ||
+			(record.asn_range_start != null && record.asn_range_end != null)
+	);
+
 	function handleCorrelationClick(type: string, value: string) {
 		if (value && onCorrelationClick) {
 			onCorrelationClick(type, value);
@@ -69,305 +82,294 @@
 	}
 </script>
 
-<div class="space-y-5 py-1">
-	{#if showAlert}
-		<Alert.Root
-			variant={urgency === 'expired' || urgency === 'critical' ? 'destructive' : 'default'}
-		>
-			{#if urgency === 'expired' || urgency === 'critical'}
-				<OctagonAlert class="h-4 w-4" />
-			{:else}
-				<TriangleAlert class="h-4 w-4" />
-			{/if}
-			<Alert.Title>
-				{#if urgency === 'expired'}
-					Domain expired
-				{:else if urgency === 'critical'}
-					Expiration imminent
+{#if !hasFields && !hasDnssec && !hasStatuses && !hasNameservers}
+	<EmptyState compact title="No registration data" />
+{:else}
+	<div class="space-y-5 py-1">
+		{#if showAlert}
+			<Alert.Root
+				variant={urgency === 'expired' || urgency === 'critical' ? 'destructive' : 'default'}
+			>
+				{#if urgency === 'expired' || urgency === 'critical'}
+					<OctagonAlert class="h-4 w-4" />
 				{:else}
-					Expiration approaching
+					<TriangleAlert class="h-4 w-4" />
 				{/if}
-			</Alert.Title>
-			<Alert.Description>{alertMessage}</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	<!-- Identity -->
-	<div class="flex items-start gap-3">
-		<div class="flex items-center justify-center h-10 w-10 rounded-xl bg-muted shrink-0">
-			<LookupIcon class="h-5 w-5 text-muted-foreground" />
-		</div>
-		<div class="min-w-0 flex-1">
-			<div class="flex items-center gap-2">
-				<h3 class="text-lg font-semibold truncate">{record.name || record.query_value}</h3>
-				<CopyButton value={record.query_value} />
-			</div>
-			<div class="flex items-center gap-2 mt-0.5">
-				<Badge variant="outline" class="text-xs">{whoisLookupLabel(record.lookup_type)}</Badge>
-				{#if record.handle}
-					<span class="text-xs text-muted-foreground font-mono">{record.handle}</span>
-				{/if}
-			</div>
-		</div>
-	</div>
-
-	<Separator />
-
-	<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-		{#if record.registrant_name}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<UserRound class="h-3 w-3" />
-					Registrant
-				</div>
-				<Hint text="Records sharing this registrant">
-					{#snippet child(props)}
-						<button
-							{...props}
-							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
-						>
-							{record.registrant_name}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
-					{/snippet}
-				</Hint>
-				{#if record.registrant_email}
-					<p class="text-xs text-muted-foreground">{record.registrant_email}</p>
-				{/if}
-			</div>
+				<Alert.Title>
+					{#if urgency === 'expired'}
+						Domain expired
+					{:else if urgency === 'critical'}
+						Expiration imminent
+					{:else}
+						Expiration approaching
+					{/if}
+				</Alert.Title>
+				<Alert.Description>{alertMessage}</Alert.Description>
+			</Alert.Root>
 		{/if}
 
-		{#if record.registrar_name}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<Building class="h-3 w-3" />
-					Registrar
-				</div>
-				<Hint text="Records sharing this registrar">
-					{#snippet child(props)}
-						<button
-							{...props}
-							class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
+		{#if hasFields}
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				{#if record.registrant_name}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
 						>
-							{record.registrar_name}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
-					{/snippet}
-				</Hint>
-				{#if record.abuse_email}
-					<div class="flex items-center gap-1 mt-0.5">
-						<Mail class="h-3 w-3 text-muted-foreground" />
-						<a
-							href="mailto:{record.abuse_email}"
-							class="text-xs text-muted-foreground hover:text-foreground transition-colors"
+							<UserRound class="h-3 w-3" />
+							Registrant
+						</div>
+						<Hint text="Records sharing this registrant">
+							{#snippet child(props)}
+								<button
+									{...props}
+									type="button"
+									class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+									onclick={() => handleCorrelationClick('registrant_name', record.registrant_name)}
+								>
+									{record.registrant_name}
+									<ExternalLink
+										class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity"
+									/>
+								</button>
+							{/snippet}
+						</Hint>
+						{#if record.registrant_email}
+							<p class="text-xs text-muted-foreground">{record.registrant_email}</p>
+						{/if}
+					</div>
+				{/if}
+
+				{#if record.registrar_name}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
 						>
-							{record.abuse_email}
-						</a>
+							<Building class="h-3 w-3" />
+							Registrar
+						</div>
+						<Hint text="Records sharing this registrar">
+							{#snippet child(props)}
+								<button
+									{...props}
+									type="button"
+									class="text-sm font-medium text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+									onclick={() => handleCorrelationClick('registrar_name', record.registrar_name)}
+								>
+									{record.registrar_name}
+									<ExternalLink
+										class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity"
+									/>
+								</button>
+							{/snippet}
+						</Hint>
+						{#if record.abuse_email}
+							<div class="flex items-center gap-1 mt-0.5">
+								<Mail class="h-3 w-3 text-muted-foreground" />
+								<a
+									href="mailto:{record.abuse_email}"
+									class="text-xs text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{record.abuse_email}
+								</a>
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				{#if record.network_cidr}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<Cable class="h-3 w-3" />
+							Network
+						</div>
+						<Hint text="Records in this network">
+							{#snippet child(props)}
+								<button
+									{...props}
+									type="button"
+									class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
+									onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
+								>
+									{record.network_cidr}
+									<ExternalLink
+										class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity"
+									/>
+								</button>
+							{/snippet}
+						</Hint>
+						{#if record.ip_version}
+							<p class="text-xs text-muted-foreground">IPv{record.ip_version}</p>
+						{/if}
+					</div>
+				{/if}
+
+				{#if record.country}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<Flag class="h-3 w-3" />
+							Country
+						</div>
+						<p class="text-sm font-medium">{record.country}</p>
+					</div>
+				{/if}
+
+				{#if record.registration_date}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<CalendarDays class="h-3 w-3" />
+							Registered
+						</div>
+						<p class="text-sm font-medium">{formatShortDate(record.registration_date)}</p>
+						{#if domainAge}
+							<p class="text-xs text-muted-foreground">{domainAge}</p>
+						{/if}
+					</div>
+				{/if}
+
+				{#if record.last_changed_date}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<CalendarCheck class="h-3 w-3" />
+							Last changed
+						</div>
+						<p class="text-sm font-medium">{formatShortDate(record.last_changed_date)}</p>
+					</div>
+				{/if}
+
+				{#if record.expiration_date}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide uppercase {urgency ===
+								'expired' || urgency === 'critical'
+								? 'text-destructive'
+								: urgency === 'warning'
+									? 'text-warning'
+									: 'text-muted-foreground'}"
+						>
+							<CalendarClock class="h-3 w-3" />
+							Expires
+						</div>
+						<p class="text-sm font-medium">{formatShortDate(record.expiration_date)}</p>
+						{#if expirationLabel}
+							<p
+								class="text-xs font-medium {urgency === 'expired' || urgency === 'critical'
+									? 'text-destructive'
+									: urgency === 'warning'
+										? 'text-warning'
+										: 'text-muted-foreground'}"
+							>
+								{expirationLabel}
+							</p>
+						{/if}
+					</div>
+				{/if}
+
+				{#if record.whois_server}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<MonitorCog class="h-3 w-3" />
+							WHOIS server
+						</div>
+						<p class="text-sm font-mono text-muted-foreground">{record.whois_server}</p>
+					</div>
+				{/if}
+
+				{#if record.rir}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<Hash class="h-3 w-3" />
+							RIR
+						</div>
+						<p class="text-sm font-medium">{record.rir}</p>
+					</div>
+				{/if}
+
+				{#if record.asn_range_start != null && record.asn_range_end != null}
+					<div class="space-y-1">
+						<div
+							class="flex items-center gap-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+						>
+							<Network class="h-3 w-3" />
+							ASN range
+						</div>
+						<p class="text-sm font-mono">{record.asn_range_start} – {record.asn_range_end}</p>
 					</div>
 				{/if}
 			</div>
 		{/if}
 
-		{#if record.network_cidr}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<Cable class="h-3 w-3" />
-					Network
-				</div>
-				<Hint text="Records in this network">
-					{#snippet child(props)}
-						<button
-							{...props}
-							class="text-sm font-medium font-mono text-left hover:text-primary transition-colors cursor-pointer inline-flex items-center gap-1 group"
-							onclick={() => handleCorrelationClick('network_cidr', record.network_cidr)}
+		<!-- DNSSEC -->
+		{#if hasDnssec}
+			{#if hasFields}<Separator />{/if}
+			<div class="flex items-center gap-2">
+				{#if record.dnssec}
+					<ShieldCheck class="h-4 w-4 text-foreground" />
+					<span class="text-sm font-medium text-foreground">DNSSEC enabled</span>
+				{:else}
+					<ShieldX class="h-4 w-4 text-muted-foreground" />
+					<span class="text-sm text-muted-foreground">DNSSEC not enabled</span>
+				{/if}
+			</div>
+		{/if}
+
+		<!-- Domain statuses -->
+		{#if hasStatuses}
+			{#if hasFields || hasDnssec}<Separator />{/if}
+			<div>
+				<SectionHead title="Domain status" />
+				<div class="mt-2 flex flex-wrap gap-1.5">
+					{#each record.domain_status as status (status)}
+						<Badge
+							variant="outline"
+							class="text-xs font-normal text-muted-foreground border-border/60"
 						>
-							{record.network_cidr}
-							<ExternalLink class="h-3 w-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-						</button>
-					{/snippet}
-				</Hint>
-				{#if record.ip_version}
-					<p class="text-xs text-muted-foreground">IPv{record.ip_version}</p>
-				{/if}
+							{status}
+						</Badge>
+					{/each}
+				</div>
 			</div>
 		{/if}
 
-		{#if record.country}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<Flag class="h-3 w-3" />
-					Country
+		<!-- Nameservers -->
+		{#if hasNameservers}
+			{#if hasFields || hasDnssec || hasStatuses}<Separator />{/if}
+			<div>
+				<SectionHead title="Nameservers" />
+				<div class="mt-2 flex flex-wrap gap-1.5">
+					{#each record.nameservers as ns (ns)}
+						<Hint text="Records on this nameserver">
+							{#snippet child(props)}
+								<button
+									{...props}
+									type="button"
+									class="cursor-pointer"
+									onclick={() => handleCorrelationClick('nameserver', ns)}
+								>
+									<Badge
+										variant="outline"
+										class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
+									>
+										<Server class="h-3 w-3 text-muted-foreground" />
+										{ns}
+									</Badge>
+								</button>
+							{/snippet}
+						</Hint>
+					{/each}
 				</div>
-				<p class="text-sm font-medium">{record.country}</p>
-			</div>
-		{/if}
-
-		{#if record.registration_date}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<CalendarDays class="h-3 w-3" />
-					Registered
-				</div>
-				<p class="text-sm font-medium">{formatShortDate(record.registration_date)}</p>
-				{#if domainAge}
-					<p class="text-xs text-muted-foreground">{domainAge}</p>
-				{/if}
-			</div>
-		{/if}
-
-		{#if record.last_changed_date}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<CalendarCheck class="h-3 w-3" />
-					Last updated
-				</div>
-				<p class="text-sm font-medium">{formatShortDate(record.last_changed_date)}</p>
-			</div>
-		{/if}
-
-		{#if record.expiration_date}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider {urgency ===
-						'expired' || urgency === 'critical'
-						? 'text-destructive'
-						: urgency === 'warning'
-							? 'text-warning'
-							: ''}"
-				>
-					<CalendarClock class="h-3 w-3" />
-					Expires
-				</div>
-				<p class="text-sm font-medium">{formatShortDate(record.expiration_date)}</p>
-				{#if expirationLabel}
-					<p
-						class="text-xs font-medium {urgency === 'expired' || urgency === 'critical'
-							? 'text-destructive'
-							: urgency === 'warning'
-								? 'text-warning'
-								: 'text-muted-foreground'}"
-					>
-						{expirationLabel}
-					</p>
-				{/if}
-			</div>
-		{/if}
-
-		{#if record.whois_server}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<MonitorCog class="h-3 w-3" />
-					WHOIS server
-				</div>
-				<p class="text-sm font-mono text-muted-foreground">{record.whois_server}</p>
-			</div>
-		{/if}
-
-		{#if record.rir}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<Hash class="h-3 w-3" />
-					RIR
-				</div>
-				<p class="text-sm font-medium">{record.rir}</p>
-			</div>
-		{/if}
-
-		{#if record.asn_range_start != null && record.asn_range_end != null}
-			<div class="space-y-1">
-				<div
-					class="flex items-center gap-1.5 text-2xs text-muted-foreground uppercase tracking-wider"
-				>
-					<Network class="h-3 w-3" />
-					ASN range
-				</div>
-				<p class="text-sm font-mono">{record.asn_range_start} – {record.asn_range_end}</p>
 			</div>
 		{/if}
 	</div>
-
-	<!-- DNSSEC -->
-	{#if record.dnssec != null}
-		<Separator />
-		<div class="flex items-center gap-2">
-			{#if record.dnssec}
-				<ShieldCheck class="h-4 w-4 text-foreground" />
-				<span class="text-sm font-medium text-foreground">DNSSEC enabled</span>
-			{:else}
-				<ShieldX class="h-4 w-4 text-muted-foreground" />
-				<span class="text-sm text-muted-foreground">DNSSEC not enabled</span>
-			{/if}
-		</div>
-	{/if}
-
-	<!-- Domain statuses -->
-	{#if hasStatuses}
-		<Separator />
-		<div>
-			<p class="text-2xs text-muted-foreground uppercase tracking-wider mb-2">Domain status</p>
-			<div class="flex flex-wrap gap-1.5">
-				{#each record.domain_status as status (status)}
-					<Badge
-						variant="outline"
-						class="text-xs font-normal text-muted-foreground border-border/60"
-					>
-						{status}
-					</Badge>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- Nameservers -->
-	{#if hasNameservers}
-		<Separator />
-		<div>
-			<p class="text-2xs text-muted-foreground uppercase tracking-wider mb-2">Nameservers</p>
-			<div class="flex flex-wrap gap-1.5">
-				{#each record.nameservers as ns (ns)}
-					<Hint text="Records on this nameserver">
-						{#snippet child(props)}
-							<button
-								{...props}
-								class="cursor-pointer"
-								onclick={() => handleCorrelationClick('nameserver', ns)}
-							>
-								<Badge
-									variant="outline"
-									class="text-xs font-mono font-normal gap-1.5 hover:bg-accent hover:border-primary/30 transition-colors"
-								>
-									<Server class="h-3 w-3 text-muted-foreground" />
-									{ns}
-								</Badge>
-							</button>
-						{/snippet}
-					</Hint>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- Footer -->
-	<Separator />
-	<p class="text-xs text-muted-foreground">
-		Last queried {formatShortDate(record.queried_at)}
-	</p>
-</div>
+{/if}

@@ -280,6 +280,9 @@
 		color: var(--muted-foreground);
 		transition: transform 0.15s ease;
 	}
+	:global(.section .disclose:hover .chev) {
+		color: var(--foreground);
+	}
 	:global(.section[data-state='open'] .disclose .chev) {
 		transform: rotate(90deg);
 	}

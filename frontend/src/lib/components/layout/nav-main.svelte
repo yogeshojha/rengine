@@ -87,7 +87,7 @@
 		)}
 	>
 		{#if b.live}
-			<span class="size-1.5 rounded-full bg-info"></span>
+			<span class="size-1.5 rounded-full bg-info" aria-hidden="true"></span>
 		{/if}
 		{b.label}
 	</Sidebar.MenuBadge>

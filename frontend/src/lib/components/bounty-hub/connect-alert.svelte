@@ -58,7 +58,7 @@
 		<div class="flex shrink-0 items-center gap-1">
 			<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">Add credentials</Button
 			>
-			<Button variant="ghost" size="icon" class="size-8" onclick={dismiss} aria-label="Dismiss">
+			<Button variant="ghost" size="icon-sm" onclick={dismiss} aria-label="Dismiss">
 				<XIcon class="size-4" />
 			</Button>
 		</div>

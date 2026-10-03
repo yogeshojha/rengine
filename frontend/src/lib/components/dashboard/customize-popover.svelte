@@ -4,6 +4,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Switch } from '$lib/components/ui/switch';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import {
 		DASHBOARD_ROW_LABELS,
 		DASHBOARD_ROWS,
@@ -12,6 +13,7 @@
 	import { dashboardLayout } from '$lib/stores/dashboard-layout.svelte';
 
 	let open = $state(false);
+	let confirming = $state(false);
 	let rows = $derived(
 		DASHBOARD_ROWS.map((row) => ({
 			row,
@@ -57,10 +59,26 @@
 				size="sm"
 				class="h-7 px-2 text-xs"
 				disabled={!dashboardLayout.customized}
-				onclick={() => dashboardLayout.reset()}
+				onclick={() => {
+					open = false;
+					confirming = true;
+				}}
 			>
 				Reset
 			</Button>
 		</div>
 	</Popover.Content>
 </Popover.Root>
+
+<ConfirmDialog
+	open={confirming}
+	title="Reset layout"
+	description="Widget visibility returns to the default."
+	confirmLabel="Reset"
+	destructive
+	onOpenChange={(next) => (confirming = next)}
+	onConfirm={() => {
+		dashboardLayout.reset();
+		confirming = false;
+	}}
+/>

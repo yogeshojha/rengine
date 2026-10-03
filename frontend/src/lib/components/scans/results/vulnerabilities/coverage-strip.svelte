@@ -141,7 +141,7 @@
 						{...props}
 						variant="ghost"
 						size="sm"
-						class="h-6 gap-1 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
+						class="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
 					>
 						<Info class="size-3" /> What ran
 					</Button>

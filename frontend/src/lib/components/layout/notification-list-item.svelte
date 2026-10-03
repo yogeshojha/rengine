@@ -35,6 +35,7 @@
 	const line = $derived(headline(notification.message));
 
 	function onKeydown(e: KeyboardEvent) {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onSelect(notification.id);
@@ -82,6 +83,7 @@
 			{#if unread}
 				<span
 					class="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
+					aria-hidden="true"
 				></span>
 			{/if}
 		</div>
@@ -93,11 +95,11 @@
 		{/if}
 
 		<div class="mt-1.5 flex items-center gap-2">
-			<span class="text-2xs font-medium tracking-[0.08em] text-muted-foreground/70 uppercase">
+			<span class="text-2xs tracking-wide text-muted-foreground uppercase">
 				{NOTIFICATION_TYPE_LABELS[notification.type]}
 			</span>
 			{#if meta?.url}
-				<span class="text-muted-foreground/40">·</span>
+				<span class="text-muted-foreground/40" aria-hidden="true">·</span>
 				<button
 					type="button"
 					class="inline-flex items-center gap-0.5 text-2xs font-medium text-primary hover:text-primary/80"
@@ -112,7 +114,7 @@
 
 	<div
 		class={cn(
-			'absolute top-2 right-3 flex items-center gap-0.5 rounded-md border p-0.5 shadow-sm transition-opacity',
+			'absolute top-1.5 right-3 flex items-center gap-0.5 rounded-md border p-0.5 shadow-sm transition-opacity',
 			'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
 			full ? 'bg-card' : 'bg-popover'
 		)}
@@ -124,8 +126,8 @@
 						<Button
 							{...props}
 							variant="ghost"
-							size="icon-sm"
-							class="size-6"
+							size="icon"
+							class="size-7"
 							onclick={(e: MouseEvent) => onMarkRead(notification.id, e)}
 							aria-label="Mark as read"
 						>
@@ -142,8 +144,8 @@
 					<Button
 						{...props}
 						variant="ghost"
-						size="icon-sm"
-						class="size-6 text-muted-foreground"
+						size="icon"
+						class="size-7 text-muted-foreground"
 						onclick={(e: MouseEvent) => onDelete(notification.id, e)}
 						aria-label="Dismiss"
 					>

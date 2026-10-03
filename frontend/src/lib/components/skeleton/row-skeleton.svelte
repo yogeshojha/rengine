@@ -5,6 +5,7 @@
 		rows?: number;
 		avatar?: string | null;
 		trailing?: string | null;
+		padding?: string;
 		class?: string;
 	}
 
@@ -12,6 +13,7 @@
 		rows = 8,
 		avatar = 'size-9 rounded-md',
 		trailing = 'h-5 w-24 rounded-full',
+		padding = 'px-4',
 		class: className = ''
 	}: Props = $props();
 
@@ -20,7 +22,7 @@
 
 <div class={className} aria-busy="true">
 	{#each Array(rows) as _, i (i)}
-		<div class="flex w-full items-center gap-3 border-b px-4 py-3 last:border-b-0">
+		<div class="flex w-full items-center gap-3 border-b {padding} py-3 last:border-b-0">
 			{#if avatar}
 				<Skeleton class="shrink-0 {avatar}" />
 			{/if}

@@ -5,7 +5,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
+	import FormField from '$lib/components/form-field.svelte';
 	import Bookmark from '@lucide/svelte/icons/bookmark';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -77,7 +77,7 @@
 <DropdownMenu.Root bind:open={menuOpen}>
 	<DropdownMenu.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="outline" size="sm" class="h-9 gap-2">
+			<Button {...props} variant="outline" aria-label="Views">
 				<Bookmark class="h-4 w-4" />
 				<span class="hidden sm:inline">Views</span>
 			</Button>
@@ -136,15 +136,16 @@
 />
 
 <Dialog.Root bind:open={saveOpen}>
-	<Dialog.Content class="w-[calc(100%-2rem)] sm:max-w-md">
+	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>Save view</Dialog.Title>
 		</Dialog.Header>
-		<form onsubmit={confirmSave} class="space-y-4">
-			<div class="space-y-2">
-				<Label for="view-name">View name</Label>
-				<Input id="view-name" bind:value={newName} placeholder="Responding web assets" autofocus />
-			</div>
+		<form onsubmit={confirmSave} class="flex flex-col gap-4">
+			<FormField label="View name">
+				{#snippet children({ id })}
+					<Input {id} bind:value={newName} placeholder="Responding web assets" autofocus />
+				{/snippet}
+			</FormField>
 			<Dialog.Footer>
 				<Button type="button" variant="outline" onclick={() => (saveOpen = false)}>Cancel</Button>
 				<Button type="submit" disabled={!canSave}>Save</Button>

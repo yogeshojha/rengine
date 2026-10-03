@@ -8,6 +8,7 @@
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import ModelPicker from '$lib/components/settings/model-picker.svelte';
 	import { toast } from 'svelte-sonner';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
@@ -150,12 +151,13 @@
 </script>
 
 <div class="space-y-6">
-	<div class="flex items-center justify-between rounded-lg border px-4 py-3">
+	<div class="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
 		<div class="space-y-0.5">
-			<Label class="text-sm font-medium">Enable AI analysis</Label>
+			<Label for="ai-enabled" class="text-sm font-medium">Enable AI analysis</Label>
 			<p class="text-xs text-muted-foreground">Connect an external LLM provider.</p>
 		</div>
 		<Switch
+			id="ai-enabled"
 			checked={enabled}
 			onCheckedChange={(v) => (enabled = v)}
 			disabled={saving || !catalog}
@@ -169,8 +171,8 @@
 			<Alert.Description>Includes targets, findings and scan context.</Alert.Description>
 		</Alert.Root>
 
-		<div class="space-y-2">
-			<Label class="text-xs">Provider</Label>
+		<div class="space-y-3">
+			<Label>Provider</Label>
 			<RadioGroup.Root
 				value={provider}
 				onValueChange={selectProvider}
@@ -187,30 +189,28 @@
 				{/each}
 			</RadioGroup.Root>
 			{#if spec?.help}
-				<p class="text-xs text-muted-foreground">{spec.help}</p>
+				<p class="text-sm text-muted-foreground">{spec.help}</p>
 			{/if}
 		</div>
 
 		{#if spec?.needs_base_url}
-			<div class="space-y-1.5">
-				<Label class="text-xs" for="ai-base-url">Server URL</Label>
-				<Input
-					id="ai-base-url"
-					bind:value={baseUrl}
-					placeholder="https://"
-					autocomplete="off"
-					spellcheck={false}
-					class="h-9 font-mono text-xs"
-					disabled={saving}
-				/>
-				{#if spec.base_url_hint}
-					<p class="text-xs text-muted-foreground">{spec.base_url_hint}</p>
-				{/if}
-			</div>
+			<FormField label="Server URL" description={spec.base_url_hint || undefined}>
+				{#snippet children({ id })}
+					<Input
+						{id}
+						bind:value={baseUrl}
+						placeholder="https://"
+						autocomplete="off"
+						spellcheck={false}
+						class="h-9 font-mono text-xs"
+						disabled={saving}
+					/>
+				{/snippet}
+			</FormField>
 		{/if}
 
-		<div class="space-y-1.5">
-			<Label class="text-xs" for="ai-key">
+		<div class="flex flex-col gap-3">
+			<Label for="ai-key">
 				API key
 				{#if spec?.key_optional}<span class="text-muted-foreground">Optional</span>{/if}
 			</Label>
@@ -236,17 +236,18 @@
 			</div>
 		</div>
 
-		<div class="space-y-1.5">
-			<Label class="text-xs" for="ai-model">Model</Label>
-			<ModelPicker
-				id="ai-model"
-				{provider}
-				{request}
-				bind:value={model}
-				bind:selected={picked}
-				disabled={saving}
-			/>
-		</div>
+		<FormField label="Model">
+			{#snippet children({ id })}
+				<ModelPicker
+					{id}
+					{provider}
+					{request}
+					bind:value={model}
+					bind:selected={picked}
+					disabled={saving}
+				/>
+			{/snippet}
+		</FormField>
 
 		<div>
 			<LoadingButton
@@ -258,7 +259,7 @@
 				disabled={saving}
 				onclick={() => handleTest()}
 			>
-				<FlaskConicalIcon class="mr-1.5 size-3" />
+				<FlaskConicalIcon class="size-4" />
 				Test connection
 			</LoadingButton>
 		</div>
@@ -266,7 +267,7 @@
 		<Separator />
 
 		<div class="space-y-3">
-			<Label class="text-xs">Features</Label>
+			<Label>Features</Label>
 			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 				{#each catalog.features as f (f.key)}
 					<Label

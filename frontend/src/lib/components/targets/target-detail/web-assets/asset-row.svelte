@@ -220,7 +220,7 @@
 							{...props}
 							variant="ghost"
 							size="icon"
-							class="size-8"
+							class="size-7"
 							aria-label="Actions for {asset.name}"
 						>
 							<Ellipsis class="size-4" />
@@ -231,18 +231,18 @@
 					<DropdownMenu.Item>
 						{#snippet child({ props })}
 							<a {...props} href={scanHref}>
-								<ExternalLink class="mr-2 size-3.5" /> Open in scan
+								<ExternalLink class="size-4" /> Open in scan
 							</a>
 						{/snippet}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={copyHost}>
-						<Copy class="mr-2 size-3.5" /> Copy host
+						<Copy class="size-4" /> Copy host
 					</DropdownMenu.Item>
 					{#if asset.url}
 						{@const url = asset.url}
 						<DropdownMenu.Separator />
 						<DropdownMenu.Item onclick={() => openExternal(url)}>
-							<ExternalLink class="mr-2 size-3.5" /> Visit site
+							<ExternalLink class="size-4" /> Open in browser
 						</DropdownMenu.Item>
 					{/if}
 				</DropdownMenu.Content>

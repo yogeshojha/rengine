@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { issueTrackersApi } from '$lib/api/issue-trackers';
 	import type { TrackerOption } from '$lib/types/issue-tracker';
 
@@ -116,8 +116,10 @@
 				<Command.Input placeholder={searchLabel} bind:value={search} />
 				<Command.List class="max-h-none overflow-visible">
 					{#if loading && !options.length}
-						<div class="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
-							<Spinner class="size-4" />
+						<div class="flex flex-col gap-1.5 p-2">
+							<Skeleton class="h-8 w-full" />
+							<Skeleton class="h-8 w-full" />
+							<Skeleton class="h-8 w-full" />
 						</div>
 					{:else if failure}
 						<div class="px-3 py-3 text-sm text-destructive">{failure}</div>

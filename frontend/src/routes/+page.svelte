@@ -15,7 +15,7 @@
 	});
 </script>
 
-<div class="min-h-screen flex items-center justify-center">
+<div class="min-h-screen flex flex-col items-center justify-center gap-3">
 	<Spinner />
 	<p class="text-muted-foreground">Loading…</p>
 </div>

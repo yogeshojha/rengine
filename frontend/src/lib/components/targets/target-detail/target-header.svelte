@@ -104,7 +104,7 @@
 	const stale = $derived(getFreshnessLevel(lastEnrichedAt) === 'stale');
 
 	async function copyValue() {
-		if (await writeClipboard(target.target_value)) toast.success('Copied');
+		if (await writeClipboard(target.target_value)) toast.success('Target copied');
 	}
 	async function copyId() {
 		if (await writeClipboard(target.id)) toast.success('Target ID copied');
@@ -179,7 +179,7 @@
 			</Button>
 			<Button size="sm" class="gap-1.5" onclick={onScan}>
 				<Play class="size-3.5" />
-				Scan
+				Start scan
 			</Button>
 		{/if}
 		<DropdownMenu.Root>
@@ -251,7 +251,7 @@
 					{/each}
 				{/if}
 				<DropdownMenu.Separator />
-				<DropdownMenu.Item class="text-destructive focus:text-destructive" onclick={onDelete}>
+				<DropdownMenu.Item variant="destructive" onclick={onDelete}>
 					<Trash2 class="size-4" />
 					Delete target
 				</DropdownMenu.Item>

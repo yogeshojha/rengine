@@ -82,10 +82,10 @@
 						variant="ghost"
 						size="icon"
 						class="-ml-1 size-7"
+						aria-label="All tools"
 						onclick={() => (selected = null)}
 					>
 						<ArrowLeft class="size-4" />
-						<span class="sr-only">All tools</span>
 					</Button>
 					<Sheet.Title class="font-mono text-base">{tool.name}</Sheet.Title>
 					<Badge variant={touches ? 'warning' : 'secondary'} class="text-2xs">
@@ -140,7 +140,7 @@
 								{/each}
 							</div>
 						{:else}
-							<p class="text-sm text-muted-foreground">No arguments.</p>
+							<p class="text-sm text-muted-foreground">No arguments</p>
 						{/if}
 					</section>
 
@@ -166,21 +166,21 @@
 						variant="ghost"
 						size="icon"
 						class="size-7"
+						aria-label="Previous tool"
 						disabled={index <= 0}
 						onclick={() => step(-1)}
 					>
 						<ChevronUp class="size-4" />
-						<span class="sr-only">Previous tool</span>
 					</Button>
 					<Button
 						variant="ghost"
 						size="icon"
 						class="size-7"
+						aria-label="Next tool"
 						disabled={index >= ordered.length - 1}
 						onclick={() => step(1)}
 					>
 						<ChevronDown class="size-4" />
-						<span class="sr-only">Next tool</span>
 					</Button>
 					<Kbd class="ml-1">j</Kbd>
 					<Kbd>k</Kbd>

@@ -8,7 +8,8 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Bell from '@lucide/svelte/icons/bell';
 	import CheckCheck from '@lucide/svelte/icons/check-check';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
@@ -36,6 +37,7 @@
 		UNREAD_BADGE_CLASS
 	} from '$lib/utilities/notifications';
 	import { ROUTES } from '$lib/config/routes';
+	import { auth } from '$lib/stores/auth.svelte';
 
 	type InboxTab = 'unread' | 'all';
 
@@ -132,9 +134,9 @@
 		if (metadata?.url) openNotificationUrl(metadata.url);
 	};
 
-	const handleMarkRead = (id: number, event: Event) => {
+	const handleMarkRead = async (id: number, event: Event) => {
 		event.stopPropagation();
-		notificationStore.markAsRead(id);
+		if (!(await notificationStore.markAsRead(id))) toast.error('Notification not marked read');
 	};
 
 	const handleDeleteNotification = async (id: number, event: Event) => {
@@ -203,7 +205,15 @@
 <Popover.Root open={popoverOpen} onOpenChange={onPopoverChange}>
 	<Popover.Trigger>
 		{#snippet child({ props })}
-			<Button {...props} variant="ghost" size="icon" class="relative" aria-label="Notifications">
+			<Button
+				{...props}
+				variant="ghost"
+				size="icon"
+				class="relative"
+				aria-label={notificationStore.unreadCount > 0
+					? `Notifications, ${notificationStore.unreadCount} unread`
+					: 'Notifications'}
+			>
 				<Bell class="size-4" />
 				{#if notificationStore.unreadCount > 0}
 					<span
@@ -249,23 +259,25 @@
 					</Tooltip.Trigger>
 					<Tooltip.Content side="bottom">Mark all as read</Tooltip.Content>
 				</Tooltip.Root>
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="ghost"
-								size="icon-sm"
-								class="size-7 text-muted-foreground hover:text-foreground"
-								onclick={openSettings}
-								aria-label="Notification settings"
-							>
-								<Settings2 class="size-3.5" />
-							</Button>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content side="bottom">Notification settings</Tooltip.Content>
-				</Tooltip.Root>
+				{#if auth.user?.is_superuser}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-sm"
+									class="size-7 text-muted-foreground hover:text-foreground"
+									onclick={openSettings}
+									aria-label="Notification settings"
+								>
+									<Settings2 class="size-3.5" />
+								</Button>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content side="bottom">Notification settings</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
 			</div>
 		</div>
 
@@ -354,28 +366,26 @@
 				<Trash2 class="size-3" />
 				Clear all
 			</Button>
-			<Button
+			<LoadingButton
 				variant="secondary"
 				size="sm"
 				class="h-7 px-2.5 text-xs"
-				disabled={viewAllLoading}
+				loading={viewAllLoading}
+				loadingLabel="Loading"
 				onclick={handleViewAll}
 			>
-				{#if viewAllLoading}
-					<Spinner class="size-3" />
-				{/if}
 				View all
 				<ArrowRight class="size-3" />
-			</Button>
+			</LoadingButton>
 		</div>
 	</Popover.Content>
 </Popover.Root>
 
 <Dialog.Root bind:open={modalOpen}>
-	<Dialog.Content class="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-4xl flex-col">
-		<Dialog.Header>
-			<div class="flex items-start justify-between gap-4">
-				<div>
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+		<Dialog.Header class="border-b px-6 py-4 pr-12">
+			<div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+				<div class="min-w-0">
 					<Dialog.Title>All notifications</Dialog.Title>
 					<Dialog.Description>
 						{notificationStore.totalCount} total
@@ -409,84 +419,75 @@
 		<Tabs.Root
 			value={selectedFilter}
 			onValueChange={(v) => (selectedFilter = v as NotificationType | 'all')}
-			class="flex min-h-0 flex-1 flex-col overflow-hidden"
+			class="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden"
 		>
-			<Tabs.List class="flex h-auto w-full flex-wrap justify-start gap-1">
-				<Tabs.Trigger value="all" class="flex-none text-xs">
-					All
-					<span class="font-mono text-2xs text-muted-foreground tabular-nums">
-						{typeCounts.all}
-					</span>
-				</Tabs.Trigger>
-				{#each presentTypes as type (type)}
-					{@const TypeIcon = getTypeIcon(type)}
-					<Tabs.Trigger value={type} class="flex-none text-xs">
-						<TypeIcon class="size-3" />
-						{NOTIFICATION_TYPE_LABELS[type]}
+			<div class="border-b px-6 py-3">
+				<Tabs.List class="flex h-auto w-full flex-wrap justify-start gap-1">
+					<Tabs.Trigger value="all" class="flex-none text-xs">
+						All
 						<span class="font-mono text-2xs text-muted-foreground tabular-nums">
-							{typeCounts[type]}
+							{typeCounts.all}
 						</span>
 					</Tabs.Trigger>
-				{/each}
-			</Tabs.List>
+					{#each presentTypes as type (type)}
+						{@const TypeIcon = getTypeIcon(type)}
+						<Tabs.Trigger value={type} class="flex-none text-xs">
+							<TypeIcon class="size-3" />
+							{NOTIFICATION_TYPE_LABELS[type]}
+							<span class="font-mono text-2xs text-muted-foreground tabular-nums">
+								{typeCounts[type]}
+							</span>
+						</Tabs.Trigger>
+					{/each}
+				</Tabs.List>
+			</div>
 
-			<ScrollArea class="mt-3 min-h-0 flex-1">
-				{#if notificationStore.isLoading}
-					<div class="space-y-2">
-						{#each Array(5) as _, i (i)}
-							<div class="flex items-start gap-3 rounded-lg border p-4">
-								<Skeleton class="size-8 rounded-md" />
-								<div class="flex-1 space-y-2">
-									<Skeleton class="h-4 w-1/2" />
-									<Skeleton class="h-4 w-full" />
-									<Skeleton class="h-3 w-1/4" />
+			<ScrollArea class="min-h-0 flex-1">
+				<div class="px-6 py-5">
+					{#if notificationStore.isLoading}
+						<div class="space-y-2">
+							{#each Array(5) as _, i (i)}
+								<div class="flex items-start gap-3 rounded-lg border p-4">
+									<Skeleton class="size-8 rounded-md" />
+									<div class="flex-1 space-y-2">
+										<Skeleton class="h-4 w-1/2" />
+										<Skeleton class="h-4 w-full" />
+										<Skeleton class="h-3 w-1/4" />
+									</div>
 								</div>
-							</div>
-						{/each}
-					</div>
-				{:else if notificationStore.error}
-					<Empty.Root class="h-64">
-						<Empty.Header>
-							<Empty.Media variant="icon">
-								<TriangleAlert class="text-destructive" />
-							</Empty.Media>
-							<Empty.Title>Notifications did not load</Empty.Title>
-						</Empty.Header>
-						<Empty.Content>
+							{/each}
+						</div>
+					{:else if notificationStore.error}
+						<EmptyState compact icon={TriangleAlert} title="Notifications did not load">
 							<Button
 								variant="outline"
 								size="sm"
 								onclick={() => notificationStore.loadAllNotifications()}>Retry</Button
 							>
-						</Empty.Content>
-					</Empty.Root>
-				{:else if filteredNotifications.length === 0}
-					<Empty.Root class="h-64 border-none">
-						<Empty.Header>
-							<Empty.Media variant="icon">
-								<Inbox class="text-muted-foreground" />
-							</Empty.Media>
-							<Empty.Title class="text-sm">
-								{selectedFilter === 'all'
-									? 'No notifications'
-									: `No ${NOTIFICATION_TYPE_LABELS[selectedFilter].toLowerCase()} notifications`}
-							</Empty.Title>
-						</Empty.Header>
-					</Empty.Root>
-				{:else}
-					<div class="space-y-2 pr-3">
-						{#each filteredNotifications as notification (notification.id)}
-							<NotificationListItem
-								{notification}
-								variant="full"
-								onSelect={openNotification}
-								onAction={handleActionClick}
-								onDelete={handleDeleteNotification}
-								onMarkRead={handleMarkRead}
-							/>
-						{/each}
-					</div>
-				{/if}
+						</EmptyState>
+					{:else if filteredNotifications.length === 0}
+						<EmptyState
+							compact
+							icon={Inbox}
+							title={selectedFilter === 'all'
+								? 'No notifications'
+								: `No ${NOTIFICATION_TYPE_LABELS[selectedFilter].toLowerCase()} notifications`}
+						/>
+					{:else}
+						<div class="space-y-2">
+							{#each filteredNotifications as notification (notification.id)}
+								<NotificationListItem
+									{notification}
+									variant="full"
+									onSelect={openNotification}
+									onAction={handleActionClick}
+									onDelete={handleDeleteNotification}
+									onMarkRead={handleMarkRead}
+								/>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			</ScrollArea>
 		</Tabs.Root>
 	</Dialog.Content>
@@ -506,6 +507,7 @@
 		? '1 notification is removed from this list.'
 		: `${notificationStore.totalCount} notifications are removed from this list.`}
 	confirmLabel="Clear all"
+	loadingLabel="Clearing"
 	isDeleting={clearing}
 	onOpenChange={(o) => (clearAllOpen = o)}
 	onConfirm={confirmClearAll}

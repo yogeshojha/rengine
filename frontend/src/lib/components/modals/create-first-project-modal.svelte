@@ -1,11 +1,10 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { PROJECT_NAME_MAX } from '$lib/constants';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
@@ -80,13 +79,13 @@
 					bind:value={name}
 					placeholder="Example Corp"
 					disabled={isSubmitting}
-					class={isOverLimit ? 'border-destructive focus-visible:ring-destructive' : ''}
+					aria-invalid={isOverLimit || !!error}
 				/>
 				<div class="flex justify-between text-xs">
 					{#if error}
-						<span class="text-destructive">{error}</span>
+						<span role="alert" class="text-destructive">{error}</span>
 					{:else if isOverLimit}
-						<span class="text-destructive">Name is too long</span>
+						<span role="alert" class="text-destructive">Name is too long</span>
 					{/if}
 					<span
 						class="ml-auto {nameLength > PROJECT_NAME_MAX
@@ -98,14 +97,15 @@
 				</div>
 			</div>
 
-			<Button type="submit" class="w-full" disabled={!isValid || isSubmitting}>
-				{#if isSubmitting}
-					<Spinner class="mr-2 size-4" />
-					Creating
-				{:else}
-					Create project
-				{/if}
-			</Button>
+			<LoadingButton
+				type="submit"
+				class="w-full"
+				loading={isSubmitting}
+				loadingLabel="Creating"
+				disabled={!isValid}
+			>
+				Create project
+			</LoadingButton>
 		</form>
 	</Dialog.Content>
 </Dialog.Root>

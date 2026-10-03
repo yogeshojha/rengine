@@ -30,7 +30,7 @@
 	} from '$lib/config/endpoints';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { stopProp } from '$lib/utilities';
-	import { formatShortDate } from '$lib/utilities/dates';
+	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import type { EndpointRead } from '$lib/utilities/endpoints';
 	import { externalHref } from '$lib/utilities/links';
 
@@ -113,10 +113,7 @@
 				<Hint text="Declared in an API schema.">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
-							<Badge
-								variant="info"
-								class="h-4 gap-1 px-1.5 text-2xs font-semibold tracking-wide uppercase"
-							>
+							<Badge variant="info" class="h-4 gap-1 px-1.5 text-2xs">
 								<Webhook class="size-2.5" />
 								API
 							</Badge>
@@ -136,7 +133,7 @@
 				</Badge>
 			{/each}
 			{#if compact && endpoint.is_new}
-				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
+				<Badge variant="info" class="h-4 px-1.5 text-2xs">New</Badge>
 			{/if}
 			{#if endpoint.sources.includes(EndpointSource.ROBOTS)}
 				<Hint text="Listed in robots.txt.">
@@ -170,6 +167,7 @@
 	{...attrs}
 	onclick={() => onOpen?.(endpoint)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onOpen?.(endpoint);
@@ -240,7 +238,7 @@
 					</span>
 				{/if}
 				{#if endpoint.is_new}
-					<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
+					<Badge variant="info" class="h-4 px-1.5 text-2xs">New</Badge>
 				{/if}
 			</div>
 			{@render badges(false)}
@@ -326,9 +324,17 @@
 			{:else if column.key === 'sources'}
 				<SourceMarks sources={endpoint.sources} evidence={endpoint.evidence} />
 			{:else if column.key === 'seen'}
-				<span class="text-xs text-muted-foreground">
-					{endpoint.discovered_at ? formatShortDate(endpoint.discovered_at) : '—'}
-				</span>
+				{#if endpoint.discovered_at}
+					<Hint text={formatDateTime(endpoint.discovered_at)}>
+						{#snippet child(props)}
+							<span {...props} class="text-xs text-muted-foreground">
+								{relativeTime(endpoint.discovered_at)}
+							</span>
+						{/snippet}
+					</Hint>
+				{:else}
+					<span class="text-xs text-muted-foreground">—</span>
+				{/if}
 			{/if}
 		</div>
 	{/each}
@@ -348,7 +354,7 @@
 							void writeClipboard(endpoint.url);
 						}}
 					>
-						<Copy class="size-3.5" />
+						<Copy class="size-4" />
 					</Button>
 				{/snippet}
 			</Hint>
@@ -365,7 +371,7 @@
 						rel="noopener noreferrer"
 						onclick={(e) => e.stopPropagation()}
 					>
-						<ExternalLink class="size-3.5" />
+						<ExternalLink class="size-4" />
 					</Button>
 				{/snippet}
 			</Hint>
@@ -383,7 +389,7 @@
 								onFilter?.(excludeToken('path', endpoint.path));
 							}}
 						>
-							<EyeOff class="size-3.5" />
+							<EyeOff class="size-4" />
 						</Button>
 					{/snippet}
 				</Hint>

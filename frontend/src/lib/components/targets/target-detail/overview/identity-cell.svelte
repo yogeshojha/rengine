@@ -52,7 +52,7 @@
 		<Skeleton class="h-4 w-48" />
 		<Skeleton class="h-4 w-36" />
 	{:else if !group.rows.length && !group.note}
-		<span class="text-sm text-muted-foreground">No record</span>
+		<span class="text-sm text-muted-foreground">No records</span>
 	{/if}
 	{#if group.rows.length}
 		<dl class="flex flex-col gap-1.5">
@@ -70,9 +70,9 @@
 							<span class="min-w-0 {row.mono ? 'font-mono text-xs' : ''}">{row.value}</span>
 							{#if row.copy}
 								<span
-									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover/row:opacity-100"
+									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover/row:opacity-100 sm:focus-within:opacity-100"
 								>
-									<CopyButton value={row.copy} class="size-5" />
+									<CopyButton value={row.copy} />
 								</span>
 							{/if}
 						</span>

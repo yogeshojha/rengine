@@ -85,7 +85,7 @@
 
 	function createEngine() {
 		onClose();
-		goto(ROUTES.engines);
+		goto(ROUTES.newEngine());
 	}
 </script>
 
@@ -129,7 +129,7 @@
 						{disabled}
 					>
 						<Select.Trigger class="w-full sm:w-80" aria-label="Scan engine">
-							{launch.engine?.name ?? 'Select a scan engine'}
+							{launch.engine?.name ?? 'Select an engine'}
 						</Select.Trigger>
 						<Select.Content>
 							{#each engines as engine (engine.id)}
@@ -222,7 +222,7 @@
 				{@const stages = launch.quickStages.filter((s) => s.group === group.key)}
 				{#if stages.length}
 					<div class="flex flex-col gap-1.5">
-						<span class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
+						<span class="text-2xs tracking-wide text-muted-foreground uppercase">
 							{group.label}
 						</span>
 						<div class="flex flex-wrap gap-1.5">

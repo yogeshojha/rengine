@@ -175,8 +175,7 @@
 		<ToggleGroup.Root
 			type="single"
 			variant="outline"
-			value={view}
-			onValueChange={(v) => v && onView(v)}
+			bind:value={() => view, (v) => v && onView(v)}
 			aria-label="View"
 		>
 			<Tooltip.Root>

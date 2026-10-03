@@ -4,6 +4,7 @@ import type { Watch } from '$lib/types/watch';
 function createWatchesStore() {
 	let watches = $state<Watch[]>([]);
 	let isLoading = $state(false);
+	let error = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let seq = 0;
 	let loadingFor: string | null = null;
@@ -15,6 +16,9 @@ function createWatchesStore() {
 		get isLoading() {
 			return isLoading;
 		},
+		get error() {
+			return error;
+		},
 		get fetchedProjectId() {
 			return fetchedProjectId;
 		},
@@ -24,12 +28,19 @@ function createWatchesStore() {
 			const my = ++seq;
 			loadingFor = projectId;
 			isLoading = true;
+			error = null;
 			try {
 				const rows = await watchesApi.list(projectId);
 				if (my !== seq) return;
 				watches = rows;
 				fetchedProjectId = projectId;
-			} catch {
+			} catch (e) {
+				if (my !== seq) return;
+				error = e instanceof Error ? e.message : 'Watches not loaded';
+				if (fetchedProjectId !== projectId) {
+					watches = [];
+					fetchedProjectId = null;
+				}
 			} finally {
 				if (my === seq) {
 					isLoading = false;
@@ -43,7 +54,9 @@ function createWatchesStore() {
 			const my = seq;
 			try {
 				const rows = await watchesApi.list(fetchedProjectId);
-				if (my === seq) watches = rows;
+				if (my !== seq) return;
+				watches = rows;
+				error = null;
 			} catch {}
 		},
 
@@ -61,6 +74,7 @@ function createWatchesStore() {
 			watches = [];
 			isLoading = false;
 			loadingFor = null;
+			error = null;
 			fetchedProjectId = null;
 		}
 	};

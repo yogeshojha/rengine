@@ -1,5 +1,7 @@
 <script lang="ts">
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -94,10 +96,15 @@
 		</Sheet.Header>
 
 		{#if loadError && !settings}
-			<div class="flex flex-col items-start gap-3 px-5 py-6 text-sm">
-				<p class="text-muted-foreground">{loadError}</p>
-				<Button variant="outline" size="sm" onclick={load}>Retry</Button>
-			</div>
+			<EmptyState
+				icon={TriangleAlertIcon}
+				title="Settings not loaded"
+				description={loadError}
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => load()}>Retry</Button>
+			</EmptyState>
 		{:else if !settings}
 			<div class="flex flex-col gap-3 px-5 py-6">
 				<Skeleton class="h-4 w-32" />

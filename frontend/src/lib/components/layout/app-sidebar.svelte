@@ -11,6 +11,8 @@
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { sidebarLayout } from '$lib/stores/sidebar-layout.svelte';
 	import { useSidebarNav } from './sidebar-nav.svelte';
+	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
+	import { page } from '$app/state';
 
 	let {
 		ref = $bindable(null),
@@ -19,6 +21,13 @@
 	}: ComponentProps<typeof Sidebar.Root> = $props();
 
 	const nav = useSidebarNav();
+	const sidebar = useSidebar();
+	const pathname = $derived(page.url.pathname);
+
+	$effect(() => {
+		void pathname;
+		untrack(() => sidebar.setOpenMobile(false));
+	});
 
 	$effect(() => {
 		const id = projectsStore.activeProject?.id;

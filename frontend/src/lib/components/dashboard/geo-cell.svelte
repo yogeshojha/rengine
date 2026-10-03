@@ -7,7 +7,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { countryName } from '$lib/config/country-geo';
 	import type { Facet } from '$lib/utilities/scan-insights';
-	import { pluralWord } from '$lib/utilities/strings';
+	import { percentLabel, pluralWord } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -67,7 +67,7 @@
 							</span>
 							<span class="font-medium tabular-nums">{e.count.toLocaleString()}</span>
 							<span class="w-9 text-right text-2xs text-muted-foreground tabular-nums">
-								{total ? Math.round((e.count / total) * 100) : 0}%
+								{percentLabel(total ? (e.count / total) * 100 : 0)}
 							</span>
 						</span>
 						<span class="h-0.5 w-full overflow-hidden rounded-full bg-muted">

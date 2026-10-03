@@ -7,9 +7,8 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import Hint from '$lib/components/hint.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
-	import { toast } from 'svelte-sonner';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import {
 		LibraryOrigin,
@@ -29,6 +28,7 @@
 	const activeTheme = $derived(reportCatalog.theme(style.theme));
 
 	let coverInput = $state<HTMLInputElement | null>(null);
+	let coverError = $state('');
 
 	async function pickCover(event: Event) {
 		const input = event.target as HTMLInputElement;
@@ -37,9 +37,10 @@
 		if (!file) return;
 		const image = await readEmbeddedImage(file);
 		if (image === null) {
-			toast.error(`Cover image exceeds ${MAX_EMBEDDED_IMAGE_KB} KB. Choose a smaller file.`);
+			coverError = `Cover image exceeds ${MAX_EMBEDDED_IMAGE_KB} KB. Choose a smaller file.`;
 			return;
 		}
+		coverError = '';
 		style.cover_image = image;
 	}
 
@@ -57,31 +58,32 @@
 	key: 'heading_font' | 'body_font' | 'mono_font',
 	fonts: ReportFont[]
 )}
-	<div class="space-y-1.5">
-		<Label class="text-xs">{name}</Label>
-		<Select.Root type="single" value={style[key]} onValueChange={(v) => (style[key] = v)}>
-			<Select.Trigger class="h-9 w-full">
-				{style[key]
-					? (fonts.find((f) => f.slug === style[key])?.name ?? style[key])
-					: 'From the theme'}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="">From the theme</Select.Item>
-				{#each fonts as font (font.slug)}
-					<Select.Item value={font.slug}>
-						{font.name}{#if font.origin === LibraryOrigin.CUSTOM}<span
-								class="ml-1.5 text-xs text-muted-foreground">custom</span
-							>{/if}
-					</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-	</div>
+	<FormField label={name}>
+		{#snippet children({ id })}
+			<Select.Root type="single" value={style[key]} onValueChange={(v) => (style[key] = v)}>
+				<Select.Trigger {id} class="h-9 w-full">
+					{style[key]
+						? (fonts.find((f) => f.slug === style[key])?.name ?? style[key])
+						: 'From the theme'}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value="">From the theme</Select.Item>
+					{#each fonts as font (font.slug)}
+						<Select.Item value={font.slug}>
+							{font.name}{#if font.origin === LibraryOrigin.CUSTOM}<span
+									class="ml-1.5 text-xs text-muted-foreground">custom</span
+								>{/if}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		{/snippet}
+	</FormField>
 {/snippet}
 
 <div class="space-y-6">
-	<div class="space-y-2">
-		<Label class="text-xs">Theme</Label>
+	<div class="space-y-3">
+		<Label>Theme</Label>
 		<div class="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
 			{#each reportCatalog.themes as theme (theme.slug)}
 				<button
@@ -114,66 +116,71 @@
 	<Separator />
 
 	<div class="grid gap-4 sm:grid-cols-2">
-		<div class="space-y-1.5">
-			<Label class="text-xs">Page size</Label>
-			<Select.Root type="single" bind:value={style.page_size}>
-				<Select.Trigger class="h-9 w-full"
-					>{catalogLabel(catalog?.page_sizes, style.page_size)}</Select.Trigger
-				>
-				<Select.Content>
-					{#each catalog?.page_sizes ?? [] as item (item.key)}
-						<Select.Item value={item.key}>{item.label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Density</Label>
-			<Select.Root type="single" bind:value={style.density}>
-				<Select.Trigger class="h-9 w-full"
-					>{catalogLabel(catalog?.densities, style.density)}</Select.Trigger
-				>
-				<Select.Content>
-					{#each catalog?.densities ?? [] as item (item.key)}
-						<Select.Item value={item.key}>{item.label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Cover layout</Label>
-			<Select.Root type="single" bind:value={style.cover_layout}>
-				<Select.Trigger class="h-9 w-full">
-					{style.cover_layout
-						? catalogLabel(catalog?.cover_layouts, style.cover_layout)
-						: 'From the theme'}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">From the theme</Select.Item>
-					{#each catalog?.cover_layouts ?? [] as item (item.key)}
-						<Select.Item value={item.key}>{item.label}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Body size</Label>
-			<Input
-				type="number"
-				step="0.5"
-				min="6"
-				max="16"
-				bind:value={style.base_font_size}
-				class="h-9"
-			/>
-		</div>
+		<FormField label="Page size">
+			{#snippet children({ id })}
+				<Select.Root type="single" bind:value={style.page_size}>
+					<Select.Trigger {id} class="h-9 w-full"
+						>{catalogLabel(catalog?.page_sizes, style.page_size)}</Select.Trigger
+					>
+					<Select.Content>
+						{#each catalog?.page_sizes ?? [] as item (item.key)}
+							<Select.Item value={item.key}>{item.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			{/snippet}
+		</FormField>
+		<FormField label="Density">
+			{#snippet children({ id })}
+				<Select.Root type="single" bind:value={style.density}>
+					<Select.Trigger {id} class="h-9 w-full"
+						>{catalogLabel(catalog?.densities, style.density)}</Select.Trigger
+					>
+					<Select.Content>
+						{#each catalog?.densities ?? [] as item (item.key)}
+							<Select.Item value={item.key}>{item.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			{/snippet}
+		</FormField>
+		<FormField label="Cover layout">
+			{#snippet children({ id })}
+				<Select.Root type="single" bind:value={style.cover_layout}>
+					<Select.Trigger {id} class="h-9 w-full">
+						{style.cover_layout
+							? catalogLabel(catalog?.cover_layouts, style.cover_layout)
+							: 'From the theme'}
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="">From the theme</Select.Item>
+						{#each catalog?.cover_layouts ?? [] as item (item.key)}
+							<Select.Item value={item.key}>{item.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			{/snippet}
+		</FormField>
+		<FormField label="Body size">
+			{#snippet children({ id })}
+				<Input
+					{id}
+					type="number"
+					step="0.5"
+					min="6"
+					max="16"
+					bind:value={style.base_font_size}
+					class="h-9"
+				/>
+			{/snippet}
+		</FormField>
 		{@render fontSelect('Heading font', 'heading_font', textFonts)}
 		{@render fontSelect('Body font', 'body_font', textFonts)}
 		{@render fontSelect('Code font', 'mono_font', monoFonts)}
 	</div>
 
-	<div class="space-y-2">
-		<Label class="text-xs">Margins in mm</Label>
+	<div class="space-y-3">
+		<Label>Margins in mm</Label>
 		<div class="grid grid-cols-4 gap-2">
 			{#each [['margin_top', 'Top'], ['margin_right', 'Right'], ['margin_bottom', 'Bottom'], ['margin_left', 'Left']] as [key, name] (key)}
 				<div class="space-y-1">
@@ -184,6 +191,7 @@
 						max="60"
 						value={style[key as keyof ReportStyle] as number}
 						class="h-9"
+						aria-label="{name} margin"
 						oninput={(e) =>
 							((style as unknown as Record<string, number>)[key] = Number(e.currentTarget.value))}
 					/>
@@ -195,7 +203,7 @@
 	<Separator />
 
 	<div class="space-y-3">
-		<Label class="text-xs">Colours</Label>
+		<Label>Colors</Label>
 		<div class="flex flex-wrap items-center gap-3">
 			<div class="flex items-center gap-2">
 				<input
@@ -203,7 +211,7 @@
 					class="size-8 cursor-pointer rounded border bg-transparent"
 					value={style.accent || activeTheme?.accent || '#4f46e5'}
 					oninput={(e) => (style.accent = e.currentTarget.value)}
-					aria-label="Accent colour"
+					aria-label="Accent color"
 				/>
 				<span class="text-xs text-muted-foreground">Accent</span>
 			</div>
@@ -214,7 +222,7 @@
 						class="size-8 cursor-pointer rounded border bg-transparent"
 						value={severity(key)}
 						oninput={(e) => setSeverity(key, e.currentTarget.value)}
-						aria-label={`${key} colour`}
+						aria-label={`${key} color`}
 					/>
 					<span class="text-xs capitalize text-muted-foreground">{key}</span>
 				</div>
@@ -239,7 +247,7 @@
 
 	<div class="space-y-3">
 		<div class="flex items-center justify-between">
-			<Label class="text-xs">Running header and footer</Label>
+			<Label>Running header and footer</Label>
 			<Popover.Root>
 				<Popover.Trigger>
 					{#snippet child({ props })}
@@ -262,33 +270,63 @@
 
 		<div class="flex items-center justify-between">
 			<span class="text-sm">Show the header</span>
-			<Switch checked={style.show_header} onCheckedChange={(v) => (style.show_header = v)} />
+			<Switch
+				checked={style.show_header}
+				onCheckedChange={(v) => (style.show_header = v)}
+				aria-label="Show the header"
+			/>
 		</div>
 		{#if style.show_header}
 			<div class="grid grid-cols-3 gap-2">
-				<Input bind:value={style.header_left} placeholder="Left" class="h-9 font-mono text-xs" />
+				<Input
+					bind:value={style.header_left}
+					placeholder="Left"
+					aria-label="Header left"
+					class="h-9 font-mono text-xs"
+				/>
 				<Input
 					bind:value={style.header_center}
 					placeholder="Center"
+					aria-label="Header center"
 					class="h-9 font-mono text-xs"
 				/>
-				<Input bind:value={style.header_right} placeholder="Right" class="h-9 font-mono text-xs" />
+				<Input
+					bind:value={style.header_right}
+					placeholder="Right"
+					aria-label="Header right"
+					class="h-9 font-mono text-xs"
+				/>
 			</div>
 		{/if}
 
 		<div class="flex items-center justify-between">
 			<span class="text-sm">Show the footer</span>
-			<Switch checked={style.show_footer} onCheckedChange={(v) => (style.show_footer = v)} />
+			<Switch
+				checked={style.show_footer}
+				onCheckedChange={(v) => (style.show_footer = v)}
+				aria-label="Show the footer"
+			/>
 		</div>
 		{#if style.show_footer}
 			<div class="grid grid-cols-3 gap-2">
-				<Input bind:value={style.footer_left} placeholder="Left" class="h-9 font-mono text-xs" />
+				<Input
+					bind:value={style.footer_left}
+					placeholder="Left"
+					aria-label="Footer left"
+					class="h-9 font-mono text-xs"
+				/>
 				<Input
 					bind:value={style.footer_center}
 					placeholder="Center"
+					aria-label="Footer center"
 					class="h-9 font-mono text-xs"
 				/>
-				<Input bind:value={style.footer_right} placeholder="Right" class="h-9 font-mono text-xs" />
+				<Input
+					bind:value={style.footer_right}
+					placeholder="Right"
+					aria-label="Footer right"
+					class="h-9 font-mono text-xs"
+				/>
 			</div>
 		{/if}
 	</div>
@@ -305,6 +343,7 @@
 				<Switch
 					checked={Boolean((style as unknown as Record<string, boolean>)[key])}
 					onCheckedChange={(v) => ((style as unknown as Record<string, boolean>)[key] = v)}
+					aria-label={name}
 				/>
 			</div>
 		{/each}
@@ -312,25 +351,18 @@
 
 	<Separator />
 
-	<div class="space-y-2">
-		<Label class="text-xs">Cover image</Label>
+	<div class="space-y-3">
+		<Label>Cover image</Label>
 		<div class="flex items-center gap-3">
 			{#if style.cover_image}
 				<img src={style.cover_image} alt="" class="h-12 w-20 rounded border object-cover" />
 			{/if}
 			<Button variant="outline" size="sm" onclick={() => coverInput?.click()}>
-				<UploadIcon class="mr-1.5 size-3.5" />
+				<UploadIcon class="size-3.5" />
 				{style.cover_image ? 'Replace' : 'Upload'}
 			</Button>
 			{#if style.cover_image}
-				<Button
-					variant="ghost"
-					size="sm"
-					class="text-destructive"
-					onclick={() => (style.cover_image = '')}
-				>
-					Remove
-				</Button>
+				<Button variant="ghost" size="sm" onclick={() => (style.cover_image = '')}>Remove</Button>
 			{/if}
 			<input
 				bind:this={coverInput}
@@ -340,32 +372,35 @@
 				onchange={pickCover}
 			/>
 		</div>
-		<p class="text-xs text-muted-foreground">
-			Fills the cover behind the title. Under {MAX_EMBEDDED_IMAGE_KB} KB.
-		</p>
+		{#if coverError}
+			<p role="alert" class="text-xs text-destructive">{coverError}</p>
+		{:else}
+			<p class="text-xs text-muted-foreground">
+				Fills the cover behind the title. Under {MAX_EMBEDDED_IMAGE_KB} KB.
+			</p>
+		{/if}
 	</div>
 
 	<Separator />
 
 	<div class="grid gap-4 sm:grid-cols-2">
-		<div class="space-y-1.5">
-			<Hint text="Printed diagonally behind every page.">
-				{#snippet child(props)}
-					<span class="inline-flex" {...props}><Label class="text-xs">Watermark</Label></span>
-				{/snippet}
-			</Hint>
-			<Input bind:value={style.watermark_text} placeholder="DRAFT" class="h-9" />
-		</div>
-		<div class="space-y-1.5">
-			<Label class="text-xs">Watermark strength</Label>
-			<Input
-				type="number"
-				step="0.01"
-				min="0.01"
-				max="0.4"
-				bind:value={style.watermark_opacity}
-				class="h-9"
-			/>
-		</div>
+		<FormField label="Watermark" description="Printed diagonally behind every page.">
+			{#snippet children({ id })}
+				<Input {id} bind:value={style.watermark_text} placeholder="DRAFT" class="h-9" />
+			{/snippet}
+		</FormField>
+		<FormField label="Watermark strength">
+			{#snippet children({ id })}
+				<Input
+					{id}
+					type="number"
+					step="0.01"
+					min="0.01"
+					max="0.4"
+					bind:value={style.watermark_opacity}
+					class="h-9"
+				/>
+			{/snippet}
+		</FormField>
 	</div>
 </div>

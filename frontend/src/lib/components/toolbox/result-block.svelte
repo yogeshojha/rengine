@@ -2,6 +2,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import HeroBlock from './hero-block.svelte';
 	import IdentityMark from './identity-mark.svelte';
 	import ResultCell from './result-cell.svelte';
@@ -39,13 +40,11 @@
 	<HeroBlock {block} />
 {:else}
 	{#if block.title && block.kind !== 'note'}
-		<div class="flex items-baseline gap-2 pb-1.5">
-			<h4 class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
-				{block.title}
-			</h4>
-			{#if block.total !== null && block.total > 0}
-				<span class="font-mono text-2xs text-muted-foreground/70">{block.total}</span>
-			{/if}
+		<div class="pb-1.5">
+			<SectionHead
+				title={block.title}
+				count={block.total !== null && block.total > 0 ? block.total.toLocaleString() : null}
+			/>
 		</div>
 	{/if}
 
@@ -64,7 +63,7 @@
 				{@const go = chase(f.lookup)}
 				{@const href = safeHref(f.href)}
 				<div
-					class="flex items-start gap-3 border-b border-border/40 py-1.5 leading-5 last:border-0"
+					class="flex items-start gap-3 border-b border-border/60 py-1.5 leading-5 last:border-0"
 				>
 					<dt class="w-36 shrink-0 text-xs text-muted-foreground">{f.label}</dt>
 					<dd class="flex min-w-0 flex-1 items-start gap-1.5">
@@ -102,7 +101,9 @@
 							{/if}
 						</span>
 						{#if f.mono}
-							<CopyButton value={f.value} class="size-5" />
+							<span class="flex h-5 shrink-0 items-center">
+								<CopyButton value={f.value} />
+							</span>
 						{/if}
 					</dd>
 				</div>
@@ -114,10 +115,10 @@
 		<ScrollArea orientation="horizontal" class="w-full">
 			<table class="w-full min-w-full text-left">
 				<thead>
-					<tr class="border-b border-border">
+					<tr class="border-b border-border bg-muted/20">
 						{#each block.columns as column (column)}
 							<th
-								class="pr-4 pb-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase last:pr-0"
+								class="px-2 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 							>
 								{column}
 							</th>
@@ -126,9 +127,9 @@
 				</thead>
 				<tbody>
 					{#each shownRows as row, i (i)}
-						<tr class="border-b border-border/40 last:border-0">
+						<tr class="border-b border-border/60 last:border-0">
 							{#each row as c, j (j)}
-								<td class="py-1 pr-4 align-top last:pr-0">
+								<td class="px-2 py-1 align-top">
 									<ResultCell cell={c} {onLookup} {onNavigate} />
 								</td>
 							{/each}
@@ -141,12 +142,12 @@
 			<button
 				type="button"
 				onclick={() => (expanded = true)}
-				class="w-full border-t border-border/40 pt-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
+				class="w-full border-t border-border/60 px-2 pt-1.5 text-left text-xs text-muted-foreground hover:text-foreground"
 			>
 				Show {folded} more
 			</button>
 		{:else if hidden > 0}
-			<p class="pt-1.5 text-xs text-muted-foreground">{hidden} more not shown.</p>
+			<p class="px-2 pt-1.5 text-xs text-muted-foreground">{hidden} more not shown.</p>
 		{/if}
 	{:else if block.kind === 'tags'}
 		<div class="flex flex-wrap gap-1.5">

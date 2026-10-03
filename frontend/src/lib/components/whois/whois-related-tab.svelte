@@ -7,9 +7,10 @@
 		whoisLookupLabel
 	} from '$lib/types/whois';
 	import { Badge } from '$lib/components/ui/badge';
-	import * as Empty from '$lib/components/ui/empty';
+	import { Button } from '$lib/components/ui/button';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import SearchX from '@lucide/svelte/icons/search-x';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import GitBranch from '@lucide/svelte/icons/git-branch';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -20,9 +21,11 @@
 		error: string | null;
 		currentRecordId?: string;
 		onCorrelationClick?: (type: string, value: string) => void;
+		onRetry?: () => void;
 	}
 
-	let { correlations, isLoading, error, currentRecordId, onCorrelationClick }: Props = $props();
+	let { correlations, isLoading, error, currentRecordId, onCorrelationClick, onRetry }: Props =
+		$props();
 
 	interface CorrelationReason {
 		type: string;
@@ -89,24 +92,13 @@
 {#if isLoading}
 	<PanelSkeleton rows={5} />
 {:else if error}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<SearchX />
-			</Empty.Media>
-			<Empty.Title>Related records not loaded</Empty.Title>
-			<Empty.Description>{error}</Empty.Description>
-		</Empty.Header>
-	</Empty.Root>
+	<EmptyState compact icon={TriangleAlert} title="Related records not loaded" description={error}>
+		{#if onRetry}
+			<Button size="sm" variant="outline" onclick={onRetry}>Retry</Button>
+		{/if}
+	</EmptyState>
 {:else if relatedTargets.length === 0}
-	<Empty.Root>
-		<Empty.Header>
-			<Empty.Media variant="icon">
-				<GitBranch />
-			</Empty.Media>
-			<Empty.Title>No related records</Empty.Title>
-		</Empty.Header>
-	</Empty.Root>
+	<EmptyState compact icon={GitBranch} title="No related records" />
 {:else}
 	<div class="space-y-4 py-1">
 		<div class="flex items-center justify-between">
@@ -152,6 +144,7 @@
 									{#snippet child(props)}
 										<button
 											{...props}
+											type="button"
 											onclick={() => handleBadgeClick(type, value)}
 											class="cursor-pointer"
 										>

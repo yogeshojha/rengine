@@ -101,7 +101,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<span class="text-sm text-muted-foreground">No failing check</span>
+			<span class="text-sm text-muted-foreground">No failing checks</span>
 		{/if}
 	{:else if rows.length}
 		<ul class="flex flex-col gap-1.5">
@@ -124,7 +124,7 @@
 			{/each}
 		</ul>
 	{:else}
-		<span class="text-sm text-muted-foreground">No failing check</span>
+		<span class="text-sm text-muted-foreground">No failing checks</span>
 	{/if}
 	{#snippet footer()}
 		{#if zone}

@@ -45,15 +45,15 @@
 			}
 		}
 		removing = false;
-		confirming = false;
+		if (done) confirming = false;
 		if (done) toast.success(`${done.toLocaleString()} ${done === 1 ? noun : many} deleted`);
 		if (done < doomed.length) {
 			const left = doomed.length - done;
 			toast.error(
-				`${left.toLocaleString()} ${left === 1 ? noun : many} not deleted.${lastError ? ` ${lastError}` : ''}`
+				`${left.toLocaleString()} ${left === 1 ? noun : many} not deleted${lastError ? `. ${lastError}` : ''}`
 			);
 		}
-		await onDone?.();
+		if (done) await onDone?.();
 	}
 </script>
 
@@ -62,7 +62,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		class="font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
 		onclick={() => (confirming = true)}
 	>
 		<Trash2 class="h-3.5 w-3.5" />

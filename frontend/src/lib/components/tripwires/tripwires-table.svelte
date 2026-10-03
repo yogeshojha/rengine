@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -127,9 +127,14 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button {...props} variant="ghost" size="icon" class="size-7">
-								<MoreVerticalIcon class="size-4" />
-								<span class="sr-only">Tripwire actions</span>
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="size-7"
+								aria-label="Tripwire actions"
+							>
+								<EllipsisIcon class="size-4" />
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>

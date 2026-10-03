@@ -113,7 +113,9 @@
 	<Popover.Content align="start" class="w-[44rem] max-w-[calc(100vw-2rem)] p-0">
 		<PanelHead title="Scan history" {description} />
 		<div class="flex flex-col p-2">
-			<div class="{GRID} px-2.5 pt-1 pb-2 text-xs text-muted-foreground">
+			<div
+				class="{GRID} px-2.5 pt-1 pb-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+			>
 				<span>Scan</span>
 				<span class="text-right">{nounTitle}</span>
 				<span class="hidden text-right sm:block">HTTP services</span>

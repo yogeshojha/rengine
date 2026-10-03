@@ -27,7 +27,7 @@
 </script>
 
 {#if !calls.length}
-	<div class="py-10">
+	<div class="px-4 py-10">
 		<EmptyState compact icon={ActivityIcon} title="No commands" />
 	</div>
 {:else}
@@ -61,13 +61,15 @@
 		</div>
 		{#each rows as call, i (call.at + call.tool + i)}
 			<div
-				class="flex items-center gap-4 border-b border-border/60 px-4 py-2 last:border-b-0"
+				class="flex items-center gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0"
 				role="row"
 			>
 				<div class="{CALL_COL.time} text-xs leading-5 text-muted-foreground tabular-nums">
 					{relativeTime(call.at)}
 				</div>
-				<div class="{CALL_COL.chat} truncate text-sm leading-5">{chatName(call.token_name)}</div>
+				<div class="{CALL_COL.chat} text-sm leading-5 wrap-anywhere">
+					{chatName(call.token_name)}
+				</div>
 				<div class="{CALL_COL.command} font-mono text-xs leading-5 wrap-anywhere">
 					{call.command ?? `/${commandFor(call.tool, commands)}`}
 				</div>

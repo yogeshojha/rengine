@@ -258,7 +258,7 @@
 		{#if caption}
 			<Collapsible.Root bind:open>
 				<Collapsible.Trigger
-					class="group -mx-1.5 flex max-w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+					class="group -mx-2 flex max-w-full cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
 				>
 					<span class="min-w-0">{caption}</span>
 					<span class="flex h-4 shrink-0 items-center">
@@ -266,9 +266,7 @@
 					</span>
 				</Collapsible.Trigger>
 
-				<Collapsible.Content
-					class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
-				>
+				<Collapsible.Content>
 					<ul class="-mx-2 mt-1 flex flex-col">
 						{#each segments as s (s.name)}
 							<li>

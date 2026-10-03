@@ -13,6 +13,7 @@
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { screenshotDiff, type ScreenshotDiff } from '$lib/utilities/screenshot-diff';
 	import { visualChange } from '$lib/utilities/whats-new';
+	import { keyTaken } from '$lib/utilities/layers';
 	import { SvelteMap } from 'svelte/reactivity';
 	import type { VisualPair } from '$lib/types/whats-new';
 
@@ -74,7 +75,11 @@
 	}
 
 	function onKey(e: KeyboardEvent) {
-		if (!open) return;
+		if (!open || keyTaken(e.target)) return;
+		const el = e.target instanceof Element ? e.target : null;
+		const arrow = e.key === 'ArrowRight' || e.key === 'ArrowLeft';
+		if (arrow && el?.closest('[role=radio]')) return;
+		if (e.key === ' ' && el?.closest('button, [role=radio]')) return;
 		if (e.key === 'ArrowRight' || e.key === 'j') {
 			e.preventDefault();
 			onStep(1);
@@ -96,13 +101,11 @@
 <svelte:window onkeydown={onKey} onkeyup={onKeyUp} onpointerup={up} onpointermove={move} />
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content
-		class="flex max-h-[94vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,1400px)]"
-	>
+	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-7xl">
 		{#if pair}
-			<Dialog.Header class="gap-2 border-b px-4 py-3">
+			<Dialog.Header class="gap-2 border-b px-6 py-4 pr-12">
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-					<Dialog.Title class="font-mono text-sm font-medium">{pair.host}</Dialog.Title>
+					<Dialog.Title class="font-mono break-all">{pair.host}</Dialog.Title>
 					<a
 						href={ROUTES.target(pair.target_id)}
 						class="text-xs text-muted-foreground hover:text-foreground">{pair.target_value}</a
@@ -139,7 +142,7 @@
 			</Dialog.Header>
 
 			<ScrollArea
-				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(94vh-7.5rem)]"
+				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(90vh-9.5rem)]"
 			>
 				{#if mode === 'side'}
 					<div class="grid grid-cols-2 gap-px bg-border">
@@ -232,13 +235,12 @@
 			</ScrollArea>
 
 			<div
-				class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-4 py-2 text-xs text-muted-foreground"
+				class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t px-6 py-4 text-xs text-muted-foreground"
 			>
 				<span class="flex items-center gap-1">
 					<Button
 						variant="ghost"
-						size="icon"
-						class="size-7"
+						size="icon-sm"
 						aria-label="Previous"
 						disabled={index <= 0}
 						onclick={() => onStep(-1)}
@@ -248,8 +250,7 @@
 					<span class="tabular-nums">{index + 1} of {pairs.length}</span>
 					<Button
 						variant="ghost"
-						size="icon"
-						class="size-7"
+						size="icon-sm"
 						aria-label="Next"
 						disabled={index >= pairs.length - 1}
 						onclick={() => onStep(1)}
@@ -259,19 +260,17 @@
 				</span>
 				<span class="flex items-center gap-1.5"><Kbd.Root>Space</Kbd.Root> hold for before</span>
 				<span class="flex items-center gap-1.5"><Kbd.Root>← →</Kbd.Root> step</span>
-				<span class="ml-auto flex items-center gap-1">
+				<span class="ml-auto flex items-center gap-2">
+					<Button variant="outline" size="sm" onclick={() => onOpenHost(pair)}>
+						Open web asset
+					</Button>
 					<Button
-						variant="ghost"
+						variant="outline"
 						size="sm"
-						class="h-7 px-2 text-xs"
-						onclick={() => onOpenHost(pair)}>Open web asset</Button
+						href={ROUTES.compare(pair.scan_id, pair.previous_scan_id)}
 					>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-7 px-2 text-xs"
-						href={ROUTES.compare(pair.scan_id, pair.previous_scan_id)}>Compare runs</Button
-					>
+						Compare runs
+					</Button>
 				</span>
 			</div>
 		{/if}

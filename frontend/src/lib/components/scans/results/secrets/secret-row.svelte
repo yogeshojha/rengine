@@ -60,7 +60,7 @@
 </script>
 
 <div
-	class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors {selected
+	class="group flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors {selected
 		? 'bg-primary/5 hover:bg-primary/10'
 		: 'hover:bg-muted/30'}"
 	onclick={() => onOpen(row)}
@@ -99,14 +99,12 @@
 		</div>
 		<div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 			{#if row.is_new}
-				<span
-					class="inline-flex shrink-0 items-center rounded border border-warning/30 px-1 font-medium text-warning"
-				>
-					New
-				</span>
+				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
 			{/if}
-			<span class="truncate md:hidden">{row.kind_label}</span>
-			<span class="hidden truncate md:inline"><HighlightText text={row.url} {term} /></span>
+			<span class="truncate @3xl/secrets:hidden">{row.kind_label}</span>
+			<span class="hidden truncate @3xl/secrets:inline"
+				><HighlightText text={row.url} {term} /></span
+			>
 			<span class="text-muted-foreground/40 sm:hidden">·</span>
 			<span class="shrink-0 tabular-nums sm:hidden">{relativeTime(row.discovered_at)}</span>
 		</div>
@@ -136,7 +134,7 @@
 		<div class="min-w-0">
 			<div class="flex min-w-0 items-center gap-1.5 text-sm">
 				<Globe class="size-3.5 shrink-0 text-muted-foreground" />
-				<span class="truncate"><HighlightText text={row.host} {term} /></span>
+				<span class="truncate font-mono"><HighlightText text={row.host} {term} /></span>
 			</div>
 			<div class="mt-0.5 truncate pl-5 text-xs text-muted-foreground">
 				{#if row.hosts > 1}

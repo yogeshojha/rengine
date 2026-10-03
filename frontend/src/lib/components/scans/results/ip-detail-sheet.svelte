@@ -1,14 +1,13 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
 	import SheetTop from './sheet-top.svelte';
 	import Network from '@lucide/svelte/icons/network';
 	import Plug from '@lucide/svelte/icons/plug';
-	import Server from '@lucide/svelte/icons/server';
 	import Globe from '@lucide/svelte/icons/globe';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import type { IconComponent } from '$lib/config/icons';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Item from '$lib/components/ui/item';
@@ -20,6 +19,7 @@
 	import { isSensitivePort } from '$lib/config/service-classes';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { plural } from '$lib/utilities/strings';
 	import CountryFlag from './country-flag.svelte';
 
@@ -50,8 +50,21 @@
 	}: Props = $props();
 
 	const IPS = SURFACE[SurfaceDimension.IPS];
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const SERVICES = SURFACE[SurfaceDimension.SERVICES];
 
 	let contentEl = $state<HTMLElement | null>(null);
+	let bodyEl = $state<HTMLElement | null>(null);
+	let scrolledFor = '';
+
+	$effect.pre(() => {
+		const ip = open ? (group?.ip ?? '') : '';
+		if (ip === scrolledFor) return;
+		scrolledFor = ip;
+		if (!ip) return;
+		untrack(() => bodyEl?.scrollTo({ top: 0 }));
+	});
+
 	let sensitivePorts = $derived((group?.ports ?? []).filter((p) => isSensitivePort(p.number)));
 	let isPrivate = $derived(group ? isPrivateIp(group.ip) : false);
 	let network = $derived(
@@ -83,6 +96,7 @@
 						class="size-2 shrink-0 rounded-full {group.is_alive
 							? 'bg-success'
 							: 'bg-muted-foreground/40'}"
+						aria-hidden="true"
 					></span>
 				</SheetTop>
 				<div class="flex min-w-0 items-center gap-1">
@@ -121,10 +135,10 @@
 				</div>
 			</Sheet.Header>
 
-			<ScrollArea class="min-h-0 flex-1">
+			<ScrollArea class="min-h-0 flex-1" bind:viewportRef={bodyEl}>
 				<div class="flex flex-col gap-6 p-5">
 					<section class="flex flex-col gap-2">
-						{@render heading(Network, 'Network')}
+						<SectionHead icon={Network} title="Network" />
 						<dl class="flex flex-col divide-y divide-border/60">
 							<div class={SHEET_ROW}>
 								<dt class={SHEET_DT}>Autonomous system</dt>
@@ -189,16 +203,16 @@
 
 					<section class="flex flex-col gap-2">
 						<div class="flex items-center justify-between">
-							{@render heading(Plug, 'Open ports')}
+							<SectionHead icon={Plug} title="Open ports" />
 							{#if group.ports.length}
 								<Button
-									variant="link"
+									variant="outline"
 									size="sm"
-									class="h-auto gap-1 px-0 text-xs"
+									class="h-7 text-xs"
 									onclick={() => onServices?.(filterToken('ip', group.ip))}
 								>
-									{group.ports.length} in Services
-									<ChevronRight class="size-3.5" />
+									<Plug data-icon="inline-start" />
+									{group.ports.length.toLocaleString()} in {SERVICES.label}
 								</Button>
 							{/if}
 						</div>
@@ -227,7 +241,7 @@
 
 					<section class="flex flex-col gap-2">
 						<div class="flex items-center justify-between">
-							{@render heading(Server, 'Web assets')}
+							<SectionHead icon={Globe} title="Web assets" />
 							{#if group.host_count}
 								<Button
 									variant="outline"
@@ -236,7 +250,7 @@
 									onclick={() => onHosts?.(filterToken('ip', group.ip))}
 								>
 									<Globe data-icon="inline-start" />
-									{group.host_count.toLocaleString()} in Web assets
+									{group.host_count.toLocaleString()} in {WEB.label}
 								</Button>
 							{/if}
 						</div>
@@ -267,7 +281,7 @@
 								</p>
 							{/if}
 						{:else}
-							<p class="text-xs text-muted-foreground">No host names resolve to this address.</p>
+							<p class="text-xs text-muted-foreground">No hostname resolves to this address.</p>
 						{/if}
 					</section>
 				</div>
@@ -276,15 +290,6 @@
 	</Sheet.Content>
 </Sheet.Root>
 
-{#snippet heading(Icon: IconComponent, title: string)}
-	<div
-		class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-	>
-		<Icon class="size-3.5" />
-		<span>{title}</span>
-	</div>
-{/snippet}
-
 {#snippet chip(text: string, dsl: string, hint: string, mono = false, warn = false, flag = false)}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
@@ -292,7 +297,7 @@
 				<button {...props} type="button" onclick={() => onFilter?.(dsl)}>
 					<Badge
 						variant="outline"
-						class="cursor-pointer font-normal hover:bg-accent {mono
+						class="max-w-full cursor-pointer text-left font-normal whitespace-normal wrap-anywhere hover:bg-accent {mono
 							? 'font-mono text-2xs'
 							: ''} {warn ? 'text-warning' : ''}"
 					>

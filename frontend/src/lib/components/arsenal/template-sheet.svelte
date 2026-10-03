@@ -133,7 +133,7 @@ http:
 	}
 
 	function requestClose(next: boolean) {
-		if (next) return;
+		if (next || saving) return;
 		if (dirty) {
 			confirming = true;
 			return;
@@ -146,7 +146,7 @@ http:
 	}
 </script>
 
-<Sheet.Root {open} onOpenChange={requestClose}>
+<Sheet.Root bind:open={() => open, (next) => requestClose(next)}>
 	<Sheet.Content
 		bind:ref={contentEl}
 		side="right"
@@ -157,7 +157,7 @@ http:
 			contentEl?.focus();
 		}}
 	>
-		<Sheet.Header class="gap-2 border-b px-5 pt-5 pr-12 pb-4">
+		<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
 			<div class="flex items-start gap-2">
 				{#if template}
 					<span class="flex h-6 shrink-0 items-center">
@@ -165,7 +165,7 @@ http:
 					</span>
 				{/if}
 				<div class="min-w-0 flex-1">
-					<Sheet.Title class="text-base leading-6 font-medium wrap-anywhere">
+					<Sheet.Title class="wrap-anywhere">
 						{creating ? 'New check' : (template?.name ?? '')}
 					</Sheet.Title>
 					<Sheet.Description class="mt-0.5 font-mono text-xs wrap-anywhere">
@@ -184,7 +184,7 @@ http:
 					<Badge variant="outline" class="font-normal">
 						{PROTOCOL_LABELS[template.protocol] ?? template.protocol}
 					</Badge>
-					{#each template.tags.slice(0, 5) as tag (tag)}
+					{#each [...new Set(template.tags)].slice(0, 5) as tag (tag)}
 						<Badge variant="outline" class="font-normal">{tag}</Badge>
 					{/each}
 				</div>
@@ -226,7 +226,7 @@ http:
 		</div>
 
 		<Sheet.Footer class="flex-row items-center justify-between gap-2 border-t px-5 py-3">
-			<Button variant="ghost" size="sm" class="gap-2" onclick={copy}>
+			<Button variant="ghost" size="sm" onclick={copy}>
 				<Copy class="size-4" /> Copy
 			</Button>
 			<div class="flex items-center gap-2">
@@ -241,7 +241,7 @@ http:
 						disabled={!dirty && !creating}
 						onclick={save}
 					>
-						{creating ? 'Add check' : 'Save changes'}
+						{creating ? 'Add check' : 'Save'}
 					</LoadingButton>
 				{/if}
 			</div>

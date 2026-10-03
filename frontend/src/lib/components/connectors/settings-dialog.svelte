@@ -6,6 +6,8 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
@@ -43,9 +45,19 @@
 	let contextId = $state<string>(SELECT_NONE);
 	let saving = $state(false);
 	let error = $state<string | null>(null);
+	let initial = $state('');
 
 	const contexts = $derived(scanContextsStore.contexts);
 	const contextName = $derived(contexts.find((c) => c.id === contextId)?.name ?? 'None');
+	const dirty = $derived(snapshot() !== initial);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
+	);
+
+	function snapshot(): string {
+		return JSON.stringify([[...tools].sort(), flags, contextId]);
+	}
 
 	$effect(() => {
 		if (!open) return;
@@ -55,6 +67,7 @@
 			for (const row of switches) flags[row.key] = connector[row.key];
 			contextId = connector.context_id ?? SELECT_NONE;
 			error = null;
+			initial = snapshot();
 			if (scanContextsStore.fetchedProjectId !== id) void scanContextsStore.fetchContexts(id);
 		});
 	});
@@ -72,14 +85,14 @@
 			);
 			open = false;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Settings not saved.';
+			error = e instanceof Error ? e.message : 'Settings not saved';
 		} finally {
 			saving = false;
 		}
 	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : !saving && guard.close())}>
 	<Dialog.Content class="gap-0 p-0 sm:max-w-lg">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{spec.title} settings</Dialog.Title>
@@ -92,8 +105,12 @@
 					type="multiple"
 					size="sm"
 					variant="outline"
-					value={tools}
-					onValueChange={(v) => v.length && (tools = v as SourceTool[])}
+					bind:value={
+						() => tools,
+						(v) => {
+							if (v?.length) tools = v as SourceTool[];
+						}
+					}
 				>
 					{#each INGESTED_TOOLS as tool (tool)}
 						<ToggleGroup.Item value={tool} class="h-7 px-2.5 text-xs">
@@ -111,14 +128,14 @@
 							<span class="text-xs text-muted-foreground">{row.help}</span>
 						{/if}
 					</div>
-					<Switch bind:checked={flags[row.key]} />
+					<Switch bind:checked={flags[row.key]} aria-label={row.label} />
 				</div>
 			{/each}
 
 			<div class="flex items-center justify-between gap-4">
 				<span class="text-sm font-medium">Scan context</span>
 				<Select.Root type="single" bind:value={contextId}>
-					<Select.Trigger class="w-44">{contextName}</Select.Trigger>
+					<Select.Trigger class="w-44" aria-label="Scan context">{contextName}</Select.Trigger>
 					<Select.Content>
 						<Select.Item value={SELECT_NONE}>None</Select.Item>
 						{#each contexts as context (context.id)}
@@ -129,13 +146,19 @@
 			</div>
 
 			{#if error}
-				<p class="text-xs text-destructive">{error}</p>
+				<p class="text-xs text-destructive" role="alert">{error}</p>
 			{/if}
 		</div>
 
-		<div class="flex justify-end gap-2 border-t bg-muted/30 px-6 py-3.5">
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={saving} onclick={save}>Save</LoadingButton>
-		</div>
+		<Dialog.Footer class="border-t px-6 py-4">
+			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton loading={saving} loadingLabel="Saving" onclick={save}>Save</LoadingButton>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

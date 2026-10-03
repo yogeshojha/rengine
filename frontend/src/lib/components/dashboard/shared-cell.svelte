@@ -5,6 +5,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { CorrelationGraph } from '$lib/types/correlation';
+	import { plural } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -54,11 +55,13 @@
 			{/each}
 		</ul>
 	{:else}
-		<span class="text-sm text-muted-foreground">No shared identity</span>
+		<span class="text-sm text-muted-foreground">No shared identities</span>
 	{/if}
 	{#snippet footer()}
 		{#if graph}
-			<span>{spanning} hubs · {graph.shared_hosts.toLocaleString()} web assets</span>
+			<span
+				>{plural(spanning, 'hub')} · {plural(graph.shared_hosts, 'web asset', 'web assets')}</span
+			>
 		{/if}
 	{/snippet}
 </Cell>

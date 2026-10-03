@@ -5,6 +5,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { proxiesApi } from '$lib/api/proxies';
 	import { PROXY_SCHEMES, PROXY_SCHEME_LABELS, type ProxyEndpoint } from '$lib/types/proxy';
 	import type { StepProps } from '$lib/types/onboarding';
@@ -223,54 +224,61 @@
 
 	{#if choice === 'single'}
 		<div class="space-y-4 rounded-lg border bg-muted/30 p-4">
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-[7rem_1fr_6rem]">
-				<div class="space-y-1.5">
-					<Label class="text-xs">Scheme</Label>
-					<Select.Root
-						type="single"
-						value={single.scheme}
-						onValueChange={(v) => (single.scheme = v || PROXY_SCHEMES[0])}
-					>
-						<Select.Trigger class="h-9 w-full text-sm">
-							{PROXY_SCHEME_LABELS[single.scheme as keyof typeof PROXY_SCHEME_LABELS]}
-						</Select.Trigger>
-						<Select.Content>
-							{#each PROXY_SCHEMES as s (s)}
-								<Select.Item value={s} label={PROXY_SCHEME_LABELS[s]}
-									>{PROXY_SCHEME_LABELS[s]}</Select.Item
-								>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Host</Label>
-					<Input
-						value={single.host}
-						placeholder="gate.provider.com"
-						class="h-9 font-mono text-xs"
-						autocomplete="off"
-						oninput={(e) => (single.host = e.currentTarget.value)}
-					/>
-				</div>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Port</Label>
-					<Input
-						type="number"
-						min="1"
-						max="65535"
-						value={single.port || ''}
-						placeholder="8080"
-						class="h-9 font-mono text-xs"
-						oninput={(e) => setSinglePort(e.currentTarget.value)}
-					/>
-				</div>
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-[7rem_1fr_6rem]">
+				<FormField label="Scheme">
+					{#snippet children({ id })}
+						<Select.Root
+							type="single"
+							value={single.scheme}
+							onValueChange={(v) => (single.scheme = v || PROXY_SCHEMES[0])}
+						>
+							<Select.Trigger {id} class="h-9 w-full text-sm">
+								{PROXY_SCHEME_LABELS[single.scheme as keyof typeof PROXY_SCHEME_LABELS]}
+							</Select.Trigger>
+							<Select.Content>
+								{#each PROXY_SCHEMES as s (s)}
+									<Select.Item value={s} label={PROXY_SCHEME_LABELS[s]}
+										>{PROXY_SCHEME_LABELS[s]}</Select.Item
+									>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</FormField>
+				<FormField label="Host">
+					{#snippet children({ id })}
+						<Input
+							{id}
+							value={single.host}
+							placeholder="gate.provider.com"
+							class="h-9 font-mono text-xs"
+							autocomplete="off"
+							oninput={(e) => (single.host = e.currentTarget.value)}
+						/>
+					{/snippet}
+				</FormField>
+				<FormField label="Port">
+					{#snippet children({ id })}
+						<Input
+							{id}
+							type="number"
+							min="1"
+							max="65535"
+							value={single.port || ''}
+							placeholder="8080"
+							class="h-9 font-mono text-xs"
+							oninput={(e) => setSinglePort(e.currentTarget.value)}
+						/>
+					{/snippet}
+				</FormField>
 			</div>
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<div class="space-y-1.5">
-					<Label class="text-xs">Username <span class="text-muted-foreground">Optional</span></Label
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				<div class="flex flex-col gap-3">
+					<Label for="proxy-username"
+						>Username <span class="text-muted-foreground">Optional</span></Label
 					>
 					<Input
+						id="proxy-username"
 						value={single.username ?? ''}
 						placeholder="username"
 						class="h-9 font-mono text-xs"
@@ -278,10 +286,12 @@
 						oninput={(e) => (single.username = e.currentTarget.value)}
 					/>
 				</div>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Password <span class="text-muted-foreground">Optional</span></Label
+				<div class="flex flex-col gap-3">
+					<Label for="proxy-password"
+						>Password <span class="text-muted-foreground">Optional</span></Label
 					>
 					<Input
+						id="proxy-password"
 						type="password"
 						value={single.password ?? ''}
 						placeholder="password"
@@ -293,30 +303,30 @@
 			</div>
 		</div>
 	{:else if choice === 'list'}
-		<div class="space-y-2.5 rounded-lg border bg-muted/30 p-4">
-			<Label class="text-xs">Proxy endpoints, one URL per line</Label>
-			<Textarea
-				value={listText}
-				placeholder={LIST_PLACEHOLDER}
-				class="min-h-32 font-mono text-xs"
-				spellcheck={false}
-				oninput={(e) => (listText = e.currentTarget.value)}
-			/>
-			<div class="flex items-center gap-3 text-xs">
-				{#if parsedList.length > 0}
-					<span class="text-muted-foreground">
-						{plural(parsedList.length, 'endpoint')} parsed
-					</span>
-				{/if}
-				{#if invalidLines > 0}
-					<span class="text-muted-foreground">
-						{plural(invalidLines, 'line')} not recognized
-					</span>
-				{/if}
-				{#if parsedList.length === 0 && invalidLines === 0}
-					<span class="text-muted-foreground">Format: scheme://[user:pass@]host:port</span>
-				{/if}
-			</div>
+		<div class="rounded-lg border bg-muted/30 p-4">
+			<FormField label="Proxy endpoints, one URL per line">
+				{#snippet children({ id })}
+					<Textarea
+						{id}
+						value={listText}
+						placeholder={LIST_PLACEHOLDER}
+						class="min-h-32 font-mono text-xs"
+						spellcheck={false}
+						oninput={(e) => (listText = e.currentTarget.value)}
+					/>
+					<div class="flex items-center gap-3 text-sm text-muted-foreground">
+						{#if parsedList.length > 0}
+							<span>{plural(parsedList.length, 'endpoint')} parsed</span>
+						{/if}
+						{#if invalidLines > 0}
+							<span>{plural(invalidLines, 'line')} not recognized</span>
+						{/if}
+						{#if parsedList.length === 0 && invalidLines === 0}
+							<span>Format: scheme://[user:pass@]host:port</span>
+						{/if}
+					</div>
+				{/snippet}
+			</FormField>
 		</div>
 	{/if}
 
@@ -331,10 +341,10 @@
 				disabled={busy || !configured}
 				onclick={handleTest}
 			>
-				<FlaskConicalIcon class="mr-1.5 size-4" />
+				<FlaskConicalIcon class="size-4" />
 				Test connection
 			</LoadingButton>
-			<p class="mt-1.5 text-2xs text-muted-foreground">Saves the proxy and checks reachability.</p>
+			<p class="mt-1.5 text-xs text-muted-foreground">Saves the proxy and checks reachability.</p>
 		</div>
 	{/if}
 </div>

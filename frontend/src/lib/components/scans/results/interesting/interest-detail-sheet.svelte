@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import Eye from '@lucide/svelte/icons/eye';
+	import ScanEye from '@lucide/svelte/icons/scan-eye';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import X from '@lucide/svelte/icons/x';
 	import * as Sheet from '$lib/components/ui/sheet';
@@ -32,17 +34,17 @@
 		bind:ref={contentEl}
 		side="right"
 		tabindex={-1}
-		class="flex w-full flex-col p-0 outline-none sm:max-w-lg"
+		class="flex w-full flex-col gap-0 p-0 outline-none sm:max-w-lg"
 		onOpenAutoFocus={(e) => {
 			e.preventDefault();
 			contentEl?.focus();
 		}}
 	>
 		{#if row}
-			<Sheet.Header class="gap-2 border-b px-5 py-4">
-				<Sheet.Title class="flex items-center gap-2 font-mono text-sm wrap-anywhere">
+			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
+				<Sheet.Title class="flex items-center gap-2 font-mono text-base font-medium wrap-anywhere">
 					{row.host}
-					<CopyButton value={row.host} class="size-5" />
+					<span class="flex h-6 shrink-0 items-center"><CopyButton value={row.host} /></span>
 				</Sheet.Title>
 				<div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 					<span class="font-medium {BAND_TEXT[row.band] ?? ''}"
@@ -59,14 +61,14 @@
 					{/if}
 					{#if row.asn_org}<span>{row.asn_org}</span>{/if}
 					{#if row.is_cdn}<Badge variant="info" class="text-2xs">CDN</Badge>{/if}
-					{#if row.is_new}<Badge variant="outline" class="text-2xs">New</Badge>{/if}
+					{#if row.is_new}<Badge variant="info" class="text-2xs">New</Badge>{/if}
 				</div>
 			</Sheet.Header>
 
 			<ScrollArea.Root class="min-h-0 flex-1">
 				<div class="flex flex-col gap-5 px-5 py-4">
 					<section class="flex flex-col gap-3">
-						<SectionHead title="Signals" />
+						<SectionHead icon={ScanEye} title="Signals" />
 						{#each ordered as signal (`${signal.source}:${signal.kind}:${signal.rule_id ?? ''}`)}
 							{@const Icon = kindIcon(signal.kind)}
 							{@const isAi = signal.source === INTEREST_SOURCE.AI}
@@ -115,7 +117,7 @@
 
 					{#if row.page_title || row.resolved_ips.length}
 						<section class="flex flex-col gap-2">
-							<SectionHead title="Observed" />
+							<SectionHead icon={Eye} title="Observed" />
 							{#if row.page_title}
 								<p class="text-xs">{row.page_title}</p>
 							{/if}
@@ -129,11 +131,7 @@
 				</div>
 			</ScrollArea.Root>
 
-			<Sheet.Footer class="flex-row flex-wrap gap-2 border-t px-5 py-3">
-				<Button size="sm" onclick={() => onOpenAssets(row)}>
-					Open in Web assets
-					<ArrowUpRight class="size-3.5" />
-				</Button>
+			<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
 				<Button
 					variant="outline"
 					size="sm"
@@ -144,6 +142,10 @@
 				>
 					<X class="size-3.5" />
 					Dismiss
+				</Button>
+				<Button size="sm" onclick={() => onOpenAssets(row)}>
+					Open in Web assets
+					<ArrowUpRight class="size-3.5" />
 				</Button>
 			</Sheet.Footer>
 		{/if}

@@ -5,6 +5,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import Zap from '@lucide/svelte/icons/zap';
 	import LayoutTemplate from '@lucide/svelte/icons/layout-template';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
@@ -42,6 +43,7 @@
 	let historyId = $state<string | null>(null);
 	let focusRunId = $state<string | null>(null);
 	let pending = $state<Tripwire | null>(null);
+	let pendingName = $state('');
 	let deleting = $state(false);
 	let landed = $state<string | null>(null);
 
@@ -107,6 +109,15 @@
 		}
 	}
 
+	function askDelete(tripwire: Tripwire) {
+		pending = tripwire;
+		pendingName = tripwire.name;
+	}
+
+	function retry() {
+		if (projectId) void tripwiresStore.fetch(projectId);
+	}
+
 	function openNew(seed: TripwireDraft | null = null) {
 		editing = null;
 		draft = seed;
@@ -153,13 +164,14 @@
 	}
 
 	async function confirmDelete() {
-		if (!pending) return;
+		const target = pending;
+		if (!target) return;
 		deleting = true;
 		try {
-			await tripwiresApi.remove(pending.id, projectId);
-			tripwiresStore.remove(pending.id);
-			if (historyId === pending.id) closeHistory();
-			toast.success(`${pending.name} deleted`);
+			await tripwiresApi.remove(target.id, projectId);
+			tripwiresStore.remove(target.id);
+			if (historyId === target.id) closeHistory();
+			toast.success(`${target.name} deleted`);
 			pending = null;
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Tripwire not deleted');
@@ -171,7 +183,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels.tripwires)}</title></svelte:head>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.tripwires}</h1>
@@ -191,7 +203,7 @@
 		</div>
 	</div>
 
-	{#if tripwiresStore.error && !tripwiresStore.isLoading}
+	{#if tripwiresStore.error && !tripwiresStore.isLoading && tripwires.length > 0}
 		<div
 			class="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
 		>
@@ -199,11 +211,15 @@
 		</div>
 	{/if}
 
-	{#if tripwiresStore.isLoading && tripwires.length === 0}
+	{#if tripwiresStore.error && !tripwiresStore.isLoading && tripwires.length === 0}
+		<EmptyState icon={TriangleAlert} title={tripwiresStore.error}>
+			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
+		</EmptyState>
+	{:else if tripwires.length === 0 && (tripwiresStore.isLoading || tripwiresStore.fetchedProjectId !== projectId)}
 		<Card.Root class="gap-0 overflow-hidden py-0">
-			<RowSkeleton rows={5} class="px-4" />
+			<RowSkeleton rows={5} />
 		</Card.Root>
-	{:else if tripwires.length === 0 && !tripwiresStore.error}
+	{:else if tripwires.length === 0}
 		<Card.Root class="gap-0 py-0">
 			<div class="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
 				<div class="flex items-center gap-3">
@@ -247,7 +263,7 @@
 					onOpen={openHistory}
 					onEdit={openEdit}
 					onToggle={toggle}
-					onDelete={(t) => (pending = t)}
+					onDelete={askDelete}
 				/>
 			{/if}
 		</Card.Root>
@@ -284,8 +300,8 @@
 
 <ConfirmDialog
 	open={pending !== null}
-	title={pending ? `Delete ${pending.name}` : 'Delete tripwire'}
-	description="The tripwire and its check history are removed."
+	title="Delete tripwire"
+	description="Tripwire {pendingName} and its check history are removed."
 	confirmLabel="Delete"
 	loadingLabel="Deleting"
 	loading={deleting}

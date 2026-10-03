@@ -239,7 +239,7 @@
 					{...props}
 					variant="outline"
 					size="icon"
-					class="size-9 shrink-0"
+					class="shrink-0"
 					aria-label="Reload models"
 					disabled={disabled || !request || loading}
 					onclick={() => load(true)}
@@ -254,6 +254,6 @@
 		</Hint>
 	</div>
 	{#if error}
-		<p class="text-xs text-destructive wrap-anywhere">{error}</p>
+		<p class="text-xs text-destructive wrap-anywhere" role="alert">{error}</p>
 	{/if}
 </div>

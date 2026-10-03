@@ -166,7 +166,7 @@
 								</span>
 								<Icon class="size-3.5 text-muted-foreground/70" />
 							</span>
-							<span class="text-2xl leading-none font-semibold tracking-tight">
+							<span class="text-2xl leading-none font-semibold tracking-tight tabular-nums">
 								{f.count.toLocaleString()}
 							</span>
 							<span

@@ -29,20 +29,23 @@
 	hrefLabel={expiringQuery}
 	class={className}
 >
-	<div class="flex h-28 items-end gap-2">
+	<div class="grid min-h-28 auto-cols-fr grid-flow-col grid-rows-[1fr_auto] gap-x-2 gap-y-1">
 		{#each buckets as b (b.key)}
 			<a
 				href={link(b.query)}
-				class="group flex h-full flex-1 flex-col items-center justify-end gap-1"
+				class="group row-span-2 grid min-w-0 grid-rows-subgrid"
 				aria-label="{b.label}: {b.count}"
 			>
-				<span class="text-xs font-medium tabular-nums">{b.count.toLocaleString()}</span>
-				<span
-					class="w-full rounded-t-[3px] transition-opacity group-hover:opacity-80"
-					style="height:{Math.max(3, (b.count / max) * 72)}px;background:{CERT_BUCKET_FILL[b.key] ??
-						'var(--series)'}"
-				></span>
-				<span class="text-2xs whitespace-nowrap text-muted-foreground">{b.label}</span>
+				<span class="flex flex-col items-center justify-end gap-1">
+					<span class="text-xs font-medium tabular-nums">{b.count.toLocaleString()}</span>
+					<span
+						class="w-full rounded-t-[3px] transition-opacity group-hover:opacity-80"
+						style="height:{Math.max(3, (b.count / max) * 72)}px;background:{CERT_BUCKET_FILL[
+							b.key
+						] ?? 'var(--series)'}"
+					></span>
+				</span>
+				<span class="text-center text-2xs leading-tight text-muted-foreground">{b.label}</span>
 			</a>
 		{/each}
 	</div>

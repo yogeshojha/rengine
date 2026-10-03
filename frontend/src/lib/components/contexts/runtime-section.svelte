@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
 	import * as Select from '$lib/components/ui/select';
+	import FormField from '$lib/components/form-field.svelte';
 	import {
 		HTTP_PROTOCOLS,
 		type ScanContextRead,
@@ -44,31 +44,33 @@
 </script>
 
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-	<div class="space-y-1.5">
-		<Label class="text-xs">HTTP protocol</Label>
-		<Select.Root type="single" value={context.http_protocol} onValueChange={setProtocol}>
-			<Select.Trigger class="h-9 w-full text-sm">
-				{HTTP_PROTOCOL_LABELS[context.http_protocol] ?? HTTP_PROTOCOL_LABELS.both}
-			</Select.Trigger>
-			<Select.Content>
-				{#each PROTOCOL_OPTS as opt (opt.value)}
-					<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-	</div>
+	<FormField label="HTTP protocol">
+		{#snippet children({ id })}
+			<Select.Root type="single" value={context.http_protocol} onValueChange={setProtocol}>
+				<Select.Trigger {id} class="h-9 w-full text-sm">
+					{HTTP_PROTOCOL_LABELS[context.http_protocol] ?? HTTP_PROTOCOL_LABELS.both}
+				</Select.Trigger>
+				<Select.Content>
+					{#each PROTOCOL_OPTS as opt (opt.value)}
+						<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		{/snippet}
+	</FormField>
 
-	<div class="space-y-1.5">
-		<Label class="text-xs">Follow redirects</Label>
-		<Select.Root type="single" value={redirectValue} onValueChange={setRedirect}>
-			<Select.Trigger class="h-9 w-full text-sm">
-				{REDIRECT_OPTS.find((o) => o.value === redirectValue)?.label ?? 'Engine default'}
-			</Select.Trigger>
-			<Select.Content>
-				{#each REDIRECT_OPTS as opt (opt.value)}
-					<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-	</div>
+	<FormField label="Follow redirects">
+		{#snippet children({ id })}
+			<Select.Root type="single" value={redirectValue} onValueChange={setRedirect}>
+				<Select.Trigger {id} class="h-9 w-full text-sm">
+					{REDIRECT_OPTS.find((o) => o.value === redirectValue)?.label ?? 'Engine default'}
+				</Select.Trigger>
+				<Select.Content>
+					{#each REDIRECT_OPTS as opt (opt.value)}
+						<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		{/snippet}
+	</FormField>
 </div>

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import OriginBadge from './origin-badge.svelte';
 	import { TYPEFACE_COLUMNS } from './typeface-columns';
@@ -58,15 +60,27 @@
 
 	<div class="col-start-2 row-start-1 flex justify-end lg:col-start-auto lg:row-start-auto">
 		{#if font.origin === LibraryOrigin.CUSTOM && auth.user?.is_superuser}
-			<Button
-				variant="ghost"
-				size="icon"
-				class="size-8 text-muted-foreground hover:text-destructive"
-				onclick={() => onDelete(font.slug)}
-				aria-label="Delete {font.name}"
-			>
-				<Trash2Icon class="size-3.5" />
-			</Button>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger>
+					{#snippet child({ props })}
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-7"
+							{...props}
+							aria-label="Actions for {font.name}"
+						>
+							<EllipsisIcon class="size-4" />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content align="end">
+					<DropdownMenu.Item variant="destructive" onSelect={() => onDelete(font.slug)}>
+						<Trash2Icon class="size-4" />
+						Delete
+					</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
 		{/if}
 	</div>
 </div>

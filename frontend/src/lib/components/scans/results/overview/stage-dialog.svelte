@@ -3,11 +3,16 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Circle from '@lucide/svelte/icons/circle';
+	import SquareTerminal from '@lucide/svelte/icons/square-terminal';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CodeBlock from '$lib/components/code-block.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { scansApi } from '$lib/api/scans';
 	import {
 		activityStatusIcon,
@@ -98,6 +103,17 @@
 		}
 	}
 
+	function retryCommands() {
+		if (!activity) return;
+		commandsFailed = false;
+		void loadCommands(activity.id);
+	}
+
+	function retryOutput(id: string) {
+		delete outputs[id];
+		void loadOutput(id);
+	}
+
 	let Icon = $derived(activity ? activityStatusIcon(activity.status) : Circle);
 	let figures = $derived(activity?.figures ?? []);
 	let notes = $derived(
@@ -121,7 +137,7 @@
 	<Dialog.Content
 		class="grid max-h-[85vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
 	>
-		<Dialog.Header class="border-b px-6 py-5 text-left">
+		<Dialog.Header class="border-b px-6 py-4 text-left">
 			<Dialog.Title class="flex items-center gap-2">
 				<Icon
 					class="size-4 {activity
@@ -144,12 +160,12 @@
 					<p class="text-sm text-muted-foreground">Stage has not run.</p>
 				{:else}
 					{#if figures.length}
-						<section>
-							<h3 class="mb-2 text-xs font-medium text-muted-foreground">Results</h3>
+						<section class="flex flex-col gap-2">
+							<SectionHead title="Results" />
 							<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
 								{#each figures as figure (figure.key)}
-									<div class="rounded-md border px-3 py-2.5">
-										<div class="text-lg leading-none font-semibold tracking-tight">
+									<div class="rounded-lg border px-3 py-2.5">
+										<div class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 											{figure.value.toLocaleString()}
 										</div>
 										<div class="mt-1.5 text-xs text-muted-foreground">
@@ -165,7 +181,7 @@
 					{/each}
 					{#if activity.error}
 						<p
-							class="rounded-md border p-3 font-mono text-xs break-words {activity.status ===
+							class="rounded-lg border p-3 font-mono text-xs break-words {activity.status ===
 							'partial'
 								? 'border-warning/40 bg-warning/5 text-warning'
 								: 'border-destructive/40 bg-destructive/5 text-destructive'}"
@@ -174,17 +190,19 @@
 						</p>
 					{/if}
 
-					<section>
-						<h3 class="mb-2 text-xs font-medium text-muted-foreground">Commands</h3>
+					<section class="flex flex-col gap-2">
+						<SectionHead title="Commands" />
 						{#if !commands && commandsFailed}
-							<p class="text-sm text-muted-foreground">Commands not loaded.</p>
+							<EmptyState compact icon={TriangleAlert} title="Commands not loaded">
+								<Button variant="outline" size="sm" onclick={() => retryCommands()}>Retry</Button>
+							</EmptyState>
 						{:else if !commands}
 							<div class="flex flex-col gap-1.5">
 								<Skeleton class="h-9 w-full" />
 								<Skeleton class="h-9 w-full" />
 							</div>
 						{:else if !commands.length}
-							<p class="text-sm text-muted-foreground">No commands recorded.</p>
+							<EmptyState compact icon={SquareTerminal} title="No commands recorded" />
 						{:else}
 							<div class="flex flex-col gap-1.5">
 								{#each commands as c (c.id)}
@@ -244,7 +262,12 @@
 														{/each}
 													</div>
 												{:else if outputs[c.id] === null}
-													<p class="p-3 text-xs text-destructive">Output not loaded.</p>
+													<div class="flex items-center justify-between gap-3 p-3">
+														<p class="text-xs text-muted-foreground">Output not loaded.</p>
+														<Button variant="outline" size="sm" onclick={() => retryOutput(c.id)}>
+															Retry
+														</Button>
+													</div>
 												{:else if outputs[c.id]}
 													{@const out = outputs[c.id] ?? ''}
 													<CodeBlock

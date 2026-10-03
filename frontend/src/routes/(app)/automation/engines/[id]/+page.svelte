@@ -11,6 +11,7 @@
 	import PanelRightClose from '@lucide/svelte/icons/panel-right-close';
 	import PanelRightOpen from '@lucide/svelte/icons/panel-right-open';
 	import Search from '@lucide/svelte/icons/search';
+	import SearchX from '@lucide/svelte/icons/search-x';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Download from '@lucide/svelte/icons/download';
 	import IndentIncrease from '@lucide/svelte/icons/indent-increase';
@@ -23,11 +24,11 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import * as Empty from '$lib/components/ui/empty';
 	import * as Resizable from '$lib/components/ui/resizable';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import Hint from '$lib/components/hint.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 
@@ -369,6 +370,11 @@
 		}
 	}
 
+	function retryLoad() {
+		const project = projectsStore.activeProject;
+		if (project && engineId && engineId !== 'new') loadEngine(engineId, project.id);
+	}
+
 	async function handleSave() {
 		if (!draft || isSaving) return;
 		const project = projectsStore.activeProject;
@@ -462,7 +468,6 @@
 		const copy = await scanEnginesStore.duplicateEngine(draft.id, project.id);
 		if (copy?.id) {
 			toast.success('Engine duplicated');
-			allowNavigation = true;
 			goto(ROUTES.engine(copy.id));
 		} else {
 			toast.error(scanEnginesStore.error ?? 'Engine not duplicated');
@@ -627,7 +632,18 @@
 				{#if !parsed}
 					<p class="none text-xs">The YAML has a syntax error. Fix it in the editor.</p>
 				{:else if visibleGroups.length === 0}
-					<p class="none text-xs">No stages match.</p>
+					<EmptyState icon={SearchX} title="No stages match" compact>
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => {
+								filter = '';
+								modifiedOnly = false;
+							}}
+						>
+							Clear filter
+						</Button>
+					</EmptyState>
 				{/if}
 
 				{#if parsed}
@@ -769,6 +785,7 @@
 {/snippet}
 
 <div class="editor">
+	<h1 class="sr-only">{engine?.name ?? routeLabels.engines}</h1>
 	{#if isLoading && !engine}
 		<div class="flex flex-col gap-4 p-4" aria-busy="true">
 			<div class="flex items-center justify-between gap-3">
@@ -799,18 +816,19 @@
 			</div>
 		</div>
 	{:else if loadError}
-		<Empty.Root class="flex-1">
-			<Empty.Header>
-				<Empty.Media class="size-[52px] rounded-xl bg-destructive/10">
-					<AlertTriangle size={22} class="text-destructive" />
-				</Empty.Media>
-				<Empty.Title>Engine not loaded</Empty.Title>
-				<Empty.Description>{loadError}</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button onclick={() => goto(ROUTES.engines)}>Back to engines</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState
+			icon={AlertTriangle}
+			title="Engine not loaded"
+			description={loadError}
+			class="m-6 flex-none"
+		>
+			<div class="flex flex-wrap items-center justify-center gap-2">
+				<Button variant="outline" size="sm" onclick={retryLoad}>Retry</Button>
+				<Button variant="outline" size="sm" onclick={() => goto(ROUTES.engines)}>
+					Back to engines
+				</Button>
+			</div>
+		</EmptyState>
 	{:else if engine}
 		<EngineTopbar
 			engine={draft ?? engine}
@@ -847,12 +865,12 @@
 				<span class="flex-1 truncate">{saveError}</span>
 				<Button
 					variant="ghost"
-					size="icon-sm"
-					class="h-6 w-6"
+					size="icon"
+					class="size-7"
 					aria-label="Dismiss"
 					onclick={() => (saveError = null)}
 				>
-					<X size={13} />
+					<X class="size-3.5" />
 				</Button>
 			</div>
 		{/if}
@@ -959,7 +977,7 @@
 		display: block;
 		height: 100%;
 	}
-	:global([data-slot='scroll-area-viewport'] > div > main:has(.editor)) {
+	:global([data-slot='scroll-area-viewport'] > div > #content:has(.editor)) {
 		height: 100%;
 		padding: 0;
 	}
@@ -977,7 +995,7 @@
 		align-items: center;
 		gap: 8px;
 		flex-shrink: 0;
-		padding: 5px 12px;
+		padding: 3px 12px;
 		background: color-mix(in oklch, var(--destructive) 8%, var(--card));
 		border-bottom: 1px solid color-mix(in oklch, var(--destructive) 30%, var(--border));
 		color: var(--destructive);
@@ -1064,7 +1082,7 @@
 	.group-head h2 {
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.08em;
 		color: var(--muted-foreground);
 	}
 	.group-count {

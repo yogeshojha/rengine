@@ -9,6 +9,7 @@ import {
 	SEVERITY_ORDER,
 	VULN_STATE_LABELS
 } from '$lib/config/vulnerabilities';
+import { epssLabel } from '$lib/config/threat-intel';
 
 export interface AssetContext {
 	host: string | null;
@@ -498,6 +499,7 @@ export function facetsAsRecord(facets: VulnFacetSet): Record<string, Facet[]> {
 
 export function locationLabel(v: VulnerabilityRead): string {
 	const at = v.matched_at || v.url || v.host || '';
+	if (!at.includes('://')) return at;
 	try {
 		const url = new URL(at);
 		return `${url.pathname}${url.search}` || '/';
@@ -508,6 +510,7 @@ export function locationLabel(v: VulnerabilityRead): string {
 
 export function originLabel(v: VulnerabilityRead): string {
 	const at = v.matched_at || v.url || '';
+	if (!at.includes('://')) return v.host ?? at;
 	try {
 		const url = new URL(at);
 		return url.host;
@@ -518,5 +521,5 @@ export function originLabel(v: VulnerabilityRead): string {
 
 export function epssPercent(value: number | null | undefined): string | null {
 	if (value === null || value === undefined) return null;
-	return `${Math.round(value * 100)}%`;
+	return epssLabel(value);
 }

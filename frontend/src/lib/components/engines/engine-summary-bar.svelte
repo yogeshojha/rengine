@@ -3,6 +3,7 @@
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Wrench from '@lucide/svelte/icons/wrench';
 	import FootprintMeter from './footprint-meter.svelte';
@@ -73,7 +74,7 @@
 	{#if error}
 		<span class="text-destructive">{error}</span>
 	{:else if isLoading && !phases.length}
-		<Spinner size={12} class="text-muted-foreground" />
+		<Skeleton class="h-3 w-48" />
 	{:else}
 		<span class="stat">
 			<strong>{running.length}</strong>

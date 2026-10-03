@@ -154,7 +154,7 @@
 		}
 		if (imported) {
 			toast.success(`${imported} ${noun(imported)} added`, {
-				description: existing ? `${existing} already in this project.` : undefined
+				description: existing ? `${existing} already in this project` : undefined
 			});
 		} else if (existing) {
 			toast.info(`${existing} already in this project`);
@@ -192,8 +192,8 @@
 	<ScrollArea orientation="horizontal" class="w-full">
 		<table class="w-full min-w-full text-left">
 			<thead>
-				<tr class="border-b border-border">
-					<th class="w-6 pr-2 pb-1.5 align-middle">
+				<tr class="border-b border-border bg-muted/20">
+					<th class="w-6 py-2 pl-2 align-middle">
 						<Checkbox
 							checked={allPicked}
 							indeterminate={somePicked}
@@ -204,7 +204,7 @@
 					</th>
 					{#each block.columns as column (column)}
 						<th
-							class="pr-4 pb-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase last:pr-0"
+							class="px-2 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 						>
 							{column}
 						</th>
@@ -215,11 +215,11 @@
 				{#each visible as entry, i (entry.key ?? `row:${i}`)}
 					{@const done = entry.key !== null ? added.get(entry.key) : undefined}
 					<tr
-						class="border-b border-border/40 last:border-0 {entry.key && picked.has(entry.key)
+						class="border-b border-border/60 last:border-0 {entry.key && picked.has(entry.key)
 							? 'bg-muted/40'
 							: ''}"
 					>
-						<td class="py-1 pr-2 align-top">
+						<td class="py-1 pl-2 align-top">
 							<span class="flex h-5 items-center">
 								{#if done}
 									<CircleCheck
@@ -236,7 +236,7 @@
 							</span>
 						</td>
 						{#each entry.cells as cell, j (j)}
-							<td class="py-1 pr-4 align-top last:pr-0">
+							<td class="px-2 py-1 align-top">
 								<ResultCell
 									cell={done && j === entry.cells.length - 1 ? tracked(done) : cell}
 									{onLookup}
@@ -253,7 +253,7 @@
 	{#if filtered.length === 0}
 		<p class="text-sm text-muted-foreground">No rows match the filter.</p>
 	{:else if remaining > 0}
-		<div class="flex items-center gap-3 border-t border-border/40 pt-1.5 text-xs">
+		<div class="flex items-center gap-3 border-t border-border/60 px-2 pt-1.5 text-xs">
 			<button
 				type="button"
 				onclick={() => (limit += SELECT_ROW_PAGE)}

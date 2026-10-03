@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Collapsible from '$lib/components/ui/collapsible';
@@ -65,7 +66,7 @@
 	let ready = $derived(stats?.ready ?? false);
 
 	$effect(() => {
-		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
+		if (!engineCatalogStore.hasFetched) untrack(() => engineCatalogStore.fetch());
 	});
 
 	$effect(() => {

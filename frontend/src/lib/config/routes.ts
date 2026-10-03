@@ -7,12 +7,14 @@ import {
 	type FindingsTab
 } from './surface';
 
+const SCAN_SETUP = 'Scan setup';
+
 export const routeLabels: Record<string, string> = {
 	dashboard: 'Dashboard',
 
 	surface: 'Attack surface',
 	assets: 'Assets',
-	engineSetup: 'Scan setup',
+	engineSetup: SCAN_SETUP,
 	operations: 'Operations',
 	integrations: 'Integrations',
 	...Object.fromEntries(SURFACE_ORDER.map((spec) => [spec.tab, spec.label])),
@@ -37,7 +39,7 @@ export const routeLabels: Record<string, string> = {
 	arsenal: 'Arsenal',
 
 	// Automation
-	automation: 'Scans',
+	automation: SCAN_SETUP,
 	engines: 'Scan engines',
 	contexts: 'Scan contexts',
 	schedules: 'Schedules',
@@ -94,6 +96,8 @@ export type ArsenalTab = (typeof ARSENAL_TABS)[number];
 
 export const ROUTES = {
 	login: '/login',
+	loginThen: (next: string) =>
+		next === '/dashboard' ? '/login' : `/login?next=${encodeURIComponent(next)}`,
 	dashboard: '/dashboard',
 	onboarding: '/onboarding',
 	profile: '/profile',
@@ -195,6 +199,7 @@ export function projectSwitchRedirect(path: string): string | null {
 }
 
 const CRUMB_LANDING: Record<string, string> = {
+	'/automation': ROUTES.engines,
 	'/surface': ROUTES.surface(ASSET_DIMENSIONS[0].tab),
 	'/reports/templates': ROUTES.reports('templates')
 };

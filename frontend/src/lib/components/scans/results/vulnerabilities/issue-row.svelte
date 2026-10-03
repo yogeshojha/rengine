@@ -24,7 +24,7 @@
 	import { plural } from '$lib/utilities/strings';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { formatShortDate } from '$lib/utilities/dates';
+	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
 	import { epssPercent, type IssueRead } from '$lib/utilities/vulns';
 	import { externalHref } from '$lib/utilities/links';
@@ -133,6 +133,7 @@
 	aria-label="{expanded ? 'Collapse' : 'Expand'} {it.template_name}"
 	onclick={() => onToggle(it)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onToggle(it);
@@ -394,9 +395,13 @@
 					</Hint>
 				{/if}
 			{:else if col.key === 'seen'}
-				<span class="text-xs whitespace-nowrap text-muted-foreground">
-					{formatShortDate(it.first_seen)}
-				</span>
+				<Hint text={formatDateTime(it.first_seen)}>
+					{#snippet child(props)}
+						<span {...props} class="text-xs whitespace-nowrap text-muted-foreground">
+							{relativeTime(it.first_seen)}
+						</span>
+					{/snippet}
+				</Hint>
 			{/if}
 		</div>
 	{/each}
@@ -443,20 +448,20 @@
 						{expanded ? 'Collapse' : `Show ${plural(it.findings, 'finding', 'findings')}`}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => onFindings(exactToken('template', it.template_id))}>
-						<Filter class="mr-2 size-3.5" /> Open as findings list
+						<Filter class="size-3.5" /> Open as findings list
 					</DropdownMenu.Item>
 					{#if it.sample_hosts.length && it.sample_hosts.length === it.hosts}
 						<DropdownMenu.Item onclick={() => onHosts(hostFilter)}>
-							<Globe class="mr-2 size-3.5" /> Open affected {WEB.nounPlural}
+							<Globe class="size-3.5" /> Open affected {WEB.nounPlural}
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Item onclick={() => onFilter(excludeToken('template', it.template_id))}>
-						<EyeOff class="mr-2 size-3.5" />
+						<EyeOff class="size-3.5" />
 						<span class="truncate">Hide all {it.template_name}</span>
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => copy(it.template_id)}>
-						<Copy class="mr-2 size-3.5" /> Copy check identifier
+						<Copy class="size-3.5" /> Copy check identifier
 					</DropdownMenu.Item>
 					{#if it.template_url}
 						<DropdownMenu.Item>
@@ -467,7 +472,7 @@
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									<ExternalLink class="mr-2 size-3.5" /> View check
+									<ExternalLink class="size-3.5" /> View check
 								</a>
 							{/snippet}
 						</DropdownMenu.Item>

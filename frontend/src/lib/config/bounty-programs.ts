@@ -105,7 +105,7 @@ export function formatPayout(
 	currency: string | null
 ): string | null {
 	if (!max && !min) return null;
-	const symbol = !currency || currency.toUpperCase() === 'USD' ? '$' : `${currency} `;
+	const symbol = !currency ? '' : currency.toUpperCase() === 'USD' ? '$' : `${currency} `;
 	if (min && max && min !== max)
 		return `${symbol}${PAYOUT_FORMAT.format(min)}–${PAYOUT_FORMAT.format(max)}`;
 	if (max) return `up to ${symbol}${PAYOUT_FORMAT.format(max)}`;

@@ -67,12 +67,13 @@
 				<Plus />
 				New thread
 			</DropdownMenu.Item>
-			{#if threads.length}
-				<DropdownMenu.Item variant="destructive" onclick={onClear}>
-					<Eraser />
-					Clear history on this {noun}
-				</DropdownMenu.Item>
-			{/if}
 		</DropdownMenu.Group>
+		{#if threads.length}
+			<DropdownMenu.Separator />
+			<DropdownMenu.Item variant="destructive" onclick={onClear}>
+				<Eraser />
+				Clear history on this {noun}
+			</DropdownMenu.Item>
+		{/if}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>

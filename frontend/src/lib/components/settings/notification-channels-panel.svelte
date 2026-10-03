@@ -3,12 +3,12 @@
 	import { toast } from 'svelte-sonner';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
@@ -25,13 +25,13 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { notificationChannelsStore } from '$lib/stores/notificationChannels.svelte';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
@@ -54,6 +54,7 @@
 		type NotifProvider
 	} from '$lib/types/notification-channel';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { externalHref } from '$lib/utilities/links';
 	import CheckStatus from './check-status.svelte';
 	import { BODY_ROW, CHANNEL_COL, HEAD_ROW } from './columns';
@@ -77,6 +78,7 @@
 	let nameError = $state('');
 	let eventsError = $state('');
 	let fieldErrors = $state<Record<string, string>>({});
+	let initial = $state('');
 
 	let removing = $state<NotificationChannelRead | null>(null);
 	let deleting = $state(false);
@@ -89,6 +91,22 @@
 		CHANNEL_LEVELS.find((l) => l.value === formPref.min_severity)?.label ?? CHANNEL_LEVELS[0].label
 	);
 	const allEvents = $derived(events.every((e) => formPref.types.includes(e.type)));
+	const dirty = $derived(snapshot() !== initial);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (dialogOpen = false)
+	);
+
+	function snapshot(): string {
+		return JSON.stringify([
+			formProvider,
+			formName.trim(),
+			formActive,
+			formConfig,
+			[...formPref.types].sort(),
+			formPref.min_severity
+		]);
+	}
 
 	async function load() {
 		loading = true;
@@ -165,6 +183,7 @@
 		formPref = defaultNotificationPreference();
 		applyDefaults(PROVIDERS[0]);
 		clearErrors();
+		initial = snapshot();
 		dialogOpen = true;
 	}
 
@@ -186,6 +205,7 @@
 		}
 		formPref = { ...defaultNotificationPreference(), ...channel.events };
 		clearErrors();
+		initial = snapshot();
 		dialogOpen = true;
 	}
 
@@ -401,9 +421,14 @@
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger>
 								{#snippet child({ props })}
-									<Button {...props} variant="ghost" size="icon" class="size-7">
-										<MoreVerticalIcon class="size-4" />
-										<span class="sr-only">{channel.name} actions</span>
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon"
+										class="size-7"
+										aria-label="{channel.name} actions"
+									>
+										<EllipsisIcon class="size-4" />
 									</Button>
 								{/snippet}
 							</DropdownMenu.Trigger>
@@ -431,17 +456,17 @@
 	</Card.Root>
 {/if}
 
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root
+	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
+>
 	<Dialog.Content
-		class="grid max-h-[90vh] grid-rows-[auto_auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 {editingId
-			? 'sm:max-w-[560px]'
-			: 'sm:max-w-[760px]'}"
+		class="grid max-h-[85vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 {editingId
+			? 'sm:max-w-xl'
+			: 'sm:max-w-3xl'}"
 	>
-		<Dialog.Header class="p-6 pb-4">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editingId ? 'Edit channel' : 'Add channel'}</Dialog.Title>
 		</Dialog.Header>
-
-		<Separator />
 
 		<div
 			class="grid min-h-0 {editingId
@@ -481,7 +506,7 @@
 			{/if}
 
 			<ScrollArea class="min-h-0">
-				<div class="flex flex-col gap-6 p-6">
+				<div class="flex flex-col gap-6 px-6 py-5">
 					<section class="flex flex-col gap-4">
 						<div class="flex items-center justify-between gap-3">
 							<SectionHead title={editingId ? formMeta.name : 'Connection'} />
@@ -630,7 +655,9 @@
 								</Label>
 							{/each}
 						</div>
-						{#if eventsError}<p class="text-xs text-destructive">{eventsError}</p>{/if}
+						{#if eventsError}
+							<p class="text-sm text-destructive" role="alert">{eventsError}</p>
+						{/if}
 
 						<div class="flex flex-wrap items-center justify-between gap-3 pt-1">
 							<Label for="channel-level" class="text-sm">Minimum level</Label>
@@ -656,9 +683,7 @@
 			</ScrollArea>
 		</div>
 
-		<Separator />
-
-		<div class="flex flex-wrap items-center justify-between gap-3 bg-muted/30 p-4">
+		<div class="flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4">
 			<Label class="cursor-pointer gap-3" for="channel-active">
 				<Switch
 					id="channel-active"
@@ -670,18 +695,20 @@
 			</Label>
 			<div class="flex items-center gap-2">
 				{#if !editingId}
-					<Button variant="ghost" onclick={testDraft} disabled={saving || testingDraft}>
-						{#if testingDraft}<Spinner class="size-4" />{:else}<FlaskConicalIcon
-								class="size-4"
-							/>{/if}
+					<LoadingButton
+						variant="ghost"
+						loading={testingDraft}
+						loadingLabel="Sending"
+						disabled={saving}
+						onclick={testDraft}
+					>
+						<FlaskConicalIcon class="size-4" />
 						Send test
-					</Button>
+					</LoadingButton>
 				{/if}
-				<Button variant="outline" onclick={() => (dialogOpen = false)} disabled={saving}>
-					Cancel
-				</Button>
+				<Button variant="outline" onclick={() => guard.close()} disabled={saving}>Cancel</Button>
 				<LoadingButton onclick={save} loading={saving} loadingLabel="Saving">
-					{editingId ? 'Save channel' : 'Add channel'}
+					{editingId ? 'Save' : 'Add channel'}
 				</LoadingButton>
 			</div>
 		</div>
@@ -693,10 +720,17 @@
 	title="Remove channel"
 	description={removing ? `Channel ${removing.name} is removed.` : ''}
 	confirmLabel="Remove"
+	loadingLabel="Removing"
 	destructive
 	loading={deleting}
 	onOpenChange={(open) => {
 		if (!open) removing = null;
 	}}
 	onConfirm={remove}
+/>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />

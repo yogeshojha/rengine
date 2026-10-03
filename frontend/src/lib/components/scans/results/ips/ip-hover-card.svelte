@@ -87,9 +87,9 @@
 		{/if}
 		{#if group.hosts.length}
 			<div class="flex flex-col gap-0.5">
-				<span class="text-2xs tracking-wide text-muted-foreground uppercase">
+				<span class="text-2xs tracking-wide text-muted-foreground uppercase tabular-nums">
 					{group.host_count}
-					{group.host_count === 1 ? 'host' : 'hosts'}
+					{group.host_count === 1 ? 'web asset' : 'web assets'}
 				</span>
 				{#each group.hosts.slice(0, MAX_HOSTS) as h (h)}
 					<span class="truncate font-mono">{h}</span>
@@ -99,7 +99,7 @@
 				{/if}
 			</div>
 		{:else}
-			<p class="text-muted-foreground">No host names resolve to this address.</p>
+			<p class="text-muted-foreground">No hostname resolves to this address.</p>
 		{/if}
 	</HoverCard.Content>
 </HoverCard.Root>

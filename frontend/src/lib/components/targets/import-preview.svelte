@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -127,9 +128,11 @@
 			{/each}
 
 			{#if filteredItems.length === 0}
-				<div class="p-8 text-center text-sm text-muted-foreground">
-					{filterTab === 'all' ? 'No targets' : `No ${filterTab} targets`}
-				</div>
+				<EmptyState
+					compact
+					title={filterTab === 'all' ? 'No targets' : `No ${filterTab} targets`}
+					class="border-0 bg-transparent"
+				/>
 			{/if}
 		</div>
 	</ScrollArea>

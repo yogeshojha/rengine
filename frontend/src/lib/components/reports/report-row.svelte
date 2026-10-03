@@ -5,7 +5,7 @@
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import MoreHorizontalIcon from '@lucide/svelte/icons/more-horizontal';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
@@ -71,7 +71,7 @@
 			aria-label="Select {report.title}"
 			class="transition-opacity {isSelected
 				? 'opacity-100'
-				: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}"
+				: 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
 		/>
 	</div>
 	<div class="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -97,14 +97,16 @@
 					<button
 						type="button"
 						onclick={() => (previewOpen = true)}
-						class="hover:text-primary truncate font-medium"
+						class="min-w-0 text-left font-medium break-words hover:text-primary"
 					>
 						{report.title}
 					</button>
 				{:else}
-					<span class="truncate font-medium">{report.title}</span>
+					<span class="min-w-0 font-medium break-words">{report.title}</span>
 				{/if}
-				<Badge variant="outline" class="font-mono text-2xs">{report.subject}</Badge>
+				<Badge variant="outline" class="max-w-full font-mono text-2xs break-all whitespace-normal"
+					>{report.subject}</Badge
+				>
 				{#if report.ai_used}
 					<Badge variant="info">AI</Badge>
 				{/if}
@@ -145,8 +147,8 @@
 
 		<div class="flex shrink-0 items-center gap-1.5">
 			{#if previewable}
-				<Button variant="outline" size="sm" class="h-8" onclick={() => (previewOpen = true)}>
-					<EyeIcon class="mr-1.5 size-3.5" />
+				<Button variant="outline" size="sm" onclick={() => (previewOpen = true)}>
+					<EyeIcon class="size-3.5" />
 					Preview
 				</Button>
 			{:else if report.files.length}
@@ -156,18 +158,23 @@
 					size="sm"
 					href={reportsApi.downloadUrl(projectId, report.id, primary.format)}
 					download
-					class="h-8"
 				>
-					<Icon class="mr-1.5 size-3.5" />
+					<Icon class="size-3.5" />
 					{FORMAT_LABELS[primary.format]}
-					<span class="text-muted-foreground ml-1.5">{formatBytes(primary.bytes)}</span>
+					<span class="text-muted-foreground">{formatBytes(primary.bytes)}</span>
 				</Button>
 			{/if}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button variant="ghost" size="icon" class="size-8" {...props} aria-label="Actions">
-							<MoreHorizontalIcon class="size-4" />
+						<Button
+							variant="ghost"
+							size="icon"
+							class="size-7"
+							{...props}
+							aria-label="Actions for {report.title}"
+						>
+							<EllipsisIcon class="size-4" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
@@ -195,6 +202,7 @@
 						<RefreshCwIcon class="size-4" />
 						Generate again
 					</DropdownMenu.Item>
+					<DropdownMenu.Separator />
 					<DropdownMenu.Item variant="destructive" onSelect={() => onDelete(report.id)}>
 						<Trash2Icon class="size-4" />
 						Delete

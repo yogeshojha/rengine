@@ -55,7 +55,7 @@
 		<div class="flex flex-wrap items-center gap-2 px-4 py-2 text-xs text-muted-foreground">
 			<button
 				type="button"
-				class="font-medium text-foreground underline underline-offset-2"
+				class="font-medium text-foreground underline underline-offset-2 hover:text-primary disabled:opacity-50"
 				onclick={() => (confirming = true)}
 				disabled={busy}
 			>
@@ -64,7 +64,7 @@
 			{#if onRescanAllOptions}
 				<button
 					type="button"
-					class="text-muted-foreground underline underline-offset-2"
+					class="text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
 					onclick={onRescanAllOptions}
 					disabled={busy}
 				>

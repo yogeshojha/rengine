@@ -6,7 +6,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { SERVICE_CLASS_FILL, SERVICE_CLASS_LABELS } from '$lib/config/service-classes';
 	import type { DashboardExposure } from '$lib/types/dashboard';
-	import { plural } from '$lib/utilities/strings';
+	import { percentLabel, plural } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -106,7 +106,7 @@
 						</span>
 						<span class="font-medium tabular-nums">{b.count.toLocaleString()}</span>
 						<span class="w-8 text-right text-2xs text-muted-foreground tabular-nums">
-							{exposure.services ? Math.round((b.count / exposure.services) * 100) : 0}%
+							{percentLabel(exposure.services ? (b.count / exposure.services) * 100 : 0)}
 						</span>
 					</a>
 				</li>
@@ -122,7 +122,7 @@
 				{exposure.sensitive.toLocaleString()} sensitive{#if !scanId}{` on ${plural(exposure.sensitive_targets, 'target')}`}{/if}
 			</a>
 		{:else}
-			<span>No sensitive service</span>
+			<span>No sensitive services</span>
 		{/if}
 	{/snippet}
 </Cell>

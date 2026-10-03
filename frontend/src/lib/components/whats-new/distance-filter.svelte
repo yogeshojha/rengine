@@ -21,7 +21,7 @@
 	let matched = $derived(distances.filter((d) => d >= min).length);
 </script>
 
-<div class="flex h-8 items-center gap-2 rounded-md border px-2">
+<div class="flex h-9 items-center gap-2 rounded-md border px-2">
 	<span class="flex h-4 items-end gap-px" aria-hidden="true">
 		{#each bars as n, i (i)}
 			{@const lo = i * width}

@@ -91,6 +91,10 @@
 		return accept([...tags, ...parts.filter((p) => !tags.includes(p))]);
 	}
 
+	export function draft(): string {
+		return text;
+	}
+
 	function remove(name: string) {
 		tags = tags.filter((t) => t !== name);
 		onError?.(null);

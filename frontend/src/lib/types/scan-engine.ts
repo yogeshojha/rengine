@@ -1,3 +1,5 @@
+import { formatTargetType } from './target';
+
 export type Intensity = 'passive' | 'normal' | 'aggressive';
 
 export const INTENSITIES: readonly Intensity[] = ['passive', 'normal', 'aggressive'] as const;
@@ -209,26 +211,16 @@ export const PHASE_LABELS: Record<string, string> = {
 	finalize: 'Finalize'
 };
 
-export const TARGET_TYPE_LABELS: Record<string, string> = {
-	domain: 'Domain',
-	ip: 'IP',
-	ip_range: 'CIDR',
-	asn: 'ASN',
-	url: 'URL'
-};
-
 export function phaseLabel(phase: string): string {
 	return PHASE_LABELS[phase] ?? phase.replace(/_/g, ' ');
 }
 
-export function targetTypeLabel(type: string): string {
-	return TARGET_TYPE_LABELS[type] ?? type;
-}
+export const targetTypeLabel = formatTargetType;
 
 const TARGET_TYPE_ARTICLES: Record<string, string> = {
 	domain: 'a',
 	ip: 'an',
-	ip_range: 'a',
+	ip_range: 'an',
 	asn: 'an',
 	url: 'a'
 };

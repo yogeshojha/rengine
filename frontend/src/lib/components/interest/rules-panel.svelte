@@ -6,8 +6,10 @@
 	import Bell from '@lucide/svelte/icons/bell';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Eye from '@lucide/svelte/icons/eye';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
@@ -34,6 +36,8 @@
 	let editing = $state<InterestRule | null>(null);
 	let creating = $state(false);
 	let removing = $state<InterestRule | null>(null);
+	let removingName = $state('');
+	let deleting = $state(false);
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let keywordRule = $derived(rules.find((r) => r.mode === RULE_MODE.KEYWORD && r.builtin) ?? null);
@@ -90,17 +94,25 @@
 		else picked.add(id);
 	}
 
+	function confirmRemove(rule: InterestRule): void {
+		removing = rule;
+		removingName = rule.name;
+	}
+
 	async function remove(): Promise<void> {
-		if (!removing) return;
+		const rule = removing;
+		if (!rule || deleting) return;
+		deleting = true;
 		try {
-			await interestApi.deleteRule(projectId, removing.id);
-			rules = rules.filter((r) => r.id !== removing!.id);
-			picked.delete(removing.id);
-			toast.success(`${removing.name} deleted`);
+			await interestApi.deleteRule(projectId, rule.id);
+			rules = rules.filter((r) => r.id !== rule.id);
+			picked.delete(rule.id);
+			removing = null;
+			toast.success(`${rule.name} deleted`);
 		} catch {
 			toast.error('Rule not deleted');
 		} finally {
-			removing = null;
+			deleting = false;
 		}
 	}
 
@@ -125,6 +137,7 @@
 				<Input
 					value={kr.keywords.join(', ')}
 					placeholder="admin, ftp, cpanel, dashboard"
+					aria-label="Keywords"
 					class="font-mono text-sm"
 					onchange={(e) => patch(kr, { keywords: parseCsv(e.currentTarget.value) })}
 				/>
@@ -168,7 +181,12 @@
 				<Search
 					class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
 				/>
-				<Input bind:value={q} placeholder="Filter rules" class="h-8 pl-8 text-sm" />
+				<Input
+					bind:value={q}
+					placeholder="Filter rules"
+					aria-label="Filter rules"
+					class="h-8 pl-8 text-sm"
+				/>
 			</div>
 			<Button size="sm" class="h-8" onclick={() => (creating = true)}>
 				<Plus class="size-3.5" />
@@ -183,7 +201,9 @@
 				{/each}
 			</div>
 		{:else if error}
-			<EmptyState icon={Eye} title="Rules not loaded" description={error} class="py-12" />
+			<EmptyState icon={TriangleAlert} title="Rules not loaded" description={error} class="py-12">
+				<Button variant="outline" size="sm" onclick={() => void load(projectId)}>Retry</Button>
+			</EmptyState>
 		{:else if !queryRules.length}
 			<EmptyState icon={Eye} title={q ? 'No rule matches the filter' : 'No rules'} class="py-12" />
 		{:else}
@@ -205,10 +225,9 @@
 						<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 							<span class="flex flex-wrap items-center gap-2 text-xs font-medium">
 								{rule.name}
-								<span
-									class="rounded border border-border px-1 py-px text-2xs font-normal tracking-[0.04em] text-muted-foreground uppercase"
-									>{rule.builtin ? 'Default' : 'Custom'}</span
-								>
+								<Badge variant="secondary" class="h-5 px-1.5 text-2xs font-normal">
+									{rule.builtin ? 'Default' : 'Custom'}
+								</Badge>
 								<span class="text-2xs font-normal text-muted-foreground">{rule.kind_label}</span>
 								{#if rule.notify}
 									<Hint text="Notifies when this rule flags a new asset">
@@ -240,7 +259,7 @@
 									variant="ghost"
 									size="icon"
 									class="size-7 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-									onclick={() => (removing = rule)}
+									onclick={() => confirmRemove(rule)}
 									aria-label="Delete {rule.name}"
 								>
 									<Trash2 class="size-3.5" />
@@ -275,10 +294,11 @@
 <DeleteConfirmationDialog
 	open={removing !== null}
 	onOpenChange={(v) => {
-		if (!v) removing = null;
+		if (!v && !deleting) removing = null;
 	}}
-	title="Delete {removing?.name ?? 'rule'}"
-	description="The rule and its labels on flagged assets are removed."
+	title="Delete rule"
+	description="Rule {removingName} and its labels on flagged assets are removed."
+	isDeleting={deleting}
 	onConfirm={remove}
 />
 

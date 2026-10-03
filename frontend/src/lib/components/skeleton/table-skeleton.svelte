@@ -52,7 +52,7 @@
 <div aria-busy="true">
 	{#if header}
 		<div
-			class="flex items-center gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
+			class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 		>
 			{#if selectable}
 				<div class="hidden size-4 shrink-0 sm:block"></div>
@@ -64,7 +64,7 @@
 				<div class={columnCell(col)}>{col.label}</div>
 			{/each}
 			{#if actions}
-				<div class={ACTIONS_PIN}><div class="{ACTIONS_BODY} bg-muted/30"></div></div>
+				<div class={ACTIONS_PIN}><div class="{ACTIONS_BODY} bg-muted/20"></div></div>
 			{/if}
 		</div>
 	{/if}

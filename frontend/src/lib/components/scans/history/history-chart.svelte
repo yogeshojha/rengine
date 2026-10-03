@@ -54,14 +54,41 @@
 		return null;
 	}
 
+	const STEP: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1 };
+
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			e.stopPropagation();
+			if (hover != null && days.length) commit(drag?.a ?? hover, hover);
+			drag = null;
+			return;
+		}
+		if (!days.length) return;
+		const last = days.length - 1;
+		const step = STEP[e.key];
+		if (step) {
+			e.preventDefault();
+			const at = hover ?? (step > 0 ? -1 : last + 1);
+			const next = Math.max(0, Math.min(last, at + step));
+			drag = e.shiftKey ? { a: drag?.a ?? hover ?? next, b: next } : null;
+			hover = next;
+		} else if (e.key === 'Escape' && (hover != null || drag)) {
+			e.stopPropagation();
+			hover = null;
+			drag = null;
+		}
+	}
+
 	let tip = $derived(hover != null ? days[hover] : null);
 </script>
 
 <div class="flex min-w-0 flex-col gap-1">
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_no_static_element_interactions, a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 	<div
 		bind:this={el}
-		class="relative flex h-14 cursor-crosshair touch-none items-end gap-[2px] select-none"
+		tabindex="0"
+		class="relative flex h-14 cursor-crosshair touch-none items-end gap-[2px] rounded-sm outline-none select-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 		onpointerdown={(e) => {
 			const i = indexAt(e.clientX);
 			drag = { a: i, b: i };
@@ -78,8 +105,14 @@
 		}}
 		onpointerleave={() => (hover = null)}
 		ondblclick={() => onRange(null, null)}
+		onkeydown={onKeydown}
+		onblur={() => {
+			hover = null;
+			drag = null;
+		}}
 		role="group"
-		aria-label="Runs per day. Drag to filter by date."
+		aria-label="Runs per day. Drag or use the arrow keys to filter by date."
+		aria-keyshortcuts="ArrowLeft ArrowRight Shift+ArrowLeft Shift+ArrowRight Enter"
 	>
 		{#each days as d, i (d.day)}
 			{@const w = worst(d)}
@@ -122,6 +155,9 @@
 			</div>
 		{/if}
 	</div>
+	<span class="sr-only" aria-live="polite">
+		{tip ? `${formatShortDate(tip.day, true)}, ${plural(tip.runs, 'run')}` : ''}
+	</span>
 	<div class="flex justify-between font-mono text-2xs text-muted-foreground">
 		<span>{days.length ? formatShortDate(days[0].day, true) : ''}</span>
 		<span>max {plural(max, 'run')} a day</span>

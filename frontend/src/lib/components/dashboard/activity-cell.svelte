@@ -5,6 +5,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { ActivityKind, ActivityTone } from '$lib/config/dashboard';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import type { DashboardActivity, DashboardEvent } from '$lib/types/dashboard';
 
 	interface Props {
@@ -49,7 +50,9 @@
 >
 	{#snippet tools()}
 		{#if events.length}
-			<span class="text-xs text-muted-foreground tabular-nums">{events.length} events</span>
+			<span class="text-xs text-muted-foreground tabular-nums"
+				>{plural(events.length, 'event')}</span
+			>
 		{/if}
 	{/snippet}
 	{#if events.length}
@@ -77,7 +80,7 @@
 									</span>
 								{/snippet}
 							</Hint>
-							<span class="font-mono text-2xs tracking-[0.08em] text-muted-foreground uppercase">
+							<span class="font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
 								{e.label}
 							</span>
 						</svelte:element>
@@ -85,7 +88,9 @@
 				{/each}
 			</ol>
 		</ScrollArea>
-	{:else}
+	{:else if activity}
 		<span class="text-sm text-muted-foreground">No activity</span>
+	{:else}
+		<span class="text-sm text-muted-foreground">Activity not loaded</span>
 	{/if}
 </Cell>

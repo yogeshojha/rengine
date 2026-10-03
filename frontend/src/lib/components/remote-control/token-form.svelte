@@ -7,12 +7,11 @@
 	interface Props {
 		channel: ChannelKind;
 		action: string;
+		token?: string;
 		onDone?: () => void;
 	}
 
-	let { channel, action, onDone }: Props = $props();
-
-	let token = $state('');
+	let { channel, action, token = $bindable(''), onDone }: Props = $props();
 	let error = $state<string | null>(null);
 
 	const meta = $derived(CHANNEL_META[channel]);
@@ -52,6 +51,6 @@
 		</LoadingButton>
 	</div>
 	{#if error}
-		<span class="text-xs text-destructive">{error}</span>
+		<p class="text-sm text-destructive" role="alert">{error}</p>
 	{/if}
 </form>

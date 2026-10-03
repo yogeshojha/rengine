@@ -5,6 +5,7 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import NewspaperIcon from '@lucide/svelte/icons/newspaper';
 	import TargetIcon from '@lucide/svelte/icons/target';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
@@ -52,7 +53,9 @@
 	} from '$lib/types/bounty-program';
 
 	let status = $state<BountyStatus | null>(null);
+	let statusError = $state<string | null>(null);
 	let programs = $state<BountyProgram[]>([]);
+	let programsError = $state<string | null>(null);
 	let total = $state(0);
 	let pageIndex = $state(0);
 	let pageSize = $state(PROGRAM_PAGE_SIZE);
@@ -73,6 +76,11 @@
 	let settingsOpen = $state(page.url.searchParams.get(PANEL_PARAM) === BOUNTY_SETTINGS_PANEL);
 
 	$effect(() => {
+		if (page.url.searchParams.get(PANEL_PARAM) === BOUNTY_SETTINGS_PANEL)
+			untrack(() => (settingsOpen = true));
+	});
+
+	$effect(() => {
 		if (settingsOpen) return;
 		const params = untrack(() => new URLSearchParams(page.url.searchParams));
 		if (params.get(PANEL_PARAM) !== BOUNTY_SETTINGS_PANEL) return;
@@ -91,8 +99,10 @@
 	async function loadStatus() {
 		try {
 			status = await bountyProgramsApi.status();
+			statusError = null;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Bounty Hub status not loaded');
+			statusError = error instanceof Error ? error.message : 'Bounty Hub status not loaded';
+			toast.error(statusError);
 		}
 	}
 
@@ -109,9 +119,11 @@
 			if (seq !== programsSeq) return;
 			programs = result.items;
 			total = result.total;
+			programsError = null;
 		} catch (error) {
 			if (seq !== programsSeq) return;
-			toast.error(error instanceof Error ? error.message : 'Programs not loaded');
+			programsError = error instanceof Error ? error.message : 'Programs not loaded';
+			toast.error(programsError);
 			programs = [];
 			total = 0;
 		} finally {
@@ -160,7 +172,10 @@
 	$effect(() => {
 		const id = page.url.searchParams.get('watch');
 		if (!id) {
-			deepLinkedWatch = null;
+			untrack(() => {
+				if (deepLinkedWatch) watchOpen = false;
+				deepLinkedWatch = null;
+			});
 			return;
 		}
 		if (watchOpen || deepLinkedWatch === id) return;
@@ -174,7 +189,14 @@
 		void watchesApi
 			.get(id, projectId)
 			.then((w) => openWatch(w))
-			.catch(() => toast.error('Watch not found'));
+			.catch(() => {
+				toast.error('Watch not found');
+				void goto(ROUTES.bountyHubTab('watching'), {
+					replaceState: true,
+					noScroll: true,
+					keepFocus: true
+				});
+			});
 	});
 
 	function openWatch(
@@ -212,7 +234,10 @@
 		const handle = page.url.searchParams.get('program');
 		const platform = page.url.searchParams.get('platform') ?? undefined;
 		if (!handle) {
-			deepLinked = null;
+			untrack(() => {
+				if (deepLinked) sheetOpen = false;
+				deepLinked = null;
+			});
 			return;
 		}
 		if (sheetOpen || deepLinked === handle) return;
@@ -231,7 +256,6 @@
 	});
 
 	function openProgram(handle: string, platform: string) {
-		tab = 'programs';
 		void goto(ROUTES.bountyHub(handle, platform), { noScroll: true, keepFocus: true });
 	}
 
@@ -286,11 +310,11 @@
 
 <svelte:head><title>{pageTitle(routeLabels['bounty-hub'])}</title></svelte:head>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="flex flex-col gap-1">
+		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels['bounty-hub']}</h1>
-			<p class="text-sm text-muted-foreground">
+			<p class="mt-1 text-sm text-muted-foreground">
 				{#if status}
 					{status.programs.toLocaleString()} programs across {status.platforms.filter(
 						(p) => p.programs > 0
@@ -317,11 +341,17 @@
 
 		<div class="flex flex-wrap items-center gap-2">
 			<Button variant="outline" size="sm" href={ROUTES.whatsNew()}>
-				<NewspaperIcon class="mr-2 size-3.5" />
+				<NewspaperIcon class="size-4" />
 				What's new
 			</Button>
-			<LoadingButton loading={syncing} variant="outline" size="sm" onclick={sync}>
-				<RefreshCwIcon class="mr-2 size-3.5" />
+			<LoadingButton
+				loading={syncing}
+				loadingLabel="Refreshing"
+				variant="outline"
+				size="sm"
+				onclick={sync}
+			>
+				<RefreshCwIcon class="size-4" />
 				Refresh all platforms
 			</LoadingButton>
 			<Button variant="outline" size="sm" onclick={() => (settingsOpen = true)}>
@@ -334,77 +364,116 @@
 	<ConnectAlert platforms={status?.platforms ?? []} />
 
 	{#if status || watchesStore.watches.length > 0}
-		<CountTabs
-			tabs={[
-				{ key: 'watching', label: 'Watching' },
-				{ key: 'programs', label: 'Programs' },
-				{ key: 'updates', label: 'Updates' }
-			]}
-			counts={{
-				watching: watchesStore.watches.length,
-				programs: total,
-				updates: status?.unseen_events ?? 0
-			}}
-			value={tab}
-			onChange={(k) => {
-				tab = k as BountyHubTab;
-				tabChosen = true;
-			}}
-		/>
-
-		{#if tab === 'watching'}
-			<WatchingTab
-				watches={watchesStore.watches}
-				loading={watchesStore.isLoading}
-				{stream}
-				onOpen={openWatch}
-				onBrowsePrograms={() => {
-					tab = 'programs';
+		<div class="flex flex-col gap-4">
+			<CountTabs
+				tabs={[
+					{ key: 'watching', label: 'Watching' },
+					{ key: 'programs', label: 'Programs' },
+					{ key: 'updates', label: 'Updates' }
+				]}
+				counts={{
+					watching: watchesStore.watches.length,
+					programs: total,
+					updates: status?.unseen_events ?? 0
+				}}
+				value={tab}
+				onChange={(k) => {
+					tab = k as BountyHubTab;
 					tabChosen = true;
 				}}
 			/>
-		{:else if tab === 'updates'}
-			<UpdatesFeed onOpenProgram={openProgram} />
-		{:else}
-			<FilterBar
-				{filters}
-				platforms={status?.platforms ?? []}
-				sourceCounts={status?.source_counts ?? {}}
-				onChange={onFilters}
-			/>
 
-			<Card.Root class="gap-0 overflow-hidden py-0">
-				{#if loading}
-					<RowSkeleton />
-				{:else if programs.length === 0}
-					<EmptyState
-						icon={TargetIcon}
-						title={total === 0 && status?.programs === 0
-							? 'No programs'
-							: 'No programs match these filters'}
-						class="p-12"
-					/>
-				{:else}
-					{#each programs as program (program.id)}
-						<ProgramRow {program} onOpen={open} />
-					{/each}
-				{/if}
-			</Card.Root>
-
-			{#if total > pageSize}
-				<ResultsPagination
-					page={pageIndex}
-					{pageSize}
-					{total}
-					noun="program"
-					onPage={(p) => (pageIndex = p)}
-					onPageSize={(s) => {
-						pageSize = s;
-						pageIndex = 0;
+			{#if tab === 'watching'}
+				<WatchingTab
+					watches={watchesStore.watches}
+					loading={watchesStore.isLoading}
+					error={watchesStore.error}
+					{stream}
+					onOpen={openWatch}
+					onRetry={() => {
+						if (projectId) void watchesStore.fetch(projectId);
+					}}
+					onBrowsePrograms={() => {
+						tab = 'programs';
+						tabChosen = true;
 					}}
 				/>
+			{:else if tab === 'updates'}
+				<UpdatesFeed onOpenProgram={openProgram} />
+			{:else}
+				<Card.Root class="gap-0 overflow-hidden py-0">
+					<FilterBar
+						{filters}
+						platforms={status?.platforms ?? []}
+						sourceCounts={status?.source_counts ?? {}}
+						onChange={onFilters}
+					/>
+
+					{#if loading}
+						<RowSkeleton />
+					{:else if programsError}
+						<EmptyState
+							icon={TriangleAlertIcon}
+							title="Programs not loaded"
+							description={programsError}
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
+						>
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => loadPrograms(filters, pageIndex, pageSize, projectId)}
+							>
+								Retry
+							</Button>
+						</EmptyState>
+					{:else if programs.length === 0}
+						<EmptyState
+							icon={TargetIcon}
+							title={total === 0 && status?.programs === 0
+								? 'No programs'
+								: 'No programs match these filters'}
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
+						/>
+					{:else}
+						{#each programs as program (program.id)}
+							<ProgramRow {program} onOpen={open} />
+						{/each}
+					{/if}
+
+					{#if total > pageSize}
+						<ResultsPagination
+							page={pageIndex}
+							{pageSize}
+							{total}
+							noun="program"
+							onPage={(p) => (pageIndex = p)}
+							onPageSize={(s) => {
+								pageSize = s;
+								pageIndex = 0;
+							}}
+						/>
+					{/if}
+				</Card.Root>
 			{/if}
-		{/if}
+		</div>
+	{:else if statusError}
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<EmptyState
+				icon={TriangleAlertIcon}
+				title="{routeLabels['bounty-hub']} not loaded"
+				description={statusError}
+				compact
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => loadStatus()}>Retry</Button>
+			</EmptyState>
+		</Card.Root>
+	{:else}
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<RowSkeleton />
+		</Card.Root>
 	{/if}
 </div>
 

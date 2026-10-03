@@ -11,8 +11,9 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button';
-	import * as Empty from '$lib/components/ui/empty';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { dashboardStore } from '$lib/stores/dashboard.svelte';
 	import { dashboardLayout } from '$lib/stores/dashboard-layout.svelte';
@@ -235,7 +236,7 @@
 <svelte:head><title>{pageTitle(routeLabels.dashboard)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-4">
+	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<span class="font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
 				{activeProject?.name ??
@@ -278,7 +279,7 @@
 			{:else if overview && !firstRun}
 				<Skeleton class="h-8 w-80 max-w-full" />
 			{:else}
-				<h1 class="text-lg font-semibold">Dashboard</h1>
+				<h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
 			{/if}
 		</div>
 		{#if activeProject && !firstRun}
@@ -298,15 +299,20 @@
 					{/each}
 				</ToggleGroup.Root>
 				<CustomizePopover />
-				<Button
-					variant="outline"
-					size="sm"
-					onclick={() => dashboardStore.refresh()}
-					disabled={dashboardStore.loading}
-					aria-label="Refresh"
-				>
-					<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
-				</Button>
+				<Hint text="Refresh">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="outline"
+							size="icon-sm"
+							onclick={() => dashboardStore.refresh()}
+							disabled={dashboardStore.loading}
+							aria-label="Refresh"
+						>
+							<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
+						</Button>
+					{/snippet}
+				</Hint>
 				<Button variant="outline" size="sm" onclick={() => (addTargetOpen = true)}>
 					<Plus class="size-4" />
 					Add target
@@ -332,35 +338,27 @@
 	{/if}
 
 	{#if !activeProject && projectsStore.hasFetched}
-		<Empty.Root class="rounded-lg border border-dashed border-border py-16">
-			<Empty.Header>
-				<Empty.Media class="rounded-full bg-muted/30 p-3">
-					<FolderOpen class="size-5 text-muted-foreground" strokeWidth={1.5} />
-				</Empty.Media>
-				<Empty.Title class="text-sm">No project selected</Empty.Title>
-				<Empty.Description>Select or create a project.</Empty.Description>
-			</Empty.Header>
-		</Empty.Root>
+		<EmptyState
+			icon={FolderOpen}
+			title="No project selected"
+			description="Select or create a project."
+		/>
 	{:else if dashboardStore.error && !overview}
-		<Empty.Root class="rounded-lg border border-dashed border-destructive/40 py-12">
-			<Empty.Header>
-				<Empty.Media class="rounded-full bg-destructive/10 p-3">
-					<TriangleAlert class="size-5 text-destructive" strokeWidth={1.5} />
-				</Empty.Media>
-				<Empty.Title class="text-sm">Dashboard not loaded</Empty.Title>
-				<Empty.Description>{dashboardStore.error}</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button
-					variant="outline"
-					onclick={() => dashboardStore.refresh()}
-					disabled={dashboardStore.loading}
-				>
-					<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
-					Retry
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState
+			icon={TriangleAlert}
+			title="Dashboard not loaded"
+			description={dashboardStore.error}
+		>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={() => dashboardStore.refresh()}
+				disabled={dashboardStore.loading}
+			>
+				<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
+				Retry
+			</Button>
+		</EmptyState>
 	{:else if firstRun}
 		<FirstRunPanel readiness={dashboardStore.readiness} />
 	{:else if overview}
@@ -377,7 +375,7 @@
 					onclick={() => dashboardStore.refresh()}
 					disabled={dashboardStore.loading}
 				>
-					<RefreshCw class="size-3.5 {dashboardStore.loading ? 'animate-spin' : ''}" />
+					<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
 					Retry
 				</Button>
 			</div>

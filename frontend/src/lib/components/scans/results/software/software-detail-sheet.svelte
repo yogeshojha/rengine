@@ -1,6 +1,11 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import Flame from '@lucide/svelte/icons/flame';
+	import Gauge from '@lucide/svelte/icons/gauge';
 	import Info from '@lucide/svelte/icons/info';
+	import MapPin from '@lucide/svelte/icons/map-pin';
+	import SearchCheck from '@lucide/svelte/icons/search-check';
+	import TextAlignStart from '@lucide/svelte/icons/text-align-start';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -10,6 +15,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { EVIDENCE_HELP } from '$lib/config/evidence';
 	import { ROUTES } from '$lib/config/routes';
+	import { epssLabel } from '$lib/config/threat-intel';
+	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import TechIcon from '../tech-icon.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
@@ -27,7 +34,8 @@
 	let { row, open, onOpenChange }: Props = $props();
 
 	const DT = 'text-2xs tracking-wide text-muted-foreground uppercase';
-	let epss = $derived(row?.epss_score == null ? null : Math.round(row.epss_score * 100));
+	const SOFTWARE = SURFACE[SurfaceDimension.SOFTWARE];
+	let epss = $derived(row?.epss_score == null ? null : epssLabel(row.epss_score));
 	let location = $derived(row ? (row.host ?? row.ip ?? '') : '');
 </script>
 
@@ -35,12 +43,13 @@
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
 		{#if row}
 			<Sheet.Header class="gap-1 border-b px-5 py-4">
-				<Sheet.Title class="flex items-center gap-2 font-mono text-base break-all">
+				<Sheet.Title class="flex items-center gap-2 font-mono text-base font-medium break-all">
 					{row.cve}
 					<a
 						href={nvdUrl(row.cve)}
 						target="_blank"
 						rel="noreferrer noopener"
+						aria-label="Open {row.cve} on NVD"
 						class="text-muted-foreground hover:text-foreground"
 					>
 						<ExternalLink class="size-3.5" />
@@ -66,8 +75,8 @@
 			</Sheet.Header>
 
 			<ScrollArea class="min-h-0 flex-1">
-				<div class="flex flex-col gap-5 px-5 py-4">
-					<div class="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs">
+				<div class="flex flex-col gap-6 px-5 py-4">
+					<div class="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs">
 						<div class="flex items-start gap-2">
 							<Info class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
 							<p class="text-muted-foreground">
@@ -77,7 +86,7 @@
 					</div>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Software" />
+						<SectionHead icon={SOFTWARE.icon} title="Software" />
 						<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 							<dt class={DT}>Reported as</dt>
 							<dd class="flex items-center gap-1.5">
@@ -110,13 +119,13 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Evidence" />
+						<SectionHead icon={SearchCheck} title="Evidence" />
 						<EvidenceMark evidence={row.evidence} size="md" hint={false} />
 						<p class="text-xs text-muted-foreground">{EVIDENCE_HELP[row.evidence] ?? ''}</p>
 					</section>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Confidence" />
+						<SectionHead icon={Gauge} title="Confidence" />
 						<div class="flex flex-wrap items-center gap-1.5">
 							<Badge variant={CONFIDENCE_VARIANT[row.confidence] ?? 'outline'}>
 								{row.confidence_label}
@@ -138,12 +147,12 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Exploitation" />
+						<SectionHead icon={Flame} title="Exploitation" />
 						<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 							<dt class={DT}>EPSS</dt>
 							<dd>
 								{#if epss != null}
-									<span class="tabular-nums">{epss}%</span>
+									<span class="tabular-nums">{epss}</span>
 									<span class="text-xs text-muted-foreground">in the next 30 days</span>
 								{:else}
 									<span class="text-muted-foreground">Not scored</span>
@@ -159,17 +168,17 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Location" />
+						<SectionHead icon={MapPin} title="Location" />
 						<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 							<dt class={DT}>Asset</dt>
-							<dd class="break-all">
+							<dd class="font-mono text-xs break-all">
 								{bracketed(location)}{#if row.port}<span class="text-muted-foreground"
 										>:{row.port}</span
 									>{/if}
 							</dd>
 							{#if row.url}
 								<dt class={DT}>URL</dt>
-								<dd class="break-all">{row.url}</dd>
+								<dd class="font-mono text-xs break-all">{row.url}</dd>
 							{/if}
 							{#if row.target_value}
 								<dt class={DT}>Target</dt>
@@ -182,7 +191,7 @@
 
 					{#if row.description}
 						<section class="flex flex-col gap-2">
-							<SectionHead title="NVD description" />
+							<SectionHead icon={TextAlignStart} title="NVD description" />
 							<p class="text-sm leading-relaxed text-muted-foreground">{row.description}</p>
 						</section>
 					{/if}

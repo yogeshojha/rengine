@@ -5,6 +5,8 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import type { ScanEngine } from '$lib/types/scan-engine';
@@ -22,13 +24,23 @@
 
 	let name = $state('');
 	let description = $state('');
+	let initialName = $state('');
+	let error = $state<string | null>(null);
 	let saving = $state(false);
 	let nameEl = $state<HTMLInputElement | null>(null);
+
+	let dirty = $derived(open && (name.trim() !== initialName.trim() || description.trim() !== ''));
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
+	);
 
 	$effect(() => {
 		if (!open) return;
 		name = suggestedName;
+		initialName = suggestedName;
 		description = '';
+		error = null;
 		tick().then(() => {
 			nameEl?.focus();
 			nameEl?.select();
@@ -40,6 +52,7 @@
 		const effective = launch.resolution?.effective;
 		if (!project || !effective || !name.trim() || saving) return;
 		saving = true;
+		error = null;
 		try {
 			const created = await scanEnginesStore.createEngine(project.id, {
 				name: name.trim(),
@@ -50,14 +63,22 @@
 			if (created) {
 				open = false;
 				onSaved(created);
-			}
+			} else error = scanEnginesStore.error ?? 'Scan engine not created';
 		} finally {
 			saving = false;
 		}
 	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!saving) guard.close();
+		}
+	}
+>
 	<Dialog.Content class="sm:max-w-md" onkeydown={(e) => e.key === 'Enter' && e.stopPropagation()}>
 		<Dialog.Header>
 			<Dialog.Title>Save as scan engine</Dialog.Title>
@@ -84,13 +105,21 @@
 					onkeydown={(e) => e.key === 'Enter' && save()}
 				/>
 			</div>
-			{#if scanEnginesStore.error}
-				<p class="text-xs text-destructive">{scanEnginesStore.error}</p>
+			{#if error}
+				<p role="alert" class="text-xs text-destructive">{error}</p>
 			{/if}
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (open = false)} disabled={saving}>Cancel</Button>
-			<LoadingButton loading={saving} disabled={!name.trim()} onclick={save}>Save</LoadingButton>
+			<Button variant="outline" onclick={() => guard.close()} disabled={saving}>Cancel</Button>
+			<LoadingButton loading={saving} loadingLabel="Saving" disabled={!name.trim()} onclick={save}
+				>Save</LoadingButton
+			>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Button } from '$lib/components/ui/button';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -44,7 +45,7 @@
 
 	$effect(() => {
 		if (!open) return;
-		void toolbox.load();
+		untrack(() => void toolbox.load());
 		const names = toolbox.tools.map((t) => t.name);
 		if (!names.length) return;
 		const stored = localStorage.getItem(STORAGE_KEYS.toolboxLastTool);
@@ -160,9 +161,9 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="max-h-[88vh] gap-0 overflow-hidden p-0 sm:max-w-4xl">
-		<Dialog.Header class="border-b px-4 py-2.5">
-			<Dialog.Title class="text-sm font-medium">Toolbox</Dialog.Title>
+	<Dialog.Content class="max-h-[90vh] gap-0 overflow-hidden p-0 sm:max-w-4xl">
+		<Dialog.Header class="border-b p-4">
+			<Dialog.Title>Toolbox</Dialog.Title>
 			<Dialog.Description class="sr-only">
 				Lookup, discovery and intelligence tools
 			</Dialog.Description>
@@ -171,22 +172,13 @@
 		<div class="grid h-[70vh] min-h-0 grid-cols-1 md:grid-cols-[13.5rem_minmax(0,1fr)]">
 			<aside class="hidden min-h-0 min-w-0 flex-col border-r md:flex">
 				{#if toolbox.loadingCatalog && !toolbox.tools.length}
-					<div class="flex flex-1 items-center justify-center">
-						<Spinner class="size-4 text-muted-foreground" />
+					<div class="flex flex-col gap-2 p-2" aria-busy="true">
+						<Skeleton class="h-8 w-full" />
+						{#each Array(8) as _, i (i)}
+							<Skeleton class="h-6 {i % 3 === 0 ? 'w-2/3' : 'w-full'}" />
+						{/each}
 					</div>
-				{:else if toolbox.catalogError && !toolbox.tools.length}
-					<EmptyState
-						compact
-						icon={TriangleAlert}
-						title="Tools not loaded"
-						description={toolbox.catalogError}
-						class="m-3 border-dashed"
-					>
-						<Button variant="outline" size="sm" onclick={() => void toolbox.load(true)}>
-							Retry
-						</Button>
-					</EmptyState>
-				{:else}
+				{:else if toolbox.tools.length || !toolbox.catalogError}
 					<ToolList
 						tools={toolbox.tools}
 						groups={toolbox.groups}
@@ -204,6 +196,34 @@
 			</aside>
 
 			<section class="flex min-h-0 min-w-0 flex-col">
+				{#if toolbox.tools.length}
+					<div class="border-b px-4 py-3 md:hidden">
+						<Select.Root
+							type="single"
+							value={selected ?? ''}
+							onValueChange={(name) => {
+								if (name) selected = name;
+							}}
+						>
+							<Select.Trigger class="w-full" aria-label="Tool">
+								{tool?.title ?? 'Tool'}
+							</Select.Trigger>
+							<Select.Content>
+								{#each toolbox.groups as group (group.key)}
+									{@const items = toolbox.tools.filter((t) => t.group === group.key)}
+									{#if items.length}
+										<Select.Group>
+											<Select.Label>{group.label}</Select.Label>
+											{#each items as t (t.name)}
+												<Select.Item value={t.name} label={t.title}>{t.title}</Select.Item>
+											{/each}
+										</Select.Group>
+									{/if}
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+				{/if}
 				{#if tool}
 					<div class="space-y-2.5 border-b px-4 py-3">
 						<div class="flex items-start gap-2">
@@ -212,7 +232,7 @@
 							{/if}
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center gap-2">
-									<h3 class="text-sm leading-5 font-medium">{tool.title}</h3>
+									<h3 class="text-sm leading-5 font-semibold">{tool.title}</h3>
 									{#if tool.touches_target}
 										<Hint text={MODE_HELP.active}>
 											{#snippet child(props)}
@@ -249,12 +269,22 @@
 						</div>
 					</ScrollArea>
 				{:else if toolbox.catalogError}
-					<div class="flex flex-1 items-center justify-center px-6 text-center">
-						<p class="text-sm text-muted-foreground">Tools not loaded. {toolbox.catalogError}</p>
-					</div>
+					<EmptyState
+						compact
+						icon={TriangleAlert}
+						title="Tools not loaded"
+						description={toolbox.catalogError}
+						class="m-4"
+					>
+						<Button variant="outline" size="sm" onclick={() => void toolbox.load(true)}>
+							Retry
+						</Button>
+					</EmptyState>
 				{:else}
-					<div class="flex flex-1 items-center justify-center">
-						<Spinner class="size-4 text-muted-foreground" />
+					<div class="flex flex-col gap-3 border-b px-4 py-3" aria-busy="true">
+						<Skeleton class="h-5 w-40" />
+						<Skeleton class="h-3 w-2/3" />
+						<Skeleton class="h-9 w-full" />
 					</div>
 				{/if}
 			</section>

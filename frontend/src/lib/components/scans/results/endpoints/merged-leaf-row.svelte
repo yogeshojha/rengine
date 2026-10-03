@@ -27,6 +27,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import type { MergedLeaf } from '$lib/utilities/endpoints';
 	import { externalHref } from '$lib/utilities/links';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		leaf: MergedLeaf;
@@ -81,6 +82,7 @@
 	{...attrs}
 	onclick={() => onOpen(leaf)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onOpen(leaf);
@@ -116,14 +118,15 @@
 									class="text-2xs text-muted-foreground hover:text-primary"
 									onclick={(e) => e.stopPropagation()}
 								>
-									on {leaf.hosts} hosts
+									on {plural(leaf.hosts, 'web asset')}
 								</button>
 							{/snippet}
 						</Popover.Trigger>
 						<Popover.Content class="w-72 p-0" align="start">
 							<div class="border-b px-3 py-2">
 								<p class="text-xs font-medium">
-									{leaf.hosts} hosts serve <span class="font-mono">{leaf.path}</span>
+									{plural(leaf.hosts, 'web asset')} serve
+									<span class="font-mono wrap-anywhere">{leaf.path}</span>
 								</p>
 							</div>
 							<div class="flex flex-wrap gap-1 p-3">
@@ -155,7 +158,7 @@
 										onFilter(leaf.query);
 									}}
 								>
-									<Rows3 class="size-3" /> Show every host in list
+									<Rows3 class="size-3" /> Show every web asset in list
 								</Button>
 							</div>
 						</Popover.Content>
@@ -173,7 +176,7 @@
 					</button>
 				{/if}
 				{#if leaf.new_count}
-					<Badge variant="info" class="h-4 px-1 text-2xs">
+					<Badge variant="info" class="h-4 px-1.5 text-2xs">
 						{leaf.new_count === leaf.endpoints ? 'New' : `+${leaf.new_count} new`}
 					</Badge>
 				{/if}
@@ -260,7 +263,7 @@
 							void writeClipboard(leaf.sample_url);
 						}}
 					>
-						<Copy class="size-3.5" />
+						<Copy class="size-4" />
 					</Button>
 				{/snippet}
 			</Hint>
@@ -277,7 +280,7 @@
 						rel="noopener noreferrer"
 						onclick={(e) => e.stopPropagation()}
 					>
-						<ExternalLink class="size-3.5" />
+						<ExternalLink class="size-4" />
 					</Button>
 				{/snippet}
 			</Hint>

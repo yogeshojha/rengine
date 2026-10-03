@@ -89,7 +89,11 @@
 					size: LEAF_PAGE
 				});
 				if (my !== req) return;
-				leaves = nextPage === 1 ? res.items : [...leaves, ...res.items];
+				if (nextPage === 1) leaves = res.items;
+				else {
+					const seen = new Set(leaves.map((e) => e.id));
+					leaves = [...leaves, ...res.items.filter((e) => !seen.has(e.id))];
+				}
 				total = res.total;
 				page = nextPage;
 			}
@@ -290,7 +294,7 @@
 					onclick={() => load(page + 1)}
 				>
 					{loading
-						? 'Loading…'
+						? 'Loading'
 						: `Show ${Math.min(remaining, LEAF_PAGE).toLocaleString()} more${
 								node.kind === 'host' ? '' : ` in ${node.name}`
 							}`}

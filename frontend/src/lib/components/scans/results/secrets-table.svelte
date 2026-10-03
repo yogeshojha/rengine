@@ -6,11 +6,13 @@
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import X from '@lucide/svelte/icons/x';
 
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import { Toggle } from '$lib/components/ui/toggle';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import QueryBar from './query-bar/query-bar.svelte';
@@ -376,6 +378,18 @@
 		onQuery(withTab(search, 'state', key));
 	}
 
+	let quick = $derived(QUICK_FILTERS.filter((f) => hasToken(search, f.token)).map((f) => f.token));
+
+	function setQuick(values: string[]) {
+		let next = search;
+		for (const { token } of QUICK_FILTERS) {
+			const on = values.includes(token);
+			if (on && !hasToken(next, token)) next = appendToken(next, token);
+			else if (!on && hasToken(next, token)) next = withoutToken(next, token);
+		}
+		onQuery(next);
+	}
+
 	function toggleCheck(id: string) {
 		const row = items.find((r) => r.id === id);
 		if (row) selection.toggle(row);
@@ -428,7 +442,7 @@
 </div>
 
 <Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
-	<div class="border-b pr-3 pl-2">
+	<div class="border-b px-2">
 		<CountTabs
 			tabs={STATE_TABS}
 			value={stateTab}
@@ -440,24 +454,29 @@
 
 	<CoverageStrip {coverage} />
 
-	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-		{#each QUICK_FILTERS as filter (filter.token)}
-			<Toggle
-				size="sm"
-				variant="outline"
-				pressed={hasToken(search, filter.token)}
-				onPressedChange={() =>
-					onQuery(
-						hasToken(search, filter.token)
-							? withoutToken(search, filter.token)
-							: appendToken(search, filter.token)
-					)}
-				class="h-7 px-2.5 text-xs font-normal"
+	<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
+		<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
+			<ScrollArea
+				orientation="horizontal"
+				class="max-lg:max-w-full max-lg:min-w-0"
+				scrollbarXClasses="h-1"
 			>
-				{filter.label}
-			</Toggle>
-		{/each}
-		<div class="ml-auto flex flex-wrap items-center gap-1.5">
+				<ToggleGroup.Root
+					type="multiple"
+					value={quick}
+					onValueChange={setQuick}
+					variant="outline"
+					aria-label="Filters"
+				>
+					{#each QUICK_FILTERS as filter (filter.token)}
+						<ToggleGroup.Item value={filter.token} class="h-9 px-3 text-sm font-normal">
+							{filter.label}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+			</ScrollArea>
+		</div>
+		<div class="flex min-w-0 flex-wrap items-center gap-2">
 			<ViewControls
 				dimension={SurfaceDimension.SECRETS}
 				dimensions={secretQuerySchema.schema.group_dimensions}
@@ -486,75 +505,88 @@
 		</div>
 	</div>
 
-	{#if groupBy}
-		<GroupList
-			set={groupSet}
-			failed={groupFailed}
-			onRetry={loadGroups}
-			dimensions={secretQuerySchema.schema.group_dimensions}
-			noun={SEC.noun}
-			nounPlural={SEC.nounPlural}
-			loading={groupLoading}
-			onPick={drillGroup}
-		/>
-	{:else if loading}
-		<TableSkeleton lead={secretSkeletonColumns(projectWide)} actions={false} selectable />
-	{:else if errored}
-		<EmptyState icon={TriangleAlert} title="Secrets not loaded">
-			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
-		</EmptyState>
-	{:else if coverage && !coverage.ran}
-		<EmptyState icon={KeyRound} title="Not scanned" />
-	{:else if items.length === 0}
-		<EmptyState
-			icon={filtered ? SearchX : ShieldCheck}
-			title={filtered ? 'No secrets match' : 'No secrets found'}
-		>
-			{#if filtered}
-				<Button variant="outline" size="sm" onclick={() => onQuery('')}>Clear query</Button>
-			{/if}
-		</EmptyState>
-	{:else}
-		<SecretListHeader
-			sticky
-			top={barH}
-			{projectWide}
-			sortKey={sort.key}
-			sortDir={sort.dir}
-			{selectAllChecked}
-			onSelectAll={toggleSelectAll}
-			{onSort}
-		/>
-		<div class="divide-y divide-border transition-opacity {refreshing ? 'opacity-60' : ''}">
-			{#each items as row (row.id)}
-				<SecretRow
-					{row}
-					{term}
-					selected={selected?.id === row.id}
-					checked={selection.has(row.id)}
-					{projectWide}
-					onCheck={toggleCheck}
-					onOpen={openRow}
-					onFilter={onToken}
-				/>
-			{/each}
-		</div>
+	<div class="@container/secrets">
+		{#if groupBy}
+			<GroupList
+				set={groupSet}
+				failed={groupFailed}
+				onRetry={loadGroups}
+				dimensions={secretQuerySchema.schema.group_dimensions}
+				noun={SEC.noun}
+				nounPlural={SEC.nounPlural}
+				loading={groupLoading}
+				onPick={drillGroup}
+			/>
+		{:else if loading}
+			<TableSkeleton lead={secretSkeletonColumns(projectWide)} actions={false} selectable />
+		{:else if errored}
+			<EmptyState
+				icon={TriangleAlert}
+				title="Secrets not loaded"
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
+			</EmptyState>
+		{:else if coverage && !coverage.ran}
+			<EmptyState
+				icon={KeyRound}
+				title="Not scanned"
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else if items.length === 0}
+			<EmptyState
+				icon={filtered ? SearchX : ShieldCheck}
+				title={filtered ? 'No secrets match' : 'No secrets found'}
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				{#if filtered}
+					<Button variant="outline" size="sm" onclick={() => onQuery('')}>
+						<X class="h-4 w-4" /> Clear filters
+					</Button>
+				{/if}
+			</EmptyState>
+		{:else}
+			<SecretListHeader
+				sticky
+				top={barH}
+				{projectWide}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				{selectAllChecked}
+				onSelectAll={toggleSelectAll}
+				{onSort}
+			/>
+			<div class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}">
+				{#each items as row (row.id)}
+					<SecretRow
+						{row}
+						{term}
+						selected={selected?.id === row.id}
+						checked={selection.has(row.id)}
+						{projectWide}
+						onCheck={toggleCheck}
+						onOpen={openRow}
+						onFilter={onToken}
+					/>
+				{/each}
+			</div>
 
-		<ResultsPagination
-			{total}
-			page={pageIndex}
-			{pageSize}
-			capped={totalCapped}
-			noun={SEC.noun}
-			plural={SEC.nounPlural}
-			{onPage}
-			onPageSize={(size) => {
-				pageSize = size;
-				pageIndex = 0;
-				void runSearch();
-			}}
-		/>
-	{/if}
+			<ResultsPagination
+				{total}
+				page={pageIndex}
+				{pageSize}
+				capped={totalCapped}
+				noun={SEC.noun}
+				plural={SEC.nounPlural}
+				{onPage}
+				onPageSize={(size) => {
+					pageSize = size;
+					pageIndex = 0;
+					void runSearch();
+				}}
+			/>
+		{/if}
+	</div>
 </Card.Root>
 
 <RowSelectionBar

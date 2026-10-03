@@ -1,9 +1,11 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Search from '@lucide/svelte/icons/search';
+	import SearchX from '@lucide/svelte/icons/search-x';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import RecordShell from '../record-shell.svelte';
@@ -142,7 +144,7 @@
 	{refreshing}
 	{loading}
 	empty={records.length === 0}
-	emptyText="No records for {host}."
+	emptyText="No records for {host}"
 	{onRefresh}
 >
 	{#snippet bar()}
@@ -152,6 +154,7 @@
 				class="rounded-md px-2 py-1 text-sm {type === ALL
 					? 'bg-muted font-medium'
 					: 'text-muted-foreground hover:text-foreground'}"
+				aria-pressed={type === ALL}
 				onclick={() => (type = ALL)}
 			>
 				All <span class="ml-1 text-2xs tabular-nums">{records.length}</span>
@@ -162,6 +165,7 @@
 					class="rounded-md px-2 py-1 font-mono text-xs {type === key
 						? 'bg-muted font-medium'
 						: 'text-muted-foreground hover:text-foreground'}"
+					aria-pressed={type === key}
 					onclick={() => (type = key)}
 				>
 					{key} <span class="ml-1 font-sans text-2xs tabular-nums">{n}</span>
@@ -187,7 +191,7 @@
 	{/snippet}
 
 	{#if groups.length === 0}
-		<p class="border-t py-8 text-center text-sm text-muted-foreground">No record matches.</p>
+		<EmptyState compact icon={SearchX} title="No matching records" />
 	{:else}
 		<div class="flex flex-col">
 			{#each groups as [key, rows] (key)}
@@ -196,7 +200,7 @@
 						{@const note = noteFor(r)}
 						{@const href = isAddress(r) ? ipsHref(r.value) : null}
 						<div
-							class="group grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_16rem_auto]"
+							class="group grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1 sm:grid-cols-[minmax(0,1fr)_16rem_auto]"
 						>
 							<span class="font-mono text-xs leading-5 wrap-anywhere">{r.value}</span>
 							<span
@@ -221,7 +225,7 @@
 								{/if}
 							</span>
 							<span
-								class="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+								class="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 							>
 								{#if href}
 									<Hint text="Open in {IPS.label}">
@@ -230,7 +234,7 @@
 												{...props}
 												variant="ghost"
 												size="icon"
-												class="size-6 text-muted-foreground sm:hidden"
+												class="size-7 text-muted-foreground sm:hidden"
 												{href}
 												aria-label="Open {r.value} in {IPS.label}"
 											>
@@ -239,7 +243,7 @@
 										{/snippet}
 									</Hint>
 								{/if}
-								<CopyButton value={r.value} class="size-6" />
+								<CopyButton value={r.value} />
 							</span>
 						</div>
 					{/each}

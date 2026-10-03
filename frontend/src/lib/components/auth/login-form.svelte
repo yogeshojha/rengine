@@ -3,13 +3,16 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { FieldGroup, Field, FieldLabel } from '$lib/components/ui/field/index.js';
 	import OtpInput from '$lib/components/onboarding/otp-input.svelte';
 
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { ROUTES } from '$lib/config/routes';
+	import { localPath } from '$lib/utilities/links';
+	import { takeSessionExpired } from './login';
 	import { auth, NO_SESSION } from '$lib/stores/auth.svelte';
 	import { twoFactorApi } from '$lib/api/twoFactor';
 	import { TOTP_DIGITS } from '$lib/constants';
@@ -24,6 +27,7 @@
 	let error = $state('');
 	let isLoading = $state(false);
 	let showPassword = $state(false);
+	let capsLock = $state(false);
 
 	let usernameEl = $state<HTMLInputElement | null>(null);
 	let passwordEl = $state<HTMLInputElement | null>(null);
@@ -34,14 +38,20 @@
 	let verifying = $state(false);
 	let useBackupCode = $state(false);
 
+	let expired = $state(false);
+	let next = $derived(localPath(page.url.searchParams.get('next')));
+
 	let inMfa = $derived(mfaToken !== null);
 	let canVerify = $derived(useBackupCode ? code.trim().length > 0 : code.length === TOTP_DIGITS);
 
-	onMount(() => usernameEl?.focus());
+	onMount(() => {
+		expired = takeSessionExpired();
+		usernameEl?.focus();
+	});
 
 	$effect(() => {
 		if (auth.isAuthenticated && !auth.isLoading) {
-			goto(ROUTES.dashboard);
+			goto(next && !next.startsWith(ROUTES.login) ? next : ROUTES.dashboard);
 		}
 	});
 
@@ -59,7 +69,7 @@
 			return;
 		}
 		if (!result.success) {
-			error = result.error || 'Not signed in';
+			error = result.error || 'Not logged in';
 			isLoading = false;
 			password = '';
 			passwordEl?.focus();
@@ -97,6 +107,10 @@
 		mfaError = '';
 		password = '';
 		useBackupCode = false;
+	}
+
+	function readCapsLock(e: KeyboardEvent) {
+		capsLock = e.getModifierState?.('CapsLock') ?? false;
 	}
 
 	function toggleBackupCode() {
@@ -141,11 +155,17 @@
 						{/if}
 					</div>
 					{#if mfaError}
-						<p class="text-sm text-destructive">{mfaError}</p>
+						<p class="text-sm text-destructive" role="alert">{mfaError}</p>
 					{/if}
-					<Button class="w-full" onclick={verifyMfa} disabled={verifying || !canVerify}>
-						{#if verifying}<Spinner class="mr-2" />Verifying{:else}Verify{/if}
-					</Button>
+					<LoadingButton
+						class="w-full"
+						onclick={() => verifyMfa()}
+						disabled={!canVerify}
+						loading={verifying}
+						loadingLabel="Verifying"
+					>
+						Verify
+					</LoadingButton>
 					<Button
 						variant="link"
 						size="sm"
@@ -162,7 +182,7 @@
 						onclick={backToPassword}
 						disabled={verifying}
 					>
-						<ArrowLeftIcon class="mr-1.5 size-4" />
+						<ArrowLeftIcon class="size-4" />
 						Back
 					</Button>
 				</div>
@@ -170,6 +190,9 @@
 		{:else}
 			<Card.Header class="text-center">
 				<Card.Title class="text-xl">Log in</Card.Title>
+				{#if expired}
+					<Card.Description>Session expired. Log in again.</Card.Description>
+				{/if}
 			</Card.Header>
 			<Card.Content>
 				<form onsubmit={handleSubmit}>
@@ -178,8 +201,12 @@
 							<FieldLabel for="username">Username</FieldLabel>
 							<Input
 								id="username"
+								name="username"
 								type="text"
-								placeholder="username"
+								autocomplete="username"
+								autocapitalize="none"
+								autocorrect="off"
+								spellcheck={false}
 								required
 								bind:ref={usernameEl}
 								bind:value={username}
@@ -190,33 +217,46 @@
 							<div class="relative">
 								<Input
 									id="password"
+									name="password"
 									type={showPassword ? 'text' : 'password'}
+									autocomplete="current-password"
 									bind:ref={passwordEl}
 									bind:value={password}
 									class="pr-10"
 									required
+									onkeydown={readCapsLock}
+									onkeyup={readCapsLock}
+									onblur={() => (capsLock = false)}
 								/>
 								<button
 									type="button"
 									onclick={() => (showPassword = !showPassword)}
-									class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+									class="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground hover:text-foreground"
 									aria-label={showPassword ? 'Hide password' : 'Show password'}
 								>
 									{#if showPassword}
-										<EyeOff class="h-4 w-4 text-muted-foreground" />
+										<EyeOff class="h-4 w-4" />
 									{:else}
-										<Eye class="h-4 w-4 text-muted-foreground" />
+										<Eye class="h-4 w-4" />
 									{/if}
 								</button>
 							</div>
+							{#if capsLock}
+								<p class="text-xs text-warning" role="status">Caps Lock is on</p>
+							{/if}
 						</Field>
 					</FieldGroup>
 					{#if error}
-						<p class="text-sm text-destructive">{error}</p>
+						<p class="mt-3 text-sm text-destructive" role="alert">{error}</p>
 					{/if}
-					<Button type="submit" class="w-full mt-4" disabled={isLoading}>
-						{#if isLoading}<Spinner class="mr-2" />Logging in{:else}Log in{/if}
-					</Button>
+					<LoadingButton
+						type="submit"
+						class="w-full mt-4"
+						loading={isLoading}
+						loadingLabel="Logging in"
+					>
+						Log in
+					</LoadingButton>
 				</form>
 			</Card.Content>
 		{/if}

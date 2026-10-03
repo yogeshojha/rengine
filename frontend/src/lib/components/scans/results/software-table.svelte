@@ -5,17 +5,18 @@
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Package from '@lucide/svelte/icons/package';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import X from '@lucide/svelte/icons/x';
 
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import ViewControls from './table/view-controls.svelte';
-	import { Toggle } from '$lib/components/ui/toggle';
 
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
@@ -357,6 +358,18 @@
 		onQuery(appendToken(search, token));
 	}
 
+	let quick = $derived(QUICK_FILTERS.filter((f) => hasToken(search, f.token)).map((f) => f.token));
+
+	function setQuick(values: string[]) {
+		let next = search;
+		for (const { token } of QUICK_FILTERS) {
+			const on = values.includes(token);
+			if (on && !hasToken(next, token)) next = appendToken(next, token);
+			else if (!on && hasToken(next, token)) next = withoutToken(next, token);
+		}
+		onQuery(next);
+	}
+
 	function toggleCheck(id: string) {
 		const row = items.find((r) => r.id === id);
 		if (row) selection.toggle(row);
@@ -453,24 +466,29 @@
 		</div>
 	{/if}
 
-	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-		{#each QUICK_FILTERS as filter (filter.token)}
-			<Toggle
-				size="sm"
-				variant="outline"
-				pressed={hasToken(search, filter.token)}
-				onPressedChange={() =>
-					onQuery(
-						hasToken(search, filter.token)
-							? withoutToken(search, filter.token)
-							: appendToken(search, filter.token)
-					)}
-				class="h-7 px-2.5 text-xs font-normal"
+	<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
+		<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
+			<ScrollArea
+				orientation="horizontal"
+				class="max-lg:max-w-full max-lg:min-w-0"
+				scrollbarXClasses="h-1"
 			>
-				{filter.label}
-			</Toggle>
-		{/each}
-		<div class="ml-auto flex flex-wrap items-center gap-1.5">
+				<ToggleGroup.Root
+					type="multiple"
+					value={quick}
+					onValueChange={setQuick}
+					variant="outline"
+					aria-label="Filters"
+				>
+					{#each QUICK_FILTERS as filter (filter.token)}
+						<ToggleGroup.Item value={filter.token} class="h-9 px-3 text-sm font-normal">
+							{filter.label}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+			</ScrollArea>
+		</div>
+		<div class="flex min-w-0 flex-wrap items-center gap-2">
 			<ViewControls
 				dimension={SurfaceDimension.SOFTWARE}
 				dimensions={[]}
@@ -510,18 +528,29 @@
 			</div>
 		</ScrollArea>
 	{:else if errored}
-		<EmptyState icon={TriangleAlert} title="Software CVEs not loaded">
+		<EmptyState
+			icon={TriangleAlert}
+			title="Software CVEs not loaded"
+			class="rounded-none border-0 bg-transparent py-16"
+		>
 			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
 		</EmptyState>
 	{:else if coverage && coverage.components === 0}
-		<EmptyState icon={Package} title="No software versions reported" />
+		<EmptyState
+			icon={Package}
+			title="No software versions reported"
+			class="rounded-none border-0 bg-transparent py-16"
+		/>
 	{:else if items.length === 0}
 		<EmptyState
 			icon={filtered ? SearchX : Package}
 			title={filtered ? 'No software CVEs match' : 'No software CVEs'}
+			class="rounded-none border-0 bg-transparent py-16"
 		>
 			{#if filtered}
-				<Button variant="outline" size="sm" onclick={() => onQuery('')}>Clear query</Button>
+				<Button variant="outline" size="sm" onclick={() => onQuery('')}>
+					<X class="h-4 w-4" /> Clear filters
+				</Button>
 			{/if}
 		</EmptyState>
 	{:else}

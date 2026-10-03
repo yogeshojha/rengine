@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import XIcon from '@lucide/svelte/icons/x';
 	import * as Sheet from '$lib/components/ui/sheet';
@@ -8,6 +9,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import DestinationPicker from './destination-picker.svelte';
 	import { toast } from 'svelte-sonner';
 	import { pluralLabel } from '$lib/utilities/strings';
@@ -35,6 +38,7 @@
 	let saving = $state(false);
 	let testing = $state(false);
 	let result = $state<TestResult | null>(null);
+	let initial = $state('');
 
 	const spec = $derived(TRACKERS_BY_KIND[kind]);
 	const stored = $derived(editing?.config_masked ?? {});
@@ -43,6 +47,17 @@
 			(!url.trim() && !spec.defaultUrl) ||
 			spec.fields.some((f) => !config[f.key]?.trim() && !(editing && stored[f.key]))
 	);
+	const dirty = $derived(
+		snapshot() !== initial || Object.values(config).some((value) => value.trim() !== '')
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
+	);
+
+	function snapshot(): string {
+		return JSON.stringify([kind, name.trim(), url.trim(), destination.trim(), issueType.trim()]);
+	}
 
 	$effect(() => {
 		if (!open) return;
@@ -62,6 +77,7 @@
 			destination = '';
 			issueType = '';
 		}
+		initial = untrack(snapshot);
 	});
 
 	function pickKind(next: string) {
@@ -129,7 +145,7 @@
 	}
 </script>
 
-<Sheet.Root bind:open>
+<Sheet.Root bind:open={() => open, (next) => (next ? (open = true) : !saving && guard.close())}>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title>{editing ? editing.name : 'Connect a tracker'}</Sheet.Title>
@@ -256,11 +272,25 @@
 			</div>
 		</ScrollArea>
 
-		<div class="flex justify-end gap-2 border-t bg-muted/30 px-5 py-3">
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={saving} disabled={missing} onclick={save}>
+		<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
+			<Button variant="outline" size="sm" disabled={saving} onclick={() => guard.close()}>
+				Cancel
+			</Button>
+			<LoadingButton
+				size="sm"
+				loading={saving}
+				loadingLabel={editing ? 'Saving' : 'Connecting'}
+				disabled={missing}
+				onclick={save}
+			>
 				{editing ? 'Save' : 'Connect'}
 			</LoadingButton>
-		</div>
+		</Sheet.Footer>
 	</Sheet.Content>
 </Sheet.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

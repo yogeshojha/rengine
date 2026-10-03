@@ -136,7 +136,7 @@
 							{#each burst.calls as call, i (call.at + call.tool + i)}
 								{@const title = titles.get(call.tool) ?? call.tool}
 								<div
-									class="grid grid-cols-[4.25rem_0.75rem_minmax(0,1fr)_auto] items-start gap-x-2.5 border-t border-border/60 py-2 first:border-t-0"
+									class="grid grid-cols-[5rem_0.75rem_minmax(0,1fr)_auto] items-start gap-x-2.5 border-t border-border/60 py-2 first:border-t-0"
 								>
 									<span class="font-mono text-2xs leading-5 text-muted-foreground tabular-nums">
 										{timeWithSeconds(call.at)}

@@ -34,6 +34,7 @@
 	let toolsOpen = $state(false);
 	let historyId = $state<string | null>(null);
 	let pending = $state<{ token: McpToken; action: 'cut' | 'delete' } | null>(null);
+	let confirming = $state(false);
 
 	const status = $derived(mcp.status);
 	const canAdmin = $derived(auth.user?.is_superuser ?? false);
@@ -85,15 +86,20 @@
 	async function confirm() {
 		if (!pending) return;
 		const { token, action } = pending;
-		pending = null;
-		if (action === 'cut') await mcp.revokeToken(token.id);
-		else await mcp.deleteToken(token.id);
+		confirming = true;
+		try {
+			const ok =
+				action === 'cut' ? await mcp.revokeToken(token.id) : await mcp.deleteToken(token.id);
+			if (ok) pending = null;
+		} finally {
+			confirming = false;
+		}
 	}
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels.agents)}</title></svelte:head>
 
-<div class="flex flex-col gap-5">
+<div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.agents}</h1>
@@ -101,7 +107,9 @@
 		</div>
 		{#if status && canAdmin}
 			<div class="flex flex-wrap items-center gap-2">
-				<span class="inline-flex h-8 min-w-0 items-center gap-2 rounded-md border px-3 text-sm">
+				<span
+					class="inline-flex h-8 min-w-0 items-center gap-2 rounded-md border pr-1 pl-3 text-sm"
+				>
 					<span
 						class="size-2 shrink-0 rounded-full {SERVER_STATE_DOT[serverState]}"
 						aria-hidden="true"
@@ -112,7 +120,7 @@
 					<span class="hidden truncate font-mono text-xs text-muted-foreground md:inline">
 						{status.endpoint}
 					</span>
-					<CopyButton value={status.endpoint} class="size-5" />
+					<CopyButton value={status.endpoint} />
 				</span>
 				<Button variant="outline" size="sm" onclick={() => (toolsOpen = true)}>
 					<WrenchIcon class="size-4" />
@@ -188,7 +196,9 @@
 			: `Agent ${pending.token.name} and its key are removed.`
 		: ''}
 	confirmLabel={pending?.action === 'cut' ? 'Cut access' : 'Delete'}
+	loadingLabel={pending?.action === 'cut' ? 'Cutting access' : 'Deleting'}
 	destructive
+	loading={confirming}
 	onOpenChange={(v) => {
 		if (!v) pending = null;
 	}}

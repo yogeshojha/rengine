@@ -18,6 +18,7 @@
 </script>
 
 <div
+	data-selection-bar={selectedCount > 0 ? '' : undefined}
 	class="fixed bottom-8 left-1/2 z-50 max-w-[calc(100vw-1rem)] -translate-x-1/2 {selectedCount > 0
 		? ''
 		: 'pointer-events-none opacity-0'}"

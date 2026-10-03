@@ -229,7 +229,7 @@
 	{refreshing}
 	{loading}
 	empty={!record}
-	emptyText="No registration record for {targetValue}."
+	emptyText="No registration record for {targetValue}"
 	{onRefresh}
 >
 	{#snippet bar()}
@@ -263,9 +263,9 @@
 							</span>
 							{#if f.copy}
 								<span
-									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 								>
-									<CopyButton value={f.copy} class="size-5" />
+									<CopyButton value={f.copy} />
 								</span>
 							{/if}
 						</span>
@@ -312,9 +312,9 @@
 							</span>
 						{/if}
 						<span
-							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 						>
-							<CopyButton value={ns} class="size-5" />
+							<CopyButton value={ns} />
 						</span>
 					</div>
 				{/each}
@@ -339,9 +339,9 @@
 										{entity.email}
 									</code>
 									<span
-										class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+										class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 									>
-										<CopyButton value={entity.email} class="size-5" />
+										<CopyButton value={entity.email} />
 									</span>
 								</span>
 							{/if}

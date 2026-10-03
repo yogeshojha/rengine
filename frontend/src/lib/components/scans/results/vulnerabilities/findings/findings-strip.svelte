@@ -141,7 +141,7 @@
 		<Button
 			variant="ghost"
 			size="sm"
-			class="ml-auto h-7 gap-1 text-xs text-muted-foreground"
+			class="ml-auto h-7 text-xs text-muted-foreground"
 			onclick={() => (findingPrefs.summary = true)}
 		>
 			<ChevronDown class="size-3.5" /> Summary

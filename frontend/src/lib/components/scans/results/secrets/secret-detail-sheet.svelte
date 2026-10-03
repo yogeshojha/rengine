@@ -1,6 +1,10 @@
 <script lang="ts">
 	import Globe from '@lucide/svelte/icons/globe';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import Braces from '@lucide/svelte/icons/braces';
+	import Eye from '@lucide/svelte/icons/eye';
+	import FileCode from '@lucide/svelte/icons/file-code';
+	import Info from '@lucide/svelte/icons/info';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -46,7 +50,7 @@
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
 		{#if row}
-			<Sheet.Header class="gap-2 border-b px-5 py-4">
+			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
 				<div class="flex flex-wrap items-center gap-2">
 					<Badge variant={STATE_BADGE[row.state] ?? 'outline'}>
 						{STATE_LABELS[row.state] ?? row.state}
@@ -56,14 +60,14 @@
 				</div>
 				<Sheet.Description class="truncate font-mono text-xs">{row.url}</Sheet.Description>
 				<div class="pt-1">
-					<Button variant="outline" size="sm" href={assetHref} class="gap-1.5">
+					<Button variant="outline" size="sm" href={assetHref}>
 						Open web asset <ArrowUpRight class="size-3.5" />
 					</Button>
 				</div>
 			</Sheet.Header>
 
 			<ScrollArea class="min-h-0 flex-1">
-				<div class="flex flex-col gap-6 px-5 py-5">
+				<div class="flex flex-col gap-6 px-5 py-4">
 					<CodeBlock
 						code={row.value}
 						lang="text"
@@ -75,7 +79,7 @@
 
 					{#if claims.length}
 						<section class="flex flex-col gap-2.5">
-							<SectionHead title="Decoded" />
+							<SectionHead icon={Braces} title="Decoded" />
 							<dl class="overflow-hidden rounded-lg border text-sm">
 								{#each claims as [key, value], i (key)}
 									<div class="flex items-baseline gap-4 px-3.5 py-2 {i > 0 ? 'border-t' : ''}">
@@ -91,7 +95,7 @@
 
 					{#if row.context}
 						<section class="flex flex-col gap-2.5">
-							<SectionHead title="Context" />
+							<SectionHead icon={FileCode} title="Context" />
 							<CodeBlock
 								code={row.context}
 								{lang}
@@ -106,9 +110,9 @@
 					{/if}
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Sightings" count={sightingsCount} />
+						<SectionHead icon={Eye} title="Sightings" count={sightingsCount} />
 						{#if row.sightings_shown.length}
-							<ul class="flex flex-col divide-y divide-border/60 rounded-md border">
+							<ul class="flex flex-col divide-y divide-border/60 rounded-lg border">
 								{#each row.sightings_shown as s (s.id)}
 									<li class="flex items-start gap-2 px-3 py-2">
 										<Globe class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
@@ -122,7 +126,7 @@
 								{/each}
 							</ul>
 						{:else}
-							<div class="flex items-start gap-2 rounded-md border px-3 py-2">
+							<div class="flex items-start gap-2 rounded-lg border px-3 py-2">
 								<Globe class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
 								<div class="flex min-w-0 flex-col">
 									<span class="font-mono text-xs break-all">{row.url}</span>
@@ -133,7 +137,7 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						<SectionHead title="Detail" />
+						<SectionHead icon={Info} title="Detail" />
 						<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
 							<dt class={DT}>Family</dt>
 							<dd>{row.group_label}</dd>

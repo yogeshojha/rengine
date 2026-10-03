@@ -5,12 +5,13 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import EmptyState from '$lib/components/empty-state.svelte';
-	import NinjaIcon from '$lib/components/icons/ninja.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
@@ -73,7 +74,13 @@
 	onMount(load);
 
 	$effect(() => {
-		setFooter({ onNext: handleNext, nextLabel: 'Continue', nextLoading: busy, canSkip: true });
+		setFooter({
+			onNext: handleNext,
+			nextLabel: 'Continue',
+			nextLoading: busy,
+			nextLoadingLabel: 'Connecting',
+			canSkip: true
+		});
 	});
 
 	function filled(p: PlatformCount): boolean {
@@ -87,18 +94,21 @@
 		const d = drafts[p.platform];
 		if (!provider || !d) return false;
 		if (provider.requires_username && !d.username.trim()) {
-			d.error = `${p.label} requires the API username.`;
+			d.error = `${p.label} requires a username.`;
 			return false;
 		}
 		d.connecting = true;
 		d.error = null;
+		let untested: string | null = null;
 		try {
 			const key = await apiKeysApi.create({
 				provider: provider.provider as APIProvider,
 				key_value: d.token.trim(),
 				...(provider.requires_username ? { key_meta: { username: d.username.trim() } } : {})
 			});
+			untested = key.id;
 			const test = await apiKeysApi.test(key.id);
+			untested = null;
 			if (!test.success) {
 				await apiKeysApi.delete(key.id).catch(() => {});
 				d.error = test.message;
@@ -110,6 +120,7 @@
 			settings = await bountyProgramsApi.settings();
 			return true;
 		} catch (e) {
+			if (untested) await apiKeysApi.delete(untested).catch(() => {});
 			d.error = e instanceof Error ? e.message : `${p.label} not connected.`;
 			return false;
 		} finally {
@@ -143,11 +154,20 @@
 
 <div class="space-y-6">
 	{#if loading}
-		{#each [0, 1] as i (i)}
-			<Skeleton class="h-36 w-full rounded-lg" />
-		{/each}
+		<div class="space-y-3">
+			{#each [0, 1] as i (i)}
+				<Skeleton class="h-36 w-full rounded-lg" />
+			{/each}
+		</div>
 	{:else if loadError}
-		<EmptyState compact icon={NinjaIcon} title="Platforms not loaded" description={loadError} />
+		<EmptyState
+			compact
+			icon={TriangleAlertIcon}
+			title="Platforms not loaded"
+			description={loadError}
+		>
+			<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
+		</EmptyState>
 	{:else if settings}
 		<div class="space-y-3">
 			{#each connectable as p (p.platform)}
@@ -170,7 +190,7 @@
 											href={externalHref(provider.docs_url)}
 											target="_blank"
 											rel="noopener noreferrer"
-											class="inline-flex items-center gap-1 text-xs text-primary"
+											class="inline-flex items-center gap-1 text-xs text-primary transition-colors hover:text-primary/80"
 										>
 											Get API key
 											<ExternalLinkIcon class="size-3" />
@@ -201,42 +221,47 @@
 									<p class="text-xs text-muted-foreground">{d.result}</p>
 								{/if}
 							{:else if d}
-								<div class="grid gap-3 sm:grid-cols-2">
+								<div class="grid gap-4 sm:grid-cols-2">
 									{#if provider?.requires_username}
-										<div class="space-y-1.5">
-											<Label class="text-xs" for="user-{p.platform}">API username</Label>
-											<Input
-												id="user-{p.platform}"
-												bind:value={d.username}
-												disabled={d.connecting || busy}
-												class="h-9 text-xs"
-												autocomplete="off"
-											/>
-										</div>
+										<FormField label="Username">
+											{#snippet children({ id })}
+												<Input
+													{id}
+													bind:value={d.username}
+													disabled={d.connecting || busy}
+													class="h-9 text-xs"
+													autocomplete="off"
+												/>
+											{/snippet}
+										</FormField>
 									{/if}
-									<div class="space-y-1.5 {provider?.requires_username ? '' : 'sm:col-span-2'}">
-										<Label class="text-xs" for="token-{p.platform}">API token</Label>
-										<div class="relative">
-											<Input
-												id="token-{p.platform}"
-												type={d.reveal ? 'text' : 'password'}
-												bind:value={d.token}
-												disabled={d.connecting || busy}
-												class="h-9 pr-9 text-xs"
-												autocomplete="off"
-											/>
-											<button
-												type="button"
-												class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-												onclick={() => (d.reveal = !d.reveal)}
-												aria-label={d.reveal ? 'Hide token' : 'Show token'}
-											>
-												{#if d.reveal}<EyeOffIcon class="size-4" />{:else}<EyeIcon
-														class="size-4"
-													/>{/if}
-											</button>
-										</div>
-									</div>
+									<FormField
+										label="API key"
+										class={provider?.requires_username ? undefined : 'sm:col-span-2'}
+									>
+										{#snippet children({ id })}
+											<div class="relative">
+												<Input
+													{id}
+													type={d.reveal ? 'text' : 'password'}
+													bind:value={d.token}
+													disabled={d.connecting || busy}
+													class="h-9 pr-9 text-xs"
+													autocomplete="off"
+												/>
+												<button
+													type="button"
+													class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+													onclick={() => (d.reveal = !d.reveal)}
+													aria-label={d.reveal ? 'Hide key' : 'Show key'}
+												>
+													{#if d.reveal}<EyeOffIcon class="size-4" />{:else}<EyeIcon
+															class="size-4"
+														/>{/if}
+												</button>
+											</div>
+										{/snippet}
+									</FormField>
 								</div>
 								<div class="flex flex-wrap items-center gap-3">
 									<LoadingButton

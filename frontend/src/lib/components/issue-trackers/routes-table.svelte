@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import type { IssueTracker, TrackerRoute } from '$lib/types/issue-tracker';
@@ -55,14 +55,20 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button {...props} variant="ghost" size="icon" class="size-7">
-									<MoreVerticalIcon class="size-4" />
-									<span class="sr-only">Route actions</span>
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon"
+									class="size-7"
+									aria-label="Route actions"
+								>
+									<EllipsisIcon class="size-4" />
 								</Button>
 							{/snippet}
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end">
 							<DropdownMenu.Item onSelect={() => onEdit(route)}>Edit</DropdownMenu.Item>
+							<DropdownMenu.Separator />
 							<DropdownMenu.Item variant="destructive" onSelect={() => onRemove(route)}>
 								Remove
 							</DropdownMenu.Item>

@@ -8,7 +8,7 @@
 	import Play from '@lucide/svelte/icons/play';
 	import Copy from '@lucide/svelte/icons/copy';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import ContextFacets from './context-facets.svelte';
 	import type { ScanContextRead } from '$lib/types/scan-context';
@@ -89,11 +89,11 @@
 						<Button
 							{...props}
 							variant="ghost"
-							size="icon-sm"
-							class="text-muted-foreground"
+							size="icon"
+							class="size-7 text-muted-foreground"
 							aria-label="More actions for {context.name}"
 						>
-							<MoreHorizontal size={15} />
+							<Ellipsis class="size-4" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>

@@ -46,8 +46,7 @@
 	}
 
 	async function stop() {
-		confirmStop = false;
-		await mcp.setRunning(false);
+		if (await mcp.setRunning(false)) confirmStop = false;
 	}
 </script>
 
@@ -86,6 +85,7 @@
 								size="sm"
 								class="shrink-0"
 								loading={mcp.isSaving}
+								loadingLabel="Starting"
 								onclick={() => mcp.setRunning(true)}
 							>
 								Start server
@@ -93,21 +93,25 @@
 						{/if}
 					</div>
 					<dl class="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-						<dt class="pt-px text-xs text-muted-foreground">Endpoint</dt>
+						<dt class="text-xs leading-5 text-muted-foreground">Endpoint</dt>
 						<dd class="flex min-w-0 items-start gap-1">
 							<span class="min-w-0 font-mono text-xs leading-5 wrap-anywhere"
 								>{status.endpoint}</span
 							>
-							<CopyButton value={status.endpoint} class="size-5" />
+							<span class="flex h-5 shrink-0 items-center">
+								<CopyButton value={status.endpoint} />
+							</span>
 						</dd>
-						<dt class="pt-px text-xs text-muted-foreground">Protocol</dt>
+						<dt class="text-xs leading-5 text-muted-foreground">Protocol</dt>
 						<dd class="font-mono text-xs leading-5">{status.protocol_version}</dd>
-						<dt class="pt-px text-xs text-muted-foreground">stdio</dt>
+						<dt class="text-xs leading-5 text-muted-foreground">stdio</dt>
 						<dd class="flex min-w-0 items-start gap-1">
 							<span class="min-w-0 font-mono text-xs leading-5 wrap-anywhere">
 								{status.stdio_command}
 							</span>
-							<CopyButton value={status.stdio_command} class="size-5" />
+							<span class="flex h-5 shrink-0 items-center">
+								<CopyButton value={status.stdio_command} />
+							</span>
 						</dd>
 					</dl>
 				</section>
@@ -170,6 +174,7 @@
 	title="Stop server"
 	description="{connected} connected agent{connected === 1 ? ' is' : 's are'} disconnected."
 	confirmLabel="Stop server"
+	loadingLabel="Stopping"
 	destructive
 	loading={mcp.isSaving}
 	onOpenChange={(v) => (confirmStop = v)}

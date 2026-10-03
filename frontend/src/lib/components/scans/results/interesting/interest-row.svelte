@@ -3,6 +3,7 @@
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
@@ -38,6 +39,7 @@
 	tabindex={0}
 	onclick={() => onOpen(row)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onOpen(row);
@@ -83,14 +85,15 @@
 				</span>
 			{/if}
 			{#if row.is_new}
-				<span class="rounded border border-primary/25 bg-primary/5 px-1 py-px text-2xs text-primary"
-					>New</span
-				>
+				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
 			{/if}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<span class="hidden group-hover:inline-flex" onclick={stopProp}>
-				<CopyButton value={row.host} class="size-5" />
+			<span
+				class="inline-flex h-4 shrink-0 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+				onclick={stopProp}
+			>
+				<CopyButton value={row.host} />
 			</span>
 		</div>
 
@@ -119,7 +122,9 @@
 		</div>
 	</div>
 
-	<span class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100">
+	<span
+		class="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+	>
 		<Hint text="Dismiss from this and later scans of this target">
 			{#snippet child(props)}
 				<Button

@@ -189,7 +189,7 @@
 	let copiedPrefixes = $state(false);
 	async function copyPrefixes() {
 		if (!(await writeClipboard(prefixRows.map((p) => p.prefix).join('\n')))) {
-			toast.error('Copy failed');
+			toast.error('Prefixes not copied');
 			return;
 		}
 		copiedPrefixes = true;
@@ -220,7 +220,7 @@
 				{...props}
 				variant="ghost"
 				size="icon"
-				class="size-5 shrink-0"
+				class="size-7 shrink-0"
 				aria-label="Add {value} as target"
 				onclick={() => onAddAsTarget?.(value)}
 			>
@@ -238,7 +238,7 @@
 	{refreshing}
 	{loading}
 	empty={!hasData}
-	emptyText="No routing data."
+	emptyText="No routing data"
 	{onRefresh}
 >
 	{#snippet bar()}
@@ -264,9 +264,9 @@
 							</span>
 							{#if f.copy || (f.add && onAddAsTarget)}
 								<span
-									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 								>
-									{#if f.copy}<CopyButton value={f.copy} class="size-5" />{/if}
+									{#if f.copy}<CopyButton value={f.copy} />{/if}
 									{#if f.add && onAddAsTarget}{@render addButton(f.add)}{/if}
 								</span>
 							{/if}
@@ -287,6 +287,7 @@
 								class="rounded-md px-2 py-1 text-sm {prefixFamily === f
 									? 'bg-muted font-medium'
 									: 'text-muted-foreground hover:text-foreground'}"
+								aria-pressed={prefixFamily === f}
 								onclick={() => (prefixFamily = f)}
 							>
 								{familyLabel(f)}
@@ -317,7 +318,7 @@
 					</Button>
 				</div>
 				{#if prefixRows.length === 0}
-					<p class="py-6 text-center text-sm text-muted-foreground">No prefix matches.</p>
+					<p class="py-6 text-center text-sm text-muted-foreground">No matching prefixes</p>
 				{:else}
 					{#each prefixRows.slice(0, prefixShown) as p (p.prefix)}
 						<div class="group flex items-center gap-3 py-1.5 text-sm">
@@ -333,9 +334,9 @@
 								{p.last_seen ? formatShortDate(p.last_seen) : '—'}
 							</span>
 							<span
-								class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+								class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 							>
-								<CopyButton value={p.prefix} class="size-5" />
+								<CopyButton value={p.prefix} />
 								{#if onAddAsTarget}{@render addButton(p.prefix)}{/if}
 							</span>
 						</div>
@@ -358,7 +359,7 @@
 		{/if}
 
 		{#if neighbours.length}
-			<RecordGroup label="Peers" mono={false} sub="{neighbours.length.toLocaleString()} neighbours">
+			<RecordGroup label="Peers" mono={false} sub="{neighbours.length.toLocaleString()} neighbors">
 				<div class="flex items-center gap-3 py-2">
 					<div class="relative">
 						<Search
@@ -446,9 +447,9 @@
 							{r.origin_asn ? `AS${r.origin_asn}` : '—'}
 						</span>
 						<span
-							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 						>
-							<CopyButton value={r.related_prefix} class="size-5" />
+							<CopyButton value={r.related_prefix} />
 							{#if onAddAsTarget}{@render addButton(r.related_prefix)}{/if}
 						</span>
 					</div>
@@ -467,9 +468,9 @@
 						{#if a.rir}<span class="shrink-0 text-xs text-muted-foreground uppercase">{a.rir}</span
 							>{/if}
 						<span
-							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
 						>
-							<CopyButton value={a.abuse_email} class="size-5" />
+							<CopyButton value={a.abuse_email} />
 						</span>
 					</div>
 				{/each}

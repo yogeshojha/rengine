@@ -136,7 +136,7 @@
 				<Button
 					variant="outline"
 					size="sm"
-					class="h-6 gap-1 px-2 text-xs"
+					class="h-6 px-2 text-xs"
 					href={ROUTES.compare(comparison.current.scan_id, comparison.suggestion.scan_id)}
 				>
 					Compare with it <ArrowRight class="size-3" />

@@ -43,7 +43,7 @@
 			{#if showTarget}
 				<CopyButton
 					value={scan.execution_config.target_value}
-					class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+					class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
 				/>
 			{/if}
 		</div>

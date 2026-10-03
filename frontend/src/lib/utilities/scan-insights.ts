@@ -100,7 +100,7 @@ export const WEB_ASSET_SORTS: { key: string; label: string }[] = [
 	{ key: 'title', label: 'Title' },
 	{ key: 'ip', label: 'IP' },
 	{ key: 'cert', label: 'Cert' },
-	{ key: 'discovered', label: 'Found' },
+	{ key: 'discovered', label: 'First seen' },
 	{ key: 'size', label: 'Size' },
 	{ key: 'time', label: 'Time' }
 ];

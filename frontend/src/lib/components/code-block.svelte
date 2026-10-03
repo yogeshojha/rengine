@@ -239,7 +239,7 @@
 					<Button
 						variant="ghost"
 						size="icon"
-						class="size-6 shrink-0 text-muted-foreground"
+						class="size-7 shrink-0 text-muted-foreground"
 						disabled={!hits}
 						tabindex={finding ? 0 : -1}
 						aria-label="Previous match"
@@ -250,7 +250,7 @@
 					<Button
 						variant="ghost"
 						size="icon"
-						class="size-6 shrink-0 text-muted-foreground"
+						class="size-7 shrink-0 text-muted-foreground"
 						disabled={!hits}
 						tabindex={finding ? 0 : -1}
 						aria-label="Next match"
@@ -261,7 +261,7 @@
 					<Button
 						variant="ghost"
 						size="icon"
-						class="size-6 shrink-0 text-muted-foreground"
+						class="size-7 shrink-0 text-muted-foreground"
 						tabindex={finding ? 0 : -1}
 						aria-label="Close find"
 						onclick={closeFind}
@@ -295,6 +295,7 @@
 								variant="ghost"
 								size="icon"
 								class={pretty ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
+								aria-label="Format"
 								aria-pressed={pretty}
 								onclick={() => (pretty = !pretty)}
 							>
@@ -310,6 +311,7 @@
 							variant="ghost"
 							size="icon"
 							class={wrapped ? 'size-7 text-foreground' : 'size-7 text-muted-foreground'}
+							aria-label="Wrap lines"
 							aria-pressed={wrapped}
 							onclick={() => (wrapOverride = !wrapped)}
 						>
@@ -325,6 +327,7 @@
 								variant="ghost"
 								size="icon"
 								class="size-7 text-muted-foreground"
+								aria-label="Download"
 								onclick={() => downloadBlob(download!, source)}
 							>
 								<Download class="size-3.5" />

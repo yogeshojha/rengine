@@ -86,7 +86,7 @@
 		</span>
 	</span>
 
-	<span class="flex shrink-0 items-center gap-1.5">
+	<span class="flex max-w-[45%] shrink-0 flex-wrap items-center justify-end gap-1.5 sm:max-w-none">
 		{#if program.watched}
 			<Badge variant="info" class="gap-1">
 				<RadarIcon class="size-3" />

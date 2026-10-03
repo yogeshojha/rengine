@@ -46,8 +46,8 @@
 		});
 	let cols = $derived(
 		wide
-			? 'grid-cols-[minmax(0,1fr)_13.75rem_minmax(0,1fr)]'
-			: 'grid-cols-[minmax(0,1fr)_10.5rem_minmax(0,1fr)]'
+			? 'grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_13.75rem_minmax(0,1fr)]'
+			: 'grid-cols-[minmax(0,1fr)_7rem_minmax(0,1fr)] sm:grid-cols-[minmax(0,1fr)_10.5rem_minmax(0,1fr)]'
 	);
 </script>
 
@@ -70,7 +70,7 @@
 						href={onScope ? undefined : ROUTES.target(r.target_id)}
 						onclick={onScope ? () => onScope(r.target_id) : undefined}
 						aria-label={onScope ? `Scope to ${r.target_value}` : undefined}
-						class="grid w-full {cols} h-9 items-center rounded-md text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+						class="grid w-full {cols} min-h-9 items-center rounded-md text-left transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 					>
 						<span class="flex items-center justify-end gap-2 pl-2">
 							<span class="text-xs text-muted-foreground tabular-nums"
@@ -85,7 +85,9 @@
 						<span class="flex min-w-0 flex-col items-center border-x px-2 text-center">
 							<span class="max-w-full truncate text-xs font-semibold">{r.target_value}</span>
 							{#if r.actionable || !settled}
-								<span class="flex items-center gap-1 text-2xs text-muted-foreground">
+								<span
+									class="flex flex-wrap items-center justify-center gap-x-1 text-2xs text-muted-foreground"
+								>
 									{#if r.actionable}
 										<span class="font-semibold text-sev-critical-ink">
 											{r.actionable.toLocaleString()} actionable

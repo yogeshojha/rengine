@@ -192,7 +192,7 @@ function createAiStore() {
 				await refreshStatus();
 				return true;
 			} catch (e) {
-				toast.error(failure(e, 'Provider not deleted'));
+				toast.error(failure(e, 'Provider not removed'));
 				return false;
 			}
 		},

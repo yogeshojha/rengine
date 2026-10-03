@@ -43,6 +43,7 @@
 				: ''}"
 			onclick={() => onOpen(s)}
 			onkeydown={(e) => {
+				if (e.target !== e.currentTarget) return;
 				if (e.key === 'Enter' || e.key === ' ') {
 					e.preventDefault();
 					onOpen(s);
@@ -66,7 +67,7 @@
 						<span class="text-2xs">No screenshot</span>
 					</div>
 				{/if}
-				<div class="absolute top-1.5 left-1.5 flex items-center gap-1">
+				<div class="absolute top-1.5 right-9 left-1.5 flex flex-wrap items-center gap-1">
 					<Badge
 						variant="outline"
 						class="gap-1 border-border/60 bg-background/90 px-1.5 font-mono text-2xs backdrop-blur"
@@ -80,7 +81,7 @@
 							class="gap-1 border-border/60 bg-background/90 px-1.5 text-2xs text-destructive backdrop-blur"
 						>
 							<Lock class="size-2.5" />
-							{cert}
+							{cert === 'expired' ? 'Expired' : 'Self-signed'}
 						</Badge>
 					{/if}
 				</div>

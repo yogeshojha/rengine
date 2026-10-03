@@ -16,10 +16,11 @@
 		type OpenBudget,
 		type OutlineContext
 	} from './outline-context';
-	import type { TableColumn } from '../table/columns';
+	import { inPopover, onControl, type TableColumn } from '../table/columns';
 	import { endpointsApi } from '$lib/api/scan-results';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { copyBranch, copyWordlist, type BranchScope } from './branch-actions';
+	import { keyTaken, underLayer } from '$lib/utilities/layers';
 	import type {
 		EndpointFilter,
 		EndpointRead,
@@ -193,7 +194,7 @@
 		try {
 			onOpen(await endpointsApi.detail(projectId, scanId, id));
 		} catch {
-			toast.error('Endpoint not loaded.');
+			toast.error('Endpoint not loaded');
 		}
 	}
 
@@ -253,8 +254,7 @@
 	}
 	function onKey(e: KeyboardEvent) {
 		if (!active || paused || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+		if (keyTaken(e.target) || inPopover(e.target) || underLayer(container)) return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			move(1);
@@ -272,6 +272,7 @@
 			if (!el) return;
 			const isFolder = el.getAttribute('data-outline-kind') === 'folder';
 			if (e.key === 'Enter') {
+				if (onControl(e.target, `[${OUTLINE_ROW_ATTR}]`)) return;
 				e.preventDefault();
 				if (isFolder) toggle(focusedKey);
 				else el.click();

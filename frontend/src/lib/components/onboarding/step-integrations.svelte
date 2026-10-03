@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import type { ProviderInfo } from '$lib/types/api-key';
 	import { getProviderIcon } from '$lib/config/icons';
@@ -17,6 +16,8 @@
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import PlugIcon from '@lucide/svelte/icons/plug';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import { Button } from '$lib/components/ui/button/index.js';
 
 	let { setFooter, next }: StepProps = $props();
 
@@ -35,17 +36,21 @@
 		})).filter((g) => g.items.length > 0)
 	);
 
-	onMount(async () => {
+	async function load() {
+		loading = true;
 		try {
 			providers = (await apiKeysApi.listProviders()).filter(
 				(p) => !p.configured && RECON_GROUPS.includes(p.group as ProviderGroup)
 			);
+			loadError = null;
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : 'API keys not loaded';
 		} finally {
 			loading = false;
 		}
-	});
+	}
+
+	onMount(load);
 
 	$effect(() => {
 		setFooter({ onNext: handleNext, nextLabel: 'Continue', nextLoading: busy, canSkip: true });
@@ -97,84 +102,102 @@
 	}
 </script>
 
-<div class="space-y-3">
+<div class="space-y-6">
 	{#if loading}
-		{#each [0, 1, 2] as i (i)}
-			<Skeleton class="h-28 w-full rounded-xl" />
-		{/each}
+		<div class="space-y-3">
+			{#each [0, 1, 2] as i (i)}
+				<Skeleton class="h-28 w-full rounded-lg" />
+			{/each}
+		</div>
 	{:else if loadError}
-		<EmptyState compact icon={PlugIcon} title="API keys not loaded" description={loadError} />
+		<EmptyState
+			compact
+			icon={TriangleAlertIcon}
+			title="API keys not loaded"
+			description={loadError}
+		>
+			<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
+		</EmptyState>
 	{:else if providers.length === 0}
 		<EmptyState compact icon={PlugIcon} title="API keys saved" />
 	{:else}
 		{#each groups as g (g.group)}
-			<h3 class="pt-2 text-xs font-medium text-muted-foreground first:pt-0">
-				{g.items[0].group_label}
-			</h3>
-			{#each g.items as p (p.provider)}
-				{@const Icon = getProviderIcon(p.icon)}
-				<Card.Root>
-					<Card.Content class="p-4">
-						<div class="flex items-start gap-3">
-							<div
-								class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
-							>
-								<Icon class="size-[18px] text-muted-foreground" />
-							</div>
-							<div class="min-w-0 flex-1 space-y-3">
-								<div class="space-y-0.5">
-									<div class="flex items-center gap-2">
-										<span class="text-sm font-medium">{p.name}</span>
-										<a
-											href={externalHref(p.docs_url)}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80"
-										>
-											Get API key
-											<ExternalLinkIcon class="size-4" />
-										</a>
-									</div>
-									<p class="text-xs text-muted-foreground">{p.description}</p>
+			<section class="space-y-2">
+				<h3 class="text-sm font-medium">{g.items[0].group_label}</h3>
+				<div class="space-y-3">
+					{#each g.items as p (p.provider)}
+						{@const Icon = getProviderIcon(p.icon)}
+						<div class="rounded-lg border p-4">
+							<div class="flex items-start gap-3">
+								<div
+									class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted"
+								>
+									<Icon class="size-[18px] text-muted-foreground" />
 								</div>
-								{#if p.requires_username}
-									<div class="space-y-1.5">
-										<Label class="text-xs" for="user-{p.provider}">API username</Label>
-										<Input
-											id="user-{p.provider}"
-											bind:value={usernames[p.provider]}
-											placeholder="username"
-											disabled={busy}
-											class="h-9 text-xs"
-											autocomplete="off"
-										/>
+								<div class="min-w-0 flex-1 space-y-3">
+									<div class="space-y-0.5">
+										<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+											<span class="text-sm font-medium">{p.name}</span>
+											<a
+												href={externalHref(p.docs_url)}
+												target="_blank"
+												rel="noopener noreferrer"
+												class="inline-flex items-center gap-1 text-xs text-primary transition-colors hover:text-primary/80"
+											>
+												Get API key
+												<ExternalLinkIcon class="size-3" />
+											</a>
+										</div>
+										<p class="text-xs text-muted-foreground">{p.description}</p>
 									</div>
-								{/if}
-								<div class="relative">
-									<Input
-										type={reveal[p.provider] ? 'text' : 'password'}
-										bind:value={keys[p.provider]}
-										placeholder="Paste the API key"
-										disabled={busy}
-										class="h-9 pr-9 text-xs"
-										autocomplete="off"
-									/>
-									<button
-										type="button"
-										class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-										onclick={() => (reveal[p.provider] = !reveal[p.provider])}
-										aria-label="Toggle visibility"
-									>
-										{#if reveal[p.provider]}<EyeOffIcon class="size-4" />{:else}<EyeIcon
-												class="size-4"
-											/>{/if}
-									</button>
+									<div class="grid gap-4 sm:grid-cols-2">
+										{#if p.requires_username}
+											<FormField label="API username">
+												{#snippet children({ id })}
+													<Input
+														{id}
+														bind:value={usernames[p.provider]}
+														disabled={busy}
+														class="h-9 text-xs"
+														autocomplete="off"
+													/>
+												{/snippet}
+											</FormField>
+										{/if}
+										<FormField
+											label="API key"
+											class={p.requires_username ? undefined : 'sm:col-span-2'}
+										>
+											{#snippet children({ id })}
+												<div class="relative">
+													<Input
+														{id}
+														type={reveal[p.provider] ? 'text' : 'password'}
+														bind:value={keys[p.provider]}
+														disabled={busy}
+														class="h-9 pr-9 text-xs"
+														autocomplete="off"
+													/>
+													<button
+														type="button"
+														class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+														onclick={() => (reveal[p.provider] = !reveal[p.provider])}
+														aria-label={reveal[p.provider] ? 'Hide key' : 'Show key'}
+													>
+														{#if reveal[p.provider]}<EyeOffIcon class="size-4" />{:else}<EyeIcon
+																class="size-4"
+															/>{/if}
+													</button>
+												</div>
+											{/snippet}
+										</FormField>
+									</div>
 								</div>
 							</div>
 						</div>
-					</Card.Content>
-				</Card.Root>
-			{/each}
+					{/each}
+				</div>
+			</section>
 		{/each}
 	{/if}
 </div>

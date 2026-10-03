@@ -77,6 +77,7 @@ function createTargetsStore() {
 	let signalSummary = $state<TargetSummary>({ ...EMPTY_TARGET_SUMMARY });
 
 	let searchDebounce: ReturnType<typeof setTimeout> | undefined;
+	let seq = 0;
 
 	const hasActiveFilters = $derived(
 		filters.searchQuery.trim() !== '' ||
@@ -150,7 +151,7 @@ function createTargetsStore() {
 		},
 
 		async fetchAll(projectSlug: string, page?: number, force: boolean = false) {
-			if (isLoading && !force) return;
+			if (isLoading && !force && projectSlug === filters.projectSlug) return;
 
 			if (!force && hasFetched && projectSlug === filters.projectSlug && page === undefined) {
 				return;
@@ -169,6 +170,7 @@ function createTargetsStore() {
 				pagination.currentPage = page;
 			}
 
+			const my = ++seq;
 			isLoading = true;
 			error = null;
 			filters.projectSlug = projectSlug;
@@ -203,6 +205,7 @@ function createTargetsStore() {
 				}
 
 				const results = await Promise.all(promises);
+				if (my !== seq) return;
 				const targetsResponse = results[0] as PaginatedResponse<Target>;
 
 				targets = targetsResponse.items;
@@ -219,9 +222,10 @@ function createTargetsStore() {
 
 				hasFetched = true;
 			} catch (e) {
+				if (my !== seq) return;
 				error = e instanceof Error ? e.message : 'Targets not loaded';
 			} finally {
-				isLoading = false;
+				if (my === seq) isLoading = false;
 			}
 		},
 
@@ -528,6 +532,9 @@ function createTargetsStore() {
 		},
 
 		clear() {
+			seq++;
+			if (searchDebounce) clearTimeout(searchDebounce);
+			isLoading = false;
 			targets = [];
 			organizations = [];
 			tags = [];

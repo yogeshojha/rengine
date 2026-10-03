@@ -10,7 +10,9 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import NoteComposer from '$lib/components/notes/note-composer.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import AskComposer from './ask-composer.svelte';
 	import AskMessageView from './ask-message.svelte';
 	import AskStarters from './ask-starters.svelte';
@@ -73,8 +75,15 @@
 	let noteBody = $state<string | null>(null);
 	let confirmDelete = $state(false);
 	let confirmClear = $state(false);
+	let deleting = $state(false);
+	let clearing = $state(false);
 	let endEl = $state<HTMLDivElement | null>(null);
 	let composer = $state<AskComposer | null>(null);
+	let noteComposer = $state<ReturnType<typeof NoteComposer> | null>(null);
+	const noteGuard = new DiscardGuard(
+		() => noteComposer?.dirty() ?? false,
+		() => (noteBody = null)
+	);
 	let loadedFor = '';
 	let briefFor = '';
 	let briefOf = '';
@@ -246,29 +255,34 @@
 	}
 
 	async function removeThread() {
-		if (!active) return;
+		if (!active || deleting) return;
 		const id = active.id;
+		deleting = true;
 		try {
 			await askApi.deleteThread(id);
 			threads = threads.filter((t) => t.id !== id);
 			startNew();
+			confirmDelete = false;
 		} catch (e) {
 			toast.error((e as Error).message);
 		} finally {
-			confirmDelete = false;
+			deleting = false;
 		}
 	}
 
 	async function clearHistory() {
+		if (clearing) return;
+		clearing = true;
 		try {
 			const { deleted } = await askApi.deleteThreads(subject);
 			threads = [];
 			startNew();
+			confirmClear = false;
 			toast.success(`${deleted} ${deleted === 1 ? 'thread' : 'threads'} removed`);
 		} catch (e) {
 			toast.error((e as Error).message);
 		} finally {
-			confirmClear = false;
+			clearing = false;
 		}
 	}
 
@@ -425,26 +439,29 @@
 		</Alert.Root>
 	{/if}
 
-	{#if loadingThread}
+	{#if loadingThread || threadsLoading}
 		<div class="flex flex-col gap-3">
 			<Skeleton class="h-9 w-3/5 self-end" />
 			<Skeleton class="h-4 w-full" />
 			<Skeleton class="h-4 w-11/12" />
 			<Skeleton class="h-4 w-2/3" />
 		</div>
-	{:else if empty}
-		<AskStarters {subject} onAsk={(question) => void send(question)} />
+	{:else}
+		{#if empty}
+			<AskStarters {subject} onAsk={(question) => void send(question)} />
+		{/if}
+		<div class="contents" role="log" aria-live="polite">
+			{#each messages as message (message.id)}
+				<AskMessageView
+					{message}
+					request={subject.request ?? null}
+					response={subject.response ?? null}
+					{onOpenEvidence}
+					onSave={(text) => (noteBody = text)}
+				/>
+			{/each}
+		</div>
 	{/if}
-
-	{#each messages as message (message.id)}
-		<AskMessageView
-			{message}
-			request={subject.request ?? null}
-			response={subject.response ?? null}
-			{onOpenEvidence}
-			onSave={(text) => (noteBody = text)}
-		/>
-	{/each}
 
 	{#if pending}
 		<Bubble.Root align="end" variant="muted" class="max-w-[85%] self-end">
@@ -519,6 +536,8 @@
 	title="Delete thread"
 	description="The thread and its messages are removed."
 	confirmLabel="Delete"
+	loadingLabel="Deleting"
+	loading={deleting}
 	destructive
 	onOpenChange={(o) => (confirmDelete = o)}
 	onConfirm={() => void removeThread()}
@@ -529,18 +548,28 @@
 	title="Clear history"
 	description="Every thread on this {noun} and its messages are removed."
 	confirmLabel="Clear"
+	loadingLabel="Clearing"
+	loading={clearing}
 	destructive
 	onOpenChange={(o) => (confirmClear = o)}
 	onConfirm={() => void clearHistory()}
 />
 
-<Dialog.Root open={noteBody !== null} onOpenChange={(o) => !o && (noteBody = null)}>
-	<Dialog.Content class="max-w-lg">
+<Dialog.Root
+	bind:open={
+		() => noteBody !== null,
+		(next) => {
+			if (!next) noteGuard.close();
+		}
+	}
+>
+	<Dialog.Content class="sm:max-w-lg">
 		<Dialog.Header>
 			<Dialog.Title>Save to notes</Dialog.Title>
 		</Dialog.Header>
 		{#if noteBody !== null}
 			<NoteComposer
+				bind:this={noteComposer}
 				anchor={{
 					targetId: subject.targetId,
 					scanId: subject.scanId,
@@ -559,3 +588,9 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={noteGuard.asking}
+	onOpenChange={(next) => (noteGuard.asking = next)}
+	onConfirm={noteGuard.discard}
+/>

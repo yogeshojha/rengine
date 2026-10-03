@@ -15,7 +15,7 @@
 	const lang = (value: string): CodeLang => (LANGS.has(value) ? (value as CodeLang) : 'text');
 </script>
 
-<div class="flex min-h-0 flex-col rounded-md border">
+<div class="flex min-h-0 flex-col rounded-lg border">
 	<div class="border-b px-3 py-2 text-xs font-medium text-muted-foreground">Description</div>
 	<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-80">
 		<div class="flex flex-col gap-3 px-3 py-3">

@@ -14,8 +14,10 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import ModelPicker from './model-picker.svelte';
 	import { ai } from '$lib/stores/ai.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import {
 		DEFAULT_AI_PROVIDER,
 		MAX_CONNECTION_NAME,
@@ -58,6 +60,8 @@
 	let writeRate = $state('');
 	let testing = $state(false);
 	let tested = $state<{ draft: string; result: AiTestResult } | null>(null);
+	let initial = $state('');
+	let attempted = $state(false);
 
 	const spec = $derived(ai.provider(provider));
 	const editing = $derived(connection);
@@ -106,6 +110,25 @@
 		].map((rate) => (rate == null ? '' : rate ? String(rate) : '0.00'))
 	);
 
+	const form = $derived(
+		JSON.stringify([
+			provider,
+			name.trim(),
+			baseUrl.trim(),
+			apiKey.trim(),
+			workspaceId.trim(),
+			model.trim(),
+			inputRate,
+			outputRate,
+			readRate,
+			writeRate
+		])
+	);
+	const guard = new DiscardGuard(
+		() => form !== initial,
+		() => (open = false)
+	);
+
 	const request = $derived.by((): AiModelsRequest | null => {
 		if (!spec || keyMissing) return null;
 		if (spec.needs_base_url && !SERVER_URL.test(serverUrl)) return null;
@@ -133,6 +156,8 @@
 			typedName = row?.name ?? '';
 			nameTouched = !!row && row.name !== connectionName(ai.provider(row.provider), baseUrl, taken);
 			tested = null;
+			attempted = false;
+			initial = form;
 		});
 	});
 
@@ -147,15 +172,25 @@
 		nameTouched = true;
 	}
 
-	function missing(): string | null {
-		if (!spec) return 'Choose a provider';
-		if (spec.needs_base_url && !serverUrl) return 'Server URL is required';
-		if (keyMissing) return 'API key is required';
-		if (!model.trim()) return 'Choose a model';
-		if (typed.some((rate) => rate === null)) return 'Price must be a number';
+	type Field = 'provider' | 'url' | 'key' | 'model' | 'price';
+
+	function missing(): { field: Field; message: string } | null {
+		if (!spec) return { field: 'provider', message: 'Choose a provider' };
+		if (spec.needs_base_url && !serverUrl)
+			return { field: 'url', message: 'Server URL is required' };
+		if (keyMissing) return { field: 'key', message: 'API key is required' };
+		if (!model.trim()) return { field: 'model', message: 'Choose a model' };
+		if (typed.some((rate) => rate === null))
+			return { field: 'price', message: 'Price must be a number' };
 		if (customPrice && (typed[0] === undefined || typed[1] === undefined))
-			return 'Input and output price are both required';
+			return { field: 'price', message: 'Input and output price are both required' };
 		return null;
+	}
+
+	const problem = $derived(attempted ? missing() : null);
+
+	function errorFor(field: Field): string | undefined {
+		return problem?.field === field ? problem.message : undefined;
 	}
 
 	async function test() {
@@ -202,9 +237,10 @@
 	}
 
 	async function save() {
+		attempted = true;
 		const reason = missing();
 		if (reason) {
-			toast.error(reason);
+			if (reason.field === 'price') priceOpen = true;
 			return;
 		}
 		const body = {
@@ -223,16 +259,22 @@
 	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open={() => open, (next) => (next ? (open = true) : !ai.isSaving && guard.close())}
+>
 	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-		<Dialog.Header class="px-6 pt-6 pb-4">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editing ? 'Edit provider' : 'Add provider'}</Dialog.Title>
 		</Dialog.Header>
 		<ScrollArea
 			class="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
 		>
-			<div class="flex flex-col gap-4 px-6 pb-5">
-				<FormField label="Provider" description={spec?.help || undefined}>
+			<div class="flex flex-col gap-4 px-6 py-5">
+				<FormField
+					label="Provider"
+					description={spec?.help || undefined}
+					error={errorFor('provider')}
+				>
 					{#snippet children({ id })}
 						<Select.Root type="single" value={provider} onValueChange={pickProvider}>
 							<Select.Trigger {id} class="w-full">
@@ -258,7 +300,11 @@
 					{/snippet}
 				</FormField>
 				{#if spec?.needs_base_url}
-					<FormField label="Server URL" description={spec.base_url_hint || undefined}>
+					<FormField
+						label="Server URL"
+						description={spec.base_url_hint || undefined}
+						error={errorFor('url')}
+					>
 						{#snippet children({ id })}
 							<Input
 								{id}
@@ -271,7 +317,7 @@
 						{/snippet}
 					</FormField>
 				{/if}
-				<FormField label="API key">
+				<FormField label="API key" error={errorFor('key')}>
 					{#snippet children({ id })}
 						<div class="relative">
 							<Input
@@ -310,7 +356,7 @@
 						{/snippet}
 					</FormField>
 				{/if}
-				<FormField label="Model">
+				<FormField label="Model" error={errorFor('model')}>
 					{#snippet children({ id })}
 						<ModelPicker
 							{id}
@@ -386,6 +432,9 @@
 							</div>
 						</Collapsible.Content>
 					</Collapsible.Root>
+					{#if errorFor('price')}
+						<p class="text-sm text-destructive" role="alert">{errorFor('price')}</p>
+					{/if}
 				{/if}
 				{#if result}
 					<p class="flex items-start gap-1.5 text-xs">
@@ -410,13 +459,19 @@
 				Test
 			</LoadingButton>
 			<div class="flex gap-2">
-				<Button variant="outline" disabled={ai.isSaving} onclick={() => (open = false)}>
+				<Button variant="outline" disabled={ai.isSaving} onclick={() => guard.close()}>
 					Cancel
 				</Button>
 				<LoadingButton loading={ai.isSaving} loadingLabel="Saving" onclick={() => save()}>
-					Save
+					{editing ? 'Save' : 'Add provider'}
 				</LoadingButton>
 			</div>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

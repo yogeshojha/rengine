@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
 	import SheetTop from './sheet-top.svelte';
 	import SheetBar from './sheet-bar.svelte';
@@ -8,11 +9,9 @@
 	import Plug from '@lucide/svelte/icons/plug';
 	import Globe from '@lucide/svelte/icons/globe';
 	import Server from '@lucide/svelte/icons/server';
-	import Copy from '@lucide/svelte/icons/copy';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Fingerprint from '@lucide/svelte/icons/fingerprint';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import type { IconComponent } from '$lib/config/icons';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as Item from '$lib/components/ui/item';
@@ -20,6 +19,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import CodeBlock from '$lib/components/code-block.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { productBrand, serviceLabel, type ServiceRead } from '$lib/utilities/services';
@@ -31,7 +32,6 @@
 		SERVICE_CLASS_ICONS,
 		serviceClassLabel
 	} from '$lib/config/service-classes';
-	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { hostPort } from '$lib/utilities/net';
 	import { externalHref } from '$lib/utilities/links';
 	import CountryFlag from './country-flag.svelte';
@@ -65,17 +65,25 @@
 	}: Props = $props();
 
 	const SVC = SURFACE[SurfaceDimension.SERVICES];
+	const IPS = SURFACE[SurfaceDimension.IPS];
 
 	let contentEl = $state<HTMLElement | null>(null);
+	let bodyEl = $state<HTMLElement | null>(null);
+	let scrolledFor = '';
+
+	$effect.pre(() => {
+		const id = open ? (s?.id ?? '') : '';
+		if (id === scrolledFor) return;
+		scrolledFor = id;
+		if (!id) return;
+		untrack(() => bodyEl?.scrollTo({ top: 0 }));
+	});
+
 	let endpoint = $derived(s ? hostPort(s.ip, s.port) : '');
 	let network = $derived(
 		s ? [s.asn ? `AS${s.asn}` : null, s.asn_org].filter(Boolean).join(' · ') : ''
 	);
 	let ClassIcon = $derived(SERVICE_CLASS_ICONS[s?.service_class ?? ''] ?? Server);
-
-	function copy(text: string) {
-		writeClipboard(text);
-	}
 </script>
 
 <svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
@@ -105,23 +113,7 @@
 					<Sheet.Title class="min-w-0 truncate font-mono text-base font-medium"
 						>{endpoint}</Sheet.Title
 					>
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="ghost"
-									size="icon-sm"
-									class="size-7 shrink-0"
-									onclick={() => copy(endpoint)}
-									aria-label="Copy address and port"
-								>
-									<Copy />
-								</Button>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Content>Copy address and port</Tooltip.Content>
-					</Tooltip.Root>
+					<CopyButton value={endpoint} label="Copy address and port" />
 				</div>
 				<Sheet.Description class="truncate">
 					{serviceLabel(s)} · {serviceClassLabel(s.service_class)}{network ? ` · ${network}` : ''}
@@ -164,10 +156,10 @@
 				</SheetBar>
 			{/if}
 
-			<ScrollArea class="min-h-0 flex-1">
+			<ScrollArea class="min-h-0 flex-1" bind:viewportRef={bodyEl}>
 				<div class="flex flex-col gap-6 p-5">
 					<section class="flex flex-col gap-2">
-						{@render heading(Plug, 'Service')}
+						<SectionHead icon={Plug} title="Service" />
 						<dl class="flex flex-col divide-y divide-border/60">
 							<div class={SHEET_ROW}>
 								<dt class={SHEET_DT}>Port</dt>
@@ -253,7 +245,7 @@
 
 					{#if s.is_http}
 						<section class="flex flex-col gap-2">
-							{@render heading(Globe, 'Web service')}
+							<SectionHead icon={Globe} title="Web service" />
 							<dl class="flex flex-col divide-y divide-border/60">
 								{#if s.status_code != null}
 									<div class={SHEET_ROW}>
@@ -304,7 +296,7 @@
 					{/if}
 
 					<section class="flex flex-col gap-2">
-						{@render heading(Network, 'Address')}
+						<SectionHead icon={Network} title="Address" />
 						<dl class="flex flex-col divide-y divide-border/60">
 							<div class={SHEET_ROW}>
 								<dt class={SHEET_DT}>Address</dt>
@@ -313,10 +305,10 @@
 									<Button
 										variant="ghost"
 										size="sm"
-										class="h-6 gap-1 px-2 text-xs"
+										class="h-6 px-2 text-xs"
 										onclick={() => onAddress?.(filterToken('ip', s.ip))}
 									>
-										<Server class="size-3" /> Open in IPs
+										<Server class="size-3" /> Open in {IPS.label}
 									</Button>
 								</dd>
 							</div>
@@ -364,11 +356,11 @@
 					</section>
 
 					<section class="flex flex-col gap-2">
-						{@render heading(Globe, 'Web assets on this address')}
+						<SectionHead icon={Globe} title="Web assets on this address" />
 						{#if s.hosts.length}
-							<Item.Group class="rounded-lg border">
+							<Item.Group class="gap-0.5">
 								{#each s.hosts as host (host)}
-									<Item.Root size="sm" class="w-full">
+									<Item.Root size="sm" class="hover:bg-muted/60">
 										{#snippet child({ props })}
 											<button
 												type="button"
@@ -388,7 +380,7 @@
 							</Item.Group>
 							{#if s.host_count > s.hosts.length}
 								<p class="px-3 text-xs text-muted-foreground">
-									{s.hosts.length} of {s.host_count} shown.
+									{s.hosts.length.toLocaleString()} of {s.host_count.toLocaleString()} shown.
 								</p>
 							{/if}
 						{:else}
@@ -401,15 +393,6 @@
 	</Sheet.Content>
 </Sheet.Root>
 
-{#snippet heading(Icon: IconComponent, title: string)}
-	<div
-		class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-	>
-		<Icon class="size-3.5" />
-		<span>{title}</span>
-	</div>
-{/snippet}
-
 {#snippet chip(text: string, dsl: string, hint: string, mono = false, flag = false)}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
@@ -417,7 +400,9 @@
 				<button {...props} type="button" onclick={() => onFilter?.(dsl)}>
 					<Badge
 						variant="outline"
-						class="cursor-pointer font-normal hover:bg-accent {mono ? 'font-mono text-2xs' : ''}"
+						class="max-w-full cursor-pointer text-left font-normal whitespace-normal wrap-anywhere hover:bg-accent {mono
+							? 'font-mono text-2xs'
+							: ''}"
 					>
 						{#if flag}<CountryFlag code={text} />{:else}{text}{/if}
 					</Badge>

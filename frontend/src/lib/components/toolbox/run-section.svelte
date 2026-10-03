@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import ResultBlockView from './result-block.svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
@@ -54,31 +55,37 @@
 <section class="space-y-4">
 	<div class="flex items-center gap-2 border-b pb-1.5">
 		<Icon class="size-3.5 shrink-0 text-muted-foreground" />
-		<h3 class="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
+		<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 			{run.title}
 		</h3>
 		<span class="flex-1"></span>
-		{#if pending}
-			<span class="flex items-center gap-1.5 text-2xs text-muted-foreground">
-				<Spinner class="size-3" />
+		<span role="status" class="flex items-center gap-1.5 text-2xs text-muted-foreground">
+			{#if pending}
+				<Spinner class="size-3" aria-hidden="true" />
 				{run.status === 'queued' ? 'Queued' : 'Running'}
-			</span>
-		{:else}
+			{:else if run.status === 'completed'}
+				<span class="sr-only">Completed</span>
+			{/if}
+		</span>
+		{#if !pending}
 			{#if took}<span class="font-mono text-2xs text-muted-foreground">{took}</span>{/if}
 			{#if run.raw}
-				<CopyButton value={JSON.stringify(run.raw, null, 2)} class="size-5" />
+				<span class="flex h-5 shrink-0 items-center">
+					<CopyButton value={JSON.stringify(run.raw, null, 2)} />
+				</span>
 			{/if}
 		{/if}
 	</div>
 
 	{#if pending}
-		<div class="space-y-2">
-			<div class="h-20 animate-pulse rounded-lg border bg-muted/25"></div>
-			<div class="h-3 w-2/3 animate-pulse rounded bg-muted/40"></div>
-			<div class="h-3 w-1/2 animate-pulse rounded bg-muted/40"></div>
+		<div class="space-y-2" aria-busy="true">
+			<Skeleton class="h-20 rounded-lg" />
+			<Skeleton class="h-3 w-2/3" />
+			<Skeleton class="h-3 w-1/2" />
 		</div>
 	{:else if run.status === 'failed'}
 		<div
+			role="alert"
 			class="flex items-start gap-2 rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-sm leading-5 text-destructive"
 		>
 			<span class="flex h-5 shrink-0 items-center"><CircleX class="size-4" /></span>

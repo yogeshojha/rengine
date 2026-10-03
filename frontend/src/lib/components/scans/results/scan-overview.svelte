@@ -216,7 +216,7 @@
 	onDestroy(() => liveRefresh.stop());
 
 	$effect(() => {
-		if (!engineCatalogStore.hasFetched) engineCatalogStore.fetch();
+		if (!engineCatalogStore.hasFetched) untrack(() => engineCatalogStore.fetch());
 	});
 
 	const stat = (key: string) => insights?.surface.find((s) => s.key === key)?.value ?? null;
@@ -268,7 +268,7 @@
 	{#if empty}
 		{#if !live}
 			<EmptyState compact icon={SearchX} title="No {nounPlural} found" description={emptyReason}>
-				<Button variant="outline" size="sm" onclick={onRescan}>Re-scan</Button>
+				<Button variant="outline" size="sm" onclick={onRescan}>Rescan</Button>
 			</EmptyState>
 		{/if}
 	{:else}

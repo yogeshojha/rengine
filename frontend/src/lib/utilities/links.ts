@@ -21,6 +21,11 @@ export function safeHref(value: string | null | undefined): string | undefined {
 	return value && (isExternalHref(value) || isLocalPath(value)) ? value : undefined;
 }
 
+/** A same-origin path, else undefined. */
+export function localPath(value: string | null | undefined): string | undefined {
+	return value && isLocalPath(value) ? value : undefined;
+}
+
 export function openExternal(value: string | null | undefined): void {
 	const href = externalHref(value);
 	if (href) window.open(href, '_blank', 'noopener,noreferrer');

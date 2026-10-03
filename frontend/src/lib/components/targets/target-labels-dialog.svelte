@@ -148,6 +148,7 @@
 										type="submit"
 										size="sm"
 										loading={saving}
+										loadingLabel="Saving"
 										disabled={!draftName.trim()}
 									>
 										Save
@@ -157,7 +158,7 @@
 									</Button>
 								</form>
 								{#if kind === 'tag'}
-									<div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Colour">
+									<div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Color">
 										{#each TAG_COLORS as color (color)}
 											{@const picked = sameColor(draftColor, color)}
 											<button
@@ -235,6 +236,7 @@
 	title="Delete {NOUN[kind].toLowerCase()}"
 	description={deleteDescription}
 	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	destructive
 	loading={deleting}
 	onOpenChange={(o) => {

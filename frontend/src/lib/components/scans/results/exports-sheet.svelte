@@ -7,10 +7,12 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Progress } from '$lib/components/ui/progress';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import Hint from '$lib/components/hint.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import {
 		BUNDLE,
 		BUNDLE_LABEL,
@@ -24,6 +26,7 @@
 	import { surfaceSpec } from '$lib/config/surface';
 	import { exportsStore } from '$lib/stores/exports.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
+	import type { ExportRead } from '$lib/types/export';
 	import FileDown from '@lucide/svelte/icons/file-down';
 
 	interface Props {
@@ -36,13 +39,25 @@
 	let { open = $bindable(false), projectId, scanId = '', targetId = '' }: Props = $props();
 
 	let loadedFor = $state('');
+	let failed = $state(false);
+	let removing = $state<ExportRead | null>(null);
+	let busy = $state(false);
+
+	async function load() {
+		failed = false;
+		try {
+			await exportsStore.load(projectId, { scanId, targetId });
+		} catch {
+			failed = true;
+		}
+	}
 
 	$effect(() => {
 		if (!open || !projectId) return;
 		const key = `${projectId}:${scanId}:${targetId}`;
 		if (loadedFor === key) return;
 		loadedFor = key;
-		void exportsStore.load(projectId, { scanId, targetId });
+		void load();
 	});
 
 	function label(dimension: string): string {
@@ -55,15 +70,20 @@
 			await exportsStore.rerun(id);
 			toast.success('Export started');
 		} catch {
-			toast.error('Export not started.');
+			toast.error('Export not started');
 		}
 	}
 
-	async function remove(id: string) {
+	async function remove() {
+		if (!removing) return;
+		busy = true;
 		try {
-			await exportsStore.remove(id);
+			await exportsStore.remove(removing.id);
+			removing = null;
 		} catch {
-			toast.error('Export not removed.');
+			toast.error('Export not removed');
+		} finally {
+			busy = false;
 		}
 	}
 </script>
@@ -84,12 +104,23 @@
 		<ScrollArea class="min-h-0 flex-1">
 			<div class="flex flex-col">
 				{#if exportsStore.loading && exportsStore.rows.length === 0}
-					<div class="flex flex-col gap-3 p-5">
-						<Skeleton class="h-12 w-full" />
-						<Skeleton class="h-12 w-full" />
-					</div>
+					<RowSkeleton rows={3} avatar={null} trailing="h-7 w-20 rounded-md" padding="px-5" />
+				{:else if failed}
+					<EmptyState
+						icon={TriangleAlert}
+						title="Exports not loaded"
+						compact
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
+					</EmptyState>
 				{:else if exportsStore.rows.length === 0}
-					<EmptyState icon={FileDown} title="No exports" />
+					<EmptyState
+						icon={FileDown}
+						title="No exports"
+						compact
+						class="rounded-none border-0 bg-transparent py-16"
+					/>
 				{:else}
 					{#each exportsStore.rows as row (row.id)}
 						{@const live = isLive(row.status)}
@@ -106,7 +137,7 @@
 										<Button
 											variant="outline"
 											size="sm"
-											class="h-7 gap-1.5"
+											class="h-7"
 											href={exportsStore.downloadUrl(row.id)}
 											download
 										>
@@ -114,23 +145,28 @@
 											{FORMAT_LABELS[row.export_format] ?? row.export_format}
 										</Button>
 									{/if}
+									<Hint text="Run again">
+										{#snippet child(props)}
+											<Button
+												{...props}
+												variant="ghost"
+												size="icon"
+												class="size-7"
+												disabled={live}
+												onclick={() => rerun(row.id)}
+												aria-label="Run again"
+											>
+												<RotateCw class="size-3.5" />
+											</Button>
+										{/snippet}
+									</Hint>
 									<Button
 										variant="ghost"
 										size="icon"
 										class="size-7"
 										disabled={live}
-										onclick={() => rerun(row.id)}
-										aria-label="Run again"
-									>
-										<RotateCw class="size-3.5" />
-									</Button>
-									<Button
-										variant="ghost"
-										size="icon"
-										class="size-7"
-										disabled={live}
-										onclick={() => remove(row.id)}
-										aria-label="Remove"
+										onclick={() => (removing = row)}
+										aria-label="Remove export"
 									>
 										<Trash2 class="size-3.5" />
 									</Button>
@@ -186,3 +222,19 @@
 		</ScrollArea>
 	</Sheet.Content>
 </Sheet.Root>
+
+<ConfirmDialog
+	open={removing !== null}
+	title="Remove export"
+	description={removing
+		? `${label(removing.dimension)} ${FORMAT_LABELS[removing.export_format] ?? removing.export_format} export ${removing.status === ExportStatus.COMPLETED ? 'and its file are' : 'is'} removed.`
+		: ''}
+	confirmLabel="Remove"
+	loadingLabel="Removing"
+	destructive
+	loading={busy}
+	onOpenChange={(value) => {
+		if (!value) removing = null;
+	}}
+	onConfirm={remove}
+/>

@@ -9,7 +9,7 @@
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { elapsedSeconds, elapsedText } from '$lib/utilities/scan-status';
-	import { relativeTime } from '$lib/utilities/dates';
+	import { relativeTime, untilTime } from '$lib/utilities/dates';
 	import type { DashboardOverview, DashboardPrograms } from '$lib/types/dashboard';
 	import type { ThreatIntelStatus } from '$lib/types/threat-intel';
 
@@ -126,7 +126,7 @@
 
 	<div class="mt-1 flex flex-col gap-2">
 		<span
-			class="flex items-baseline justify-between text-2xs font-medium tracking-wider text-muted-foreground uppercase"
+			class="flex items-baseline justify-between text-2xs tracking-wide text-muted-foreground uppercase"
 		>
 			<span>{running.length ? 'Running now' : 'Next run'}</span>
 			{#if overflow}
@@ -142,7 +142,10 @@
 						{@const run = liveScans.runFor(scan.id)}
 						{@const elapsed = elapsedSeconds(scan, now)}
 						<li>
-							<a href={ROUTES.scan(scan.id)} class="flex items-center gap-2 text-sm">
+							<a
+								href={ROUTES.scan(scan.id)}
+								class="flex items-center gap-2 text-sm hover:text-primary"
+							>
 								<span
 									class="size-1.5 shrink-0 rounded-full bg-chart-1 shadow-[0_0_0_3px_color-mix(in_oklch,var(--chart-1)_22%,transparent)]"
 								></span>
@@ -164,7 +167,7 @@
 			</ScrollArea>
 		{/if}
 		{#if next}
-			<a href={ROUTES.schedules} class="flex items-center gap-2 text-sm">
+			<a href={ROUTES.schedules} class="flex items-center gap-2 text-sm hover:text-primary">
 				<span class="size-1.5 shrink-0 rounded-full bg-muted-foreground/60"></span>
 				<span class="min-w-0 flex-1 truncate">
 					<span class="font-medium">{next.targets[0]?.target_value ?? next.name}</span>
@@ -173,11 +176,11 @@
 					{/if}
 				</span>
 				<span class="shrink-0 text-xs text-muted-foreground">
-					{relativeTime(next.next_run_at!)}
+					{untilTime(next.next_run_at) ?? relativeTime(next.next_run_at)}
 				</span>
 			</a>
 		{:else if !running.length}
-			<span class="text-sm text-muted-foreground">No schedule</span>
+			<span class="text-sm text-muted-foreground">No schedules</span>
 		{/if}
 	</div>
 

@@ -11,8 +11,12 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { watchesApi } from '$lib/api/watches';
 	import {
 		ALERT_QUERY_EXAMPLES,
@@ -29,6 +33,7 @@
 	import type { BountyProgram } from '$lib/types/bounty-program';
 	import type { NotifProvider } from '$lib/types/notification-channel';
 	import { WatchCadence, type Watch, type WatchPreview } from '$lib/types/watch';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
@@ -88,6 +93,31 @@
 	);
 	const existingTargets = $derived(preview?.targets.filter((t) => t.exists).length ?? 0);
 
+	function formState() {
+		return {
+			engineId,
+			cadence,
+			passiveOnly,
+			runNow,
+			rateLimit: String(rateLimit).trim(),
+			probeOnResolve,
+			followScope,
+			alertUnresolved,
+			alertQuery: alertQuery.trim(),
+			channelIds: [...channelIds].sort(),
+			notifyInApp
+		};
+	}
+
+	let baseline = $state<ReturnType<typeof formState> | null>(null);
+	const dirty = $derived(
+		baseline !== null && JSON.stringify(formState()) !== JSON.stringify(baseline)
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => onOpenChange(false)
+	);
+
 	function reset() {
 		const w = existing;
 		engineId = w?.engine_id ?? SELECT_NONE;
@@ -106,6 +136,7 @@
 		queryError = null;
 		channelIds = [...(w?.channel_ids ?? [])];
 		notifyInApp = w?.notify_in_app ?? true;
+		baseline = formState();
 	}
 
 	async function loadPreview() {
@@ -122,15 +153,6 @@
 	}
 
 	$effect(() => {
-		if (!open || isEdit) return;
-		const first = scanEnginesStore.engines[0];
-		if (!enginesReady || !first) return;
-		untrack(() => {
-			if (engineId === SELECT_NONE) engineId = first.id;
-		});
-	});
-
-	$effect(() => {
 		if (!open) return;
 		untrack(() => {
 			reset();
@@ -141,6 +163,17 @@
 			if (!notificationChannelsStore.hasFetched) {
 				void notificationChannelsStore.fetch();
 			}
+		});
+	});
+
+	$effect(() => {
+		if (!open || isEdit) return;
+		const first = scanEnginesStore.engines[0];
+		if (!enginesReady || !first) return;
+		untrack(() => {
+			if (engineId !== SELECT_NONE) return;
+			engineId = first.id;
+			if (baseline?.engineId === SELECT_NONE) baseline = { ...baseline, engineId: first.id };
 		});
 	});
 
@@ -210,9 +243,17 @@
 	}
 </script>
 
-<Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 p-0 sm:max-w-xl">
-		<Dialog.Header class="border-b p-5 pb-4">
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) onOpenChange(true);
+			else if (!saving) guard.close();
+		}
+	}
+>
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{isEdit ? 'Watch settings' : `Watch ${program.name}`}</Dialog.Title>
 			<Dialog.Description>
 				Scope from {program.platform_label}, refreshed on every sync.
@@ -220,7 +261,7 @@
 		</Dialog.Header>
 
 		<ScrollArea.Root class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[60vh]">
-			<div class="flex flex-col gap-6 p-5">
+			<div class="flex flex-col gap-6 px-6 py-5">
 				{#if !isEdit}
 					<section class="flex flex-col gap-2">
 						{#if loadingPreview}
@@ -228,7 +269,14 @@
 							<Skeleton class="h-4 w-1/2" />
 							<Skeleton class="h-4 w-3/5" />
 						{:else if previewError}
-							<p class="text-sm text-destructive">{previewError}</p>
+							<EmptyState
+								icon={TriangleAlertIcon}
+								title="Scope not read"
+								description={previewError}
+								compact
+							>
+								<Button variant="outline" size="sm" onclick={() => loadPreview()}>Retry</Button>
+							</EmptyState>
 						{:else if preview}
 							<dl class="grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
 								<dt class="text-muted-foreground">Targets</dt>
@@ -285,12 +333,13 @@
 					</section>
 				{/if}
 
-				<section class="flex flex-col gap-3">
-					<span class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-						>Baseline</span
-					>
-					<div class="grid gap-3 sm:grid-cols-2">
-						<FormField label="Engine">
+				<section class="flex flex-col gap-4">
+					<SectionHead title="Baseline" />
+					<div class="grid gap-4 sm:grid-cols-2">
+						<FormField
+							label="Engine"
+							error={baselineNeedsEngine ? 'A repeating baseline needs an engine.' : undefined}
+						>
 							{#snippet children({ id })}
 								{#if !enginesReady}
 									<Skeleton class="h-9 w-full rounded-md" />
@@ -328,9 +377,6 @@
 							{/snippet}
 						</FormField>
 					</div>
-					{#if baselineNeedsEngine}
-						<p class="text-xs text-destructive">A repeating baseline needs an engine.</p>
-					{/if}
 					<label class="flex items-center justify-between gap-4 text-sm">
 						<span class="flex flex-col gap-0.5">
 							Passive only
@@ -361,7 +407,11 @@
 							/>
 						</label>
 					{/if}
-					<FormField label="Rate ceiling" description="Requests per second per target, all tools.">
+					<FormField
+						label="Rate ceiling"
+						description="Requests per second per target, all tools."
+						error={rateInvalid ? `Enter a whole number from 1 to ${MAX_RATE_LIMIT}.` : undefined}
+					>
 						{#snippet children({ id })}
 							<div class="flex items-center gap-2">
 								<Input
@@ -381,10 +431,8 @@
 					</FormField>
 				</section>
 
-				<section class="flex flex-col gap-3">
-					<span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-						New hosts
-					</span>
+				<section class="flex flex-col gap-4">
+					<SectionHead title="New hosts" />
 					<label class="flex items-center justify-between gap-4 text-sm">
 						<span class="flex flex-col gap-0.5">
 							Probe a new host when it resolves
@@ -418,7 +466,8 @@
 					</label>
 					<FormField
 						label="Alert when"
-						description="A Web Assets query evaluated against the probe alone. Empty matches every resolving host."
+						description="A Web assets query evaluated against the probe alone. Empty matches every resolving host."
+						error={queryError ?? undefined}
 					>
 						{#snippet children({ id })}
 							<Textarea
@@ -433,11 +482,9 @@
 							/>
 						{/snippet}
 					</FormField>
-					{#if queryError}
-						<p class="text-xs text-destructive">{queryError}</p>
-					{:else if checkingQuery}
+					{#if checkingQuery}
 						<p class="text-xs text-muted-foreground">Checking</p>
-					{:else}
+					{:else if !queryError}
 						<div class="flex flex-wrap gap-1">
 							{#each ALERT_QUERY_EXAMPLES as example (example)}
 								<button
@@ -455,10 +502,8 @@
 					{/if}
 				</section>
 
-				<section class="flex flex-col gap-3">
-					<span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-						Alerts to
-					</span>
+				<section class="flex flex-col gap-4">
+					<SectionHead title="Alerts to" />
 					<label class="flex items-center justify-between gap-4 text-sm">
 						<span>In-app inbox</span>
 						<Switch checked={notifyInApp} onCheckedChange={(v) => (notifyInApp = v)} />
@@ -496,11 +541,22 @@
 			</div>
 		</ScrollArea.Root>
 
-		<Dialog.Footer class="border-t p-4">
-			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<LoadingButton loading={saving} disabled={!canSave} onclick={() => save()}>
+		<Dialog.Footer class="border-t px-6 py-4">
+			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton
+				loading={saving}
+				loadingLabel="Saving"
+				disabled={!canSave}
+				onclick={() => save()}
+			>
 				{isEdit ? 'Save' : 'Watch program'}
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

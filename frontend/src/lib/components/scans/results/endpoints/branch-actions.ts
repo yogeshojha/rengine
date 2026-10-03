@@ -58,7 +58,7 @@ export async function copyBranch(scope: BranchScope, node: TreeNode) {
 				: `Copied ${urls.length.toLocaleString()} ${urls.length === 1 ? 'URL' : 'URLs'}`
 		);
 	} catch {
-		toast.error('URLs not copied.');
+		toast.error('URLs not copied');
 	}
 }
 
@@ -81,7 +81,7 @@ export async function copyWordlist(scope: BranchScope, node: TreeNode) {
 			`Copied ${words.size.toLocaleString()} ${words.size === 1 ? 'path' : 'paths'}${capped ? ` from the first ${COPY_CAP.toLocaleString()} URLs` : ''}`
 		);
 	} catch {
-		toast.error('Paths not copied.');
+		toast.error('Paths not copied');
 	}
 }
 

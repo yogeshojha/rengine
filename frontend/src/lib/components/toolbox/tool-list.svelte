@@ -53,7 +53,9 @@
 	<div class="space-y-3 p-2">
 		{#each sections as section (section.group.key)}
 			<div>
-				<p class="px-2 pb-1 text-2xs font-medium tracking-wide text-muted-foreground uppercase">
+				<p
+					class="px-2 pb-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+				>
 					{section.group.label}
 				</p>
 				{#each section.items as tool (tool.name)}

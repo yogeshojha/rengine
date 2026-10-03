@@ -388,7 +388,7 @@
 								<span class="truncate text-xs text-muted-foreground group-hover:text-foreground">
 									{k.label}
 								</span>
-								<span class="text-2xl leading-none font-semibold tracking-tight">
+								<span class="text-2xl leading-none font-semibold tracking-tight tabular-nums">
 									{k.value == null ? '—' : k.value.toLocaleString()}
 								</span>
 								<span class="flex h-4 items-center gap-2 text-xs tabular-nums">

@@ -4,6 +4,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { CHECK_BY_KEY, HYGIENE_ANY, hygieneQuery } from '$lib/config/hygiene';
 	import type { HygieneSummary } from '$lib/utilities/scan-insights';
+	import { percentLabel } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -25,7 +26,7 @@
 			.map((c) => ({
 				key: c.key,
 				label: CHECK_BY_KEY[c.key]?.label ?? c.key.replace(/_/g, ' '),
-				share: Math.round((c.failing / c.applicable) * 100),
+				share: (c.failing / c.applicable) * 100,
 				failing: c.failing,
 				href: routes.results(WEB.tab, scanId, { [WEB.queryParam]: c.query })
 			}))
@@ -54,13 +55,13 @@
 						<span class="h-1.5 overflow-hidden rounded-full bg-muted">
 							<span class="block h-full rounded-full bg-series" style="width:{r.share}%"></span>
 						</span>
-						<span class="text-right font-medium tabular-nums">{r.share}%</span>
+						<span class="text-right font-medium tabular-nums">{percentLabel(r.share)}</span>
 					</a>
 				</li>
 			{/each}
 		</ul>
 	{:else}
-		<span class="text-sm text-muted-foreground">No failing check</span>
+		<span class="text-sm text-muted-foreground">No failing checks</span>
 	{/if}
 	{#snippet footer()}
 		{#if hygiene}

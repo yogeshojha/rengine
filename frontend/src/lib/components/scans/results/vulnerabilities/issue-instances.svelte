@@ -66,21 +66,25 @@
 								{group.status}
 							</span>
 						{/if}
-						<span class="font-mono text-xs font-medium">{group.host}</span>
+						<span class="min-w-0 font-mono text-xs font-medium wrap-anywhere">{group.host}</span>
 						{#if group.title}
-							<span class="min-w-0 truncate text-xs text-muted-foreground">{group.title}</span>
+							<span class="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+								>{group.title}</span
+							>
 						{/if}
 					</div>
 					<ul class="flex flex-col">
 						{#each group.items as v (v.id)}
 							{@const reviewed = v.state !== VulnState.OPEN}
-							<li>
+							<li
+								class="group/inst flex items-center gap-2 rounded-sm pr-1.5 hover:bg-muted/50 {selectedId ===
+								v.id
+									? 'bg-primary/5'
+									: ''}"
+							>
 								<button
 									type="button"
-									class="group/inst flex w-full items-center gap-2 rounded-sm px-1.5 py-0.5 text-left hover:bg-muted/50 {selectedId ===
-									v.id
-										? 'bg-primary/5'
-										: ''}"
+									class="flex min-w-0 flex-1 items-center gap-2 py-0.5 pl-1.5 text-left"
 									onclick={() => onOpen(v)}
 								>
 									<span
@@ -109,26 +113,25 @@
 											{VULN_STATE_LABELS[v.state] ?? v.state}
 										</Badge>
 									{/if}
-									{#if v.url}
-										<Hint text="Open in a new tab">
-											{#snippet child(props)}
-												<Button
-													{...props}
-													variant="ghost"
-													size="icon"
-													class="size-6 opacity-0 group-hover/inst:opacity-100 focus-visible:opacity-100"
-													href={externalHref(v.matched_at)}
-													target="_blank"
-													rel="noopener noreferrer"
-													onclick={(e: Event) => e.stopPropagation()}
-												>
-													<ExternalLink class="size-3" />
-													<span class="sr-only">Open {v.matched_at}</span>
-												</Button>
-											{/snippet}
-										</Hint>
-									{/if}
 								</button>
+								{#if v.url}
+									<Hint text="Open in a new tab">
+										{#snippet child(props)}
+											<Button
+												{...props}
+												variant="ghost"
+												size="icon"
+												class="size-7 opacity-0 group-hover/inst:opacity-100 focus-visible:opacity-100"
+												href={externalHref(v.matched_at)}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<ExternalLink class="size-3" />
+												<span class="sr-only">Open {v.matched_at}</span>
+											</Button>
+										{/snippet}
+									</Hint>
+								{/if}
 							</li>
 						{/each}
 					</ul>

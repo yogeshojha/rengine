@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { untrack } from 'svelte';
-	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
+	import FormField from '$lib/components/form-field.svelte';
 	import * as Select from '$lib/components/ui/select';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
@@ -29,6 +29,7 @@
 	let activeProxies = $derived(proxiesStore.proxies.filter((p) => p.is_active));
 	let selectedId = $derived(context.proxy_id ?? SELECT_NONE);
 	let selected = $derived(activeProxies.find((p) => p.id === context.proxy_id) ?? null);
+	let missing = $derived(Boolean(context.proxy_id) && proxiesStore.hasFetched && !selected);
 
 	function setProxy(v: string | undefined) {
 		onChange({ proxy_id: v && v !== SELECT_NONE ? v : null } as Partial<CtxLike>);
@@ -42,28 +43,32 @@
 </script>
 
 <div class="space-y-4">
-	<div class="space-y-1.5">
-		<Label class="text-xs">Proxy</Label>
-		<Select.Root type="single" value={selectedId} onValueChange={setProxy} disabled={!isAdmin}>
-			<Select.Trigger class="h-9 w-full max-w-sm text-sm">
-				{triggerLabel}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value={SELECT_NONE} label="None">None</Select.Item>
-				{#each activeProxies as proxy (proxy.id)}
-					<Select.Item value={proxy.id} label={proxy.name}>
-						<span class="flex items-center gap-2">
-							{proxy.name}
-							{#if proxy.is_default}
-								<Badge variant="secondary" class="h-4 px-1 text-2xs">Default</Badge>
-							{/if}
-						</span>
-					</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		<p class="text-xs text-muted-foreground">Applies to HTTP traffic.</p>
-	</div>
+	<FormField
+		label="Proxy"
+		description="Applies to HTTP traffic."
+		error={missing ? 'The selected proxy is inactive or removed.' : undefined}
+	>
+		{#snippet children({ id })}
+			<Select.Root type="single" value={selectedId} onValueChange={setProxy} disabled={!isAdmin}>
+				<Select.Trigger {id} class="h-9 w-full max-w-sm text-sm">
+					{triggerLabel}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value={SELECT_NONE} label="None">None</Select.Item>
+					{#each activeProxies as proxy (proxy.id)}
+						<Select.Item value={proxy.id} label={proxy.name}>
+							<span class="flex items-center gap-2">
+								{proxy.name}
+								{#if proxy.is_default}
+									<Badge variant="secondary" class="h-4 px-1 text-2xs">Default</Badge>
+								{/if}
+							</span>
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+		{/snippet}
+	</FormField>
 
 	{#if proxiesStore.isLoading && !proxiesStore.hasFetched}
 		<div class="flex h-4 items-center gap-2" aria-busy="true">
@@ -87,8 +92,6 @@
 				</p>
 			{/if}
 		</div>
-	{:else if context.proxy_id && proxiesStore.hasFetched}
-		<p class="text-xs text-destructive">The selected proxy is inactive or removed.</p>
 	{/if}
 
 	{#if isAdmin}

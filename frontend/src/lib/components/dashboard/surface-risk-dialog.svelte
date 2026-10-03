@@ -15,6 +15,8 @@
 	import type { DashboardSurfaceRisk, SurfaceRiskTarget } from '$lib/types/dashboard';
 	import type { TargetScope } from '$lib/utilities/surface-scope';
 	import { Button } from '$lib/components/ui/button';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
 	let {
 		open = $bindable(false),
@@ -122,15 +124,15 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="flex max-h-[min(88vh,56rem)] flex-col gap-0 p-0 sm:max-w-[68rem]"
+		class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl"
 		showCloseButton={true}
 	>
-		<Dialog.Header class="border-b px-5 pt-4 pb-3 text-left">
+		<Dialog.Header class="border-b px-6 py-4 text-left">
 			<Dialog.Title>Surface against risk</Dialog.Title>
 			<Dialog.Description>Live web assets against open findings, per target</Dialog.Description>
 		</Dialog.Header>
 
-		<div class="flex flex-wrap items-center gap-2 border-b px-5 py-3">
+		<div class="flex flex-wrap items-center gap-2 border-b px-6 py-3">
 			<Input
 				id="surface-risk-query"
 				type="search"
@@ -211,22 +213,22 @@
 		</div>
 
 		{#if data}
-			<div class="grid grid-cols-3 gap-2 px-5 pt-3">
-				<div class="flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5">
-					<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
+			<div class="grid grid-cols-3 gap-2 px-6 pt-3">
+				<div class="flex min-w-0 flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2">
+					<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 						{data.live.toLocaleString()}
 					</span>
 					<span class="text-2xs text-muted-foreground sm:truncate">live web assets</span>
 				</div>
-				<div class="flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5">
-					<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
+				<div class="flex min-w-0 flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2">
+					<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 						{data.findings.toLocaleString()}
 					</span>
 					<span class="text-2xs text-muted-foreground sm:truncate">open findings</span>
 				</div>
-				<div class="flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5">
+				<div class="flex min-w-0 flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2">
 					<span
-						class="text-lg leading-tight font-semibold tracking-tight tabular-nums {data.actionable
+						class="text-lg leading-none font-semibold tracking-tight tabular-nums {data.actionable
 							? 'text-sev-critical-ink'
 							: ''}"
 					>
@@ -240,7 +242,7 @@
 		{/if}
 
 		<ScrollArea class="min-h-0 flex-1">
-			<div class="flex flex-col gap-3 px-5 py-3">
+			<div class="flex flex-col gap-3 px-6 py-3">
 				{#if loading && !data}
 					<div class="flex flex-col gap-2">
 						{#each Array(6) as _, i (i)}
@@ -248,9 +250,14 @@
 						{/each}
 					</div>
 				{:else if failed && !data}
-					<p class="py-8 text-center text-sm text-muted-foreground">
-						Surface against risk not loaded.
-					</p>
+					<EmptyState
+						compact
+						icon={TriangleAlert}
+						title="Surface against risk not loaded"
+						class="border-dashed"
+					>
+						<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
+					</EmptyState>
 				{:else if rows.length}
 					<SurfaceRiskRows
 						{rows}
@@ -259,13 +266,13 @@
 						onScope={onScope && ((id) => scopeTo({ targetIds: [id] }))}
 					/>
 				{:else}
-					<p class="py-8 text-center text-sm text-muted-foreground">No matching target</p>
+					<EmptyState compact title="No matching targets" class="border-dashed" />
 				{/if}
 			</div>
 		</ScrollArea>
 
 		<div
-			class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-5 py-2 text-2xs text-muted-foreground"
+			class="flex flex-wrap items-center gap-x-3 gap-y-1 border-t px-6 py-2 text-xs text-muted-foreground"
 		>
 			<span class="flex items-center gap-1.5">
 				<span class="size-2.5 rounded-[2px]" style="background:var(--series)"></span>

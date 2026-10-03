@@ -74,7 +74,7 @@
 					<Icon class="size-4" />
 				</span>
 				<span class="flex min-w-0 flex-col gap-0.5">
-					<span class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+					<span class="text-2xs tracking-wide text-muted-foreground uppercase">
 						{node.title}
 					</span>
 					{#if node.key === 'when'}

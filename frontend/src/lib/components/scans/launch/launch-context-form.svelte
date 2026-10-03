@@ -8,7 +8,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
@@ -25,15 +24,17 @@
 
 	interface Props {
 		targetValue: string;
+		dirty?: boolean;
 		onBack: () => void;
 		onCreated: (id: string, name: string) => void;
 	}
 
-	let { targetValue, onBack, onCreated }: Props = $props();
+	let { targetValue, dirty = $bindable(false), onBack, onCreated }: Props = $props();
 
 	const SECTIONS: ContextFormSection[] = ['scope', 'auth', 'rate', 'runtime', 'proxy'];
 
 	let draft = $state<ScanContextCreate>(seed());
+	let initial = $state(JSON.stringify(seed()));
 	let touched = new SvelteSet<string>();
 	let nameEl = $state<HTMLInputElement | null>(null);
 	let saving = $state(false);
@@ -59,7 +60,15 @@
 		const fallback = proxiesStore.defaultId;
 		if (!isAdmin || proxyPreset || !proxiesStore.hasFetched) return;
 		proxyPreset = true;
-		if (fallback && !draft.proxy_id) untrack(() => (draft.proxy_id = fallback));
+		if (fallback && !draft.proxy_id)
+			untrack(() => {
+				initial = JSON.stringify({ ...JSON.parse(initial), proxy_id: fallback });
+				draft.proxy_id = fallback;
+			});
+	});
+
+	$effect(() => {
+		dirty = JSON.stringify(draft) !== initial;
 	});
 
 	function seed(): ScanContextCreate {
@@ -101,7 +110,7 @@
 	}
 </script>
 
-<Dialog.Header class="px-6 pt-6 pb-4">
+<Dialog.Header class="border-b px-6 py-4">
 	<Button
 		variant="ghost"
 		size="sm"
@@ -116,10 +125,8 @@
 	</Dialog.Description>
 </Dialog.Header>
 
-<Separator />
-
 <ScrollArea class="h-[60vh]">
-	<div class="flex flex-col gap-4 p-6">
+	<div class="flex flex-col gap-4 px-6 py-5">
 		<div class="flex flex-col gap-1.5">
 			<Label for="ctx-name">Name</Label>
 			<Input
@@ -141,14 +148,17 @@
 	</div>
 </ScrollArea>
 
-<Separator />
-
-<div class="flex items-center justify-end gap-3 bg-muted/30 px-6 py-4">
+<div class="flex items-center justify-end gap-2 border-t px-6 py-4">
 	{#if validation}
 		<span class="mr-auto text-xs text-muted-foreground">{validation.message}</span>
 	{/if}
 	<Button variant="outline" onclick={onBack} disabled={saving}>Cancel</Button>
-	<LoadingButton loading={saving} disabled={!draft.name.trim()} onclick={create} class="gap-2">
+	<LoadingButton
+		loading={saving}
+		loadingLabel="Creating"
+		disabled={!draft.name.trim()}
+		onclick={create}
+	>
 		<Plus class="size-4" />
 		Create and use
 	</LoadingButton>

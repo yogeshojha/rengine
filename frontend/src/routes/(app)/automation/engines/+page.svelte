@@ -8,7 +8,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import Upload from '@lucide/svelte/icons/upload';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import ListChecks from '@lucide/svelte/icons/list-checks';
 	import Search from '@lucide/svelte/icons/search';
 	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
@@ -21,10 +21,10 @@
 	import { NEW_PARAM, ROUTES, routeLabels } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Alert from '$lib/components/ui/alert';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import EngineListCard from '$lib/components/engines/engine-list-card.svelte';
 	import NewEngineDialog from '$lib/components/engines/new-engine-dialog.svelte';
 	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
@@ -230,7 +230,6 @@
 				engineCatalogStore.fetch(true)
 			]);
 			if (scanEnginesStore.error) toast.error(scanEnginesStore.error);
-			else toast.success('Engines refreshed');
 		} finally {
 			isRefreshing = false;
 		}
@@ -239,13 +238,20 @@
 	const stageCount = $derived(stages.length);
 	const total = $derived(scanEnginesStore.engines.length);
 	const selectable = $derived(scanEnginesStore.engines.filter((e) => !e.builtin).length);
+	const loaded = $derived(
+		Boolean(projectsStore.activeProject) &&
+			scanEnginesStore.fetchedProjectId === projectsStore.activeProject?.id
+	);
+	const loadFailed = $derived(
+		!loaded && Boolean(scanEnginesStore.error) && !scanEnginesStore.isLoading
+	);
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels.engines)}</title></svelte:head>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap items-start justify-between gap-4">
-		<div class="max-w-2xl">
+<div class="flex flex-col gap-6">
+	<div class="flex flex-wrap items-end justify-between gap-3">
+		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">Scan engines</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
 				Stage selection and settings for a scan{stageCount
@@ -253,49 +259,41 @@
 					: ''}
 			</p>
 		</div>
-		<div class="flex items-center gap-2">
-			<Button
-				variant="outline"
-				size="icon"
-				class="h-9 w-9"
-				aria-label="Refresh"
-				onclick={handleRefresh}
-				disabled={isRefreshing}
-			>
-				<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-			</Button>
-			<Button variant="outline" class="gap-2" onclick={() => (showImportDialog = true)}>
-				<Upload class="h-4 w-4" />
+		<div class="flex flex-wrap items-center gap-2">
+			<Hint text="Refresh">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="outline"
+						size="icon-sm"
+						aria-label="Refresh"
+						onclick={handleRefresh}
+						disabled={isRefreshing}
+					>
+						<RefreshCw class="size-4 {isRefreshing ? 'animate-spin' : ''}" />
+					</Button>
+				{/snippet}
+			</Hint>
+			<Button variant="outline" size="sm" onclick={() => (showImportDialog = true)}>
+				<Upload class="size-4" />
 				Import
 			</Button>
-			<Button class="gap-2" onclick={() => (showNewDialog = true)}>
-				<Plus class="h-4 w-4" />
+			<Button size="sm" onclick={() => (showNewDialog = true)}>
+				<Plus class="size-4" />
 				New engine
 			</Button>
 		</div>
 	</div>
 
-	{#if scanEnginesStore.error && !scanEnginesStore.isLoading}
-		<Alert.Root variant="destructive">
-			<AlertCircle />
-			<Alert.Title>Scan engines not loaded</Alert.Title>
-			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
-				<span>{scanEnginesStore.error}</span>
-				<Button
-					variant="outline"
-					size="sm"
-					class="gap-1.5"
-					onclick={handleRefresh}
-					disabled={isRefreshing}
-				>
-					<RefreshCw class="h-3.5 w-3.5 {isRefreshing ? 'animate-spin' : ''}" />
-					Retry
-				</Button>
-			</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	{#if scanEnginesStore.isLoading}
+	{#if loadFailed}
+		<EmptyState
+			icon={TriangleAlert}
+			title="Scan engines not loaded"
+			description={scanEnginesStore.error ?? undefined}
+		>
+			<Button variant="outline" size="sm" onclick={handleRefresh}>Retry</Button>
+		</EmptyState>
+	{:else if !loaded}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
 				<div class="flex flex-col gap-3 rounded-xl border border-border p-4">
@@ -399,7 +397,7 @@
 	}}
 	onClear={clearSelection}
 >
-	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
+	<Button variant="ghost" size="sm" class="font-medium" onclick={toggleSelectAll}>
 		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
 		{selectedIds.size >= selectable ? 'Deselect all' : 'Select all'}
 	</Button>

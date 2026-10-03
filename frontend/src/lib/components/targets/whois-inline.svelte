@@ -140,8 +140,8 @@
 		<HoverCard.Content class="w-80 p-0" align="start" side="bottom">
 			<div class="px-4 pt-3.5 pb-3 border-b border-border/50">
 				<div class="flex items-center gap-2">
-					<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
-						<LookupIcon class="h-4 w-4 text-primary" />
+					<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-muted">
+						<LookupIcon class="h-4 w-4 text-muted-foreground" />
 					</div>
 					<div class="min-w-0 flex-1">
 						<p class="text-sm font-medium truncate">{whois.name || whois.query_value}</p>
@@ -157,7 +157,7 @@
 					<div class="flex items-start gap-2.5">
 						<UserRound class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 								Registrant
 							</p>
 							<p class="text-sm truncate">{whois.registrant_name}</p>
@@ -169,7 +169,7 @@
 					<div class="flex items-start gap-2.5">
 						<Building class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 								Registrar
 							</p>
 							<p class="text-sm truncate">{whois.registrar_name}</p>
@@ -181,7 +181,7 @@
 					<div class="flex items-start gap-2.5">
 						<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 								Network
 							</p>
 							<p class="text-sm font-mono">{whois.network_cidr}</p>
@@ -193,7 +193,7 @@
 					<div class="flex items-start gap-2.5">
 						<Flag class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 								Country
 							</p>
 							<p class="text-sm">{whois.country}</p>
@@ -209,7 +209,7 @@
 									<CalendarDays class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 									<div>
 										<p
-											class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
+											class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1"
 										>
 											Registered
 										</p>
@@ -226,7 +226,7 @@
 									<CalendarClock class="h-3.5 w-3.5 mt-0.5 shrink-0 {urgencyClasses}" />
 									<div>
 										<p
-											class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
+											class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1"
 										>
 											Expires
 										</p>

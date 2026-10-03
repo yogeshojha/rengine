@@ -76,7 +76,7 @@
 							/>
 						</a>
 						<ul class="flex flex-col">
-							{#each link.peers as peer (peer.host)}
+							{#each link.peers as peer (`${peer.target_id}:${peer.host}`)}
 								<li>
 									{#if onHost}
 										<button

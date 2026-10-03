@@ -30,7 +30,7 @@
 		<button
 			{...props}
 			type="button"
-			class="flex h-5 shrink-0 items-center gap-1.5"
+			class="flex h-5 shrink-0 items-center gap-1.5 hover:text-primary"
 			aria-label="Filter to {label.toLowerCase()} evidence"
 			onclick={(e) => {
 				e.stopPropagation();

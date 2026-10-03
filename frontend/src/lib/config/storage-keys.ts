@@ -54,5 +54,6 @@ export const STORAGE_KEYS = {
 	paletteRecents: 'rengine:palette:recents',
 	scansShowMedium: 'rengine:scans:showMedium',
 	scansColumns: 'rengine:scans:columns',
-	scansDensity: 'rengine:scans:density'
+	scansDensity: 'rengine:scans:density',
+	sessionExpired: 'rengine:session:expired'
 } as const;

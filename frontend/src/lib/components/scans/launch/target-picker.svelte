@@ -56,16 +56,17 @@
 			return;
 		}
 		searching = true;
+		let live = true;
 		const timer = setTimeout(async () => {
-			try {
-				suggestions = await targetsApi.searchByValue(q, projectSlug);
-			} catch {
-				suggestions = [];
-			} finally {
-				searching = false;
-			}
+			const found = await targetsApi.searchByValue(q, projectSlug).catch(() => []);
+			if (!live) return;
+			suggestions = found;
+			searching = false;
 		}, SEARCH_DEBOUNCE_MS);
-		return () => clearTimeout(timer);
+		return () => {
+			live = false;
+			clearTimeout(timer);
+		};
 	});
 
 	$effect(() => {
@@ -178,9 +179,9 @@
 					{/if}
 					{#each chips as chip (chip.key)}
 						<span
-							class="inline-flex h-6 items-center gap-1 rounded-sm bg-muted pr-0.5 pl-2 text-secondary-foreground"
+							class="inline-flex h-6 max-w-full min-w-0 items-center gap-1 rounded-sm bg-muted pr-0.5 pl-2 text-secondary-foreground"
 						>
-							<span class="font-mono text-xs">{chip.value}</span>
+							<span class="min-w-0 truncate font-mono text-xs">{chip.value}</span>
 							{#if !chip.id}
 								<span
 									class="rounded-full border border-border bg-background px-1.5 text-2xs leading-4 text-muted-foreground"
@@ -280,7 +281,7 @@
 		</Popover.Content>
 	</Popover.Root>
 	{#if error}
-		<p class="text-2xs text-destructive">{error}</p>
+		<p role="alert" class="text-2xs text-destructive">{error}</p>
 	{:else if chips.length > 1}
 		<p class="text-2xs text-muted-foreground">Each target runs as its own scan.</p>
 	{/if}

@@ -202,7 +202,7 @@
 			<span class="hidden h-5 shrink-0 items-center sm:flex">
 				<CopyButton
 					value={g.ip}
-					class="size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+					class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
 				/>
 			</span>
 		</div>
@@ -420,8 +420,8 @@
 						<Button
 							{...props}
 							variant="ghost"
-							size="icon-sm"
-							class="size-7 text-muted-foreground"
+							size="icon"
+							class="size-7"
 							aria-label="More actions for {g.ip}"
 						>
 							<Ellipsis />

@@ -85,7 +85,7 @@
 		if (!values.length) return;
 		if (await writeClipboard(values.join('\n')))
 			toast.success(`${values.length.toLocaleString()} ${option.label} copied`);
-		else toast.error('Clipboard not available.');
+		else toast.error(`${option.label.charAt(0).toUpperCase()}${option.label.slice(1)} not copied`);
 	}
 
 	function hideValues(option: HideOption) {
@@ -112,7 +112,7 @@
 			);
 			onDeleted?.(result);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : `${spec.label} not deleted.`);
+			toast.error(e instanceof Error ? e.message : `${spec.label} not deleted`);
 		} finally {
 			removing = false;
 		}
@@ -123,7 +123,7 @@
 	{#if actions}{@render actions()}{/if}
 
 	{#if copy.length === 1}
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={() => copyValues(copy[0])}>
+		<Button variant="ghost" size="sm" onclick={() => copyValues(copy[0])}>
 			<Copy class="h-3.5 w-3.5 text-muted-foreground" />
 			Copy {copy[0].label}
 		</Button>
@@ -131,7 +131,7 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+					<Button {...props} variant="ghost" size="sm">
 						<Copy class="h-3.5 w-3.5 text-muted-foreground" />
 						Copy
 					</Button>
@@ -148,7 +148,7 @@
 	{/if}
 
 	{#if onHide && hide.length === 1}
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={() => hideValues(hide[0])}>
+		<Button variant="ghost" size="sm" onclick={() => hideValues(hide[0])}>
 			<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
 			Hide all {hide[0].label}
 		</Button>
@@ -156,7 +156,7 @@
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
-					<Button {...props} variant="ghost" size="sm" class="gap-2 font-medium">
+					<Button {...props} variant="ghost" size="sm">
 						<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
 						Hide
 					</Button>
@@ -184,7 +184,7 @@
 	<Button
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
+		class="text-destructive hover:bg-destructive/10 hover:text-destructive"
 		onclick={openConfirm}
 	>
 		<Trash2 class="h-3.5 w-3.5" />

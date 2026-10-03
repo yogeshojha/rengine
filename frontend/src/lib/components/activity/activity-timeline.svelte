@@ -2,8 +2,9 @@
 	import Activity from '@lucide/svelte/icons/activity';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import ShieldX from '@lucide/svelte/icons/shield-x';
-	import PlugZap from '@lucide/svelte/icons/plug-zap';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
 	import * as Empty from '$lib/components/ui/empty/index.js';
 	import ActivityTimelineItem from './activity-timeline-item.svelte';
 	import ActivityTargetGroup from './activity-target-group.svelte';
@@ -24,6 +25,7 @@
 		isLoading?: boolean;
 		isEmpty?: boolean;
 		onRescan?: (targetId: string) => void;
+		onRetry?: () => void;
 	}
 
 	let {
@@ -35,12 +37,13 @@
 		tick = 0,
 		isLoading = false,
 		isEmpty = false,
-		onRescan
+		onRescan,
+		onRetry
 	}: Props = $props();
 
 	let empty = $derived.by(() => {
 		if (activityFeed.loadError)
-			return { icon: PlugZap, title: 'Activity not loaded', sub: activityFeed.loadError };
+			return { icon: TriangleAlert, title: 'Activity not loaded', sub: activityFeed.loadError };
 		if (activityFeed.search.trim())
 			return {
 				icon: SearchX,
@@ -84,6 +87,11 @@
 				>
 			{/if}
 		</Empty.Header>
+		{#if activityFeed.loadError && onRetry}
+			<Empty.Content class="mt-3">
+				<Button size="sm" variant="outline" onclick={() => onRetry()}>Retry</Button>
+			</Empty.Content>
+		{/if}
 	</Empty.Root>
 {:else if grouping === 'target'}
 	{#each targetGroups as group (group.key)}
@@ -98,7 +106,7 @@
 				: ''}"
 		>
 			<div class="h-px flex-1 bg-border/40"></div>
-			<span class="px-1 text-2xs font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
+			<span class="px-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
 				{group.label}
 			</span>
 			<div class="h-px flex-1 bg-border/40"></div>

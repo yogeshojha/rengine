@@ -4,6 +4,7 @@
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -29,6 +30,7 @@
 		checked?: boolean;
 		onCheck?: (id: string) => void;
 		onChanged?: () => void;
+		onDirty?: (dirty: boolean) => void;
 		class?: string;
 	}
 
@@ -38,11 +40,13 @@
 		checked = false,
 		onCheck,
 		onChanged,
+		onDirty,
 		class: className
 	}: Props = $props();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let editing = $state(false);
+	let editor = $state<ReturnType<typeof NoteComposer> | null>(null);
 	let busy = $state(false);
 	let confirmDelete = $state(false);
 	let resolved = $derived(note.status === 'resolved');
@@ -51,6 +55,12 @@
 	let bodyEl = $state<HTMLParagraphElement | null>(null);
 	let expanded = $state(false);
 	let clamped = $state(false);
+
+	$effect(() => {
+		onDirty?.(editing && (editor?.dirty() ?? false));
+	});
+
+	onDestroy(() => onDirty?.(false));
 
 	$effect(() => {
 		void note.body;
@@ -75,7 +85,7 @@
 			await notes.update(projectId, note.id, { status: resolved ? 'open' : 'resolved' });
 			onChanged?.();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Note not updated.');
+			toast.error(e instanceof Error ? e.message : 'Note not updated');
 		} finally {
 			busy = false;
 		}
@@ -89,7 +99,7 @@
 			confirmDelete = false;
 			onChanged?.();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Note not deleted.');
+			toast.error(e instanceof Error ? e.message : 'Note not deleted');
 		} finally {
 			busy = false;
 		}
@@ -109,6 +119,7 @@
 	<div class="flex min-w-0 flex-1 flex-col gap-1">
 		{#if editing}
 			<NoteComposer
+				bind:this={editor}
 				anchor={{
 					targetId: note.target_id,
 					scanId: note.scan_id,

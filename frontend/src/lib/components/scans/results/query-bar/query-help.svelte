@@ -74,7 +74,7 @@
 </script>
 
 {#snippet label(text: string)}
-	<h3 class="text-2xs font-medium tracking-[0.08em] text-muted-foreground uppercase">{text}</h3>
+	<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">{text}</h3>
 {/snippet}
 
 {#snippet key(text: string)}
@@ -83,7 +83,7 @@
 
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
-		<Sheet.Header class="gap-1 border-b p-5 pb-4">
+		<Sheet.Header class="gap-1 border-b px-5 py-4">
 			<Sheet.Title>Search syntax</Sheet.Title>
 			<Sheet.Description>
 				Free text or field:value terms, combined with and, or and not.
@@ -116,7 +116,7 @@
 		</Sheet.Header>
 
 		<ScrollArea class="min-h-0 flex-1">
-			<div class="flex flex-col gap-7 p-5">
+			<div class="flex flex-col gap-7 px-5 py-4">
 				{#if !needle}
 					{#if sample}
 						<section class="rounded-lg border bg-muted/30 p-4">
@@ -184,6 +184,7 @@
 						icon={SearchX}
 						title="No fields match"
 						description="Shorten the filter."
+						compact
 						class="border-0 bg-transparent"
 					/>
 				{/if}

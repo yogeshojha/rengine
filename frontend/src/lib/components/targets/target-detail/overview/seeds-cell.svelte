@@ -11,7 +11,11 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { targetsApi } from '$lib/api/targets';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
+	import { plural } from '$lib/utilities/strings';
 	import type { TargetSeed, TargetSeedRejection } from '$lib/types/target';
 
 	interface Props {
@@ -25,8 +29,11 @@
 
 	let seeds = $state<TargetSeed[]>([]);
 	let loading = $state(true);
+	let failed = $state(false);
 	let adding = $state(false);
-	let removing = $state<string | null>(null);
+	let removing = $state(false);
+	let removeOpen = $state(false);
+	let pendingRemove = $state<TargetSeed | null>(null);
 	let draft = $state('');
 	let rejected = $state<TargetSeedRejection[]>([]);
 	let loadedFor = $state<string | null>(null);
@@ -39,6 +46,15 @@
 			.filter(Boolean)
 	);
 
+	const guard = new DiscardGuard(
+		() => draft.trim() !== '',
+		() => {
+			open = false;
+			draft = '';
+			rejected = [];
+		}
+	);
+
 	$effect(() => {
 		if (loadedFor === targetId) return;
 		loadedFor = targetId;
@@ -49,8 +65,9 @@
 		loading = true;
 		try {
 			seeds = await targetsApi.listSeeds(targetId);
+			failed = false;
 		} catch {
-			toast.error('Seeds not loaded. Check that the api service is running.');
+			failed = true;
 		} finally {
 			loading = false;
 		}
@@ -64,24 +81,27 @@
 			rejected = result.rejected;
 			draft = '';
 			await load();
-			if (result.added > 0) toast.success(`${result.added} stored`);
+			if (result.added > 0) toast.success(`${plural(result.added, 'seed asset')} stored`);
 			if (!result.rejected.length) open = false;
 		} catch {
-			toast.error('Seeds not stored.');
+			toast.error('Seed assets not stored');
 		} finally {
 			adding = false;
 		}
 	}
 
-	async function remove(seed: TargetSeed) {
-		removing = seed.id;
+	async function remove() {
+		const seed = pendingRemove;
+		if (!seed) return;
+		removing = true;
 		try {
 			await targetsApi.deleteSeed(targetId, seed.id);
 			seeds = seeds.filter((s) => s.id !== seed.id);
+			removeOpen = false;
 		} catch {
-			toast.error('Seed not removed.');
+			toast.error('Seed asset not removed');
 		} finally {
-			removing = null;
+			removing = false;
 		}
 	}
 </script>
@@ -94,12 +114,7 @@
 	class={className}
 >
 	{#snippet tools()}
-		<Button
-			variant="outline"
-			size="sm"
-			class="h-7 gap-1 px-2 text-xs"
-			onclick={() => (open = true)}
-		>
+		<Button variant="outline" size="sm" class="h-7 px-2 text-xs" onclick={() => (open = true)}>
 			<Plus class="size-3.5" />
 			Add
 		</Button>
@@ -108,7 +123,7 @@
 		<ScrollArea class={seeds.length > VISIBLE ? 'h-48' : ''}>
 			<ul class="flex flex-col">
 				{#each seeds as seed (seed.id)}
-					<li class="flex items-center gap-2 border-t py-1 first:border-t-0">
+					<li class="flex items-center gap-2 border-t py-0.5 first:border-t-0">
 						<span class="min-w-0 flex-1 font-mono text-xs break-all">{seed.value}</span>
 						{#if seed.kind !== 'host'}
 							<Badge variant="outline" class="font-normal">{seed.kind}</Badge>
@@ -116,9 +131,11 @@
 						<Button
 							variant="ghost"
 							size="icon"
-							class="size-6 shrink-0"
-							disabled={removing === seed.id}
-							onclick={() => remove(seed)}
+							class="size-7 shrink-0"
+							onclick={() => {
+								pendingRemove = seed;
+								removeOpen = true;
+							}}
 							aria-label="Remove {seed.value}"
 						>
 							<X class="size-3.5" />
@@ -129,6 +146,11 @@
 		</ScrollArea>
 	{:else if loading}
 		<Skeleton class="h-4 w-2/3" />
+	{:else if failed}
+		<div class="flex flex-wrap items-center gap-3">
+			<span class="text-sm text-muted-foreground">Seed assets not loaded</span>
+			<Button variant="outline" size="sm" onclick={() => load()}>Retry</Button>
+		</div>
 	{:else}
 		<span class="text-sm text-muted-foreground">No seed assets</span>
 	{/if}
@@ -137,17 +159,18 @@
 	{/snippet}
 </Cell>
 
-<Dialog.Root bind:open>
-	<Dialog.Content class="flex flex-col gap-0 p-0 sm:max-w-[480px]">
-		<Dialog.Header class="p-6 pb-4">
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : !adding && guard.close())}>
+	<Dialog.Content class="sm:max-w-lg">
+		<Dialog.Header>
 			<Dialog.Title>Add seed assets</Dialog.Title>
 			<Dialog.Description>One host name, address or URL per line.</Dialog.Description>
 		</Dialog.Header>
-		<div class="flex flex-col gap-3 px-6 pb-6">
+		<div class="flex flex-col gap-3">
 			<Textarea
 				rows={6}
 				placeholder="www.example.com"
 				bind:value={draft}
+				aria-label="Seed assets"
 				class="font-mono text-xs"
 			/>
 			{#if rejected.length > 0}
@@ -160,13 +183,31 @@
 					{/each}
 				</div>
 			{/if}
-			<div class="flex justify-end gap-2">
-				<Button variant="outline" size="sm" onclick={() => (open = false)}>Cancel</Button>
-				<LoadingButton size="sm" loading={adding} disabled={!lines.length} onclick={add}>
-					<Plus class="size-3.5" />
-					Store
-				</LoadingButton>
-			</div>
 		</div>
+		<Dialog.Footer>
+			<Button variant="outline" disabled={adding} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton loading={adding} loadingLabel="Storing" disabled={!lines.length} onclick={add}>
+				<Plus />
+				Store
+			</LoadingButton>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>
+
+<ConfirmDialog
+	open={removeOpen}
+	title="Remove seed asset"
+	description="Seed asset {pendingRemove?.value ?? ''} is removed."
+	confirmLabel="Remove"
+	loading={removing}
+	loadingLabel="Removing"
+	destructive
+	onOpenChange={(next) => (removeOpen = next)}
+	onConfirm={remove}
+/>

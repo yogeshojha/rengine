@@ -13,6 +13,7 @@
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import Zap from '@lucide/svelte/icons/zap';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { tripwiresApi } from '$lib/api/tripwires';
 	import { ROUTES } from '$lib/config/routes';
 	import {
@@ -56,6 +57,7 @@
 	let total = $state(0);
 	let counts = $state<TripwireRunCounts | null>(null);
 	let loading = $state(false);
+	let failed = $state(false);
 	let expanded = $state<string | null>(null);
 	let loadedFor = $state<string | null>(null);
 	let pinned = $state<TripwireRun | null>(null);
@@ -115,6 +117,7 @@
 
 	async function load(id: string) {
 		loading = true;
+		failed = false;
 		try {
 			const res = await tripwiresApi.runs(id, projectId, {
 				status: tab === 'all' ? null : tab,
@@ -126,6 +129,7 @@
 		} catch {
 			runs = [];
 			total = 0;
+			failed = true;
 		} finally {
 			loading = false;
 		}
@@ -218,7 +222,17 @@
 
 			<ScrollArea class="min-h-0 flex-1">
 				{#if loading && shown.length === 0}
-					<RowSkeleton rows={5} class="px-5" />
+					<RowSkeleton rows={5} padding="px-5" />
+				{:else if failed && shown.length === 0}
+					<EmptyState
+						icon={TriangleAlert}
+						title="Checks not loaded"
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button size="sm" variant="outline" onclick={() => void load(tripwire.id)}>
+							Retry
+						</Button>
+					</EmptyState>
 				{:else if shown.length === 0}
 					<EmptyState
 						icon={Zap}
@@ -230,10 +244,10 @@
 						{#each shown as run (run.id)}
 							{@const open = expanded === run.id}
 							{@const fired = run.status === CheckStatus.Fired}
-							<div class="px-5 py-3 {focusRunId === run.id ? 'bg-primary/5' : ''}">
+							<div class={focusRunId === run.id ? 'bg-primary/5' : ''}>
 								<button
 									type="button"
-									class="grid w-full grid-cols-[84px_minmax(0,1fr)_auto_auto] items-start gap-3 text-left"
+									class="grid w-full grid-cols-[84px_minmax(0,1fr)_auto_auto] items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-muted/40"
 									aria-expanded={open}
 									onclick={() => (expanded = open ? null : run.id)}
 								>
@@ -270,7 +284,7 @@
 									/>
 								</button>
 								{#if open}
-									<div class="mt-3 flex flex-col gap-3 pl-[96px]">
+									<div class="flex flex-col gap-3 pr-5 pb-3 pl-[116px]">
 										{#if run.rows.length > 0}
 											<div class="flex flex-col divide-y divide-border/60 rounded-md border">
 												{#each run.rows.slice(0, 50) as row (row.key)}
@@ -296,7 +310,9 @@
 											<div class="flex flex-col gap-1.5">
 												{#each run.outcomes as outcome, i (i)}
 													<div class="flex items-center gap-2 text-xs">
-														<span class="size-2 shrink-0 rounded-full {outcomeTone(outcome)}"
+														<span
+															class="size-2 shrink-0 rounded-full {outcomeTone(outcome)}"
+															aria-hidden="true"
 														></span>
 														<span class="min-w-0 truncate">{outcome.detail}</span>
 														{#if outcome.scan_id}
@@ -328,16 +344,14 @@
 				{/if}
 			</ScrollArea>
 			{#if total > PAGE_SIZE}
-				<div class="border-t px-3">
-					<ResultsPagination
-						{total}
-						{page}
-						pageSize={PAGE_SIZE}
-						noun="check"
-						plural="checks"
-						onPage={setPage}
-					/>
-				</div>
+				<ResultsPagination
+					{total}
+					page={page - 1}
+					pageSize={PAGE_SIZE}
+					noun="check"
+					plural="checks"
+					onPage={(next) => setPage(next + 1)}
+				/>
 			{/if}
 		{/if}
 	</Sheet.Content>

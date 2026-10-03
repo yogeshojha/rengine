@@ -59,7 +59,7 @@
 	const QUICK = [
 		{ value: 'new', label: 'New' },
 		{ value: 'sensitive', label: 'Sensitive' },
-		{ value: 'hosted', label: 'Has hosts' },
+		{ value: 'hosted', label: 'Has web assets' },
 		{ value: 'nocdn', label: 'No CDN' },
 		{ value: 'v6', label: 'IPv6' }
 	];

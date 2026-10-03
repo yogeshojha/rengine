@@ -7,14 +7,16 @@
 		value: string;
 		onValueChange: (v: string) => void;
 		disabled?: boolean;
+		id?: string;
 	}
 
-	let { value, onValueChange, disabled = false }: Props = $props();
+	let { value, onValueChange, disabled = false, id }: Props = $props();
 </script>
 
 <PinInput.Root
 	{value}
 	{disabled}
+	inputId={id}
 	maxlength={TOTP_DIGITS}
 	inputmode="numeric"
 	onValueChange={(v) => onValueChange(v.replace(/\D/g, '').slice(0, TOTP_DIGITS))}

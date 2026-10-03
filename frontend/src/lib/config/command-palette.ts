@@ -23,6 +23,7 @@ import Settings2 from '@lucide/svelte/icons/settings-2';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import StickyNote from '@lucide/svelte/icons/sticky-note';
 import Library from '@lucide/svelte/icons/library';
+import MessageSquare from '@lucide/svelte/icons/message-square';
 import SquareKanban from '@lucide/svelte/icons/square-kanban';
 import Radar from '@lucide/svelte/icons/radar';
 import Target from '@lucide/svelte/icons/target';
@@ -186,7 +187,7 @@ function createCommands(ctx: PaletteContext): PaletteCommand[] {
 		},
 		{
 			id: 'create:engine',
-			label: 'New scan engine',
+			label: 'New engine',
 			icon: Cog,
 			group: 'create',
 			keywords: 'configuration stages',
@@ -194,7 +195,7 @@ function createCommands(ctx: PaletteContext): PaletteCommand[] {
 		},
 		{
 			id: 'create:context',
-			label: 'New scan context',
+			label: 'New context',
 			icon: Layers,
 			group: 'create',
 			keywords: 'auth scope rate proxy',
@@ -329,6 +330,13 @@ function destinations(isAdmin: boolean): Destination[] {
 			href: ROUTES.issueTrackers(),
 			icon: SquareKanban,
 			keywords: 'jira github gitlab tickets issues tracker'
+		},
+		{
+			id: 'page:remote-control',
+			label: routeLabels['remote-control'],
+			href: ROUTES.remoteControl(),
+			icon: MessageSquare,
+			keywords: 'telegram chat bot pairing'
 		},
 		{
 			id: 'page:agents',

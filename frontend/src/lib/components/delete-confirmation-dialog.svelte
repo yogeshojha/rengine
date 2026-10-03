@@ -6,6 +6,7 @@
 		title?: string;
 		description?: string;
 		confirmLabel?: string;
+		loadingLabel?: string;
 		isDeleting?: boolean;
 		onOpenChange: (open: boolean) => void;
 		onConfirm: () => void;
@@ -16,6 +17,7 @@
 		title = 'Delete item',
 		description = 'The item and its data are removed.',
 		confirmLabel = 'Delete',
+		loadingLabel = 'Deleting',
 		isDeleting = false,
 		onOpenChange,
 		onConfirm
@@ -29,7 +31,7 @@
 	{confirmLabel}
 	destructive
 	loading={isDeleting}
-	loadingLabel="Deleting"
+	{loadingLabel}
 	{onOpenChange}
 	{onConfirm}
 />

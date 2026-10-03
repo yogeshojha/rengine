@@ -89,14 +89,14 @@
 	const LENSES: { value: EndpointView; label: string; hint: string; icon: IconComponent }[] = [
 		{
 			value: 'hosts',
-			label: 'Hosts',
-			hint: 'Every host, ranked',
+			label: 'Web assets',
+			hint: 'Every web asset, ranked',
 			icon: Network
 		},
 		{
 			value: 'merged',
-			label: 'Across hosts',
-			hint: 'Paths merged across hosts',
+			label: 'Across web assets',
+			hint: 'Paths merged across web assets',
 			icon: Layers
 		},
 		{ value: 'list', label: 'List', hint: 'One flat list', icon: Rows3 }
@@ -111,7 +111,9 @@
 			hasProxy ? { value: 'browsed', label: 'Browsed' } : null,
 			hasProxy ? { value: 'unbrowsed', label: 'Not browsed' } : null,
 			{ value: 'static', label: 'Hide static' },
-			hostsAtRest && onHideRootOnly ? { value: 'rootonly', label: 'Hide root-only' } : null
+			hostsAtRest && onHideRootOnly
+				? { value: 'rootonly', label: 'Hide root-only web assets' }
+				: null
 		].filter((q): q is { value: string; label: string } => q !== null)
 	);
 	let quick = $derived(
@@ -150,8 +152,7 @@
 						<Button
 							{...props}
 							variant="outline"
-							size="sm"
-							class="h-9 gap-2 {query.source ? 'border-primary/50 bg-primary/5' : ''}"
+							class={query.source ? 'border-primary/50 bg-primary/5' : ''}
 						>
 							Found by
 						</Button>
@@ -181,8 +182,7 @@
 						<Button
 							{...props}
 							variant="outline"
-							size="sm"
-							class="h-9 gap-2 {query.interest ? 'border-primary/50 bg-primary/5' : ''}"
+							class={query.interest ? 'border-primary/50 bg-primary/5' : ''}
 						>
 							Interest
 						</Button>
@@ -212,8 +212,7 @@
 						<Button
 							{...props}
 							variant="outline"
-							size="sm"
-							class="h-9 gap-2 {query.statusClass ? 'border-primary/50 bg-primary/5' : ''}"
+							class={query.statusClass ? 'border-primary/50 bg-primary/5' : ''}
 						>
 							Status
 						</Button>
@@ -281,8 +280,7 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<ToggleGroup.Root
 			type="single"
-			value={view}
-			onValueChange={(v) => v && onView(v as EndpointView)}
+			bind:value={() => view, (v) => v && onView(v as EndpointView)}
 			variant="outline"
 			aria-label="View"
 		>
@@ -307,11 +305,10 @@
 						{...props}
 						variant="outline"
 						size="icon"
-						class="h-9 w-9"
 						aria-label="Collapse all"
 						onclick={onCollapseAll}
 					>
-						<ChevronsDownUp class="h-4 w-4" />
+						<ChevronsDownUp />
 					</Button>
 				{/snippet}
 			</Hint>

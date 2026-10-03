@@ -10,19 +10,21 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="flex max-h-[90vh] flex-col gap-4 sm:max-w-2xl"
+		class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
 		onOpenAutoFocus={(e) => e.preventDefault()}
 	>
-		<Dialog.Header>
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Customize sidebar</Dialog.Title>
 			<Dialog.Description>Applies to this account in this browser</Dialog.Description>
 		</Dialog.Header>
-		<ScrollArea class="-mx-2 min-h-0 flex-1 px-2">
-			<SidebarItems />
+		<ScrollArea class="min-h-0 flex-1">
+			<div class="px-6 py-5">
+				<SidebarItems />
+			</div>
 		</ScrollArea>
-		<Dialog.Footer class="border-t pt-4">
+		<Dialog.Footer class="border-t px-6 py-4">
 			{#if sidebarLayout.customized}
-				<Button variant="ghost" onclick={() => sidebarLayout.reset()}>Show all</Button>
+				<Button variant="outline" onclick={() => sidebarLayout.reset()}>Show all</Button>
 			{/if}
 			<Button onclick={() => (open = false)}>Done</Button>
 		</Dialog.Footer>

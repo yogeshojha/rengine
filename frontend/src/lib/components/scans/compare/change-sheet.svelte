@@ -2,7 +2,6 @@
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import Copy from '@lucide/svelte/icons/copy';
 	import ImageOff from '@lucide/svelte/icons/image-off';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
@@ -10,6 +9,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import Hint from '$lib/components/hint.svelte';
+	import CopyButton from '$lib/components/copy-button.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import VerbRail from './verb-rail.svelte';
 	import { SIGNAL_TONE_CLASS, VERB, signalSpec } from '$lib/config/compare';
@@ -18,7 +18,6 @@
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { durationText } from '$lib/utilities/scan-status';
 	import { formatDateTime } from '$lib/utilities/dates';
-	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { cn } from '$lib/utils';
 	import { CHANGE_VERB, type ChangeRow, type RunSide } from '$lib/types/compare';
 
@@ -50,7 +49,7 @@
 
 {#snippet head(label: string, side: RunSide, absent: boolean)}
 	<div class="flex min-w-0 flex-col gap-0.5">
-		<span class="text-2xs tracking-wider text-muted-foreground uppercase">{label}</span>
+		<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
 		<a
 			href={ROUTES.scanTab(side.scan_id, tabTarget(row?.dimension ?? ''))}
 			class="inline-flex items-center gap-1 truncate text-xs font-medium hover:text-primary"
@@ -75,7 +74,7 @@
 <Sheet.Root {open} onOpenChange={(v) => onOpenChange(v)}>
 	<Sheet.Content
 		side="right"
-		class="flex w-full flex-col gap-0 p-0 sm:max-w-[42rem]"
+		class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl"
 		aria-describedby={undefined}
 	>
 		{#if row && signal && verb}
@@ -108,20 +107,7 @@
 						<SeverityMark severity={row.severity} class="mt-0.5 shrink-0" />
 					{/if}
 					<span class="min-w-0">{row.title}</span>
-					<Hint text="Copy">
-						{#snippet child(props)}
-							<Button
-								{...props}
-								aria-label="Copy"
-								variant="ghost"
-								size="icon-sm"
-								class="size-6 shrink-0"
-								onclick={() => writeClipboard(row?.title ?? '')}
-							>
-								<Copy class="size-3" />
-							</Button>
-						{/snippet}
-					</Hint>
+					<span class="flex h-5 shrink-0 items-center"><CopyButton value={row.title} /></span>
 				</Sheet.Title>
 
 				{#if row.subtitle}
@@ -140,7 +126,6 @@
 									aria-label="Previous change"
 									variant="outline"
 									size="icon-sm"
-									class="size-7"
 									disabled={index <= 0}
 									onclick={() => onStep(-1)}
 								>
@@ -155,7 +140,6 @@
 									aria-label="Next change"
 									variant="outline"
 									size="icon-sm"
-									class="size-7"
 									disabled={index >= total - 1}
 									onclick={() => onStep(1)}
 								>
@@ -201,10 +185,12 @@
 						<dl
 							class="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_minmax(0,1fr)] items-baseline"
 						>
-							<div class="col-span-3 grid grid-cols-subgrid border-b bg-muted/30 px-5 py-1.5">
+							<div
+								class="col-span-3 grid grid-cols-subgrid gap-x-4 border-b bg-muted/20 px-5 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+							>
 								<span></span>
-								<span class="text-2xs tracking-wider text-muted-foreground uppercase">Was</span>
-								<span class="text-2xs tracking-wider text-muted-foreground uppercase">Now</span>
+								<span>Was</span>
+								<span>Now</span>
 							</div>
 							{#each row.fields as f (f.field)}
 								<div
@@ -215,7 +201,7 @@
 										{f.before ?? '—'}
 									</dd>
 									<dd class="m-0 font-mono text-xs break-all">
-										<span class="rounded bg-primary/10 px-1 font-medium">{f.after ?? '—'}</span>
+										<span class="rounded bg-muted px-1 font-medium">{f.after ?? '—'}</span>
 									</dd>
 								</div>
 							{/each}
@@ -239,7 +225,6 @@
 					variant="outline"
 					size="sm"
 					href={ROUTES.scanTab(row.scan_id, tabTarget(row.dimension))}
-					class="gap-1.5"
 				>
 					Open in results <ArrowUpRight class="size-3.5" />
 				</Button>

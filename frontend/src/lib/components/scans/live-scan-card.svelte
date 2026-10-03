@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
-	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import Hint from '$lib/components/hint.svelte';
 	import Clock from '@lucide/svelte/icons/clock';
 	import Ban from '@lucide/svelte/icons/ban';
@@ -58,7 +57,7 @@
 			</span>
 			{#if elapsed}
 				<span
-					class="flex shrink-0 items-center gap-1 font-mono text-2xs text-muted-foreground tabular-nums transition-opacity group-hover/card:opacity-0"
+					class="flex shrink-0 items-center gap-1 font-mono text-2xs text-muted-foreground tabular-nums transition-opacity group-hover/card:opacity-0 group-has-[button:focus-visible]/card:opacity-0"
 				>
 					{elapsed}
 					{#if eta}
@@ -127,22 +126,19 @@
 	</a>
 
 	{#if onCancel}
-		<Tooltip.Root>
-			<Tooltip.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="icon-sm"
-						class="absolute top-1.5 right-1.5 size-6 text-muted-foreground opacity-0 group-hover/card:opacity-100 hover:text-destructive focus-visible:opacity-100"
-						aria-label="Cancel scan"
-						onclick={() => onCancel(scan)}
-					>
-						<Ban class="size-3" />
-					</Button>
-				{/snippet}
-			</Tooltip.Trigger>
-			<Tooltip.Content side="left">Cancel scan</Tooltip.Content>
-		</Tooltip.Root>
+		<Hint text="Cancel scan" side="left">
+			{#snippet child(props)}
+				<Button
+					{...props}
+					variant="ghost"
+					size="icon"
+					class="absolute top-1 right-1 size-7 text-muted-foreground opacity-0 group-hover/card:opacity-100 hover:text-destructive focus-visible:opacity-100"
+					aria-label="Cancel scan"
+					onclick={() => onCancel(scan)}
+				>
+					<Ban class="size-3" />
+				</Button>
+			{/snippet}
+		</Hint>
 	{/if}
 </div>

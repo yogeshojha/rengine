@@ -20,9 +20,8 @@
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="ghost" size="icon">
+						<Button {...props} variant="ghost" size="icon" aria-label="Create">
 							<Plus class="h-4 w-4" />
-							<span class="sr-only">Create</span>
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
@@ -30,24 +29,24 @@
 					<DropdownMenu.Label>Create</DropdownMenu.Label>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={onAddTarget}>
-						<Crosshair class="mr-2 h-4 w-4" />
+						<Crosshair class="h-4 w-4" />
 						Add target
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Discover</DropdownMenu.Label>
 					<DropdownMenu.Item onclick={() => toolbox.open({ value: '', tool: ORG_DOMAINS_TOOL })}>
-						<OrgIcon class="mr-2 h-4 w-4" />
+						<OrgIcon class="h-4 w-4" />
 						Domains by organization
 					</DropdownMenu.Item>
 					<DropdownMenu.Separator />
 					<DropdownMenu.Label class="text-xs text-muted-foreground">Automation</DropdownMenu.Label>
 					<DropdownMenu.Item onclick={() => goto(ROUTES.newEngine())}>
-						<Cog class="mr-2 h-4 w-4" />
-						New scan engine
+						<Cog class="h-4 w-4" />
+						New engine
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => goto(ROUTES.newContext())}>
-						<Layers class="mr-2 h-4 w-4" />
-						New scan context
+						<Layers class="h-4 w-4" />
+						New context
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

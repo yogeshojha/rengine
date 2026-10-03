@@ -293,7 +293,7 @@ export const INTEREST_HELP: Record<string, string> = {
 	rce: 'Names a command or process the server runs.',
 	ssti: 'Names a template the server renders.',
 	upload: 'Carries a file name or upload target.',
-	debug: 'Switches on diagnostic behaviour.',
+	debug: 'Switches on diagnostic behavior.',
 	vcs: 'A version control directory served over HTTP.',
 	secrets: 'A file that conventionally holds credentials or keys.',
 	backup: 'A backup or editor file in the web root.',

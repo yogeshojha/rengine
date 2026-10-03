@@ -3,6 +3,7 @@ import { TOOLBOX_POLL_MS } from '$lib/config/toolbox';
 import type { ToolboxCatalog, ToolboxLaunch, ToolRun, ToolSpec } from '$lib/types/toolbox';
 
 const PENDING = new Set(['queued', 'running']);
+const POLL_RETRIES = 5;
 
 function createToolboxStore() {
 	let catalog = $state<ToolboxCatalog | null>(null);
@@ -14,28 +15,37 @@ function createToolboxStore() {
 	let dialogOpen = $state(false);
 	let launch = $state<ToolboxLaunch | null>(null);
 	let timer: ReturnType<typeof setTimeout> | null = null;
+	let chain = 0;
 
 	function upsert(run: ToolRun) {
 		runs = [run, ...runs.filter((r) => r.id !== run.id)];
 	}
 
 	function stopPolling() {
+		chain++;
 		if (timer) clearTimeout(timer);
 		timer = null;
 	}
 
-	function poll(id: string) {
+	function poll(id: string, misses = 0) {
 		stopPolling();
-		timer = setTimeout(async () => {
-			try {
-				const next = await toolboxApi.get(id);
-				upsert(next);
-				if (PENDING.has(next.status)) poll(id);
-				else busy = false;
-			} catch {
+		const mine = chain;
+		timer = setTimeout(
+			async () => {
+				try {
+					const next = await toolboxApi.get(id);
+					if (mine !== chain) return;
+					upsert(next);
+					if (PENDING.has(next.status)) return poll(id);
+				} catch {
+					if (mine !== chain) return;
+					if (misses < POLL_RETRIES) return poll(id, misses + 1);
+				}
+				timer = null;
 				busy = false;
-			}
-		}, TOOLBOX_POLL_MS);
+			},
+			TOOLBOX_POLL_MS * (misses + 1)
+		);
 	}
 
 	return {
@@ -88,7 +98,11 @@ function createToolboxStore() {
 		},
 
 		async load(force = false) {
-			if (loadingCatalog || (catalog && !force)) return;
+			if (catalog && !force) {
+				void this.loadHistory();
+				return;
+			}
+			if (loadingCatalog) return;
 			loadingCatalog = true;
 			catalogError = null;
 			try {
@@ -105,6 +119,11 @@ function createToolboxStore() {
 			try {
 				runs = await toolboxApi.runs();
 				historyError = null;
+				const live = runs.find((r) => PENDING.has(r.status));
+				if (live && !timer) {
+					busy = true;
+					poll(live.id);
+				}
 			} catch (e) {
 				historyError = e instanceof Error ? e.message : 'Recent runs not loaded';
 			}
@@ -126,10 +145,10 @@ function createToolboxStore() {
 		},
 
 		async clear() {
+			await toolboxApi.clear();
 			stopPolling();
 			busy = false;
 			runs = [];
-			await toolboxApi.clear();
 		},
 
 		reset() {

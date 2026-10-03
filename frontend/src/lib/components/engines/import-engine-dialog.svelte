@@ -5,6 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Alert from '$lib/components/ui/alert';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
 	import Upload from '@lucide/svelte/icons/upload';
 	import YamlEditor from '$lib/components/yaml-editor.svelte';
@@ -12,6 +13,7 @@
 	import FootprintMeter from './footprint-meter.svelte';
 	import { parse, validate, draftFromDoc } from '$lib/utilities/engine-yaml';
 	import { summarize } from '$lib/utilities/engine-summary';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { INTENSITY_LABELS, type EngineCatalog } from '$lib/types/scan-engine';
 
 	interface Props {
@@ -43,6 +45,10 @@ stages:
 	const parsed = $derived(doc && !doc.errors.length ? draftFromDoc(doc) : null);
 	const summary = $derived(parsed ? summarize(parsed.stages, catalog, parsed.intensity) : null);
 	const canImport = $derived(Boolean(parsed) && errors.length === 0 && !isImporting);
+	const guard = new DiscardGuard(
+		() => source.trim() !== '',
+		() => onOpenChange(false)
+	);
 
 	async function handleDrop(event: DragEvent) {
 		event.preventDefault();
@@ -50,9 +56,14 @@ stages:
 		const file = event.dataTransfer?.files?.[0];
 		if (file) source = await file.text();
 	}
+
+	function requestOpen(next: boolean) {
+		if (next) onOpenChange(true);
+		else if (!isImporting) guard.close();
+	}
 </script>
 
-<Dialog.Root {open} {onOpenChange}>
+<Dialog.Root bind:open={() => open, requestOpen}>
 	<Dialog.Content class="sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Import engine</Dialog.Title>
@@ -131,13 +142,24 @@ stages:
 		{/if}
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<LoadingButton loading={isImporting} disabled={!canImport} onclick={() => onImport(source)}>
+			<Button variant="outline" disabled={isImporting} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton
+				loading={isImporting}
+				loadingLabel="Importing"
+				disabled={!canImport}
+				onclick={() => onImport(source)}
+			>
 				Import engine
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>
 
 <style>
 	.drop {

@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import SeverityBar from '$lib/components/scans/results/vulnerabilities/severity-bar.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { epssLabel } from '$lib/config/threat-intel';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { ACTIONABLE_SEVERITIES, SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
 	import { formatShortDate } from '$lib/utilities/dates';
@@ -148,10 +149,10 @@
 								</span>
 							</span>
 							{#if epss(f) !== null}
-								<Hint text="EPSS {epss(f)}%">
+								<Hint text="EPSS {epssLabel(f.epss_score)}">
 									{#snippet child(props)}
 										<span {...props} class="flex h-5 items-center gap-1.5 text-2xs tabular-nums">
-											{epss(f)}%
+											{epssLabel(f.epss_score)}
 											<span class="h-1 w-10 overflow-hidden rounded-full bg-muted">
 												<span class="block h-full bg-series" style="width:{epss(f)}%"></span>
 											</span>
@@ -165,7 +166,7 @@
 			</ul>
 		{/if}
 	{:else}
-		<span class="text-sm text-muted-foreground">No finding</span>
+		<span class="text-sm text-muted-foreground">No findings</span>
 	{/if}
 	{#snippet footer()}
 		{#if vulns}

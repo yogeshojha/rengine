@@ -23,7 +23,7 @@
 </script>
 
 <div
-	class="flex items-start gap-3 border-b px-4 py-2.5 last:border-b-0"
+	class="flex items-start gap-3 border-b px-5 py-2.5 last:border-b-0"
 	class:opacity-60={outOfScope}
 >
 	<span class="flex h-5 w-4 shrink-0 items-center justify-center">

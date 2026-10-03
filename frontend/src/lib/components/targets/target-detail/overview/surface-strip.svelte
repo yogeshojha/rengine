@@ -175,14 +175,14 @@
 								? 'col-span-2 @2xl/strip:col-span-1'
 								: ''}"
 						>
-							<span class="text-2xs font-medium tracking-wider text-muted-foreground uppercase">
+							<span class="text-2xs tracking-wide text-muted-foreground uppercase">
 								{t.label}
 							</span>
 							<span
 								class="text-2xl leading-none font-semibold tracking-tight tabular-nums {t.value ===
 								'—'
 									? 'text-muted-foreground'
-									: ''}"
+									: ''} {t.value.length > 7 ? '@5xl/strip:text-xl @7xl/strip:text-2xl' : ''}"
 							>
 								{t.value}
 							</span>

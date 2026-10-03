@@ -10,6 +10,7 @@
 	import RunFindings from './run-findings.svelte';
 	import SevCounts from './sev-counts.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { formatClock } from '$lib/utilities/dates';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { getTargetTypeIcon } from '$lib/config/icons';
 	import {
@@ -92,13 +93,7 @@
 			? (RUN_VERBS[group.scan_status as ScanStatus] ?? group.scan_status)
 			: null
 	);
-	let time = $derived(
-		new Date(group.at).toLocaleTimeString('en-US', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false
-		})
-	);
+	let time = $derived(formatClock(group.at));
 	let Icon = $derived(
 		isRun && subject.target_type
 			? getTargetTypeIcon(subject.target_type as TargetType)
@@ -151,7 +146,7 @@
 </script>
 
 <li
-	class="group/ev grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 px-4 transition-colors sm:grid-cols-[3rem_1rem_minmax(0,1fr)_auto] {cursor
+	class="group/ev grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 px-4 transition-colors sm:grid-cols-[4rem_1rem_minmax(0,1fr)_auto] {cursor
 		? 'bg-muted/40'
 		: expanded
 			? 'bg-muted/20'
@@ -159,7 +154,7 @@
 	data-event-row={index}
 >
 	<span
-		class="hidden h-6 items-center pt-3 font-mono text-xs text-muted-foreground tabular-nums sm:flex"
+		class="hidden h-6 items-center pt-3 font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:flex"
 	>
 		{time}
 	</span>
@@ -275,7 +270,7 @@
 					onOpen={(v) => onFinding(v, group.scan_id ?? '')}
 				/>
 			{:else if items.length}
-				<div class="divide-y divide-border/50 overflow-clip rounded-md border bg-card">
+				<div class="divide-y divide-border/50 overflow-clip rounded-lg border bg-card">
 					{#each items as item (item.id)}
 						<ItemRow
 							{item}

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -24,6 +24,7 @@
 	let loading = $state(true);
 	let saving = $state(false);
 	let name = $state('');
+	let nameError = $state('');
 
 	const settings = $derived(instanceSettingsStore.settings);
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
@@ -73,7 +74,7 @@
 		if (next === settings.instance_name) return;
 		if (!next) {
 			name = settings.instance_name;
-			toast.error('Instance name is required');
+			nameError = 'Instance name is required';
 			return;
 		}
 		void save({ instance_name: next }, 'Instance name').then((updated) => {
@@ -90,7 +91,7 @@
 		<Skeleton class="h-9 w-full" />
 	</Card.Root>
 {:else if !settings}
-	<EmptyState compact icon={CircleAlertIcon} title="Settings not loaded">
+	<EmptyState compact icon={TriangleAlertIcon} title="Settings not loaded">
 		<Button variant="outline" size="sm" onclick={load}>
 			<RotateCwIcon class="size-3.5" />
 			Retry
@@ -105,16 +106,24 @@
 			for="instance-name"
 			class="border-t-0"
 		>
-			<Input
-				id="instance-name"
-				bind:value={name}
-				maxlength={120}
-				autocomplete="off"
-				class="h-9 w-60"
-				disabled={locked}
-				onblur={commitName}
-				onkeydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-			/>
+			<div class="flex w-60 flex-col gap-3">
+				<Input
+					id="instance-name"
+					bind:value={name}
+					maxlength={120}
+					autocomplete="off"
+					class="h-9 w-60"
+					disabled={locked}
+					aria-invalid={!!nameError}
+					aria-describedby={nameError ? 'instance-name-error' : undefined}
+					oninput={() => (nameError = '')}
+					onblur={commitName}
+					onkeydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+				/>
+				{#if nameError}
+					<p id="instance-name-error" class="text-sm text-destructive" role="alert">{nameError}</p>
+				{/if}
+			</div>
 		</SettingRow>
 		<SettingRow label="Time zone" help="Schedules and What's new dates" for="instance-timezone">
 			<TimezonePicker

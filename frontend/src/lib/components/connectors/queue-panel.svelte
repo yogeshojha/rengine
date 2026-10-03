@@ -10,12 +10,13 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import ListTreeIcon from '@lucide/svelte/icons/list-tree';
 	import CopyIcon from '@lucide/svelte/icons/copy';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
@@ -82,7 +83,7 @@
 	};
 
 	const HEAD =
-		'px-4 py-2 text-left text-2xs font-semibold tracking-wider text-muted-foreground uppercase whitespace-nowrap';
+		'px-4 py-2 text-left text-2xs font-medium tracking-wide text-muted-foreground uppercase whitespace-nowrap';
 	const PAGE_SIZE = 50;
 	const PARAMS_SHOWN = 3;
 
@@ -95,9 +96,9 @@
 	let now = $state(Date.now());
 	let pageNumber = $state(0);
 	let picked = new SvelteSet<string>();
+	const sending = new SvelteSet<string>();
 	let scanning = $state(false);
 	let acting = $state(false);
-	let error = $state<string | null>(null);
 
 	const connectorId = $derived(connector.id);
 	const page = $derived(connectors.queue);
@@ -169,18 +170,17 @@
 	}
 
 	async function scan(ids: string[]) {
-		confirming = null;
-		openedId = null;
 		scanning = true;
-		error = null;
 		try {
 			const runs = await connectorsApi.scan(connector.id, projectId, ids);
+			confirming = null;
+			openedId = null;
 			picked.clear();
 			await reload();
 			if (runs.length === 1) void goto(ROUTES.scan(runs[0].id));
-			else toast.success(`${runs.length} scans started.`);
+			else toast.success(`${runs.length} scans started`);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Scan not started.';
+			toast.error(e instanceof Error ? e.message : 'Scan not started');
 		} finally {
 			scanning = false;
 		}
@@ -206,7 +206,7 @@
 		if (!urls.length) return;
 		if (await writeClipboard(urls.join('\n')))
 			toast.success(`${urls.length.toLocaleString()} URLs copied`);
-		else toast.error('Clipboard not available.');
+		else toast.error('Clipboard not available');
 	}
 
 	async function sendOne(row: Candidate, kind: ActionKind, request?: string) {
@@ -217,6 +217,16 @@
 			connectors: [connector],
 			catalog: connectors.catalog
 		});
+	}
+
+	async function sendRow(row: Candidate) {
+		if (sending.has(row.id)) return;
+		sending.add(row.id);
+		try {
+			await sendOne(row, proxyTool.kind);
+		} finally {
+			sending.delete(row.id);
+		}
 	}
 
 	function previewOne(row: Candidate) {
@@ -232,16 +242,15 @@
 	}
 
 	async function ignore(ids: string[]) {
-		confirming = null;
-		openedId = null;
 		acting = true;
-		error = null;
 		try {
 			await connectorsApi.setState(connector.id, projectId, ids, 'ignored');
+			confirming = null;
+			openedId = null;
 			picked.clear();
 			await reload();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Requests not ignored.';
+			toast.error(e instanceof Error ? e.message : 'Requests not ignored');
 		} finally {
 			acting = false;
 		}
@@ -253,85 +262,98 @@
 	}
 </script>
 
-<Card.Root class="gap-0 overflow-hidden py-0">
-	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-		<div class="relative min-w-52 flex-1">
-			<SearchIcon
-				class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
-			/>
-			<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
-		</div>
-		{#if hosts.length > 1}
-			<Select.Root
-				type="single"
-				value={host}
-				onValueChange={(v) => {
-					host = v ?? '';
-					pageNumber = 0;
-				}}
-			>
-				<Select.Trigger class="h-8 w-64 text-xs">
-					{host || `All hosts · ${hosts.length}`}
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">All hosts</Select.Item>
-					{#each hosts as row (row.host)}
-						<Select.Item value={row.host}>{row.host} · {row.count}</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-		{/if}
+<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+	<div class="relative min-w-52 flex-1">
+		<SearchIcon
+			class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
+		/>
+		<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
+	</div>
+	{#if hosts.length > 1}
 		<Select.Root
 			type="single"
-			value={stateFilter}
+			value={host}
 			onValueChange={(v) => {
-				stateFilter = v ?? '';
+				host = v ?? '';
 				pageNumber = 0;
 			}}
 		>
-			<Select.Trigger class="h-8 w-36 text-xs">
-				{stateFilter ? CANDIDATE_STATE_LABELS[stateFilter as Candidate['state']] : 'Any state'}
+			<Select.Trigger class="h-8 w-64 text-xs">
+				{host || `All hosts · ${hosts.length}`}
 			</Select.Trigger>
 			<Select.Content>
-				<Select.Item value="">Any state</Select.Item>
-				{#each CANDIDATE_STATES as s (s)}
-					<Select.Item value={s}>{CANDIDATE_STATE_LABELS[s]}</Select.Item>
+				<Select.Item value="">All hosts</Select.Item>
+				{#each hosts as row (row.host)}
+					<Select.Item value={row.host}>{row.host} · {row.count}</Select.Item>
 				{/each}
 			</Select.Content>
 		</Select.Root>
-		<span class="text-muted-foreground text-xs tabular-nums">
-			{plural(page?.total ?? 0, 'request')}
-		</span>
-		{#if live}
-			<span class="flex items-center gap-1.5 text-xs">
-				<span class="bg-success size-1.5 rounded-full" aria-hidden="true"></span>
-				Live
-			</span>
-		{/if}
-	</div>
-
-	{#if error}
-		<p class="text-destructive border-b px-4 py-2 text-xs">{error}</p>
 	{/if}
-
-	{#if connector.unassigned > 0 && connector.unassigned === connector.candidates}
-		<p class="text-muted-foreground border-b px-4 py-2 text-xs">No target covers these requests.</p>
-	{/if}
-
-	{#if connectors.queueLoading && rows.length === 0}
-		<div class="space-y-2 p-4">
-			{#each Array(6) as _, i (i)}
-				<Skeleton class="h-11 w-full" />
+	<Select.Root
+		type="single"
+		value={stateFilter}
+		onValueChange={(v) => {
+			stateFilter = v ?? '';
+			pageNumber = 0;
+		}}
+	>
+		<Select.Trigger class="h-8 w-36 text-xs">
+			{stateFilter ? CANDIDATE_STATE_LABELS[stateFilter as Candidate['state']] : 'Any state'}
+		</Select.Trigger>
+		<Select.Content>
+			<Select.Item value="">Any state</Select.Item>
+			{#each CANDIDATE_STATES as s (s)}
+				<Select.Item value={s}>{CANDIDATE_STATE_LABELS[s]}</Select.Item>
 			{/each}
-		</div>
-	{:else if rows.length === 0}
-		<div class="px-4 py-10">
-			<EmptyState icon={RadarIcon} title={VIEW_EMPTY[view]} />
-		</div>
-	{:else}
-		<table class="w-full table-fixed text-sm">
+		</Select.Content>
+	</Select.Root>
+	<span class="text-muted-foreground text-xs tabular-nums">
+		{plural(page?.total ?? 0, 'request')}
+	</span>
+	{#if live}
+		<span class="flex items-center gap-1.5 text-xs">
+			<span class="bg-success size-1.5 rounded-full" aria-hidden="true"></span>
+			Live
+		</span>
+	{/if}
+</div>
+
+{#if connector.unassigned > 0 && connector.unassigned === connector.candidates}
+	<p class="text-muted-foreground border-b px-4 py-2 text-xs">No target covers these requests.</p>
+{/if}
+
+{#if connectors.queueLoading && rows.length === 0}
+	<div class="space-y-2 p-4">
+		{#each Array(6) as _, i (i)}
+			<Skeleton class="h-11 w-full" />
+		{/each}
+	</div>
+{:else if connectors.queueError && rows.length === 0}
+	<EmptyState
+		icon={TriangleAlertIcon}
+		title="Requests not loaded"
+		description={connectors.queueError}
+		class="rounded-none border-0 bg-transparent py-16"
+	>
+		<Button
+			variant="outline"
+			size="sm"
+			onclick={() => connectors.loadQueue(connector.id, projectId, filters)}
+		>
+			Retry
+		</Button>
+	</EmptyState>
+{:else if rows.length === 0}
+	<EmptyState
+		icon={RadarIcon}
+		title={VIEW_EMPTY[view]}
+		class="rounded-none border-0 bg-transparent py-16"
+	/>
+{:else}
+	<ScrollArea orientation="horizontal">
+		<table class="w-full min-w-[760px] table-fixed text-sm">
 			<thead>
-				<tr class="bg-muted/40 border-b">
+				<tr class="border-b bg-muted/20">
 					<th class="w-10 px-3 py-2">
 						<Checkbox
 							checked={picked.size === rows.length && rows.length > 0}
@@ -443,8 +465,8 @@
 							class="text-muted-foreground px-4 py-2.5 text-right align-top text-2xs leading-5 whitespace-nowrap"
 							>{relativeTime(row.last_seen_at)}</td
 						>
-						<td class="px-2 py-2 align-top">
-							<span class="flex h-6 items-center justify-end gap-0.5">
+						<td class="px-2 py-1.5 align-top">
+							<span class="flex h-7 items-center justify-end gap-0.5">
 								{#if !connector.paused}
 									<Hint text={sendLabel}>
 										{#snippet child(props)}
@@ -452,9 +474,10 @@
 												{...props}
 												variant="ghost"
 												size="icon"
-												class="size-6"
+												class="size-7"
 												aria-label={sendLabel}
-												onclick={() => sendOne(row, proxyTool.kind)}
+												disabled={sending.has(row.id)}
+												onclick={() => sendRow(row)}
 											>
 												<SendIcon class="size-3.5" />
 											</Button>
@@ -468,7 +491,7 @@
 												{...props}
 												variant="ghost"
 												size="icon"
-												class="size-6"
+												class="size-7"
 												aria-label="Open in Endpoints"
 												href={endpointsLink(row)}
 											>
@@ -483,7 +506,7 @@
 											{...props}
 											variant="ghost"
 											size="icon"
-											class="size-6"
+											class="size-7"
 											aria-label="Open in a new tab"
 											href={externalHref(row.url)}
 											target="_blank"
@@ -499,24 +522,22 @@
 				{/each}
 			</tbody>
 		</table>
-		<div class="border-t px-4 py-2">
-			<ResultsPagination
-				total={page?.total ?? 0}
-				page={pageNumber}
-				pageSize={PAGE_SIZE}
-				noun="request"
-				onPage={(next) => (pageNumber = next)}
-			/>
-		</div>
-	{/if}
-</Card.Root>
+	</ScrollArea>
+	<ResultsPagination
+		total={page?.total ?? 0}
+		page={pageNumber}
+		pageSize={PAGE_SIZE}
+		noun="request"
+		onPage={(next) => (pageNumber = next)}
+	/>
+{/if}
 
 <SelectionActionBar selectedCount={picked.size} noun="request" onClear={() => picked.clear()}>
 	<LoadingButton
 		loading={scanning}
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium"
+		class="font-medium"
 		loadingLabel="Starting"
 		onclick={() => (confirming = { action: 'scan', ids: [...picked] })}
 	>
@@ -531,14 +552,14 @@
 			onSend={sendToProxy}
 		/>
 	{/if}
-	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={copyPicked}>
+	<Button variant="ghost" size="sm" class="font-medium" onclick={copyPicked}>
 		<CopyIcon class="h-3.5 w-3.5 text-muted-foreground" />
 		Copy URLs
 	</Button>
 	<Button
 		variant="ghost"
 		size="sm"
-		class="gap-2 font-medium"
+		class="font-medium"
 		disabled={acting}
 		onclick={() => (confirming = { action: 'ignore', ids: [...picked] })}
 	>
@@ -563,6 +584,8 @@
 	title={confirming?.action === 'scan' ? `Scan ${count} ${noun}` : `Ignore ${count} ${noun}`}
 	description={confirming?.action === 'scan' ? 'One scan per target.' : undefined}
 	confirmLabel={confirming?.action === 'scan' ? 'Start scan' : 'Ignore'}
+	loadingLabel={confirming?.action === 'scan' ? 'Starting' : 'Ignoring'}
+	loading={scanning || acting}
 	onOpenChange={(v) => {
 		if (!v) confirming = null;
 	}}

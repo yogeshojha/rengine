@@ -5,6 +5,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import {
 		CONNECT_POLL_MS,
@@ -36,9 +38,19 @@
 	const outdated = $derived(isOutdated(connector.last_client, spec.client_file));
 	const receiving = $derived(connector.requests_seen > 0);
 
+	let copied = $state(false);
+	const guard = new DiscardGuard(
+		() => !!secret && !copied,
+		() => (open = false)
+	);
+
 	function finished(index: number): boolean {
 		return index === spec.steps.length - 1 ? receiving : online || receiving;
 	}
+
+	$effect(() => {
+		if (secret) copied = false;
+	});
 
 	$effect(() => {
 		if (!open) return;
@@ -47,7 +59,7 @@
 	});
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : guard.close())}>
 	<Dialog.Content class="gap-0 p-0 sm:max-w-xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Connect {spec.title}</Dialog.Title>
@@ -98,7 +110,7 @@
 									<span class="w-16 shrink-0 text-xs text-muted-foreground">Token</span>
 									{#if secret}
 										<code class={CODE}>{secret}</code>
-										<CopyButton value={secret} />
+										<CopyButton value={secret} onCopied={() => (copied = true)} />
 									{:else}
 										<code class="{CODE} text-muted-foreground">{connector.token_prefix}…</code>
 										<Button variant="outline" size="sm" class="h-8" onclick={onRotate}>
@@ -113,7 +125,7 @@
 			{/each}
 		</ol>
 
-		<div class="flex items-center justify-between gap-4 border-t bg-muted/30 px-6 py-3.5">
+		<div class="flex items-center justify-between gap-4 border-t px-6 py-4">
 			<div class="flex min-w-0 items-center gap-2.5 text-sm">
 				{#if connector.paused}
 					<span class="size-2 shrink-0 rounded-full bg-muted-foreground" aria-hidden="true"></span>
@@ -137,7 +149,17 @@
 					<span class="text-muted-foreground">Waiting for {spec.title}</span>
 				{/if}
 			</div>
-			<Button onclick={() => (open = false)}>Done</Button>
+			<Button onclick={() => guard.close()}>Done</Button>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ConfirmDialog
+	open={guard.asking}
+	title="Close setup"
+	description="The token is shown once. Rotate the token to issue a new one."
+	confirmLabel="Close"
+	cancelLabel="Keep open"
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

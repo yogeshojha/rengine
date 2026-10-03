@@ -43,7 +43,7 @@
 
 <div class="space-y-2">
 	{#each rows as row, i (i)}
-		<div class="space-y-1">
+		<div class="space-y-1.5">
 			<div class="flex items-center gap-2">
 				<Input
 					value={row}
@@ -64,7 +64,7 @@
 				</Button>
 			</div>
 			{#if errorFor(row)}
-				<p class="pl-1 text-xs text-destructive">{errorFor(row)}</p>
+				<p class="text-sm text-destructive" role="alert">{errorFor(row)}</p>
 			{/if}
 		</div>
 	{/each}

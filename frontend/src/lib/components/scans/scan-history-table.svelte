@@ -16,7 +16,6 @@
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 
 	import * as Card from '$lib/components/ui/card';
-	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Empty from '$lib/components/ui/empty';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
@@ -30,7 +29,7 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
+	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { HISTORY_DAYS, scansStore } from '$lib/stores/scans.svelte';
@@ -72,9 +71,14 @@
 		onLaunch?: () => void;
 		onRescan?: (scan: ScanRead) => void;
 		onRescanMany?: (targetIds: string[]) => void;
+		scopeLabel?: string;
+		onClearScope?: () => void;
 	}
 
-	let { targetId, targetIds, onLaunch, onRescan, onRescanMany }: Props = $props();
+	let { targetId, targetIds, onLaunch, onRescan, onRescanMany, scopeLabel, onClearScope }: Props =
+		$props();
+
+	const PAGE_SIZES = [10, 20, 25, 50, 100];
 
 	const SAVED_VIEWS = [
 		{ label: 'Critical findings', token: 'severity:critical' },
@@ -88,6 +92,10 @@
 	let bulkDeleteOpen = $state(false);
 	let bulkCancelOpen = $state(false);
 	let cancelAllOpen = $state(false);
+	let cancelling = $state(false);
+	let deleting = $state(false);
+	let bulkDeleting = $state(false);
+	let bulkCancelling = $state(false);
 	let cancellingAll = $state(false);
 	let shortcutsOpen = $state(false);
 	let now = $state(Date.now());
@@ -101,6 +109,14 @@
 	const selected = new SvelteSet<string>();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+	let scoped = $derived(!!onClearScope && (targetIds?.length ?? 0) > 0);
+	let filtered = $derived(scansStore.hasActiveFilters || scoped);
+
+	function clearAll() {
+		queryText = '';
+		scansStore.clearFilters();
+		if (scoped) onClearScope?.();
+	}
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
@@ -120,7 +136,7 @@
 
 	$effect(() => {
 		if (!scansStore.hasLive) return;
-		engineCatalogStore.fetch();
+		untrack(() => engineCatalogStore.fetch());
 		const poll = setInterval(() => scansStore.refresh(), SCAN_POLL_MS);
 		return () => clearInterval(poll);
 	});
@@ -272,44 +288,70 @@
 
 	async function confirmCancel() {
 		const s = cancelTarget;
-		cancelTarget = null;
-		if (s && (await scansStore.cancel(s))) toast.success('Scan cancelled');
-		else if (s) toast.error(scansStore.error ?? 'Scan not cancelled');
+		if (!s || cancelling) return;
+		cancelling = true;
+		const ok = await scansStore.cancel(s);
+		cancelling = false;
+		if (ok) {
+			cancelTarget = null;
+			toast.success('Scan cancelled');
+		} else toast.error(scansStore.error ?? 'Scan not cancelled');
 	}
 
 	async function confirmDelete() {
 		const s = deleteTarget;
-		deleteTarget = null;
-		if (s && (await scansStore.remove(s))) toast.success('Scan deleted');
-		else if (s) toast.error(scansStore.error ?? 'Scan not deleted');
+		if (!s || deleting) return;
+		deleting = true;
+		const ok = await scansStore.remove(s);
+		deleting = false;
+		if (ok) {
+			deleteTarget = null;
+			toast.success('Scan deleted');
+		} else toast.error(scansStore.error ?? 'Scan not deleted');
 	}
 
 	async function confirmBulkDelete() {
 		const ids = [...selected];
-		bulkDeleteOpen = false;
-		if (!ids.length) return;
+		if (!ids.length) {
+			bulkDeleteOpen = false;
+			return;
+		}
+		bulkDeleting = true;
 		const { ok, failed } = await scansStore.removeMany(ids);
-		selected.clear();
-		if (ok) toast.success(`${plural(ok, 'scan')} deleted`);
+		bulkDeleting = false;
+		if (ok) {
+			bulkDeleteOpen = false;
+			selected.clear();
+			toast.success(`${plural(ok, 'scan')} deleted`);
+		}
 		if (failed) toast.error(`${plural(failed, 'scan')} not deleted`);
 	}
 
 	async function confirmBulkCancel() {
 		const ids = selectedScans.filter((s) => isOpenStatus(s.status)).map((s) => s.id);
-		bulkCancelOpen = false;
-		if (!ids.length) return;
+		if (!ids.length) {
+			bulkCancelOpen = false;
+			return;
+		}
+		bulkCancelling = true;
 		const { ok, failed } = await scansStore.cancelMany(ids);
-		if (ok) toast.success(`${plural(ok, 'scan')} cancelled`);
+		bulkCancelling = false;
+		if (ok) {
+			bulkCancelOpen = false;
+			toast.success(`${plural(ok, 'scan')} cancelled`);
+		}
 		if (failed) toast.error(`${plural(failed, 'scan')} not cancelled`);
 	}
 
 	async function confirmCancelAll() {
-		cancelAllOpen = false;
 		cancellingAll = true;
 		const n = await scansStore.cancelAll();
 		cancellingAll = false;
 		if (n === null) toast.error(scansStore.error ?? 'Scans not cancelled');
-		else toast.success(`${plural(n, 'scan')} cancelled`);
+		else {
+			cancelAllOpen = false;
+			toast.success(`${plural(n, 'scan')} cancelled`);
+		}
 	}
 
 	function openCompare(scan?: ScanRead) {
@@ -439,7 +481,7 @@
 				<span class="flex items-center gap-2 font-mono text-2xl font-semibold tabular-nums">
 					{byStatus?.running ?? 0}
 					{#if (byStatus?.running ?? 0) > 0}
-						<span class="size-2 rounded-full bg-info"></span>
+						<span class="size-2 rounded-full bg-info" aria-hidden="true"></span>
 					{/if}
 				</span>
 				<span class="text-2xs text-muted-foreground">
@@ -633,7 +675,7 @@
 					<span {...props} class="inline-flex">
 						<LoadingButton
 							variant="outline"
-							class="h-9 gap-2"
+							class="h-9"
 							disabled={!canCancelAll}
 							loading={cancellingAll}
 							loadingLabel="Cancelling"
@@ -645,7 +687,7 @@
 				{/snippet}
 			</Hint>
 			{#if onLaunch}
-				<Button class="h-9 gap-2" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
+				<Button class="h-9" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
 			{/if}
 		</div>
 	</div>
@@ -665,6 +707,23 @@
 				{v.label}
 			</button>
 		{/each}
+		{#if scoped}
+			<span
+				class="ml-1 inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+			>
+				<span class="min-w-0 truncate {targetIds?.length === 1 ? 'font-mono' : 'tabular-nums'}"
+					>{scopeLabel}</span
+				>
+				<button
+					type="button"
+					aria-label="Remove target filter"
+					class="text-muted-foreground hover:text-foreground"
+					onclick={() => onClearScope?.()}
+				>
+					<X class="size-3" />
+				</button>
+			</span>
+		{/if}
 		{#if scansStore.filters.startedFrom}
 			<span
 				class="ml-1 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
@@ -682,14 +741,11 @@
 				</button>
 			</span>
 		{/if}
-		{#if scansStore.hasActiveFilters}
+		{#if filtered}
 			<button
 				type="button"
 				class="ml-auto text-xs text-muted-foreground hover:text-foreground"
-				onclick={() => {
-					queryText = '';
-					scansStore.clearFilters();
-				}}
+				onclick={clearAll}
 			>
 				Clear all
 			</button>
@@ -712,24 +768,16 @@
 				<Empty.Description class="max-w-md">{scansStore.error}</Empty.Description>
 			</Empty.Header>
 			<Empty.Content>
-				<Button variant="outline" class="gap-2" onclick={() => scansStore.refresh()}>
+				<Button size="sm" variant="outline" onclick={() => scansStore.refresh()}>
 					<RefreshCw class="size-4" /> Retry
 				</Button>
 			</Empty.Content>
 		</Empty.Root>
-	{:else if scans.length === 0 && scansStore.hasActiveFilters}
+	{:else if scans.length === 0 && filtered}
 		<Empty.Root class="py-16">
 			<Empty.Header><Empty.Title>No runs match</Empty.Title></Empty.Header>
 			<Empty.Content>
-				<Button
-					size="sm"
-					variant="outline"
-					class="gap-2"
-					onclick={() => {
-						queryText = '';
-						scansStore.clearFilters();
-					}}
-				>
+				<Button size="sm" variant="outline" onclick={clearAll}>
 					<X class="size-4" /> Clear filters
 				</Button>
 			</Empty.Content>
@@ -744,7 +792,7 @@
 			</Empty.Header>
 			{#if onLaunch}
 				<Empty.Content>
-					<Button class="gap-2" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
+					<Button size="sm" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
 				</Empty.Content>
 			{/if}
 		</Empty.Root>
@@ -813,44 +861,15 @@
 				{/each}
 			</div>
 		</ScrollArea>
-		<div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
-			<div class="flex items-center gap-4">
-				<span class="text-xs text-muted-foreground">
-					{scans.length} of {pagination.totalItems}
-					{pluralWord(pagination.totalItems, latest ? 'target' : 'run')}
-				</span>
-				<PageSizeSelector
-					pageSize={pagination.pageSize}
-					onPageSizeChange={(size) => scansStore.setPageSize(size)}
-				/>
-			</div>
-			{#if pagination.totalPages > 1}
-				<Pagination.Root
-					count={pagination.totalItems}
-					perPage={pagination.pageSize}
-					page={pagination.currentPage}
-					onPageChange={(p) => scansStore.setPage(p)}
-				>
-					{#snippet children({ pages, currentPage })}
-						<Pagination.Content>
-							<Pagination.Item><Pagination.Previous /></Pagination.Item>
-							{#each pages as p (p.key)}
-								{#if p.type === 'ellipsis'}
-									<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
-								{:else}
-									<Pagination.Item
-										><Pagination.Link page={p} isActive={currentPage === p.value}
-											>{p.value}</Pagination.Link
-										></Pagination.Item
-									>
-								{/if}
-							{/each}
-							<Pagination.Item><Pagination.Next /></Pagination.Item>
-						</Pagination.Content>
-					{/snippet}
-				</Pagination.Root>
-			{/if}
-		</div>
+		<ResultsPagination
+			total={pagination.totalItems}
+			page={pagination.currentPage - 1}
+			pageSize={pagination.pageSize}
+			noun={latest ? 'target' : 'run'}
+			sizes={PAGE_SIZES}
+			onPage={(p) => scansStore.setPage(p + 1)}
+			onPageSize={(size) => scansStore.setPageSize(size)}
+		/>
 	{/if}
 </Card.Root>
 
@@ -879,6 +898,9 @@
 	description="The scan stops and is marked cancelled."
 	confirmLabel="Cancel scan"
 	cancelLabel="Keep running"
+	destructive
+	loading={cancelling}
+	loadingLabel="Cancelling"
 	onOpenChange={(o) => !o && (cancelTarget = null)}
 	onConfirm={confirmCancel}
 />
@@ -891,6 +913,8 @@
 	confirmLabel="Delete"
 	cancelLabel="Keep"
 	destructive
+	loading={deleting}
+	loadingLabel="Deleting"
 	onOpenChange={(o) => !o && (deleteTarget = null)}
 	onConfirm={confirmDelete}
 />
@@ -917,6 +941,8 @@
 	confirmLabel="Delete {selectedScans.length}"
 	cancelLabel="Keep"
 	destructive
+	loading={bulkDeleting}
+	loadingLabel="Deleting"
 	onOpenChange={(o) => (bulkDeleteOpen = o)}
 	onConfirm={confirmBulkDelete}
 />
@@ -927,6 +953,9 @@
 	description="Running, queued and paused scans stop and are marked cancelled."
 	confirmLabel="Cancel scans"
 	cancelLabel="Keep"
+	destructive
+	loading={cancellingAll}
+	loadingLabel="Cancelling"
 	onOpenChange={(o) => (cancelAllOpen = o)}
 	onConfirm={confirmCancelAll}
 />
@@ -937,6 +966,9 @@
 	description="The selected scans stop and are marked cancelled."
 	confirmLabel="Cancel scans"
 	cancelLabel="Keep"
+	destructive
+	loading={bulkCancelling}
+	loadingLabel="Cancelling"
 	onOpenChange={(o) => (bulkCancelOpen = o)}
 	onConfirm={confirmBulkCancel}
 />

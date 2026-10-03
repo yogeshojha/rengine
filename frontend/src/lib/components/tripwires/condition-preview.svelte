@@ -31,6 +31,7 @@
 
 	let preview = $state<TripwirePreview | null>(null);
 	let loading = $state(false);
+	let failure = $state<string | null>(null);
 	let seq = 0;
 
 	let spec = $derived(dimensionSpec(request.dimension));
@@ -45,6 +46,7 @@
 		untrack(() => {
 			if (!on) {
 				preview = null;
+				failure = null;
 				return;
 			}
 			const mine = ++seq;
@@ -55,10 +57,12 @@
 					const result = await tripwiresApi.preview(projectId, request);
 					if (mine !== seq) return;
 					preview = result;
+					failure = null;
 					onError?.(result.error);
-				} catch {
+				} catch (e) {
 					if (mine !== seq) return;
 					preview = null;
+					failure = e instanceof Error ? e.message : 'Preview not loaded';
 				} finally {
 					if (mine === seq) {
 						loading = false;
@@ -84,6 +88,8 @@
 		<Skeleton class="h-4 w-2/3" />
 	{:else if preview?.error}
 		<p class="text-xs text-destructive">{preview.error.message}</p>
+	{:else if failure}
+		<p class="text-xs text-destructive">{failure}</p>
 	{:else if preview}
 		<p class="text-sm">
 			<span class="font-semibold tabular-nums">{count(preview.fired, preview.capped)}</span>

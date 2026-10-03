@@ -5,15 +5,16 @@
 	import CircleXIcon from '@lucide/svelte/icons/circle-x';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import SatelliteDishIcon from '@lucide/svelte/icons/satellite-dish';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import { oastApi } from '$lib/api/oast';
 	import {
@@ -50,19 +51,23 @@
 				: null
 	);
 
-	onMount(async () => {
+	async function load() {
+		loading = true;
 		try {
 			const row = await oastApi.get();
 			settings = row;
 			mode = row.mode as OastMode;
 			server = row.server ?? '';
 			acknowledged = row.public_acknowledged;
+			loadError = null;
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : 'Out-of-band settings not loaded';
 		} finally {
 			loading = false;
 		}
-	});
+	}
+
+	onMount(load);
 
 	$effect(() => {
 		setFooter({
@@ -129,10 +134,12 @@
 	{:else if loadError}
 		<EmptyState
 			compact
-			icon={SatelliteDishIcon}
+			icon={TriangleAlertIcon}
 			title="Out-of-band settings not loaded"
 			description={loadError}
-		/>
+		>
+			<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
+		</EmptyState>
 	{:else if settings}
 		<div class="space-y-2">
 			<ToggleGroup.Root
@@ -164,46 +171,42 @@
 
 		{#if mode === OastMode.SELF_HOSTED}
 			<div class="grid gap-4 sm:grid-cols-2">
-				<div class="space-y-1.5">
-					<Label for="oast-server" class="text-xs">Server domain</Label>
-					<Input
-						id="oast-server"
-						bind:value={server}
-						placeholder="oast.example.com"
-						autocomplete="off"
-						spellcheck="false"
-						class="h-9 text-sm"
-						aria-invalid={!!serverError}
-						oninput={() => (serverError = null)}
-					/>
-					{#if serverError}
-						<p class="text-xs text-destructive">{serverError}</p>
-					{/if}
-				</div>
-				<div class="space-y-1.5">
-					<Label for="oast-token" class="text-xs">Token</Label>
-					<div class="relative">
+				<FormField label="Server domain" error={serverError ?? undefined}>
+					{#snippet children({ id })}
 						<Input
-							id="oast-token"
-							type={reveal ? 'text' : 'password'}
-							bind:value={token}
-							placeholder={settings.token_set ? 'Saved' : ''}
+							{id}
+							bind:value={server}
+							placeholder="oast.example.com"
 							autocomplete="off"
-							class="h-9 pr-9 text-sm"
+							spellcheck="false"
+							class="h-9 text-sm"
+							aria-invalid={!!serverError}
+							oninput={() => (serverError = null)}
 						/>
-						<button
-							type="button"
-							class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
-							onclick={() => (reveal = !reveal)}
-							aria-label={reveal ? 'Hide token' : 'Show token'}
-						>
-							{#if reveal}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
-						</button>
-					</div>
-					<p class="text-xs text-muted-foreground">
-						A server without authentication needs no token.
-					</p>
-				</div>
+					{/snippet}
+				</FormField>
+				<FormField label="Token" description="A server without authentication needs no token.">
+					{#snippet children({ id })}
+						<div class="relative">
+							<Input
+								{id}
+								type={reveal ? 'text' : 'password'}
+								bind:value={token}
+								placeholder={settings?.token_set ? 'Saved' : ''}
+								autocomplete="off"
+								class="h-9 pr-9 text-sm"
+							/>
+							<button
+								type="button"
+								class="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+								onclick={() => (reveal = !reveal)}
+								aria-label={reveal ? 'Hide token' : 'Show token'}
+							>
+								{#if reveal}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
+							</button>
+						</div>
+					{/snippet}
+				</FormField>
 			</div>
 		{/if}
 

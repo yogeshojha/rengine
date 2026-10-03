@@ -62,16 +62,28 @@
 		domains: linked?.discovered ?? 0
 	});
 
-	const CONFIRM: Record<Action, (title: string, c: Connector) => [string, string, string]> = {
-		pause: (title) => [`Pause ${title}`, `Requests from ${title} are refused.`, 'Pause'],
-		resume: (title) => [`Resume ${title}`, '', 'Resume'],
-		rotate: (_title, c) => ['Rotate token', `Token ${c.token_prefix}… is revoked.`, 'Rotate'],
-		disconnect: (title) => [
-			`Disconnect ${title}`,
-			'The connection, its token and its recorded requests are removed.',
-			'Disconnect'
-		]
-	};
+	const CONFIRM: Record<Action, (title: string, c: Connector) => [string, string, string, string]> =
+		{
+			pause: (title) => [
+				`Pause ${title}`,
+				`Requests from ${title} are refused.`,
+				'Pause',
+				'Pausing'
+			],
+			resume: (title) => [`Resume ${title}`, '', 'Resume', 'Resuming'],
+			rotate: (_title, c) => [
+				'Rotate token',
+				`Token ${c.token_prefix}… is revoked.`,
+				'Rotate',
+				'Rotating'
+			],
+			disconnect: (title) => [
+				`Disconnect ${title}`,
+				'The connection, its token and its recorded requests are removed.',
+				'Disconnect',
+				'Disconnecting'
+			]
+		};
 	const confirmCopy = $derived(
 		pending && linked && linkedSpec ? CONFIRM[pending](linkedSpec.title, linked) : null
 	);
@@ -156,12 +168,12 @@
 					await connectorsApi.update(linked.id, projectId, { paused: action === 'pause' })
 				);
 			}
+			pending = null;
+			if (action === 'rotate') setupOpen = true;
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Change not applied');
 		} finally {
 			working = false;
-			pending = null;
-			if (action === 'rotate') setupOpen = true;
 		}
 	}
 
@@ -173,7 +185,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels.connectors)}</title></svelte:head>
 
-<div class="flex flex-col gap-5">
+<div class="flex flex-col gap-6">
 	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.connectors}</h1>
 
 	{#if !ready && connectors.error}
@@ -199,22 +211,21 @@
 		{/each}
 
 		{#if linked && projectId}
-			<div>
-				<CountTabs
-					tabs={CONNECTOR_TABS.map((key) => ({ key, label: TAB_LABELS[key] }))}
-					counts={tabCounts}
-					value={activeTab}
-					onChange={(key) => (activeTab = key as ConnectorTab)}
-				/>
-
-				<div class="mt-4">
-					{#if activeTab === 'domains'}
-						<DiscoveredPanel connector={linked} {projectId} />
-					{:else}
-						<QueuePanel connector={linked} {projectId} view={activeTab as QueueView} {live} />
-					{/if}
+			<Card.Root class="gap-0 overflow-hidden py-0">
+				<div class="border-b px-2">
+					<CountTabs
+						tabs={CONNECTOR_TABS.map((key) => ({ key, label: TAB_LABELS[key] }))}
+						counts={tabCounts}
+						value={activeTab}
+						onChange={(key) => (activeTab = key as ConnectorTab)}
+					/>
 				</div>
-			</div>
+				{#if activeTab === 'domains'}
+					<DiscoveredPanel connector={linked} {projectId} />
+				{:else}
+					<QueuePanel connector={linked} {projectId} view={activeTab as QueueView} {live} />
+				{/if}
+			</Card.Root>
 		{/if}
 	{/if}
 </div>
@@ -239,10 +250,11 @@
 	title={confirmCopy?.[0] ?? ''}
 	description={confirmCopy?.[1] || undefined}
 	confirmLabel={confirmCopy?.[2] ?? 'Continue'}
+	loadingLabel={confirmCopy?.[3]}
 	destructive={pending === 'rotate' || pending === 'disconnect'}
 	loading={working}
 	onOpenChange={(v) => {
-		if (!v && !working) dismiss();
+		if (!v) dismiss();
 	}}
 	onConfirm={confirm}
 />

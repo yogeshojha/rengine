@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { SEND_SHORTCUT, type ActionKind } from '$lib/config/connectors';
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
@@ -11,6 +12,11 @@
 	import Globe from '@lucide/svelte/icons/globe';
 	import ListTree from '@lucide/svelte/icons/list-tree';
 	import Terminal from '@lucide/svelte/icons/terminal';
+	import MapPin from '@lucide/svelte/icons/map-pin';
+	import ScanEye from '@lucide/svelte/icons/scan-eye';
+	import SearchCheck from '@lucide/svelte/icons/search-check';
+	import Variable from '@lucide/svelte/icons/variable';
+	import ArrowDownLeft from '@lucide/svelte/icons/arrow-down-left';
 
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -20,12 +26,13 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import StatusMark from './endpoints/status-mark.svelte';
 	import PathBreadcrumb from './endpoints/path-breadcrumb.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
 	import { previewHandoff } from './endpoints/proxy';
-	import { SHEET_HEAD, sheetStep, type SheetAction } from './sheet';
+	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep, type SheetAction } from './sheet';
 	import SheetTop from './sheet-top.svelte';
 	import SheetBar from './sheet-bar.svelte';
 	import SheetMore from './sheet-more.svelte';
@@ -112,6 +119,17 @@
 	const EP = SURFACE[SurfaceDimension.ENDPOINTS];
 
 	let contentEl = $state<HTMLElement | null>(null);
+	let bodyEl = $state<HTMLElement | null>(null);
+	let scrolledFor = '';
+
+	$effect.pre(() => {
+		const id = open ? (endpoint?.id ?? '') : '';
+		if (id === scrolledFor) return;
+		scrolledFor = id;
+		if (!id) return;
+		untrack(() => bodyEl?.scrollTo({ top: 0 }));
+	});
+
 	let row = $derived(detail?.id === endpoint?.id ? detail : null);
 	let sensitive = $derived((endpoint?.interest ?? []).filter((i) => SENSITIVE_INTEREST.has(i)));
 	let testable = $derived((endpoint?.interest ?? []).filter((i) => !SENSITIVE_INTEREST.has(i)));
@@ -186,7 +204,7 @@
 									rel="noopener noreferrer"
 									aria-label="Open in browser"
 								>
-									<ExternalLink />
+									<ExternalLink class="size-3.5 text-muted-foreground" />
 								</Button>
 							{/snippet}
 						</Tooltip.Trigger>
@@ -219,42 +237,42 @@
 				<SheetMore actions={more} />
 			</SheetBar>
 
-			<ScrollArea class="min-h-0 flex-1">
-				<div class="space-y-6 px-5 py-4">
-					<section class="space-y-2">
-						<h3 class="text-xs font-medium text-muted-foreground uppercase">Location</h3>
+			<ScrollArea class="min-h-0 flex-1" bind:viewportRef={bodyEl}>
+				<div class="flex flex-col gap-6 p-5">
+					<section class="flex flex-col gap-2">
+						<SectionHead icon={MapPin} title="Location" />
 						<PathBreadcrumb
 							host={endpoint.host}
 							path={endpoint.dir_path}
 							onSelect={(h, p) => onFilter?.(`${filterToken('dir', p)} ${filterToken('host', h)}`)}
 						/>
-						<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
-							<div class="flex justify-between gap-2">
-								<dt class="text-muted-foreground">Depth</dt>
-								<dd class="tabular-nums">{endpoint.depth}</dd>
+						<dl class="flex flex-col divide-y divide-border/60">
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Depth</dt>
+								<dd class="text-sm tabular-nums">{endpoint.depth}</dd>
 							</div>
-							<div class="flex justify-between gap-2">
-								<dt class="text-muted-foreground">Port</dt>
-								<dd class="tabular-nums">{endpoint.port}</dd>
+							<div class={SHEET_ROW}>
+								<dt class={SHEET_DT}>Port</dt>
+								<dd class="font-mono text-sm tabular-nums">{endpoint.port}</dd>
 							</div>
 							{#if row}
-								<div class="flex justify-between gap-2">
-									<dt class="text-muted-foreground">Siblings in folder</dt>
-									<dd class="tabular-nums">{row.siblings}</dd>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Siblings in folder</dt>
+									<dd class="text-sm tabular-nums">{row.siblings.toLocaleString()}</dd>
 								</div>
 							{/if}
 							{#if endpoint.found_on}
-								<div class="col-span-2 flex flex-col gap-0.5">
-									<dt class="text-muted-foreground">Reached from</dt>
-									<dd class="font-mono break-all">{endpoint.found_on}</dd>
+								<div class={SHEET_ROW}>
+									<dt class={SHEET_DT}>Reached from</dt>
+									<dd class="font-mono text-xs break-all">{endpoint.found_on}</dd>
 								</div>
 							{/if}
 						</dl>
 					</section>
 
 					{#if sensitive.length || testable.length}
-						<section class="space-y-2">
-							<h3 class="text-xs font-medium text-muted-foreground uppercase">Interest</h3>
+						<section class="flex flex-col gap-2">
+							<SectionHead icon={ScanEye} title="Interest" />
 							<div class="flex flex-wrap gap-1.5">
 								{#each sensitive as key (key)}
 									<Badge variant="destructive" class="gap-1">
@@ -269,14 +287,14 @@
 						</section>
 					{/if}
 
-					<section class="space-y-2">
-						<h3 class="text-xs font-medium text-muted-foreground uppercase">Evidence</h3>
-						<div class="space-y-2">
+					<section class="flex flex-col gap-2">
+						<SectionHead icon={SearchCheck} title="Evidence" />
+						<div class="flex flex-col gap-2">
 							{#each endpoint.evidence as e (e.source)}
 								{@const Icon = SOURCE_ICONS[e.source] ?? SOURCE_ICONS[EndpointSource.OTHER]}
 								<div class="flex gap-2.5 rounded-md border p-2.5">
 									<span
-										class="flex size-7 shrink-0 items-center justify-center rounded border {PASSIVE_SOURCES.has(
+										class="flex size-7 shrink-0 items-center justify-center rounded-md border {PASSIVE_SOURCES.has(
 											e.source
 										)
 											? 'border-border/60 text-muted-foreground'
@@ -317,13 +335,13 @@
 					</section>
 
 					{#if endpoint.param_count > 0}
-						<section class="space-y-2">
-							<h3 class="text-xs font-medium text-muted-foreground uppercase">Parameters</h3>
+						<section class="flex flex-col gap-2">
+							<SectionHead icon={Variable} title="Parameters" />
 							<div class="flex flex-wrap gap-1.5">
 								{#each endpoint.params as name (name)}
 									<button
 										type="button"
-										class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:bg-muted/70"
+										class="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs hover:bg-muted/70"
 										onclick={() => onFilter?.(filterToken('param', name))}
 									>
 										{name}
@@ -337,7 +355,7 @@
 							{#if loading && !row}
 								<Skeleton class="h-16 w-full" />
 							{:else if row?.param_samples.length}
-								<div class="space-y-1 rounded-md border p-2">
+								<div class="flex flex-col gap-1 rounded-md border p-2">
 									{#each row.param_samples.slice(0, 5) as sample, i (i)}
 										<p class="font-mono text-2xs break-all text-muted-foreground">
 											{Object.entries(sample)
@@ -350,46 +368,50 @@
 						</section>
 					{/if}
 
-					<section class="space-y-2">
-						<h3 class="text-xs font-medium text-muted-foreground uppercase">Response</h3>
+					<section class="flex flex-col gap-2">
+						<SectionHead icon={ArrowDownLeft} title="Response" />
 						{#if !endpoint.is_probed}
 							<p class="text-xs text-muted-foreground">Not requested.</p>
 						{:else}
-							<dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+							<dl class="flex flex-col divide-y divide-border/60">
 								{#each [['Status', endpoint.status_code], ['Content type', endpoint.content_type], ['Size', formatBytes(endpoint.content_length)], ['Words', endpoint.words?.toLocaleString()], ['Lines', endpoint.lines?.toLocaleString()], ['Response time', endpoint.response_time ? formatResponseTime(endpoint.response_time) : null]] as [label, value] (label)}
 									{#if value !== null && value !== undefined}
-										<div class="flex justify-between gap-2">
-											<dt class="text-muted-foreground">{label}</dt>
-											<dd class="tabular-nums">{value}</dd>
+										<div class={SHEET_ROW}>
+											<dt class={SHEET_DT}>{label}</dt>
+											<dd class="text-sm tabular-nums">{value}</dd>
 										</div>
 									{/if}
 								{/each}
+								{#if endpoint.title}
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>Title</dt>
+										<dd class="text-sm break-words">{endpoint.title}</dd>
+									</div>
+								{/if}
+								{#if endpoint.redirect_location}
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>Redirects to</dt>
+										<dd class="font-mono text-xs break-all">{endpoint.redirect_location}</dd>
+									</div>
+								{/if}
+								{#if endpoint.tech.length}
+									<div class={SHEET_ROW}>
+										<dt class={SHEET_DT}>Technologies</dt>
+										<dd class="flex flex-wrap items-center gap-1.5">
+											{#each endpoint.tech as name (name)}
+												<button
+													type="button"
+													class="flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs hover:bg-muted/50"
+													onclick={() => onFilter?.(filterToken('tech', name))}
+												>
+													<TechIcon {name} class="size-3.5" />
+													{name}
+												</button>
+											{/each}
+										</dd>
+									</div>
+								{/if}
 							</dl>
-							{#if endpoint.title}
-								<div class="flex flex-col gap-0.5 text-xs">
-									<span class="text-muted-foreground">Title</span>
-									<p class="text-sm">{endpoint.title}</p>
-								</div>
-							{/if}
-							{#if endpoint.redirect_location}
-								<p class="font-mono text-xs break-all text-muted-foreground">
-									→ {endpoint.redirect_location}
-								</p>
-							{/if}
-							{#if endpoint.tech.length}
-								<div class="flex flex-wrap items-center gap-1.5 pt-1">
-									{#each endpoint.tech as name (name)}
-										<button
-											type="button"
-											class="flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs hover:bg-muted/50"
-											onclick={() => onFilter?.(filterToken('tech', name))}
-										>
-											<TechIcon {name} class="size-3.5" />
-											{name}
-										</button>
-									{/each}
-								</div>
-							{/if}
 						{/if}
 					</section>
 				</div>

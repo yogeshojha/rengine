@@ -4,7 +4,7 @@
 	import RankedBars, { type BarRow } from './ranked-bars.svelte';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
-	import { cappedCount } from '$lib/utilities/strings';
+	import { cappedCount, percentLabel } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -29,7 +29,7 @@
 	);
 	let coverage = $derived(software?.coverage ?? null);
 	let mappedShare = $derived(
-		coverage && coverage.components ? Math.round((coverage.mapped / coverage.components) * 100) : 0
+		coverage && coverage.components ? (coverage.mapped / coverage.components) * 100 : 0
 	);
 </script>
 
@@ -55,7 +55,7 @@
 				<span class="flex items-center gap-1.5">
 					<span class="size-2.5 rounded-[2px] bg-series"></span>
 					Mapped products
-					<span class="font-medium text-foreground tabular-nums">{mappedShare}%</span>
+					<span class="font-medium text-foreground tabular-nums">{percentLabel(mappedShare)}</span>
 				</span>
 				<span class="flex items-center gap-1.5">
 					<span class="size-2.5 rounded-[2px] bg-muted"></span>

@@ -4,6 +4,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select';
+	import FormField from '$lib/components/form-field.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
@@ -71,15 +72,15 @@
 
 	let selectionLabel = $derived.by(() => {
 		const s = selection;
-		if (!s) return 'Select configuration';
+		if (!s) return 'Select a configuration';
 		if (s.kind === 'recipe')
-			return presets.find((p) => p.name === s.preset)?.title ?? 'Select configuration';
-		return engines.find((e) => e.id === s.engineId)?.name ?? 'Select configuration';
+			return presets.find((p) => p.name === s.preset)?.title ?? 'Select a configuration';
+		return engines.find((e) => e.id === s.engineId)?.name ?? 'Select a configuration';
 	});
 	let contextLabel = $derived(
 		contextId === SELECT_NONE
 			? NO_CONTEXT_LABEL
-			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
+			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select a context')
 	);
 
 	$effect(() => {
@@ -148,7 +149,7 @@
 
 	{#if enabled}
 		{#if error}
-			<p class="text-xs text-destructive">{error} {fallbackNote}</p>
+			<p class="text-sm text-destructive" role="alert">{error} {fallbackNote}</p>
 		{:else if !ready}
 			<div class="grid gap-3 sm:grid-cols-2">
 				<Skeleton class="h-9 w-full rounded-md" />
@@ -156,51 +157,53 @@
 			</div>
 		{:else}
 			<div class="grid gap-3 sm:grid-cols-2">
-				<div class="space-y-1.5">
-					<Label for="{id}-plan" class="text-xs text-muted-foreground">Configuration</Label>
-					<Select.Root
-						type="single"
-						value={selection ? encodeSelection(selection) : ''}
-						onValueChange={(v) => (selection = decodeSelection(v))}
-						{disabled}
-					>
-						<Select.Trigger id="{id}-plan" class="w-full">{selectionLabel}</Select.Trigger>
-						<Select.Content>
-							<Select.Group>
-								<Select.Label>Presets</Select.Label>
-								{#each presets as preset (preset.name)}
-									<Select.Item value="recipe:{preset.name}" label={preset.title}>
-										{preset.title}
-									</Select.Item>
-								{/each}
-							</Select.Group>
-							{#if engines.length}
+				<FormField label="Configuration">
+					{#snippet children({ id: planId })}
+						<Select.Root
+							type="single"
+							value={selection ? encodeSelection(selection) : ''}
+							onValueChange={(v) => (selection = decodeSelection(v))}
+							{disabled}
+						>
+							<Select.Trigger id={planId} class="w-full">{selectionLabel}</Select.Trigger>
+							<Select.Content>
 								<Select.Group>
-									<Select.Label>Scan engines</Select.Label>
-									{#each engines as engine (engine.id)}
-										<Select.Item value="engine:{engine.id}" label={engine.name}>
-											{engine.name}
+									<Select.Label>Presets</Select.Label>
+									{#each presets as preset (preset.name)}
+										<Select.Item value="recipe:{preset.name}" label={preset.title}>
+											{preset.title}
 										</Select.Item>
 									{/each}
 								</Select.Group>
-							{/if}
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="space-y-1.5">
-					<Label for="{id}-context" class="text-xs text-muted-foreground">Context</Label>
-					<Select.Root type="single" bind:value={contextId} {disabled}>
-						<Select.Trigger id="{id}-context" class="w-full">{contextLabel}</Select.Trigger>
-						<Select.Content>
-							<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>
-								{NO_CONTEXT_LABEL}
-							</Select.Item>
-							{#each scanContextsStore.contexts as context (context.id)}
-								<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
+								{#if engines.length}
+									<Select.Group>
+										<Select.Label>Scan engines</Select.Label>
+										{#each engines as engine (engine.id)}
+											<Select.Item value="engine:{engine.id}" label={engine.name}>
+												{engine.name}
+											</Select.Item>
+										{/each}
+									</Select.Group>
+								{/if}
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</FormField>
+				<FormField label="Context">
+					{#snippet children({ id: contextFieldId })}
+						<Select.Root type="single" bind:value={contextId} {disabled}>
+							<Select.Trigger id={contextFieldId} class="w-full">{contextLabel}</Select.Trigger>
+							<Select.Content>
+								<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>
+									{NO_CONTEXT_LABEL}
+								</Select.Item>
+								{#each scanContextsStore.contexts as context (context.id)}
+									<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</FormField>
 			</div>
 		{/if}
 	{/if}

@@ -6,7 +6,7 @@ import {
 	type McpSession,
 	type McpToken
 } from '$lib/types/mcp';
-import { MS_PER_DAY } from '$lib/utilities/dates';
+import { formatClock, MS_PER_DAY } from '$lib/utilities/dates';
 import { safeHref } from '$lib/utilities/links';
 
 export const MCP_POLL_MS = 10_000;
@@ -120,16 +120,9 @@ export function spanLabel(ms: number): string {
 	return `${(ms / 3_600_000).toFixed(1)} h`;
 }
 
-export const timeOfDay = (iso: string) =>
-	new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+export const timeOfDay = (iso: string) => formatClock(iso);
 
-export const timeWithSeconds = (iso: string) =>
-	new Date(iso).toLocaleTimeString('en-US', {
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
-		hour12: false
-	});
+export const timeWithSeconds = (iso: string) => formatClock(iso, true);
 
 export function dayLabel(iso: string, now = new Date()): string {
 	const d = new Date(iso);

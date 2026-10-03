@@ -51,7 +51,7 @@
 			{/snippet}
 		</RankedBars>
 	{:else}
-		<span class="text-sm text-muted-foreground">No AI service</span>
+		<span class="text-sm text-muted-foreground">No AI services</span>
 	{/if}
 	{#snippet footer()}
 		{#if ai}

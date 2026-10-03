@@ -7,8 +7,8 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Globe from '@lucide/svelte/icons/globe';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import PanelRight from '@lucide/svelte/icons/panel-right';
+	import ShieldCheck from '@lucide/svelte/icons/shield-check';
+	import MailCheck from '@lucide/svelte/icons/mail-check';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 
 	import * as Card from '$lib/components/ui/card';
@@ -21,7 +21,16 @@
 	import QueryBar from './query-bar/query-bar.svelte';
 	import FilterBar from './web-assets/filter-bar.svelte';
 	import ListHeader from './table/list-header.svelte';
-	import { readPref, rowPadding, selectAllState, withTarget, writePref } from './table/columns';
+	import {
+		inPopover,
+		onControl,
+		readPref,
+		rowPadding,
+		selectAllState,
+		withTarget,
+		writePref
+	} from './table/columns';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import RenderGallery from './web-assets/render-gallery.svelte';
@@ -825,15 +834,15 @@
 	}
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const t = e.target as HTMLElement | null;
-		const typing =
-			!!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+		const typing = keyTaken(e.target);
 		if (e.key === '/' && !typing) {
 			e.preventDefault();
 			searchRef?.focus();
 			return;
 		}
-		if (typing || drawerOpen || view !== 'table' || !items.length) return;
+		if (typing || drawerOpen || topLayer() || inPopover(e.target)) return;
+		if (view !== 'table' || !items.length) return;
+		if (e.key === 'Enter' && onControl(e.target, '[data-row-index]')) return;
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			cursor = Math.min(cursor + 1, items.length - 1);
@@ -902,14 +911,16 @@
 					aria-pressed={insightsOpen}
 					onclick={() => openRail('hygiene')}
 				>
-					<PanelRight class="size-4" />
-					<span class="max-sm:hidden">Hygiene</span>
+					<ShieldCheck class="size-4" />
+					<span class="@max-4xl/query:hidden">Hygiene</span>
 					{#if hygieneHeadline > 0}
 						<span
-							class="size-1.5 rounded-full max-sm:hidden {TONE_DOT[hygieneTone]}"
+							class="size-1.5 rounded-full @max-4xl/query:hidden {TONE_DOT[hygieneTone]}"
 							aria-hidden="true"
 						></span>
-						<span class="tabular-nums max-sm:hidden">{hygieneHeadline.toLocaleString()}</span>
+						<span class="tabular-nums @max-4xl/query:hidden"
+							>{hygieneHeadline.toLocaleString()}</span
+						>
 					{/if}
 				</Button>
 			{/if}
@@ -924,14 +935,16 @@
 					aria-pressed={postureOpen}
 					onclick={() => openRail('posture')}
 				>
-					<PanelRight class="size-4" />
-					<span class="max-sm:hidden">Posture</span>
+					<MailCheck class="size-4" />
+					<span class="@max-4xl/query:hidden">Posture</span>
 					{#if postureHeadline > 0}
 						<span
-							class="size-1.5 rounded-full max-sm:hidden {TONE_DOT[postureTone]}"
+							class="size-1.5 rounded-full @max-4xl/query:hidden {TONE_DOT[postureTone]}"
 							aria-hidden="true"
 						></span>
-						<span class="tabular-nums max-sm:hidden">{postureHeadline.toLocaleString()}</span>
+						<span class="tabular-nums @max-4xl/query:hidden"
+							>{postureHeadline.toLocaleString()}</span
+						>
 					{/if}
 				</Button>
 			{/if}
@@ -1026,9 +1039,7 @@
 					title="Web assets not loaded"
 					class="rounded-none border-0 bg-transparent py-16"
 				>
-					<Button variant="outline" class="gap-2" onclick={() => refresh()}>
-						<RefreshCw class="h-4 w-4" /> Retry
-					</Button>
+					<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
 				</EmptyState>
 			{:else if groupBy}
 				<GroupList
@@ -1055,12 +1066,7 @@
 						title="No web assets match"
 						class="rounded-none border-0 bg-transparent py-16"
 					>
-						<Button
-							size="sm"
-							variant="outline"
-							class="gap-2"
-							onclick={() => setQuery(emptyQuery())}
-						>
+						<Button size="sm" variant="outline" onclick={() => setQuery(emptyQuery())}>
 							<X class="h-4 w-4" /> Clear filters
 						</Button>
 					</EmptyState>
@@ -1232,7 +1238,7 @@
 			busy={rescanBusy}
 			onRescan={rescanSelection}
 		/>
-		<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={openRescanOptions}>
+		<Button variant="ghost" size="sm" onclick={openRescanOptions}>
 			<Settings2 class="h-3.5 w-3.5 text-muted-foreground" />
 			Options
 		</Button>

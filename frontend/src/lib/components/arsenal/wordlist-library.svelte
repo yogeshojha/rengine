@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import Eye from '@lucide/svelte/icons/eye';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Upload from '@lucide/svelte/icons/upload';
 	import * as Card from '$lib/components/ui/card';
@@ -9,9 +10,9 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
@@ -45,11 +46,14 @@
 	let removing = $state<Wordlist | null>(null);
 	let deleting = $state(false);
 	let viewing = $state<Wordlist | null>(null);
+	let attempted = $state(false);
 	const picked = new SvelteSet<string>();
 
 	$effect(() => {
-		untrack(() => store.fetch());
+		untrack(() => store.fetch().finally(() => (attempted = true)));
 	});
+
+	let failed = $derived(attempted && !store.hasFetched && !store.isLoading);
 
 	let items = $derived(
 		kindFilter === ALL ? store.wordlists : store.wordlists.filter((w) => w.kind === kindFilter)
@@ -111,11 +115,11 @@
 		try {
 			if (await store.remove(target.id)) {
 				picked.delete(target.id);
-				toast.success(`${target.name} removed`);
+				toast.success(`${target.name} deleted`);
+				removing = null;
 			}
 		} finally {
 			deleting = false;
-			removing = null;
 		}
 	}
 
@@ -128,15 +132,15 @@
 </script>
 
 <div class="space-y-6">
-	<Card.Root class="gap-0 py-0">
-		<Card.Header class="border-b py-5">
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<Card.Header class="border-b px-4 py-5">
 			<Card.Title>Wordlists</Card.Title>
 			{#if lastChanged}
 				<Card.Description>Updated {relativeTime(lastChanged)}</Card.Description>
 			{/if}
-			<Card.Action class="flex items-center gap-2">
+			<Card.Action class="flex flex-wrap items-center justify-end gap-2">
 				<Select.Root type="single" bind:value={uploadKind} disabled={!isAdmin}>
-					<Select.Trigger class="w-[190px]" aria-label="Wordlist kind">
+					<Select.Trigger size="sm" class="w-[190px]" aria-label="Wordlist kind">
 						{WORDLIST_KIND_LABELS[uploadKind]}
 					</Select.Trigger>
 					<Select.Content>
@@ -153,58 +157,70 @@
 					class="hidden"
 					onchange={upload}
 				/>
-				<LoadingButton
-					size="sm"
-					class="gap-2"
-					loading={uploading}
-					loadingLabel="Uploading"
-					disabled={!isAdmin}
-					onclick={() => fileInput?.click()}
-				>
-					<Upload class="size-4" /> Upload wordlists
-				</LoadingButton>
+				<Hint text={isAdmin ? null : 'Editable by administrators'}>
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<LoadingButton
+								size="sm"
+								loading={uploading}
+								loadingLabel="Uploading"
+								disabled={!isAdmin}
+								onclick={() => fileInput?.click()}
+							>
+								<Upload class="size-4" /> Upload wordlists
+							</LoadingButton>
+						</span>
+					{/snippet}
+				</Hint>
 			</Card.Action>
 		</Card.Header>
 
 		<Card.Content class="p-0">
-			<div class="border-b px-6 py-3">
+			<div class="border-b px-4 py-3">
 				<ToggleGroup.Root
 					type="single"
 					variant="outline"
-					size="sm"
 					spacing={1}
 					value={kindFilter}
 					onValueChange={(v) => (kindFilter = v || ALL)}
 					class="flex-wrap justify-start"
 					aria-label="Filter by kind"
 				>
-					<ToggleGroup.Item value={ALL}>All {store.wordlists.length}</ToggleGroup.Item>
+					<ToggleGroup.Item value={ALL} class="h-9 gap-1.5 px-3 text-sm font-normal">
+						All
+						<span class="text-muted-foreground tabular-nums">{store.wordlists.length}</span>
+					</ToggleGroup.Item>
 					{#each WORDLIST_KINDS as kind (kind)}
-						<ToggleGroup.Item value={kind}>
+						<ToggleGroup.Item value={kind} class="h-9 gap-1.5 px-3 text-sm font-normal">
 							{WORDLIST_KIND_LABELS[kind]}
-							{counts[kind]}
+							<span class="text-muted-foreground tabular-nums">{counts[kind]}</span>
 						</ToggleGroup.Item>
 					{/each}
 				</ToggleGroup.Root>
 			</div>
 
-			{#if store.isLoading && !store.hasFetched}
-				<div class="space-y-3 p-6">
-					<Skeleton class="h-12 w-full" />
-					<Skeleton class="h-12 w-full" />
-				</div>
+			{#if failed}
+				<EmptyState
+					icon={TriangleAlert}
+					title="Wordlists not loaded"
+					description="The API did not respond. Check that the api service is running."
+					class="rounded-none border-0 bg-transparent py-16"
+				>
+					<Button variant="outline" size="sm" onclick={() => store.fetch()}>Retry</Button>
+				</EmptyState>
+			{:else if !store.hasFetched}
+				<RowSkeleton rows={4} avatar={null} trailing="h-8 w-24 rounded-md" />
 			{:else if !items.length}
-				<div class="p-6">
-					<EmptyState
-						icon={Upload}
-						title="No wordlists"
-						description="Plain text, one word per line."
-					/>
-				</div>
+				<EmptyState
+					icon={Upload}
+					title="No wordlists"
+					description="Plain text, one word per line."
+					class="rounded-none border-0 bg-transparent py-16"
+				/>
 			{:else}
 				{#each items as item (item.id)}
 					<div
-						class="group flex items-start gap-4 border-b px-6 py-4 last:border-b-0 hover:bg-muted/40"
+						class="group flex items-start gap-3 border-b px-4 py-3 last:border-b-0 hover:bg-muted/40"
 					>
 						{#if item.origin !== WordlistOrigin.BUILTIN && isAdmin}
 							<div class="flex h-6 shrink-0 items-center">
@@ -219,20 +235,20 @@
 						{/if}
 						<div class="min-w-0 flex-1 space-y-1">
 							<div class="flex flex-wrap items-center gap-2">
-								<span class="font-medium">{item.name}</span>
+								<span class="text-sm leading-5 font-medium">{item.name}</span>
 								<Badge variant={WORDLIST_ORIGIN_BADGE[item.origin]}>
 									{WORDLIST_ORIGIN_LABELS[item.origin]}
 								</Badge>
 								<Badge variant="outline">{WORDLIST_KIND_LABELS[item.kind]}</Badge>
 							</div>
 							{#if item.description}
-								<p class="text-sm text-muted-foreground">{item.description}</p>
+								<p class="text-xs text-muted-foreground">{item.description}</p>
 							{/if}
 							<Hint text="Name used in a scan engine">
 								{#snippet child(props)}
 									<code
 										{...props}
-										class="inline-block rounded border bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+										class="inline-block rounded-md border bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
 										>{item.slug}</code
 									>
 								{/snippet}
@@ -251,8 +267,7 @@
 									<Button
 										{...props}
 										variant="ghost"
-										size="icon"
-										class="size-8"
+										size="icon-sm"
 										aria-label="Preview {item.name}"
 										onclick={() => (viewing = item)}
 									>
@@ -264,17 +279,15 @@
 								text={item.origin === WordlistOrigin.BUILTIN
 									? 'Default wordlists are read-only'
 									: isAdmin
-										? 'Remove'
+										? 'Delete'
 										: 'Editable by administrators'}
 							>
 								{#snippet child(props)}
-									<span class="inline-flex">
+									<span {...props} class="inline-flex">
 										<Button
-											{...props}
 											variant="ghost"
-											size="icon"
-											class="size-8"
-											aria-label="Remove {item.name}"
+											size="icon-sm"
+											aria-label="Delete {item.name}"
 											disabled={item.origin === WordlistOrigin.BUILTIN || !isAdmin}
 											onclick={() => (removing = item)}
 										>
@@ -299,6 +312,7 @@
 	onDone={async () => {
 		picked.clear();
 		await store.fetch(true);
+		if (store.error) toast.error('Wordlists not refreshed');
 	}}
 	onClear={() => picked.clear()}
 />
@@ -315,9 +329,10 @@
 	onOpenChange={(value) => {
 		if (!value) removing = null;
 	}}
-	title="Remove wordlist"
+	title="Delete wordlist"
 	description={`Wordlist ${removing?.name ?? ''} and its file are removed.`}
-	confirmLabel="Remove"
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	isDeleting={deleting}
 	onConfirm={remove}
 />

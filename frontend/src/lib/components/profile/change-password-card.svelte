@@ -100,20 +100,19 @@
 						id="current-password"
 						type={showCurrentPassword ? 'text' : 'password'}
 						bind:value={currentPassword}
-						placeholder="Current password"
 						disabled={isChangingPassword}
 						class="pr-10"
 					/>
 					<button
 						type="button"
 						onclick={() => (showCurrentPassword = !showCurrentPassword)}
-						class="absolute right-0 top-0 h-full px-3 py-2"
+						class="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
 						aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
 					>
 						{#if showCurrentPassword}
-							<EyeOffIcon class="h-4 w-4 text-muted-foreground" />
+							<EyeOffIcon class="size-4" />
 						{:else}
-							<EyeIcon class="h-4 w-4 text-muted-foreground" />
+							<EyeIcon class="size-4" />
 						{/if}
 					</button>
 				</div>
@@ -128,7 +127,6 @@
 						id="new-password"
 						type={showNewPassword ? 'text' : 'password'}
 						bind:value={newPassword}
-						placeholder="New password"
 						disabled={isChangingPassword}
 						class="pr-10"
 						aria-invalid={!!newPasswordError}
@@ -137,18 +135,18 @@
 					<button
 						type="button"
 						onclick={() => (showNewPassword = !showNewPassword)}
-						class="absolute right-0 top-0 h-full px-3 py-2"
+						class="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
 						aria-label={showNewPassword ? 'Hide password' : 'Show password'}
 					>
 						{#if showNewPassword}
-							<EyeOffIcon class="h-4 w-4 text-muted-foreground" />
+							<EyeOffIcon class="size-4" />
 						{:else}
-							<EyeIcon class="h-4 w-4 text-muted-foreground" />
+							<EyeIcon class="size-4" />
 						{/if}
 					</button>
 				</div>
 				{#if newPasswordError}
-					<p class="text-xs text-destructive">{newPasswordError}</p>
+					<p role="alert" class="text-xs text-destructive">{newPasswordError}</p>
 				{:else}
 					<p class="text-xs text-muted-foreground">At least {MIN_PASSWORD_LENGTH} characters</p>
 				{/if}
@@ -161,7 +159,6 @@
 						id="confirm-password"
 						type={showConfirmPassword ? 'text' : 'password'}
 						bind:value={confirmPassword}
-						placeholder="Confirm new password"
 						disabled={isChangingPassword}
 						class="pr-10"
 						aria-invalid={!!confirmPasswordError}
@@ -170,18 +167,18 @@
 					<button
 						type="button"
 						onclick={() => (showConfirmPassword = !showConfirmPassword)}
-						class="absolute right-0 top-0 h-full px-3 py-2"
+						class="absolute top-0 right-0 h-full px-3 py-2 text-muted-foreground transition-colors hover:text-foreground"
 						aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
 					>
 						{#if showConfirmPassword}
-							<EyeOffIcon class="h-4 w-4 text-muted-foreground" />
+							<EyeOffIcon class="size-4" />
 						{:else}
-							<EyeIcon class="h-4 w-4 text-muted-foreground" />
+							<EyeIcon class="size-4" />
 						{/if}
 					</button>
 				</div>
 				{#if confirmPasswordError}
-					<p class="text-xs text-destructive">{confirmPasswordError}</p>
+					<p role="alert" class="text-xs text-destructive">{confirmPasswordError}</p>
 				{/if}
 			</div>
 

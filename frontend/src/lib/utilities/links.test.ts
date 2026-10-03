@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { externalHref, isExternalHref, openExternal, safeHref } from './links';
+import { externalHref, isExternalHref, localPath, openExternal, safeHref } from './links';
 
 const HOSTILE = [
 	'javascript:alert(1)',
@@ -34,6 +34,17 @@ describe('safeHref', () => {
 
 	it('drops other schemes and protocol-relative links', () => {
 		for (const value of [...HOSTILE, null, undefined]) expect(safeHref(value)).toBeUndefined();
+	});
+});
+
+describe('localPath', () => {
+	it('keeps same-origin paths', () => {
+		expect(localPath('/scans/1?tab=endpoints#a')).toBe('/scans/1?tab=endpoints#a');
+	});
+
+	it('drops absolute URLs, other schemes and protocol-relative links', () => {
+		for (const value of [...HOSTILE, 'https://example.com/poc', null, undefined])
+			expect(localPath(value)).toBeUndefined();
 	});
 });
 

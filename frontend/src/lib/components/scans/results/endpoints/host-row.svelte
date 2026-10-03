@@ -109,6 +109,7 @@
 	data-host-row={node.name}
 	onclick={() => onEnter(node.name)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter') {
 			e.preventDefault();
 			onEnter(node.name);
@@ -252,16 +253,16 @@
 								onFilter?.(excludeToken('host', node.name));
 							}}
 						>
-							<EyeOff class="size-3.5" />
+							<EyeOff class="size-4" />
 						</Button>
 					{/snippet}
 				</Hint>
 			{/if}
-			<Hint text="Copy every URL on this host">
+			<Hint text="Copy every URL on this web asset">
 				{#snippet child(props)}
 					<Button
 						{...props}
-						aria-label="Copy every URL on this host"
+						aria-label="Copy every URL on this web asset"
 						variant="ghost"
 						size="icon"
 						class="hidden size-7 sm:inline-flex"
@@ -270,7 +271,7 @@
 							onCopy(node);
 						}}
 					>
-						<Copy class="size-3.5" />
+						<Copy class="size-4" />
 					</Button>
 				{/snippet}
 			</Hint>
@@ -285,27 +286,27 @@
 							aria-label="More actions"
 							onclick={stopProp}
 						>
-							<Ellipsis class="size-3.5" />
+							<Ellipsis class="size-4" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-60" onclick={stopProp}>
 					<DropdownMenu.Item onclick={() => onEnter(node.name)}>
-						<ArrowRight class="size-3.5" /> Open sitemap
+						<ArrowRight class="size-4" /> Open sitemap
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => onList(node)}>
-						<Rows3 class="size-3.5" /> Show in list
+						<Rows3 class="size-4" /> Show in list
 					</DropdownMenu.Item>
 					{#if onFilter}
 						<DropdownMenu.Item onclick={() => onFilter?.(excludeToken('host', node.name))}>
-							<EyeOff class="size-3.5" />
+							<EyeOff class="size-4" />
 							<span class="truncate">Hide all {node.name}</span>
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Item>
 						{#snippet child({ props })}
 							<a {...props} href={externalHref(openUrl)} target="_blank" rel="noopener noreferrer">
-								<ExternalLink class="size-3.5" /> Open in a new tab
+								<ExternalLink class="size-4" /> Open in a new tab
 							</a>
 						{/snippet}
 					</DropdownMenu.Item>
@@ -314,8 +315,8 @@
 					{/if}
 					{#if onVerify && node.unprobed > 0}
 						<DropdownMenu.Item onclick={() => onVerify(node)}>
-							<ShieldCheck class="size-3.5" />
-							Verify this host
+							<ShieldCheck class="size-4" />
+							Verify this web asset
 							<span class="ml-auto text-xs tabular-nums text-muted-foreground">
 								{node.unprobed.toLocaleString()} unchecked
 							</span>
@@ -326,10 +327,10 @@
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => onCopy(node)}>
-						<Copy class="size-3.5" /> Copy URLs on this host
+						<Copy class="size-4" /> Copy URLs on this web asset
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={() => onWordlist(node)}>
-						<ListOrdered class="size-3.5" /> Copy paths as wordlist
+						<ListOrdered class="size-4" /> Copy paths as wordlist
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

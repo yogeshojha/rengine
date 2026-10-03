@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import RungMeter from '$lib/components/access/rung-meter.svelte';
@@ -151,9 +151,14 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button {...props} variant="ghost" size="icon" class="size-7">
-								<MoreVerticalIcon class="size-4" />
-								<span class="sr-only">Agent actions</span>
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="size-7"
+								aria-label="{token.name} actions"
+							>
+								<EllipsisIcon class="size-4" />
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
@@ -161,10 +166,12 @@
 						<DropdownMenu.Item onSelect={() => onHistory(token)}>History</DropdownMenu.Item>
 						{#if usable}
 							<DropdownMenu.Item onSelect={() => onEdit(token)}>Edit access</DropdownMenu.Item>
+							<DropdownMenu.Separator />
 							<DropdownMenu.Item variant="destructive" onSelect={() => onCut(token)}>
 								Cut access
 							</DropdownMenu.Item>
 						{:else}
+							<DropdownMenu.Separator />
 							<DropdownMenu.Item variant="destructive" onSelect={() => onDelete(token)}>
 								Delete
 							</DropdownMenu.Item>

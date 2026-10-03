@@ -6,6 +6,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { SCAN_STATUS_DOT } from '$lib/utilities/scan-status';
@@ -14,10 +15,12 @@
 
 	interface Props {
 		coverage: SurfaceCoverage | null;
+		error?: string | null;
+		onRetry?: () => void;
 		onScanUncovered?: (targetIds: string[]) => void;
 	}
 
-	let { coverage, onScanUncovered }: Props = $props();
+	let { coverage, error = null, onRetry, onScanUncovered }: Props = $props();
 
 	let covered = $derived(coverage?.covered ?? []);
 	let uncovered = $derived(coverage?.uncovered ?? []);
@@ -34,8 +37,7 @@
 	let tone = $derived(uncovered.length ? 'text-warning' : 'text-muted-foreground');
 
 	let summary = $derived.by(() => {
-		if (!coverage) return 'Loading coverage';
-		if (!covered.length) return 'Not scanned';
+		if (!coverage || !covered.length) return 'Not scanned';
 		const parts = [
 			`${covered.length} of ${coverage.targets_total} ${
 				coverage.targets_total === 1 ? 'target' : 'targets'
@@ -47,9 +49,21 @@
 	});
 </script>
 
-<div class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-2 text-xs {tone}">
-	<Icon class="size-3.5 shrink-0" />
-	<span>{summary}</span>
+<div class="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 py-2 text-xs {tone}">
+	{#if coverage}
+		<Icon class="size-3.5 shrink-0" />
+		<span>{summary}</span>
+	{:else if error}
+		<TriangleAlert class="size-3.5 shrink-0" />
+		<span>Coverage not loaded · {error}</span>
+		{#if onRetry}
+			<Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={() => onRetry()}>
+				Retry
+			</Button>
+		{/if}
+	{:else}
+		<Skeleton class="h-4 w-56 max-w-full" />
+	{/if}
 
 	{#if coverage && (covered.length || uncovered.length)}
 		<Popover.Root>

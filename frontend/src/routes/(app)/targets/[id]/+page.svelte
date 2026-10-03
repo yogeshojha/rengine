@@ -9,7 +9,6 @@
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import FileText from '@lucide/svelte/icons/file-text';
 	import Router from '@lucide/svelte/icons/router';
@@ -31,6 +30,7 @@
 	import { usersApi } from '$lib/api/users';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
@@ -51,7 +51,7 @@
 	import type { ScanExposure } from '$lib/utilities/services';
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import { Button } from '$lib/components/ui/button';
-	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -356,32 +356,39 @@
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
 		const t = e.target as HTMLElement | null;
 		if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+		if (document.querySelector('[role=dialog],[role=alertdialog],[role=menu]')) return;
 		const n = Number(e.key);
 		if (n >= 1 && n <= tabs.length) setTab(tabs[n - 1]);
 	}
 
 	async function fetchTarget() {
+		const id = targetId;
 		isLoading = true;
 		error = null;
 		try {
-			target = await targetsApi.get(targetId);
-			breadcrumbStore.set(targetId, target.target_value);
+			const fresh = await targetsApi.get(id);
+			if (id !== targetId) return;
+			target = fresh;
+			breadcrumbStore.set(id, fresh.target_value);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Target not loaded';
+			if (id === targetId && !target) error = e instanceof Error ? e.message : 'Target not loaded';
 		} finally {
-			isLoading = false;
+			if (id === targetId) isLoading = false;
 		}
 	}
 
 	async function fetchDetail(silent = false) {
+		const id = targetId;
 		if (!silent) detailLoading = true;
 		try {
-			detail = await targetsApi.getDetail(targetId);
+			const fresh = await targetsApi.getDetail(id);
+			if (id !== targetId) return;
+			detail = fresh;
 			detailError = null;
 		} catch (e) {
-			detailError = e instanceof Error ? e.message : 'Enrichment not loaded';
+			if (id === targetId) detailError = e instanceof Error ? e.message : 'Enrichment not loaded';
 		} finally {
-			if (!silent) detailLoading = false;
+			if (!silent && id === targetId) detailLoading = false;
 		}
 	}
 
@@ -598,6 +605,8 @@
 		if (shownId && shownId !== id) breadcrumbStore.remove(shownId);
 		shownId = id;
 		stopPolling();
+		target = null;
+		error = detailError = null;
 		programs = [];
 		programsLoaded = false;
 		estate = lookalikes = ipFacets = hosting = tech = hygiene = ai = null;
@@ -727,8 +736,8 @@
 		cancelling = true;
 		const ok = await liveScans.cancel(latest);
 		cancelling = false;
-		cancelOpen = false;
 		if (ok) {
+			cancelOpen = false;
 			toast.success('Scan cancelled');
 			refreshAll();
 		} else toast.error('Scan not cancelled');
@@ -742,7 +751,7 @@
 			await targetsApi.update(targetId, { seed_scans: on });
 		} catch {
 			target = target ? { ...target, seed_scans: before } : target;
-			toast.error('Setting not saved.');
+			toast.error('Setting not saved');
 		}
 	}
 
@@ -754,7 +763,7 @@
 			await targetsApi.update(targetId, { new_checks: on });
 		} catch {
 			target = target ? { ...target, new_checks: before } : target;
-			toast.error('Setting not saved.');
+			toast.error('Setting not saved');
 		}
 	}
 
@@ -841,17 +850,17 @@
 
 	async function confirmDelete() {
 		if (!target) return;
+		const value = target.target_value;
 		isDeleting = true;
-		try {
-			await targetsApi.delete(target.id);
-			toast.success(`Target ${target.target_value} deleted`);
-			showDeleteDialog = false;
-			goto(ROUTES.targets);
-		} catch {
+		const ok = await targetsStore.deleteTarget(target.id);
+		isDeleting = false;
+		if (!ok) {
 			toast.error('Target not deleted');
-		} finally {
-			isDeleting = false;
+			return;
 		}
+		toast.success(`Target ${value} deleted`);
+		showDeleteDialog = false;
+		goto(ROUTES.targets);
 	}
 </script>
 
@@ -862,7 +871,7 @@
 <div class="flex w-full flex-col gap-4 px-4 py-4 md:px-6">
 	<a
 		href={ROUTES.targets}
-		class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+		class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeft class="size-3.5" />
 		Targets
@@ -871,24 +880,9 @@
 	{#if isLoading && !target}
 		<TargetHeaderSkeleton />
 	{:else if error}
-		<Empty.Root class="min-h-[50vh] border-none">
-			<Empty.Header>
-				<Empty.Media
-					variant="icon"
-					class="size-16 rounded-full bg-destructive/10 text-destructive [&_svg:not([class*='size-'])]:size-8"
-				>
-					<TriangleAlert />
-				</Empty.Media>
-				<Empty.Title>Target not found</Empty.Title>
-				<Empty.Description class="max-w-md">{error}</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button variant="outline" class="gap-2" onclick={() => goto(ROUTES.targets)}>
-					<ChevronLeft class="size-4" />
-					Back to targets
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState icon={TriangleAlert} title="Target not loaded" description={error}>
+			<Button size="sm" variant="outline" onclick={() => fetchTarget()}>Retry</Button>
+		</EmptyState>
 	{:else if target}
 		<div bind:this={headerEl}>
 			<TargetHeader
@@ -908,12 +902,14 @@
 
 		{#if detailError && !detailLoading}
 			<div
-				class="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3"
+				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-2.5"
 			>
 				<p class="text-sm text-destructive">
 					Enrichment not loaded. {detailError}
 				</p>
-				<Button variant="outline" size="sm" onclick={() => fetchDetail()}>Retry</Button>
+				<Button variant="outline" size="sm" class="ml-auto" onclick={() => fetchDetail()}
+					>Retry</Button
+				>
 			</div>
 		{/if}
 
@@ -1197,7 +1193,6 @@
 					<NotePanel
 						anchor={{ targetId: target.id }}
 						filter={{ target_id: target.id }}
-						emptyTitle="No notes on this target"
 						onCount={(n) => (notesTotal = n)}
 					/>
 				</div>
@@ -1228,6 +1223,9 @@
 		title="Cancel scan"
 		description="The scan is marked cancelled. Finished stages keep their results."
 		confirmLabel="Cancel scan"
+		cancelLabel="Keep running"
+		loadingLabel="Cancelling"
+		destructive
 		loading={cancelling}
 		onOpenChange={(open) => (cancelOpen = open)}
 		onConfirm={confirmCancel}

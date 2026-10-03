@@ -206,8 +206,16 @@ export interface EnrichmentRefreshResponse {
 	message: string;
 }
 
-export function formatTargetType(type: TargetType): string {
-	return type.replace('_', ' ').toUpperCase();
+export const TARGET_TYPE_LABELS: Record<string, string> = {
+	[TargetType.DOMAIN]: 'Domain',
+	[TargetType.IP]: 'IP',
+	[TargetType.IP_RANGE]: 'IP range',
+	[TargetType.ASN]: 'ASN',
+	[TargetType.URL]: 'URL'
+};
+
+export function formatTargetType(type: TargetType | string): string {
+	return TARGET_TYPE_LABELS[type] ?? type;
 }
 
 const TARGET_TYPE_PLURALS: Record<string, string> = {

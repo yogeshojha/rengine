@@ -24,6 +24,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SeverityBar from '$lib/components/scans/results/vulnerabilities/severity-bar.svelte';
@@ -88,6 +89,7 @@
 	let onlyNew = $state(false);
 	let onlyCallback = $state(false);
 	let oast = $state<OastRead | null>(null);
+	let oastFailed = $state(false);
 	let callbackOpen = $state(false);
 	let seenAt = $state<string | null>(null);
 	let reqId = 0;
@@ -199,12 +201,24 @@
 		off: 'bg-muted-foreground/40'
 	};
 
-	onMount(() => {
+	function loadOast() {
+		oastFailed = false;
 		void oastApi
 			.get()
 			.then((row) => (oast = row))
-			.catch(() => (oast = null));
-		if (route.url.searchParams.get(PANEL_PARAM) === CALLBACK_PANEL) callbackOpen = true;
+			.catch(() => {
+				oast = null;
+				oastFailed = true;
+			});
+	}
+
+	onMount(() => {
+		loadOast();
+	});
+
+	$effect(() => {
+		if (route.url.searchParams.get(PANEL_PARAM) === CALLBACK_PANEL)
+			untrack(() => (callbackOpen = true));
 	});
 
 	$effect(() => {
@@ -294,11 +308,11 @@
 		try {
 			await vulnTemplatesApi.remove(target.id);
 			picked.delete(target.id);
-			toast.success(`${target.name} removed`);
+			toast.success(`${target.name} deleted`);
 			removing = null;
 			await Promise.all([loadStats(), loadList()]);
 		} catch {
-			toast.error('Check not removed');
+			toast.error('Check not deleted');
 		} finally {
 			deleting = false;
 		}
@@ -309,15 +323,16 @@
 	}
 </script>
 
-<Card.Root class="gap-0 py-0">
-	<Card.Header class="border-b py-5">
+<Card.Root class="gap-0 overflow-hidden py-0">
+	<Card.Header class="border-b px-4 py-5">
 		<Card.Title>Check library</Card.Title>
 		{#if stats?.last_synced_at}
 			<Card.Description>Synced {relativeTime(stats.last_synced_at)}</Card.Description>
 		{/if}
 		<Card.Action class="flex flex-wrap items-center justify-end gap-2">
-			<Button variant="outline" size="sm" class="gap-2" onclick={() => (callbackOpen = true)}>
-				<span class="size-2 shrink-0 rounded-full {CALLBACK_DOT[callbackState]}"></span>
+			<Button variant="outline" size="sm" onclick={() => (callbackOpen = true)}>
+				<span class="size-2 shrink-0 rounded-full {CALLBACK_DOT[callbackState]}" aria-hidden="true"
+				></span>
 				{CALLBACK_SERVER}
 				<span class="text-muted-foreground">
 					{callbackState === 'on' && oast ? OAST_MODE_LABELS[oast.mode as OastMode] : 'Off'}
@@ -331,46 +346,56 @@
 				class="hidden"
 				onchange={upload}
 			/>
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
+			<Hint text={isAdmin ? null : 'Editable by administrators'}>
+				{#snippet child(hintProps)}
+					<span {...hintProps} class="inline-flex">
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<LoadingButton
+										{...props}
+										variant="outline"
+										size="sm"
+										loading={uploading}
+										loadingLabel="Uploading"
+										disabled={!isAdmin}
+									>
+										<Plus class="size-4" /> Add check
+										<ChevronDown class="size-3.5 text-muted-foreground" />
+									</LoadingButton>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content align="end">
+								<DropdownMenu.Item onclick={() => (creating = true)}>
+									<FilePlus class="size-4" /> New check
+								</DropdownMenu.Item>
+								<DropdownMenu.Item onclick={() => fileInput?.click()}>
+									<Upload class="size-4" /> Upload checks
+								</DropdownMenu.Item>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
+					</span>
+				{/snippet}
+			</Hint>
+			<Hint text={isAdmin ? null : 'Editable by administrators'}>
+				{#snippet child(props)}
+					<span {...props} class="inline-flex">
 						<LoadingButton
-							{...props}
-							variant="outline"
 							size="sm"
-							class="gap-2"
-							loading={uploading}
-							loadingLabel="Uploading"
+							loading={syncing}
+							loadingLabel="Syncing"
 							disabled={!isAdmin}
+							onclick={sync}
 						>
-							<Plus class="size-4" /> Add check
-							<ChevronDown class="size-3.5 text-muted-foreground" />
+							<Download class="size-4" /> Sync library
 						</LoadingButton>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end">
-					<DropdownMenu.Item onclick={() => (creating = true)}>
-						<FilePlus class="size-4" /> New check
-					</DropdownMenu.Item>
-					<DropdownMenu.Item onclick={() => fileInput?.click()}>
-						<Upload class="size-4" /> Upload checks
-					</DropdownMenu.Item>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
-			<LoadingButton
-				size="sm"
-				class="gap-2"
-				loading={syncing}
-				loadingLabel="Syncing"
-				disabled={!isAdmin}
-				onclick={sync}
-			>
-				<Download class="size-4" /> Sync library
-			</LoadingButton>
+					</span>
+				{/snippet}
+			</Hint>
 		</Card.Action>
 	</Card.Header>
 
-	<div class="border-b px-6 py-4">
+	<div class="border-b px-4 py-4">
 		{#if statsLoading}
 			<Skeleton class="h-12 w-full" />
 		{:else if statsError}
@@ -435,14 +460,14 @@
 		{/if}
 	</div>
 
-	<div class="flex flex-wrap items-center gap-2 border-b px-6 py-3">
+	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 		<Input
 			bind:value={search}
 			placeholder="Search checks by name or identifier"
 			class="h-9 w-full sm:max-w-xs"
 		/>
 		<Select.Root type="single" bind:value={severity}>
-			<Select.Trigger class="h-9 w-36">
+			<Select.Trigger class="h-9 w-36" aria-label="Severity">
 				{severity === ALL ? 'Any severity' : SEVERITY_LABELS[severity]}
 			</Select.Trigger>
 			<Select.Content>
@@ -455,7 +480,7 @@
 			</Select.Content>
 		</Select.Root>
 		<Select.Root type="single" bind:value={set}>
-			<Select.Trigger class="h-9 w-44">
+			<Select.Trigger class="h-9 w-44" aria-label="Check set">
 				{set === ALL ? 'Any check set' : (sets.find((s) => s.key === set)?.label ?? set)}
 			</Select.Trigger>
 			<Select.Content>
@@ -471,7 +496,7 @@
 			</Select.Content>
 		</Select.Root>
 		<Select.Root type="single" bind:value={origin}>
-			<Select.Trigger class="h-9 w-40">
+			<Select.Trigger class="h-9 w-40" aria-label="Origin">
 				{origin === ALL ? 'Any origin' : TEMPLATE_ORIGIN_LABELS[origin]}
 			</Select.Trigger>
 			<Select.Content>
@@ -498,8 +523,6 @@
 		{#if onlyCallback}
 			<Button
 				variant="secondary"
-				size="sm"
-				class="h-9 gap-1.5"
 				aria-label="Clear the need a callback filter"
 				onclick={() => (onlyCallback = false)}
 			>
@@ -510,7 +533,7 @@
 		<Button
 			variant="outline"
 			size="icon"
-			class="ml-auto h-9 w-9"
+			class="ml-auto"
 			aria-label="Refresh"
 			onclick={() => {
 				void loadStats();
@@ -522,17 +545,13 @@
 	</div>
 
 	{#if listLoading && items.length === 0}
-		<div class="divide-y">
-			{#each Array(6) as _, i (i)}
-				<div class="px-6 py-3"><Skeleton class="h-9 w-full" /></div>
-			{/each}
-		</div>
+		<RowSkeleton rows={6} avatar="size-7 rounded-md" trailing="h-5 w-20 rounded-full" />
 	{:else if listError}
 		<EmptyState
 			icon={TriangleAlert}
 			title="Checks not loaded"
 			description={listError}
-			class="rounded-none border-0 bg-transparent py-12"
+			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" size="sm" onclick={() => void loadList()}>Retry</Button>
 		</EmptyState>
@@ -540,14 +559,14 @@
 		<EmptyState
 			icon={SearchX}
 			title="No checks match"
-			class="rounded-none border-0 bg-transparent py-12"
+			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else}
 		<div class="divide-y">
 			{#each items as template (template.id)}
 				{@const custom = template.origin === TemplateOrigin.CUSTOM}
 				{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
-				<div class="flex items-start gap-3 px-6 py-3 hover:bg-muted/40">
+				<div class="flex items-start gap-3 px-4 py-3 hover:bg-muted/40">
 					{#if custom && isAdmin}
 						<span class="flex h-7 shrink-0 items-center">
 							<Checkbox
@@ -608,8 +627,8 @@
 					<div class="flex shrink-0 items-center gap-2">
 						<Button
 							variant="ghost"
-							size="icon"
-							class="size-8 text-muted-foreground hover:text-foreground"
+							size="icon-sm"
+							class="text-muted-foreground hover:text-foreground"
 							aria-label="{custom && isAdmin ? 'Edit' : 'View'} {template.name}"
 							onclick={() => (viewing = template)}
 						>
@@ -624,9 +643,9 @@
 						{#if custom && isAdmin}
 							<Button
 								variant="ghost"
-								size="icon"
-								class="size-8 text-muted-foreground hover:text-destructive"
-								aria-label="Remove {template.name}"
+								size="icon-sm"
+								class="text-muted-foreground hover:text-destructive"
+								aria-label="Delete {template.name}"
 								onclick={() => (removing = template)}
 							>
 								<Trash2 class="size-4" />
@@ -663,9 +682,10 @@
 	onOpenChange={(value) => {
 		if (!value) removing = null;
 	}}
-	title="Remove check"
+	title="Delete check"
 	description={`Check ${removing?.name ?? ''} and its file are removed.`}
-	confirmLabel="Remove"
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	isDeleting={deleting}
 	onConfirm={remove}
 />
@@ -682,4 +702,10 @@
 	onClear={() => picked.clear()}
 />
 
-<CallbackServerSheet bind:open={callbackOpen} settings={oast} onSaved={(row) => (oast = row)} />
+<CallbackServerSheet
+	bind:open={callbackOpen}
+	settings={oast}
+	failed={oastFailed}
+	onRetry={loadOast}
+	onSaved={(row) => (oast = row)}
+/>

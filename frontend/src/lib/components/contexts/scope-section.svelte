@@ -15,36 +15,36 @@
 </script>
 
 <div class="space-y-5">
-	<div class="space-y-1.5">
-		<Label class="text-xs">Excluded subdomain patterns</Label>
-		<p class="text-xs text-muted-foreground">
-			Keyword, wildcard or regex matched against every discovered subdomain. Matches are recorded as <span
-				class="text-warning">excluded</span
-			> and skipped by later stages.
-		</p>
+	<div class="flex flex-col gap-3">
+		<Label>Excluded subdomain patterns</Label>
 		<StringListField
 			items={context.excluded_subdomains}
 			placeholder="admin"
 			validate={patternError}
 			onChange={(items) => onChange({ excluded_subdomains: items })}
 		/>
+		<p class="text-sm text-muted-foreground">
+			Keyword, wildcard or regex matched against every discovered subdomain. Matches are recorded as <span
+				class="text-warning">excluded</span
+			> and skipped by later stages.
+		</p>
 	</div>
 
-	<div class="space-y-1.5">
-		<Label class="text-xs">Excluded paths</Label>
-		<p class="text-xs text-muted-foreground">
-			Path prefixes or regular expressions excluded from crawling and fuzzing.
-		</p>
+	<div class="flex flex-col gap-3">
+		<Label>Excluded paths</Label>
 		<StringListField
 			items={context.excluded_paths}
 			placeholder="/admin"
 			validate={pathError}
 			onChange={(items) => onChange({ excluded_paths: items })}
 		/>
+		<p class="text-sm text-muted-foreground">
+			Path prefixes or regular expressions excluded from crawling and fuzzing.
+		</p>
 	</div>
 
-	<div class="space-y-1.5">
-		<Label class="text-xs">Excluded IPs / CIDRs</Label>
+	<div class="flex flex-col gap-3">
+		<Label>Excluded IPs / CIDRs</Label>
 		<StringListField
 			items={context.excluded_ips}
 			placeholder="10.0.0.0/8"
@@ -53,13 +53,13 @@
 		/>
 	</div>
 
-	<div class="space-y-1.5">
-		<Label class="text-xs">Included subdomains</Label>
-		<p class="text-xs text-muted-foreground">An empty list scans every discovered subdomain.</p>
+	<div class="flex flex-col gap-3">
+		<Label>Included subdomains</Label>
 		<StringListField
 			items={context.included_subdomains}
 			placeholder="api.example.com"
 			onChange={(items) => onChange({ included_subdomains: items })}
 		/>
+		<p class="text-sm text-muted-foreground">An empty list scans every discovered subdomain.</p>
 	</div>
 </div>

@@ -10,7 +10,7 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import Download from '@lucide/svelte/icons/download';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import StageList from './stage-list.svelte';
@@ -114,11 +114,11 @@
 						<Button
 							{...props}
 							variant="ghost"
-							size="icon-sm"
-							class="text-muted-foreground"
+							size="icon"
+							class="size-7 text-muted-foreground"
 							aria-label="More actions for {engine.name}"
 						>
-							<MoreHorizontal size={15} />
+							<Ellipsis class="size-4" />
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>

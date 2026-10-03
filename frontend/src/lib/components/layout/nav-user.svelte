@@ -22,6 +22,7 @@
 	import { getInitials } from '$lib/utilities/strings';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
+	import { ROLE_LABELS } from '$lib/config/users';
 
 	let { user }: { user: { name: string; email: string; is_superuser: boolean } } = $props();
 	const sidebar = useSidebar();
@@ -75,8 +76,8 @@
 							<span class="truncate text-xs">{user.email}</span>
 							{#if user.is_superuser}
 								<Badge variant="secondary" class="bg-primary/15 text-primary mt-1">
-									<ShieldIcon class="w-3 h-3 mr-1" />
-									Admin
+									<ShieldIcon />
+									{ROLE_LABELS.admin}
 								</Badge>
 							{/if}
 						</div>
@@ -161,7 +162,7 @@
 			</div>
 		</div>
 		<Dialog.Footer>
-			<Button variant="ghost" onclick={() => (aboutDialogOpen = false)}>Close</Button>
+			<Button variant="outline" onclick={() => (aboutDialogOpen = false)}>Close</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

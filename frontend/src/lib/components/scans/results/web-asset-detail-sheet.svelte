@@ -38,7 +38,6 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Check from '@lucide/svelte/icons/check';
 	import X from '@lucide/svelte/icons/x';
-	import type { IconComponent } from '$lib/config/icons';
 	import {
 		CHECK_BY_KEY as POSTURE_BY_KEY,
 		postureQuery,
@@ -71,7 +70,9 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Progress } from '$lib/components/ui/progress';
 	import Hint from '$lib/components/hint.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import ScreenshotThumb from './screenshot-thumb.svelte';
 	import TechIcon from './tech-icon.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
@@ -111,6 +112,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { hostPort } from '$lib/utilities/net';
 	import { externalHref } from '$lib/utilities/links';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		sub: SubdomainRead | null;
@@ -159,6 +161,7 @@
 	let bodyEl = $state<HTMLElement | null>(null);
 	let detail = $state<HttpAssetDetail | null>(null);
 	let detailLoading = $state(false);
+	let detailErrored = $state(false);
 	let httpView = $state('response');
 	let loadedFor = '';
 	let detailFor = '';
@@ -214,6 +217,25 @@
 			});
 	}
 
+	function loadDetail(assetId: string, forName: string) {
+		detailFor = assetId;
+		detailLoading = true;
+		detailErrored = false;
+		httpAssetsApi
+			.detail(projectId, assetId)
+			.then((d) => {
+				if (loadedFor === forName) detail = d;
+			})
+			.catch(() => {
+				if (loadedFor !== forName) return;
+				detail = null;
+				detailErrored = true;
+			})
+			.finally(() => {
+				if (loadedFor === forName) detailLoading = false;
+			});
+	}
+
 	$effect(() => {
 		if (!open || !sub) return;
 		const name = sub.name;
@@ -222,25 +244,11 @@
 			detailFor = '';
 			detail = null;
 			detailLoading = false;
+			detailErrored = false;
 			loadCorrelation(name);
 		}
 		const assetId = corr?.primary_asset?.id;
-		if (assetId && detailFor !== assetId) {
-			detailFor = assetId;
-			detailLoading = true;
-			const forName = name;
-			httpAssetsApi
-				.detail(projectId, assetId)
-				.then((d) => {
-					if (loadedFor === forName) detail = d;
-				})
-				.catch(() => {
-					if (loadedFor === forName) detail = null;
-				})
-				.finally(() => {
-					if (loadedFor === forName) detailLoading = false;
-				});
-		}
+		if (assetId && detailFor !== assetId) loadDetail(assetId, name);
 	});
 
 	let hasHttp = $derived(sub?.http_status != null);
@@ -377,6 +385,7 @@
 					<span class="flex items-center gap-1.5 text-xs">
 						<span
 							class="size-2 shrink-0 rounded-full {STATUS_DOT[httpStatusClass(sub.http_status)]}"
+							aria-hidden="true"
 						></span>
 						{#if hasHttp}
 							<span class="font-mono font-medium {httpStatusTextClass(sub.http_status)}"
@@ -406,7 +415,7 @@
 										rel="noreferrer noopener"
 										aria-label="Open in browser"
 									>
-										<ExternalLink />
+										<ExternalLink class="size-3.5 text-muted-foreground" />
 									</Button>
 								{/snippet}
 							</Tooltip.Trigger>
@@ -537,7 +546,7 @@
 						{/if}
 
 						<section class="flex flex-col gap-2">
-							{@render heading(Network, 'Identity')}
+							<SectionHead icon={Network} title="Identity" />
 							<dl class="flex flex-col divide-y divide-border/60">
 								<div class={SHEET_ROW_TIGHT}>
 									<dt class={SHEET_DT}>Resolves to</dt>
@@ -642,7 +651,7 @@
 
 						{#if hasHttp}
 							<section class="flex flex-col gap-2">
-								{@render heading(Globe, 'Web service')}
+								<SectionHead icon={Globe} title="Web service" />
 								<dl class="flex flex-col divide-y divide-border/60">
 									<div class={SHEET_ROW_TIGHT}>
 										<dt class={SHEET_DT}>URL</dt>
@@ -691,8 +700,8 @@
 										[
 											sub.content_length != null ? formatBytes(sub.content_length) : null,
 											sub.response_time != null ? formatResponseTime(sub.response_time) : null,
-											detail?.lines != null ? `${detail.lines} lines` : null,
-											detail?.words != null ? `${detail.words} words` : null
+											detail?.lines != null ? plural(detail.lines, 'line') : null,
+											detail?.words != null ? plural(detail.words, 'word') : null
 										]
 											.filter(Boolean)
 											.join(' · ') || null
@@ -774,7 +783,10 @@
 						{#if hasHttp && hygieneChecked.length}
 							<section class="flex flex-col gap-2">
 								<div class="flex items-center justify-between">
-									{@render heading(hygieneIssues.length ? ShieldAlert : ShieldCheck, 'Web hygiene')}
+									<SectionHead
+										icon={hygieneIssues.length ? ShieldAlert : ShieldCheck}
+										title="Web hygiene"
+									/>
 									<Button variant="ghost" size="sm" class="h-6 text-xs" onclick={showChecks}>
 										All checks <ChevronRight data-icon="inline-end" />
 									</Button>
@@ -835,7 +847,10 @@
 
 						{#if postureChecked.length}
 							<section class="flex flex-col gap-2">
-								{@render heading(postureIssues.length ? MailWarning : MailCheck, 'Domain posture')}
+								<SectionHead
+									icon={postureIssues.length ? MailWarning : MailCheck}
+									title="Domain posture"
+								/>
 								{#if postureIssues.length}
 									<ul class="flex flex-col divide-y divide-border/60">
 										{#each postureIssues as key (key)}
@@ -884,7 +899,7 @@
 
 						{#if aiAssets.length}
 							<section class="flex flex-col gap-2">
-								{@render heading(AI_ICON, 'AI services')}
+								<SectionHead icon={AI_ICON} title="AI services" />
 								<ul class="flex flex-col divide-y divide-border/60">
 									{#each aiAssets as a (a.id)}
 										{@const service = a.ai_service ?? ''}
@@ -914,7 +929,7 @@
 
 						{#if sub.tech.length || detail?.cpe?.length}
 							<section class="flex flex-col gap-2">
-								{@render heading(Layers, 'Technologies')}
+								<SectionHead icon={Layers} title="Technologies" />
 								<div class="flex flex-wrap gap-1">
 									{#each sub.tech as t (t)}
 										{@render chip(t, `tech:${t}`, false, undefined, false, true)}
@@ -935,10 +950,10 @@
 						{#if sub.tls_not_after || primaryAsset?.tls_version}
 							<section class="flex flex-col gap-2">
 								<div class="flex items-center justify-between">
-									{@render heading(
-										sub.tls_expired || sub.tls_self_signed ? ShieldAlert : ShieldCheck,
-										'TLS certificate'
-									)}
+									<SectionHead
+										icon={sub.tls_expired || sub.tls_self_signed ? ShieldAlert : ShieldCheck}
+										title="TLS certificate"
+									/>
 									{#if primaryAsset?.tls_version}
 										<span class="text-xs text-muted-foreground">
 											{primaryAsset.tls_version}{primaryAsset.tls_cipher
@@ -1013,7 +1028,9 @@
 													<span class="min-w-0 truncate font-mono text-xs"
 														>{primaryAsset.tls_fingerprint}</span
 													>
-													<CopyButton value={primaryAsset.tls_fingerprint} class="size-6" />
+													<span class="flex h-5 shrink-0 items-center">
+														<CopyButton value={primaryAsset.tls_fingerprint} />
+													</span>
 												</dd>
 											</div>
 										{/if}
@@ -1073,14 +1090,8 @@
 											{verdicts.length === 1 ? 'check' : 'checks'} that apply to this response fail.
 										</p>
 										{#each verdictGroups as { group, list } (group)}
-											{@const GroupIcon = GROUP_ICONS[group]}
-											<section class="flex flex-col gap-1">
-												<div
-													class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-												>
-													<GroupIcon class="size-3.5" />
-													{GROUP_LABELS[group]}
-												</div>
+											<section class="flex flex-col gap-2">
+												<SectionHead icon={GROUP_ICONS[group]} title={GROUP_LABELS[group]} />
 												<ul class="divide-y divide-border/60 rounded-md border border-border">
 													{#each list as v (v.key)}
 														{@const spec = CHECK_BY_KEY[v.key]}
@@ -1151,8 +1162,18 @@
 									{/if}
 								{/if}
 							</div>
+						{:else if corrErrored}
+							{@render corrState()}
+						{:else if detailErrored && primaryAsset}
+							{@const assetId = primaryAsset.id}
+							{@const name = sub.name}
+							<EmptyState compact icon={TriangleAlert} title="HTTP capture not loaded">
+								<Button variant="outline" size="sm" onclick={() => loadDetail(assetId, name)}>
+									Retry
+								</Button>
+							</EmptyState>
 						{:else}
-							{@render emptyNote('HTTP capture not loaded', null)}
+							{@render emptyNote('No HTTP capture', null)}
 						{/if}
 					</Tabs.Content>
 
@@ -1162,13 +1183,14 @@
 						{:else}
 							{#if hostAssets.length}
 								<section class="flex flex-col gap-2">
-									{@render heading(Globe, 'Web services')}
+									<SectionHead icon={Globe} title="Web services" />
 									<Item.Group class="gap-0.5">
 										{#each hostAssets as a (a.id)}
 											<Item.Root size="sm" variant="outline">
 												<Item.Media>
 													<span
 														class="size-2 rounded-full {STATUS_DOT[httpStatusClass(a.status_code)]}"
+														aria-hidden="true"
 													></span>
 												</Item.Media>
 												<Item.Content class="gap-0">
@@ -1191,8 +1213,8 @@
 													</span>
 													<Button
 														variant="ghost"
-														size="icon-sm"
-														class="size-6"
+														size="icon"
+														class="size-7"
 														href={externalHref(a.url)}
 														target="_blank"
 														rel="noreferrer noopener"
@@ -1208,7 +1230,7 @@
 							{/if}
 							{#if ports.length}
 								<section class="flex flex-col gap-2">
-									{@render heading(Plug, 'Open ports')}
+									<SectionHead icon={Plug} title="Open ports" />
 									<div class="flex flex-wrap gap-1">
 										{#each ports as p (p.id)}
 											{@render chip(
@@ -1224,7 +1246,7 @@
 							{/if}
 							{#if ipMetas.length}
 								<section class="flex flex-col gap-2">
-									{@render heading(Network, 'Network')}
+									<SectionHead icon={Network} title="Network" />
 									<Item.Group class="gap-0.5">
 										{#each ipMetas as m (m.ip)}
 											<Item.Root size="sm" variant="outline">
@@ -1352,15 +1374,6 @@
 	</Tabs.Trigger>
 {/snippet}
 
-{#snippet heading(Icon: IconComponent, title: string)}
-	<div
-		class="flex items-center gap-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-	>
-		<Icon class="size-3.5" />
-		<span>{title}</span>
-	</div>
-{/snippet}
-
 {#snippet kv(label: string, value: string | number | null | undefined)}
 	{#if value !== null && value !== undefined && value !== ''}
 		<div class={SHEET_ROW_TIGHT}>
@@ -1377,7 +1390,7 @@
 				<button {...props} type="button" onclick={() => onFilter?.(dsl)}>
 					<Badge
 						variant="outline"
-						class="cursor-pointer font-normal hover:bg-accent {mono
+						class="max-w-full cursor-pointer text-left font-normal whitespace-normal wrap-anywhere hover:bg-accent {mono
 							? 'font-mono text-2xs'
 							: ''} {warn ? 'text-warning' : ''}"
 					>
@@ -1396,10 +1409,7 @@
 {/snippet}
 
 {#snippet emptyNote(title: string, description: string | null)}
-	<div class="flex flex-col items-center gap-1 py-10 text-center">
-		<p class="text-sm font-medium">{title}</p>
-		{#if description}<p class="max-w-xs text-xs text-muted-foreground">{description}</p>{/if}
-	</div>
+	<EmptyState compact {title} description={description ?? undefined} />
 {/snippet}
 
 {#snippet corrState()}
@@ -1409,12 +1419,10 @@
 			<Skeleton class="h-24 w-full" />
 		</div>
 	{:else}
-		<div class="flex flex-col items-center gap-2 py-10 text-xs text-muted-foreground">
-			<TriangleAlert class="size-5 text-destructive" />
-			Correlation not loaded.
+		<EmptyState compact icon={TriangleAlert} title="Correlation not loaded">
 			<Button variant="outline" size="sm" onclick={() => sub && loadCorrelation(sub.name)}>
 				Retry
 			</Button>
-		</div>
+		</EmptyState>
 	{/if}
 {/snippet}

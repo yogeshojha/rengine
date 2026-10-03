@@ -10,10 +10,14 @@ function createReportsStore() {
 	let templates = $state<ReportTemplate[]>([]);
 	let isLoading = $state(false);
 	let templatesLoading = $state(false);
+	let error = $state<string | null>(null);
+	let templatesError = $state<string | null>(null);
 	let fetchedProjectId = $state<string | null>(null);
 	let rowsProjectId = $state<string | null>(null);
 	let templatesProjectId = $state<string | null>(null);
 	let timer: ReturnType<typeof setTimeout> | null = null;
+	let seq = 0;
+	let loadingFor: string | null = null;
 
 	function schedule(projectId: string) {
 		if (timer) clearTimeout(timer);
@@ -50,6 +54,15 @@ function createReportsStore() {
 		get isLoading() {
 			return isLoading;
 		},
+		get error() {
+			return error;
+		},
+		get templatesError() {
+			return templatesError;
+		},
+		get templatesLoading() {
+			return templatesLoading;
+		},
 		get liveCount() {
 			return reports.filter((r) => isLive(r.status)).length;
 		},
@@ -58,17 +71,31 @@ function createReportsStore() {
 		},
 
 		async fetch(projectId: string, force = false) {
-			if (isLoading || (fetchedProjectId === projectId && !force)) return;
+			if (isLoading && loadingFor === projectId) return;
+			if (fetchedProjectId === projectId && !force) return;
+			const my = ++seq;
+			loadingFor = projectId;
 			isLoading = true;
+			error = null;
 			try {
-				reports = await reportsApi.list(projectId);
+				const rows = await reportsApi.list(projectId);
+				if (my !== seq) return;
+				reports = rows;
 				fetchedProjectId = projectId;
 				rowsProjectId = projectId;
 				schedule(projectId);
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Reports not loaded');
+				if (my !== seq) return;
+				error = e instanceof Error ? e.message : 'Reports not loaded';
+				if (rowsProjectId !== projectId) {
+					reports = [];
+					rowsProjectId = null;
+				}
 			} finally {
-				isLoading = false;
+				if (my === seq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
@@ -78,8 +105,13 @@ function createReportsStore() {
 			try {
 				templates = await reportsApi.templates(projectId);
 				templatesProjectId = projectId;
+				templatesError = null;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report templates not loaded');
+				templatesError = e instanceof Error ? e.message : 'Report templates not loaded';
+				if (templatesProjectId !== projectId) {
+					templates = [];
+					templatesProjectId = null;
+				}
 			} finally {
 				templatesLoading = false;
 			}
@@ -126,13 +158,6 @@ function createReportsStore() {
 			}
 		},
 
-		async removeMany(projectId: string, ids: string[]): Promise<{ ok: number; failed: number }> {
-			const results = await Promise.allSettled(ids.map((id) => reportsApi.remove(projectId, id)));
-			const gone = new Set(ids.filter((_, i) => results[i].status === 'fulfilled'));
-			reports = reports.filter((r) => !gone.has(r.id));
-			return { ok: gone.size, failed: ids.length - gone.size };
-		},
-
 		async saveTemplate(projectId: string, id: string, body: unknown): Promise<boolean> {
 			try {
 				const updated = await reportsApi.updateTemplate(projectId, id, body);
@@ -169,10 +194,14 @@ function createReportsStore() {
 		reset() {
 			if (timer) clearTimeout(timer);
 			timer = null;
+			seq++;
+			loadingFor = null;
 			reports = [];
 			templates = [];
 			isLoading = false;
 			templatesLoading = false;
+			error = null;
+			templatesError = null;
 			fetchedProjectId = null;
 			rowsProjectId = null;
 			templatesProjectId = null;

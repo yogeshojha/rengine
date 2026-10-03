@@ -8,6 +8,8 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import DestinationPicker from './destination-picker.svelte';
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -39,12 +41,22 @@
 	let pickerOpen = $state(false);
 	let search = $state('');
 	let found = $state<{ id: string; value: string }[]>([]);
+	let initial = $state('');
 	let searchReq = 0;
 
 	const project = $derived(projectsStore.activeProject);
 	const trackers = $derived(issueTrackers.trackers);
 	const tracker = $derived(trackers.find((t) => t.id === trackerId) ?? null);
 	const spec = $derived(tracker ? TRACKERS_BY_KIND[tracker.kind] : null);
+	const dirty = $derived(snapshot() !== initial);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
+	);
+
+	function snapshot(): string {
+		return JSON.stringify([targetId, trackerId, destination.trim(), issueType.trim()]);
+	}
 
 	$effect(() => {
 		if (!open) return;
@@ -56,6 +68,7 @@
 			trackerId = row?.tracker_id ?? first?.id ?? '';
 			destination = row?.destination ?? first?.destination ?? '';
 			issueType = row?.issue_type ?? '';
+			initial = snapshot();
 		});
 	});
 
@@ -103,13 +116,16 @@
 	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : !saving && guard.close())}>
 	<Dialog.Content class="sm:max-w-md">
 		<Dialog.Header>
 			<Dialog.Title>{editing ? 'Edit route' : 'Add route'}</Dialog.Title>
 		</Dialog.Header>
 		<div class="flex flex-col gap-4">
-			<FormField label="Applies to">
+			<FormField
+				label="Applies to"
+				description={editing ? 'Read-only on an existing route.' : undefined}
+			>
 				{#snippet children({ id })}
 					<Popover.Root bind:open={pickerOpen}>
 						<Popover.Trigger class="w-full" disabled={!!editing}>
@@ -213,10 +229,21 @@
 			{/if}
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={saving} disabled={!trackerId || !destination.trim()} onclick={save}>
+			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton
+				loading={saving}
+				loadingLabel="Saving"
+				disabled={!trackerId || !destination.trim()}
+				onclick={save}
+			>
 				Save
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

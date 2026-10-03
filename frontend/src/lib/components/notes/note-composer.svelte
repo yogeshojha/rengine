@@ -4,6 +4,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import NoteTagInput from './note-tag-input.svelte';
 	import { notes } from '$lib/stores/notes.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -30,9 +32,14 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 
 	const editing = untrack(() => note);
-	let body = $state(editing?.body ?? untrack(() => initialBody));
-	let title = $state(editing?.title ?? '');
-	let tags = $state<string[]>(editing ? [...editing.tags] : []);
+	const start = {
+		body: editing?.body ?? untrack(() => initialBody),
+		title: editing?.title ?? '',
+		tags: editing ? [...editing.tags] : []
+	};
+	let body = $state(start.body);
+	let title = $state(start.title);
+	let tags = $state<string[]>([...start.tags]);
 	let saving = $state(false);
 	let failed = $state('');
 	let tagError = $state<string | null>(null);
@@ -84,6 +91,17 @@
 		area?.focus();
 	}
 
+	export function dirty(): boolean {
+		return (
+			body.trim() !== start.body.trim() ||
+			title.trim() !== start.title.trim() ||
+			tags.join('\n') !== start.tags.join('\n') ||
+			(tagInput?.draft() ?? '').trim() !== ''
+		);
+	}
+
+	const guard = new DiscardGuard(dirty, () => onCancel?.());
+
 	function onKey(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
 			e.preventDefault();
@@ -91,7 +109,7 @@
 		} else if (e.key === 'Escape' && editing && onCancel) {
 			e.preventDefault();
 			e.stopPropagation();
-			onCancel();
+			if (!saving) guard.close();
 		}
 	}
 </script>
@@ -130,7 +148,7 @@
 					variant="ghost"
 					size="sm"
 					class="h-7 px-2 text-muted-foreground"
-					onclick={onCancel}
+					onclick={() => guard.close()}
 					disabled={saving}
 				>
 					Cancel
@@ -149,6 +167,14 @@
 		</div>
 	</div>
 	{#if tagError || failed}
-		<p class="text-xs text-destructive">{tagError ?? failed}</p>
+		<p role="alert" class="text-xs text-destructive">{tagError ?? failed}</p>
 	{/if}
 </div>
+
+{#if onCancel}
+	<UnsavedChangesDialog
+		open={guard.asking}
+		onOpenChange={(next) => (guard.asking = next)}
+		onConfirm={guard.discard}
+	/>
+{/if}

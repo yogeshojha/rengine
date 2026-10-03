@@ -13,6 +13,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ImportDialog from './import-dialog.svelte';
@@ -235,7 +236,7 @@
 <Sheet.Root {open} {onOpenChange}>
 	<Sheet.Content class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
 		{#if program}
-			<Sheet.Header class="gap-2 border-b p-4">
+			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
 				<Sheet.Title class="flex flex-wrap items-center gap-2">
 					<span class="min-w-0 truncate">{program.name}</span>
 					{#if program.program_state === ProgramState.Private}
@@ -295,23 +296,30 @@
 							variant="outline"
 							onclick={() => onOpenWatch?.(program.watch_id ?? '')}
 						>
-							<RadarIcon class="mr-1.5 size-3.5" />
+							<RadarIcon class="size-3.5" />
 							Watching
 						</Button>
 					{:else}
-						<Button
-							size="sm"
-							disabled={!projectId || program.importable_count === 0}
-							onclick={() => (watchOpen = true)}
-						>
-							<RadarIcon class="mr-1.5 size-3.5" />
-							Watch
-						</Button>
+						{@const watchBlocked = !projectId
+							? 'Select a project'
+							: program.importable_count === 0
+								? 'No scannable asset in scope'
+								: null}
+						<Hint text={watchBlocked}>
+							{#snippet child(props)}
+								<span {...props} class="inline-flex">
+									<Button size="sm" disabled={!!watchBlocked} onclick={() => (watchOpen = true)}>
+										<RadarIcon class="size-3.5" />
+										Watch
+									</Button>
+								</span>
+							{/snippet}
+						</Hint>
 					{/if}
 				</div>
 			</Sheet.Header>
 
-			<div class="border-b px-4">
+			<div class="border-b px-2">
 				<CountTabs
 					tabs={SCOPE_TABS}
 					value={tab}
@@ -321,7 +329,7 @@
 			</div>
 
 			<div
-				class="flex flex-wrap gap-x-4 gap-y-1 border-b bg-muted/20 px-4 py-2 text-xs text-muted-foreground"
+				class="flex flex-wrap gap-x-4 gap-y-1 border-b bg-muted/20 px-5 py-2 text-xs text-muted-foreground"
 			>
 				{#each program.sources as source (source)}
 					<span>
@@ -333,12 +341,13 @@
 
 			<ScrollArea.Root class="min-h-0 flex-1">
 				{#if loading}
-					<RowSkeleton rows={6} avatar={null} trailing="h-5 w-16 rounded-full" />
+					<RowSkeleton rows={6} avatar={null} trailing="h-5 w-16 rounded-full" padding="px-5" />
 				{:else if scopes.length === 0 && detail?.scopes_synced_at}
 					<EmptyState
 						title="No structured scope"
 						description="The scope is in the program policy."
-						class="p-10"
+						compact
+						class="rounded-none border-0 bg-transparent py-16"
 					>
 						<Button
 							href={externalHref(program.url ?? bountyVocabulary.url(program.platform))}
@@ -347,7 +356,7 @@
 							variant="outline"
 							size="sm"
 						>
-							<ExternalLinkIcon class="mr-2 size-3.5" />
+							<ExternalLinkIcon class="size-3.5" />
 							Policy on {program.platform_label}
 						</Button>
 					</EmptyState>
@@ -356,7 +365,8 @@
 						icon={TriangleAlertIcon}
 						title="Program not loaded"
 						description={loadError}
-						class="p-10"
+						compact
+						class="rounded-none border-0 bg-transparent py-16"
 					>
 						<Button
 							variant="outline"
@@ -370,28 +380,40 @@
 					<EmptyState
 						title="Scope not shared"
 						description={`${program.platform_label} did not return this program's scope.`}
-						class="p-10"
+						compact
+						class="rounded-none border-0 bg-transparent py-16"
 					/>
 				{:else if scopes.length === 0}
 					{#if syncing}
 						<div aria-busy="true">
-							<p class="flex items-center gap-2 border-b px-4 py-2.5 text-xs text-muted-foreground">
+							<p class="flex items-center gap-2 border-b px-5 py-2.5 text-xs text-muted-foreground">
 								<RefreshCwIcon class="size-3.5 animate-spin" />
 								Fetching scope from {program.platform_label}
 							</p>
-							<RowSkeleton rows={4} avatar={null} trailing="h-5 w-16 rounded-full" />
+							<RowSkeleton rows={4} avatar={null} trailing="h-5 w-16 rounded-full" padding="px-5" />
 						</div>
 					{:else}
-						<EmptyState title="Scope not fetched" description={fetchFailed ?? ''} class="p-10">
-							<LoadingButton loading={syncing} variant="outline" size="sm" onclick={refreshScope}>
-								<RefreshCwIcon class="mr-2 size-3.5" />
+						<EmptyState
+							title="Scope not fetched"
+							description={fetchFailed ?? ''}
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
+						>
+							<LoadingButton
+								loading={syncing}
+								loadingLabel="Fetching"
+								variant="outline"
+								size="sm"
+								onclick={refreshScope}
+							>
+								<RefreshCwIcon class="size-3.5" />
 								Fetch scope
 							</LoadingButton>
 						</EmptyState>
 					{/if}
 				{:else}
 					{#if tab !== ScopeState.OutOfScope && unreachableTotal > 0}
-						<div class="border-b bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+						<div class="border-b bg-muted/30 px-5 py-2.5 text-xs text-muted-foreground">
 							<span class="font-medium text-foreground">{plural(unreachableTotal, 'asset')}</span>
 							not scannable:
 							{unreachableEntries.map(([label, n]) => `${n} ${label}`).join(' · ')}
@@ -411,10 +433,10 @@
 			</ScrollArea.Root>
 
 			{#if scopes.length > 0}
-				<Sheet.Footer class="gap-3 border-t p-4">
+				<Sheet.Footer class="gap-3 border-t px-5 py-3">
 					{#if selectedOutOfScope > 0}
 						<div
-							class="flex items-start gap-2 rounded-md border border-warning/25 bg-warning/10 p-2.5 text-xs"
+							class="flex items-start gap-2 rounded-lg border border-warning/25 bg-warning/10 p-2.5 text-xs"
 						>
 							<TriangleAlertIcon class="mt-0.5 size-3.5 shrink-0 text-warning" />
 							<span>
@@ -440,6 +462,7 @@
 							</Button>
 						</div>
 						<Button
+							size="sm"
 							disabled={selected.size === 0 || !projectId}
 							onclick={() => (importOpen = true)}
 						>

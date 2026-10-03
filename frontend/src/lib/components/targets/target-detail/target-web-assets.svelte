@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Search from '@lucide/svelte/icons/search';
+	import SearchX from '@lucide/svelte/icons/search-x';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Globe from '@lucide/svelte/icons/globe';
@@ -11,8 +12,8 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Toggle } from '$lib/components/ui/toggle';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ListHeader from '$lib/components/scans/results/table/list-header.svelte';
@@ -36,6 +37,7 @@
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const PAGE_SIZE = 50;
+	const EMPTY = 'rounded-none border-0 bg-transparent py-16';
 
 	let page = $state<TargetAssetPage | null>(null);
 	let loading = $state(true);
@@ -114,6 +116,10 @@
 		pageIndex = 0;
 	}
 
+	function retry() {
+		if (projectsStore.activeProject) load(projectsStore.activeProject.id);
+	}
+
 	function reset() {
 		search = '';
 		debounced = '';
@@ -143,7 +149,7 @@
 			/>
 			<Input
 				bind:value={search}
-				placeholder="Search host, title or address…"
+				placeholder="Search host, title or address"
 				class="h-9 pl-9"
 				aria-label="Search web assets"
 			/>
@@ -183,43 +189,33 @@
 			{targetId}
 			filters={{}}
 		/>
-		<Button
-			variant="outline"
-			size="icon"
-			class="size-9"
-			aria-label="Refresh"
-			onclick={() => projectsStore.activeProject && load(projectsStore.activeProject.id)}
-		>
+		<Button variant="outline" size="icon" class="size-9" aria-label="Refresh" onclick={retry}>
 			<RefreshCw class="size-4 {loading ? 'animate-spin' : ''}" />
 		</Button>
 	</div>
 
 	{#if loading && !page}
-		<div class="divide-y">
-			{#each Array(8) as _, i (i)}
-				<div class="flex items-center gap-3 px-4 py-3">
-					<Skeleton class="h-5 flex-1" />
-					<Skeleton class="hidden h-5 w-32 sm:block" />
-					<Skeleton class="hidden h-5 w-24 sm:block" />
-				</div>
-			{/each}
-		</div>
+		<ScrollArea orientation="horizontal">
+			<TableSkeleton lead={ASSET_LEAD_COLUMNS} {columns} />
+		</ScrollArea>
 	{:else if error}
 		<EmptyState
-			class="py-16"
+			class={EMPTY}
 			icon={TriangleAlert}
 			title="Web assets not loaded"
 			description={error}
-		/>
+		>
+			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
+		</EmptyState>
 	{:else if rows.length === 0 && filtered}
-		<EmptyState class="py-16" title="No web assets match this filter">
-			<Button size="sm" variant="outline" class="gap-2" onclick={reset}>
+		<EmptyState class={EMPTY} icon={SearchX} title="No web assets match">
+			<Button size="sm" variant="outline" onclick={reset}>
 				<X class="size-4" /> Clear filters
 			</Button>
 		</EmptyState>
 	{:else if rows.length === 0}
-		<EmptyState class="py-16" icon={Globe} title="No web assets">
-			<Button class="gap-2" onclick={onScan}>Start scan</Button>
+		<EmptyState class={EMPTY} icon={Globe} title="No web assets">
+			<Button size="sm" onclick={onScan}>Start scan</Button>
 		</EmptyState>
 	{:else}
 		<ScrollArea orientation="horizontal">

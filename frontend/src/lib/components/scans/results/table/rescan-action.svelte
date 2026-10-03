@@ -29,7 +29,6 @@
 <LoadingButton
 	variant="ghost"
 	size="sm"
-	class="gap-2 font-medium"
 	loading={busy}
 	loadingLabel="Starting"
 	onclick={() => (confirming = true)}

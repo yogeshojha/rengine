@@ -17,7 +17,7 @@
 	import { EXPOSURE_PARAMS } from '$lib/config/interest';
 	import type { IconComponent } from '$lib/config/icons';
 	import { scopeFromParams, scopeToParams } from '$lib/utilities/dashboard-scope';
-	import type { TargetScope } from '$lib/utilities/surface-scope';
+	import { isScoped, type TargetScope } from '$lib/utilities/surface-scope';
 
 	const TAB_META: Record<ExposureTab, { label: string; icon: IconComponent }> = {
 		exposures: { label: 'Exposures', icon: ScanEyeIcon },
@@ -44,6 +44,15 @@
 		void goto(qs ? `?${qs}` : page.url.pathname, { keepFocus: true, noScroll: true });
 	}
 
+	let lastProject = '';
+	$effect(() => {
+		const pid = projectId;
+		untrack(() => {
+			if (lastProject && pid && lastProject !== pid && isScoped(scope)) setScope({});
+			if (pid) lastProject = pid;
+		});
+	});
+
 	$effect(() => {
 		const tab = activeTab;
 		if (!browser) return;
@@ -61,7 +70,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels.exposures)}</title></svelte:head>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
 	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>
 
 	<Tabs.Root

@@ -5,6 +5,8 @@
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
@@ -220,16 +222,17 @@
 					<span class="text-xs text-destructive">
 						{health.responded ? 'Not running' : 'No response'}
 					</span>
-					<Button
+					<LoadingButton
 						variant="outline"
 						size="sm"
-						class="h-7 gap-1.5 text-xs"
-						disabled={checking}
+						class="h-7 text-xs"
+						loading={checking}
+						loadingLabel="Checking"
 						onclick={() => checkWorkers()}
 					>
 						<RefreshCwIcon class="size-3.5" />
 						Check again
-					</Button>
+					</LoadingButton>
 				{/if}
 			</div>
 		</div>
@@ -309,32 +312,34 @@
 	<section class="space-y-2">
 		<h3 class="text-sm font-medium">Retention</h3>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-			<div class="space-y-1.5">
-				<Label class="text-xs">Scan history</Label>
-				<Select.Root type="single" bind:value={scanRetention} disabled={!storedRetention}>
-					<Select.Trigger class="h-9 w-full text-sm">
-						{scanRetention ? retentionLabel(SCAN_RETENTION, scanRetention) : ''}
-					</Select.Trigger>
-					<Select.Content>
-						{#each SCAN_RETENTION as o (o.value)}
-							<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<div class="space-y-1.5">
-				<Label class="text-xs">Screenshots and response bodies</Label>
-				<Select.Root type="single" bind:value={shotRetention}>
-					<Select.Trigger class="h-9 w-full text-sm">
-						{retentionLabel(SCREENSHOT_RETENTION, shotRetention)}
-					</Select.Trigger>
-					<Select.Content>
-						{#each SCREENSHOT_RETENTION as o (o.value)}
-							<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
+			<FormField label="Scan history">
+				{#snippet children({ id })}
+					<Select.Root type="single" bind:value={scanRetention} disabled={!storedRetention}>
+						<Select.Trigger {id} class="h-9 w-full text-sm">
+							{scanRetention ? retentionLabel(SCAN_RETENTION, scanRetention) : ''}
+						</Select.Trigger>
+						<Select.Content>
+							{#each SCAN_RETENTION as o (o.value)}
+								<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				{/snippet}
+			</FormField>
+			<FormField label="Screenshots and response bodies">
+				{#snippet children({ id })}
+					<Select.Root type="single" bind:value={shotRetention} disabled={!storedRetention}>
+						<Select.Trigger {id} class="h-9 w-full text-sm">
+							{shotRetention ? retentionLabel(SCREENSHOT_RETENTION, shotRetention) : ''}
+						</Select.Trigger>
+						<Select.Content>
+							{#each SCREENSHOT_RETENTION as o (o.value)}
+								<Select.Item value={o.value} label={o.label}>{o.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				{/snippet}
+			</FormField>
 		</div>
 	</section>
 </div>

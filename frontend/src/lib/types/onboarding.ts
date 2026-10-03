@@ -26,6 +26,7 @@ export interface StepFooter {
 	onNext: () => void;
 	nextLabel?: string;
 	nextLoading?: boolean;
+	nextLoadingLabel?: string;
 	nextDisabled?: boolean;
 	canSkip?: boolean;
 	hidden?: boolean;

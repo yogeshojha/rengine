@@ -30,6 +30,7 @@
 {#snippet arrow(key: SecretSortKey)}
 	{#if sortKey === key}
 		{#if sortDir === 1}<ArrowUp class="h-3 w-3" />{:else}<ArrowDown class="h-3 w-3" />{/if}
+		<span class="sr-only">, sorted {sortDir === 1 ? 'ascending' : 'descending'}</span>
 	{/if}
 {/snippet}
 
@@ -38,7 +39,7 @@
 	style={sticky ? `top: calc(var(--scan-tabs-h, 0px) + ${top}px)` : undefined}
 >
 	<div
-		class="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
+		class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 	>
 		{#if onSelectAll}
 			<div class="hidden shrink-0 sm:flex">
@@ -58,7 +59,10 @@
 
 		<button
 			type="button"
-			class="{SECRET_WIDTHS.kind} items-center gap-1 text-left tracking-wider uppercase hover:text-foreground"
+			class="{SECRET_WIDTHS.kind} items-center gap-1 text-left uppercase hover:text-foreground {sortKey ===
+			'kind'
+				? 'text-foreground'
+				: ''}"
 			onclick={() => onSort('kind')}
 		>
 			Kind
@@ -67,7 +71,10 @@
 
 		<button
 			type="button"
-			class="{SECRET_WIDTHS.state} items-center gap-1 tracking-wider uppercase hover:text-foreground"
+			class="{SECRET_WIDTHS.state} items-center gap-1 uppercase hover:text-foreground {sortKey ===
+			'state'
+				? 'text-foreground'
+				: ''}"
 			onclick={() => onSort('state')}
 		>
 			State
@@ -76,7 +83,10 @@
 
 		<button
 			type="button"
-			class="{SECRET_WIDTHS.asset} items-center gap-1 text-left tracking-wider uppercase hover:text-foreground"
+			class="{SECRET_WIDTHS.asset} items-center gap-1 text-left uppercase hover:text-foreground {sortKey ===
+			'hosts'
+				? 'text-foreground'
+				: ''}"
 			onclick={() => onSort('hosts')}
 		>
 			Web asset
@@ -85,7 +95,10 @@
 
 		<button
 			type="button"
-			class="{SECRET_WIDTHS.seen} items-center gap-1 tracking-wider uppercase hover:text-foreground"
+			class="{SECRET_WIDTHS.seen} items-center gap-1 uppercase hover:text-foreground {sortKey ===
+			'seen'
+				? 'text-foreground'
+				: ''}"
 			onclick={() => onSort('seen')}
 		>
 			Seen

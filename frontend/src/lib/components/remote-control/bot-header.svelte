@@ -35,8 +35,7 @@
 	);
 
 	async function stop() {
-		confirmStop = false;
-		await remoteControl.setRunning(false);
+		if (await remoteControl.setRunning(false)) confirmStop = false;
 	}
 </script>
 
@@ -100,6 +99,7 @@
 				<LoadingButton
 					size="sm"
 					loading={remoteControl.isSaving}
+					loadingLabel="Starting"
 					onclick={() => remoteControl.setRunning(true)}
 				>
 					<PlayIcon class="size-4" />
@@ -117,6 +117,7 @@
 		? ' receives'
 		: 's receive'} no replies while the listener is stopped."
 	confirmLabel="Stop listener"
+	loadingLabel="Stopping"
 	destructive
 	loading={remoteControl.isSaving}
 	onOpenChange={(v) => (confirmStop = v)}

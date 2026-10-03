@@ -6,7 +6,6 @@
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 
 	import { Button } from '$lib/components/ui/button';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -16,6 +15,10 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import MultiSelectCombobox from '$lib/components/multi-select-combobox.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
@@ -86,12 +89,12 @@
 	);
 
 	let engineLabel = $derived(
-		scanEnginesStore.engines.find((e) => e.id === engineId)?.name ?? 'Select engine'
+		scanEnginesStore.engines.find((e) => e.id === engineId)?.name ?? 'Select an engine'
 	);
 	let contextLabel = $derived(
 		contextId === SELECT_NONE
 			? NO_CONTEXT_LABEL
-			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select context')
+			: (scanContextsStore.contexts.find((c) => c.id === contextId)?.name ?? 'Select a context')
 	);
 	let targetItems = $derived(targets.map((t) => ({ id: t.id, label: t.target_value })));
 	let selectedTargetItems = $derived(
@@ -127,6 +130,28 @@
 		return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 	}
 
+	function snapshot(): string {
+		return JSON.stringify([
+			name.trim(),
+			targetIds,
+			engineId,
+			contextId,
+			scheduleType,
+			onceLocal,
+			String(intervalEvery),
+			intervalUnit,
+			dailyTime,
+			cronExpr.trim()
+		]);
+	}
+
+	let initial = $state('');
+	let dirty = $derived(open && snapshot() !== initial);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => handleOpenChange(false)
+	);
+
 	function prefill() {
 		if (schedule) {
 			name = schedule.name;
@@ -151,6 +176,7 @@
 			dailyTime = '10:00';
 			cronExpr = '0 0 * * *';
 		}
+		initial = snapshot();
 	}
 
 	$effect(() => {
@@ -231,7 +257,7 @@
 				? await scanSchedulesStore.updateSchedule(schedule.id, project.id, payload)
 				: await scanSchedulesStore.createSchedule(project.id, payload);
 			if (result) {
-				toast.success(isEdit ? 'Schedule updated' : 'Schedule created');
+				toast.success(isEdit ? 'Schedule saved' : 'Schedule created');
 				handleOpenChange(false);
 			} else {
 				toast.error(scanSchedulesStore.error ?? 'Schedule not saved');
@@ -247,23 +273,31 @@
 	}
 </script>
 
-<Dialog.Root {open} onOpenChange={handleOpenChange}>
-	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[560px]">
-		<Dialog.Header class="p-6 pb-4">
-			<Dialog.Title>{isEdit ? 'Edit scheduled scan' : 'New scheduled scan'}</Dialog.Title>
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!saving) guard.close();
+		}
+	}
+>
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+		<Dialog.Header class="border-b px-6 py-4">
+			<Dialog.Title>{isEdit ? 'Edit schedule' : 'New schedule'}</Dialog.Title>
 			<Dialog.Description>Each target runs as its own scan on this schedule.</Dialog.Description>
 		</Dialog.Header>
 
-		<Separator />
-
-		<ScrollArea class="min-h-0 flex-1">
-			<div class="space-y-4 p-6">
-				<div class="space-y-2">
+		<ScrollArea
+			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
+		>
+			<div class="space-y-4 px-6 py-5">
+				<div class="flex flex-col gap-3">
 					<Label for="schedule-name">Name <span class="text-destructive">*</span></Label>
 					<Input id="schedule-name" bind:value={name} placeholder="Nightly recon" />
 				</div>
 
-				<div class="space-y-2">
+				<div class="flex flex-col gap-3">
 					<Label for="schedule-targets">Targets <span class="text-destructive">*</span></Label>
 					{#if targetsLoading}
 						<Skeleton class="h-9 w-full rounded-md" />
@@ -291,7 +325,7 @@
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
-					<div class="space-y-2">
+					<div class="flex flex-col gap-3">
 						<Label for="schedule-engine">Engine <span class="text-destructive">*</span></Label>
 						{#if !enginesReady}
 							<Skeleton class="h-9 w-full rounded-md" />
@@ -314,7 +348,7 @@
 							</Select.Root>
 						{/if}
 					</div>
-					<div class="space-y-2">
+					<div class="flex flex-col gap-3">
 						<Label for="schedule-context">Context</Label>
 						{#if !contextsReady}
 							<Skeleton class="h-9 w-full rounded-md" />
@@ -355,55 +389,55 @@
 						</Tabs.List>
 
 						<Tabs.Content value="daily_at" class="pt-3">
-							<Label for="daily-time" class="text-xs text-muted-foreground">Runs every day at</Label
-							>
-							<Input id="daily-time" type="time" bind:value={dailyTime} class="mt-1.5 w-40" />
+							<FormField label="Runs every day at">
+								{#snippet children({ id })}
+									<Input {id} type="time" bind:value={dailyTime} class="max-w-40" />
+								{/snippet}
+							</FormField>
 						</Tabs.Content>
 
 						<Tabs.Content value="interval" class="pt-3">
-							<Label class="text-xs text-muted-foreground">Runs every</Label>
-							<div class="mt-1.5 flex items-center gap-2">
-								<Input
-									type="number"
-									min="1"
-									bind:value={intervalEvery}
-									class="w-24"
-									aria-label="Interval amount"
-								/>
-								<Select.Root type="single" bind:value={intervalUnit}>
-									<Select.Trigger class="w-36">{unitLabel}</Select.Trigger>
-									<Select.Content>
-										{#each INTERVAL_UNITS as unit (unit)}
-											<Select.Item value={unit} label={INTERVAL_UNIT_LABELS[unit]}>
-												{INTERVAL_UNIT_LABELS[unit]}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
+							<div class="flex flex-col gap-3">
+								<Label>Runs every</Label>
+								<div class="flex items-center gap-2">
+									<Input
+										type="number"
+										min="1"
+										bind:value={intervalEvery}
+										class="w-24"
+										aria-label="Interval amount"
+									/>
+									<Select.Root type="single" bind:value={intervalUnit}>
+										<Select.Trigger class="w-36">{unitLabel}</Select.Trigger>
+										<Select.Content>
+											{#each INTERVAL_UNITS as unit (unit)}
+												<Select.Item value={unit} label={INTERVAL_UNIT_LABELS[unit]}>
+													{INTERVAL_UNIT_LABELS[unit]}
+												</Select.Item>
+											{/each}
+										</Select.Content>
+									</Select.Root>
+								</div>
 							</div>
 						</Tabs.Content>
 
 						<Tabs.Content value="one_off" class="pt-3">
-							<Label for="once-at" class="text-xs text-muted-foreground">Runs once at</Label>
-							<Input
-								id="once-at"
-								type="datetime-local"
-								bind:value={onceLocal}
-								class="mt-1.5 w-60"
-							/>
+							<FormField label="Runs once at">
+								{#snippet children({ id })}
+									<Input {id} type="datetime-local" bind:value={onceLocal} class="max-w-60" />
+								{/snippet}
+							</FormField>
 						</Tabs.Content>
 
 						<Tabs.Content value="cron" class="pt-3">
-							<Label for="cron-expr" class="text-xs text-muted-foreground">Cron expression</Label>
-							<Input
-								id="cron-expr"
-								bind:value={cronExpr}
-								placeholder="0 0 * * *"
-								class="mt-1.5 font-mono"
-							/>
-							<p class="mt-1 text-2xs text-muted-foreground">
-								Standard 5-field cron: minute, hour, day of month, month, day of week.
-							</p>
+							<FormField
+								label="Cron expression"
+								description="Standard 5-field cron: minute, hour, day of month, month, day of week."
+							>
+								{#snippet children({ id })}
+									<Input {id} bind:value={cronExpr} placeholder="0 0 * * *" class="font-mono" />
+								{/snippet}
+							</FormField>
 						</Tabs.Content>
 					</Tabs.Root>
 
@@ -427,16 +461,22 @@
 			</div>
 		</ScrollArea>
 
-		<Separator />
-
-		<div class="flex items-center justify-end gap-3 bg-muted/30 p-4">
-			<Button variant="outline" onclick={() => handleOpenChange(false)} disabled={saving}>
-				Cancel
-			</Button>
-			<Button onclick={handleSave} disabled={!canSave} class="gap-2">
-				{#if saving}<Spinner class="h-4 w-4" />{/if}
-				{isEdit ? 'Save changes' : 'Create schedule'}
-			</Button>
-		</div>
+		<Dialog.Footer class="border-t px-6 py-4">
+			<Button variant="outline" onclick={() => guard.close()} disabled={saving}>Cancel</Button>
+			<LoadingButton
+				onclick={handleSave}
+				disabled={!canSave}
+				loading={saving}
+				loadingLabel="Saving"
+			>
+				{isEdit ? 'Save' : 'Create schedule'}
+			</LoadingButton>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

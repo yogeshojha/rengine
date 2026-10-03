@@ -3,6 +3,7 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Waypoints from '@lucide/svelte/icons/waypoints';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -47,6 +48,7 @@
 	let hideStatic = $state(true);
 	let tree = $state<EndpointTree | null>(null);
 	let loading = $state(true);
+	let failed = $state(false);
 	let summary = $state<EndpointSummary | null>(null);
 	let selected = $state<EndpointRead | null>(null);
 	let drawerOpen = $state(false);
@@ -85,9 +87,15 @@
 		loading = true;
 		try {
 			const res = await endpointsApi.tree(projectId, scanId, 'host', filter);
-			if (my === req) tree = res;
+			if (my === req) {
+				tree = res;
+				failed = false;
+			}
 		} catch {
-			if (my === req) tree = null;
+			if (my === req) {
+				tree = null;
+				failed = true;
+			}
 		} finally {
 			if (my === req) loading = false;
 		}
@@ -186,14 +194,24 @@
 			</ToggleGroup.Item>
 		</ToggleGroup.Root>
 		{#if onOpenEndpoints}
-			<Button variant="outline" size="sm" class="h-9 gap-1.5" onclick={() => onOpenEndpoints(host)}>
-				Open in Endpoints <ArrowUpRight class="size-3.5" />
+			<Button variant="outline" onclick={() => onOpenEndpoints(host)}>
+				Open in Endpoints <ArrowUpRight />
 			</Button>
 		{/if}
 	</div>
 
-	{#if tree && tree.nodes.length === 0 && !loading}
+	{#if failed && !loading}
 		<EmptyState
+			compact
+			icon={TriangleAlert}
+			title="Endpoints not loaded"
+			class="rounded-none border-0 bg-transparent"
+		>
+			<Button size="sm" variant="outline" onclick={() => load()}>Retry</Button>
+		</EmptyState>
+	{:else if tree && tree.nodes.length === 0 && !loading}
+		<EmptyState
+			compact
 			icon={Waypoints}
 			title={search || hideStatic ? 'No paths match' : 'No paths'}
 			description={search
@@ -201,7 +219,7 @@
 				: hideStatic
 					? 'All paths are static files.'
 					: undefined}
-			class="rounded-none border-0 bg-transparent py-12"
+			class="rounded-none border-0 bg-transparent"
 		>
 			{#if hideStatic && !search}
 				<Button size="sm" variant="outline" onclick={() => (hideStatic = false)}>

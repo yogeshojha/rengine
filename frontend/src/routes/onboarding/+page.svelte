@@ -50,7 +50,7 @@
 	const ALL_STEPS: Step[] = [
 		{
 			title: 'Instance setup',
-			description: 'Instance name, timezone and administrator password.',
+			description: 'Instance name, time zone and administrator password.',
 			icon: ServerCogIcon,
 			component: StepWelcomeSecurity
 		},
@@ -146,6 +146,7 @@
 			onNext: cfg.onNext,
 			nextLabel: cfg.nextLabel ?? 'Continue',
 			nextLoading: cfg.nextLoading ?? false,
+			nextLoadingLabel: cfg.nextLoadingLabel,
 			nextDisabled: cfg.nextDisabled ?? false,
 			canSkip: cfg.canSkip ?? false,
 			hidden: cfg.hidden ?? false

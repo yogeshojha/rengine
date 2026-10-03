@@ -5,7 +5,6 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Share2 from '@lucide/svelte/icons/share-2';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as Card from '$lib/components/ui/card';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
@@ -234,6 +233,7 @@
 									<span
 										class="size-2 rounded-full"
 										style="background:{kindColor(k.key, mode.current === 'dark')}"
+										aria-hidden="true"
 									></span>
 									{k.label}
 									<span class="text-muted-foreground tabular-nums">{byKind.shown[k.key] ?? 0}</span>
@@ -285,9 +285,7 @@
 			title="Graph not loaded"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" class="gap-2" onclick={load}
-				><RefreshCw class="size-4" /> Retry</Button
-			>
+			<Button variant="outline" size="sm" onclick={() => load()}>Retry</Button>
 		</EmptyState>
 	{:else if loading && !graph}
 		<div class="flex items-center justify-center" style="height:{HEIGHT}px">
@@ -311,7 +309,7 @@
 			title="Shared identities hidden"
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" onclick={showAll}>Show all identities</Button>
+			<Button variant="outline" size="sm" onclick={showAll}>Show all identities</Button>
 		</EmptyState>
 	{:else if graph}
 		<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem]">

@@ -77,8 +77,8 @@ export async function retryTransient<T>(
 
 function sessionError(result: RefreshResult): ApiError {
 	return result === 'expired'
-		? new ApiError('Session expired. Sign in again.', 401)
-		: new ApiError('Session not refreshed. Sign in again.', 0);
+		? new ApiError('Session expired. Log in again.', 401)
+		: new ApiError('Session not refreshed. Log in again.', 0);
 }
 
 async function responseError(response: Response): Promise<ApiError> {

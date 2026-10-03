@@ -110,8 +110,8 @@
 			{#if targetType === TargetType.ASN}
 				<div class="px-4 pt-3.5 pb-3 border-b border-border/50">
 					<div class="flex items-center gap-2">
-						<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
-							<RadioTower class="h-4 w-4 text-primary" />
+						<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-muted">
+							<RadioTower class="h-4 w-4 text-muted-foreground" />
 						</div>
 						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium font-mono">{targetValue}</p>
@@ -128,7 +128,7 @@
 							<CircleCheck class="h-3.5 w-3.5 text-foreground mt-0.5 shrink-0" />
 						{/if}
 						<div>
-							<p class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 								Status
 							</p>
 							<p
@@ -145,9 +145,7 @@
 						<div class="flex items-start gap-2.5">
 							<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
-								<p
-									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
-								>
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Announced prefixes
 								</p>
 								<p class="text-sm font-medium font-mono">{formatNumber(bgp.prefix_count)}</p>
@@ -157,9 +155,7 @@
 						<div class="flex items-start gap-2.5">
 							<Users class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
-								<p
-									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
-								>
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Peers
 								</p>
 								<p class="text-sm font-medium font-mono">{formatNumber(bgp.peer_count)}</p>
@@ -170,8 +166,8 @@
 			{:else}
 				<div class="px-4 pt-3.5 pb-3 border-b border-border/50">
 					<div class="flex items-center gap-2">
-						<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
-							<Radio class="h-4 w-4 text-primary" />
+						<div class="flex items-center justify-center h-8 w-8 rounded-lg bg-muted">
+							<Radio class="h-4 w-4 text-muted-foreground" />
 						</div>
 						<div class="min-w-0 flex-1">
 							<p class="text-sm font-medium font-mono">{targetValue}</p>
@@ -185,9 +181,7 @@
 						<div class="flex items-start gap-2.5">
 							<Server class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
-								<p
-									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
-								>
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Announcing ASN
 								</p>
 								<p class="text-sm font-medium font-mono">AS{bgp.asn}</p>
@@ -199,9 +193,7 @@
 						<div class="flex items-start gap-2.5">
 							<CircleDot class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
-								<p
-									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
-								>
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Holder
 								</p>
 								<p class="text-sm">{bgp.holder}</p>
@@ -213,9 +205,7 @@
 						<div class="flex items-start gap-2.5">
 							<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
 							<div>
-								<p
-									class="text-2xs text-muted-foreground uppercase tracking-wider leading-none mb-1"
-								>
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Containing prefix
 								</p>
 								<p class="text-sm font-mono">{bgp.prefix}</p>

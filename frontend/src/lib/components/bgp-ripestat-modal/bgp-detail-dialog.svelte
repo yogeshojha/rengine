@@ -4,7 +4,6 @@
 	import { targetsApi } from '$lib/api/targets';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Spinner } from '$lib/components/ui/spinner';
 	import BgpTab from '$lib/components/targets/target-detail/bgp/bgp-tab.svelte';
 	import RelatedTargets from '$lib/components/targets/related-targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -126,26 +125,22 @@
 
 <Dialog.Root bind:open {onOpenChange}>
 	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-		<Dialog.Header class="shrink-0 px-6 pt-6 pb-4">
+		<Dialog.Header class="border-b px-6 py-4 pr-12">
 			<div class="flex items-center gap-3">
-				<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-					{#if loading}
-						<Spinner class="h-5 w-5 text-primary" />
-					{:else}
-						<DialogIcon class="h-5 w-5 text-primary" />
-					{/if}
+				<div
+					class="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted/40"
+				>
+					<DialogIcon class="size-5 text-muted-foreground" />
 				</div>
-				<div class="min-w-0 flex-1">
-					<Dialog.Title class="truncate font-mono text-lg font-semibold">
-						{targetValue ?? 'BGP routing'}
-					</Dialog.Title>
-					<Dialog.Description class="text-sm text-muted-foreground">BGP routing</Dialog.Description>
+				<div class="flex min-w-0 flex-1 flex-col gap-1">
+					<Dialog.Title class="truncate font-mono">{targetValue ?? 'BGP routing'}</Dialog.Title>
+					<Dialog.Description>BGP routing</Dialog.Description>
 				</div>
 			</div>
 		</Dialog.Header>
 
-		<ScrollArea class="min-h-0 flex-1">
-			<div class="flex flex-col gap-5 px-6 pb-6">
+		<ScrollArea class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-5rem)]">
+			<div class="flex flex-col gap-5 px-6 py-5">
 				<BgpTab
 					targetValue={targetValue ?? ''}
 					targetType={targetType ?? TargetType.IP}

@@ -54,6 +54,7 @@
 	let saving = $state(false);
 	let wizardOpen = $state(false);
 	let draft = $state<TripwireDraft | null>(null);
+	let seededFor: string | null = null;
 
 	let spec = $derived(dimensionSpec(dimension));
 	let text = $derived(query.trim());
@@ -70,8 +71,14 @@
 		if (!open) return;
 		const sid = scanId;
 		const project = pid;
+		const key = [dimension, text, sid ?? '', project].join('\n');
 		untrack(() => {
 			void tripwiresStore.loadCatalog();
+			if (key === seededFor) {
+				if (sid && project && !targetId) void loadTarget(sid, project);
+				return;
+			}
+			seededFor = key;
 			name = defaultTripwireName(spec, text);
 			fireOn = FireOn.Appears;
 			scopeChoice = sid ? 'target' : ScopeKind.All;
@@ -108,6 +115,7 @@
 				enabled: true
 			});
 			tripwiresStore.upsert(saved);
+			seededFor = null;
 			open = false;
 			toast.success(`${saved.name} created`, {
 				action: {
@@ -137,18 +145,14 @@
 
 	function saved(tripwire: Tripwire) {
 		tripwiresStore.upsert(tripwire);
+		seededFor = null;
 	}
 </script>
 
 <Popover.Root bind:open>
 	<Popover.Trigger>
 		{#snippet child({ props })}
-			<Button
-				{...props}
-				variant="outline"
-				class="h-9 gap-1.5 {klass}"
-				aria-label="Tripwire on this query"
-			>
+			<Button {...props} variant="outline" class={klass} aria-label="Tripwire on this query">
 				<Zap class="h-4 w-4" />
 				<span class="hidden sm:inline">Tripwire</span>
 			</Button>

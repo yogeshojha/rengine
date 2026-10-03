@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import MoreVerticalIcon from '@lucide/svelte/icons/more-vertical';
+	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
 	import RouteIcon from '@lucide/svelte/icons/route';
@@ -21,11 +21,13 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { settingsActions } from '$lib/stores/settings-actions.svelte';
 	import { MASK } from '$lib/constants';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import {
 		PROXY_SCHEMES,
 		PROXY_SCHEME_LABELS,
@@ -65,12 +67,24 @@
 	let asDefault = $state(false);
 	let rows = $state<EndpointRow[]>([]);
 	let saving = $state(false);
+	let initial = $state('');
+	let nameError = $state('');
+	let endpointError = $state('');
 
 	let removing = $state<ProxyRead | null>(null);
 	let deleting = $state(false);
 
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const proxies = $derived(proxiesStore.proxies);
+	const dirty = $derived(snapshot() !== initial);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (dialogOpen = false)
+	);
+
+	function snapshot(): string {
+		return JSON.stringify([name.trim(), description.trim(), asDefault, rows]);
+	}
 
 	function blank(): EndpointRow {
 		return { scheme: 'http', host: '', port: '8080', username: '', password: '', stored: false };
@@ -104,6 +118,9 @@
 					stored: e.has_password
 				}))
 			: [blank()];
+		nameError = '';
+		endpointError = '';
+		initial = snapshot();
 		dialogOpen = true;
 	}
 
@@ -126,14 +143,9 @@
 
 	async function save() {
 		const parsed = endpoints();
-		if (!name.trim()) {
-			toast.error('Proxy name is required');
-			return;
-		}
-		if (!parsed) {
-			toast.error('Each endpoint needs a host and a port between 1 and 65535');
-			return;
-		}
+		nameError = name.trim() ? '' : 'Proxy name is required';
+		endpointError = parsed ? '' : 'Each endpoint needs a host and a port between 1 and 65535';
+		if (!parsed || nameError) return;
 		saving = true;
 		try {
 			const body = {
@@ -298,9 +310,14 @@
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger>
 								{#snippet child({ props })}
-									<Button {...props} variant="ghost" size="icon" class="size-7">
-										<MoreVerticalIcon class="size-4" />
-										<span class="sr-only">{proxy.name} actions</span>
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon"
+										class="size-7"
+										aria-label="{proxy.name} actions"
+									>
+										<EllipsisIcon class="size-4" />
 									</Button>
 								{/snippet}
 							</DropdownMenu.Trigger>
@@ -336,19 +353,28 @@
 	</Card.Root>
 {/if}
 
-<Dialog.Root bind:open={dialogOpen}>
+<Dialog.Root
+	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
+>
 	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-		<Dialog.Header class="px-6 pt-6 pb-4">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editing ? 'Edit proxy' : 'Add proxy'}</Dialog.Title>
 		</Dialog.Header>
 		<ScrollArea
 			class="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
 		>
-			<div class="flex flex-col gap-5 px-6 pb-5">
+			<div class="flex flex-col gap-5 px-6 py-5">
 				<div class="grid gap-4 sm:grid-cols-2">
-					<FormField label="Name">
+					<FormField label="Name" error={nameError}>
 						{#snippet children({ id })}
-							<Input {id} bind:value={name} maxlength={120} disabled={saving} />
+							<Input
+								{id}
+								bind:value={name}
+								maxlength={120}
+								disabled={saving}
+								aria-invalid={!!nameError}
+								oninput={() => (nameError = '')}
+							/>
 						{/snippet}
 					</FormField>
 					<FormField label="Description">
@@ -375,7 +401,7 @@
 					</div>
 					<div class="overflow-hidden rounded-lg border">
 						<div
-							class="hidden grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem] gap-2 border-b bg-muted/20 px-3 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
+							class="hidden grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem] gap-2 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
 						>
 							<span>Scheme</span>
 							<span>Host</span>
@@ -386,7 +412,7 @@
 						</div>
 						{#each rows as row, i (i)}
 							<div
-								class="grid grid-cols-2 gap-2 border-b border-border/60 px-3 py-2 last:border-b-0 sm:grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem]"
+								class="grid grid-cols-2 gap-2 border-b border-border/60 px-4 py-2 last:border-b-0 sm:grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem]"
 							>
 								<Select.Root
 									type="single"
@@ -437,7 +463,7 @@
 								<Button
 									variant="ghost"
 									size="icon"
-									class="size-9 text-muted-foreground"
+									class="text-muted-foreground"
 									disabled={rows.length === 1}
 									aria-label="Remove endpoint"
 									onclick={() => (rows = rows.filter((_, idx) => idx !== i))}
@@ -447,6 +473,9 @@
 							</div>
 						{/each}
 					</div>
+					{#if endpointError && !endpoints()}
+						<p class="text-sm text-destructive" role="alert">{endpointError}</p>
+					{/if}
 					<Button
 						variant="ghost"
 						size="sm"
@@ -473,11 +502,9 @@
 			</div>
 		</ScrollArea>
 		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" disabled={saving} onclick={() => (dialogOpen = false)}>
-				Cancel
-			</Button>
+			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
 			<LoadingButton loading={saving} loadingLabel="Saving" onclick={save}>
-				{editing ? 'Save proxy' : 'Add proxy'}
+				{editing ? 'Save' : 'Add proxy'}
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
@@ -488,10 +515,17 @@
 	title="Remove proxy"
 	description={removing ? removeDescription(removing) : ''}
 	confirmLabel="Remove"
+	loadingLabel="Removing"
 	destructive
 	loading={deleting}
 	onOpenChange={(open) => {
 		if (!open) removing = null;
 	}}
 	onConfirm={remove}
+/>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />

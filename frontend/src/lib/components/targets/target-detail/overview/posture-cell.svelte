@@ -123,7 +123,7 @@
 			{/each}
 		</ul>
 	{:else}
-		<span class="text-sm text-muted-foreground">No check</span>
+		<span class="text-sm text-muted-foreground">No checks</span>
 	{/if}
 	{#snippet footer()}
 		<span>{review} to review · {pass} pass</span>

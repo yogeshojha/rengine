@@ -108,6 +108,7 @@
 					<button
 						type="button"
 						class="ml-0.5 rounded-full hover:bg-foreground/10 p-0.5"
+						aria-label="Remove {item.label}"
 						onclick={() => onRemove(item)}
 					>
 						<X class="h-3 w-3" />
@@ -126,7 +127,7 @@
 					role="combobox"
 					class="w-full justify-start text-muted-foreground font-normal h-9"
 				>
-					<Search class="h-4 w-4 mr-2 shrink-0" />
+					<Search class="h-4 w-4 shrink-0" />
 					{placeholder}
 				</Button>
 			{/snippet}
@@ -153,6 +154,8 @@
 									? 'border-foreground'
 									: 'border-transparent'}"
 								style="background-color: {color}"
+								aria-label="Color {color}"
+								aria-pressed={selectedColor === color}
 								onclick={() => (selectedColor = color)}
 							>
 								{#if selectedColor === color}
@@ -163,7 +166,7 @@
 					</div>
 					<div class="flex items-center gap-2 pt-1">
 						<Button variant="ghost" size="sm" onclick={handleCancelCreate}>Cancel</Button>
-						<Button size="sm" onclick={handleConfirmCreate} class="gap-1.5">
+						<Button size="sm" onclick={handleConfirmCreate}>
 							<span class="h-2.5 w-2.5 rounded-full" style="background-color: {selectedColor}"
 							></span>
 							Create tag

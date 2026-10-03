@@ -48,7 +48,7 @@ export async function handoffToProxy(call: HandoffCall): Promise<HandoffResult |
 		}
 		return res;
 	} catch (e) {
-		toast.error(e instanceof Error ? e.message : 'Requests not sent.');
+		toast.error(e instanceof Error ? e.message : 'Requests not sent');
 		return null;
 	}
 }
@@ -64,7 +64,7 @@ export async function previewHandoff(call: PreviewCall): Promise<string | null> 
 		);
 		return res.request;
 	} catch (e) {
-		toast.error(e instanceof Error ? e.message : 'Request not loaded.');
+		toast.error(e instanceof Error ? e.message : 'Request not loaded');
 		return null;
 	}
 }

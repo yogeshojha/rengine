@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import BoxesIcon from '@lucide/svelte/icons/boxes';
+	import BrandMark from '$lib/components/icons/brand-mark.svelte';
 	import { Progress } from '$lib/components/ui/progress/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { PRODUCT_NAME } from '$lib/constants';
@@ -40,11 +40,7 @@
 
 {#snippet brand()}
 	<div class="flex items-center gap-2">
-		<div
-			class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md"
-		>
-			<BoxesIcon class="size-3.5" />
-		</div>
+		<BrandMark />
 		<span class="text-sm font-semibold tracking-tight">{PRODUCT_NAME} setup</span>
 	</div>
 {/snippet}
@@ -138,6 +134,7 @@
 							onNext={footer.onNext}
 							nextLabel={footer.nextLabel}
 							nextLoading={footer.nextLoading}
+							nextLoadingLabel={footer.nextLoadingLabel}
 							nextDisabled={footer.nextDisabled}
 							canSkip={footer.canSkip}
 						/>

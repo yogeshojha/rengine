@@ -6,9 +6,12 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import StageList from './stage-list.svelte';
 	import FootprintMeter from './footprint-meter.svelte';
 	import { summarize } from '$lib/utilities/engine-summary';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import type { EnginePreset, StageCatalogEntry } from '$lib/types/scan-engine';
 
 	interface Props {
@@ -43,30 +46,43 @@
 
 	const preset = $derived(presets.find((p) => p.name === selected));
 	const canCreate = $derived(name.trim().length > 0 && preset !== undefined);
+	const dirty = $derived(
+		name.trim() !== '' || (selected !== '' && selected !== (presets[0]?.name ?? ''))
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => onOpenChange(false)
+	);
 
 	function submit() {
-		if (!canCreate || !preset) return;
+		if (!canCreate || !preset || isCreating) return;
 		onCreate(name.trim(), preset);
+	}
+
+	function requestOpen(next: boolean) {
+		if (next) onOpenChange(true);
+		else if (!isCreating) guard.close();
 	}
 </script>
 
-<Dialog.Root {open} {onOpenChange}>
+<Dialog.Root bind:open={() => open, requestOpen}>
 	<Dialog.Content class="sm:max-w-xl">
 		<Dialog.Header>
-			<Dialog.Title>New scan engine</Dialog.Title>
+			<Dialog.Title>New engine</Dialog.Title>
 		</Dialog.Header>
 
-		<div class="space-y-4 py-1">
-			<div class="space-y-1.5">
-				<Label for="engine-name">Name</Label>
-				<Input
-					id="engine-name"
-					bind:value={name}
-					placeholder="Engine name"
-					autocomplete="off"
-					onkeydown={(e) => e.key === 'Enter' && submit()}
-				/>
-			</div>
+		<div class="flex flex-col gap-4 py-1">
+			<FormField label="Name">
+				{#snippet children({ id })}
+					<Input
+						{id}
+						bind:value={name}
+						placeholder="Engine name"
+						autocomplete="off"
+						onkeydown={(e) => e.key === 'Enter' && submit()}
+					/>
+				{/snippet}
+			</FormField>
 
 			<RadioGroup.Root bind:value={selected} class="grid gap-2 sm:grid-cols-2">
 				{#each presets as p (p.name)}
@@ -107,10 +123,21 @@
 		</div>
 
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => onOpenChange(false)}>Cancel</Button>
-			<LoadingButton loading={isCreating} disabled={!canCreate} onclick={submit}>
+			<Button variant="outline" disabled={isCreating} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton
+				loading={isCreating}
+				loadingLabel="Creating"
+				disabled={!canCreate}
+				onclick={submit}
+			>
 				Create engine
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

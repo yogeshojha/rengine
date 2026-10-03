@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
+	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
@@ -25,7 +26,20 @@
 
 {#snippet side(run: RunSide, label: string, which: 'baseline' | 'current')}
 	<div class="flex min-w-0 flex-col gap-2 px-4 py-3.5 sm:px-5">
-		<span class="text-2xs tracking-wider text-muted-foreground uppercase">{label}</span>
+		<div class="flex items-center justify-between gap-2">
+			<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
+			{#if which === 'current'}
+				<Button
+					variant="ghost"
+					size="icon"
+					class="-my-1.5 size-7 sm:hidden"
+					aria-label="Swap runs"
+					onclick={() => onSwap()}
+				>
+					<ArrowUpDown class="size-3.5" />
+				</Button>
+			{/if}
+		</div>
 
 		<RunPicker
 			{label}
@@ -62,7 +76,7 @@
 				variant="link"
 				size="sm"
 				href={ROUTES.scan(run.scan_id)}
-				class="ml-auto h-auto gap-1 p-0 text-xs"
+				class="ml-auto h-auto p-0 text-xs"
 			>
 				Open run <ArrowUpRight class="size-3" />
 			</Button>
@@ -87,7 +101,7 @@
 					size="icon-sm"
 					onclick={() => onSwap()}
 					aria-label="Swap runs"
-					class="pointer-events-auto size-7 rounded-full bg-background shadow-sm"
+					class="pointer-events-auto rounded-full bg-background shadow-sm"
 				>
 					<ArrowLeftRight class="size-3.5" />
 				</Button>

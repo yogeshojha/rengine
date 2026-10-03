@@ -54,12 +54,7 @@
 <Popover.Root {open} {onOpenChange}>
 	<Popover.Trigger>
 		{#snippet child({ props })}
-			<Button
-				{...props}
-				variant="outline"
-				class="h-9 gap-1.5"
-				disabled={!options.length && !selected.length && !query}
-			>
+			<Button {...props} variant="outline" disabled={!options.length && !selected.length && !query}>
 				{title}
 				{#if selected.length}
 					<span class="font-mono text-2xs text-muted-foreground">{selected.length}</span>

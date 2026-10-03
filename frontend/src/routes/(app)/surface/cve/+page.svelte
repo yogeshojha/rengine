@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { page } from '$app/state';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { untrack } from 'svelte';
 	import Bug from '@lucide/svelte/icons/bug';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -10,10 +13,10 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import SearchBar from '$lib/components/search-bar.svelte';
 	import FindingsTabs from '$lib/components/surface/findings-tabs.svelte';
 	import CveRow from '$lib/components/cve/cve-row.svelte';
@@ -33,6 +36,7 @@
 	import { CVE_ID, SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 	import { RESULTS_PAGE_SIZE, SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { plural } from '$lib/utilities/strings';
+	import { writeSearch } from '$lib/utilities/url-history.svelte';
 	import type { CveIndex, CveIndexRow } from '$lib/types/cve';
 
 	const SEVERITY_TABS = [
@@ -43,12 +47,25 @@
 		}))
 	];
 
+	const DEFAULT_SORT = { key: 'rank', dir: -1 as const };
+	const initial = new SvelteURLSearchParams(browser ? location.search : page.url.search);
+	const initialSeverity = initial.get('cve_sev') ?? '';
+	const [initialSortKey, initialSortDir] = initial.get('cve_sort')?.split(':') ?? [];
+
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
-	let query = $state('');
-	let severity = $state('all');
-	let active = $state<string[]>([]);
-	let sort = $state<{ key: string; dir: 1 | -1 }>({ key: 'rank', dir: -1 });
-	let pageIndex = $state(0);
+	let query = $state(initial.get('cve_q') ?? '');
+	let severity = $state(
+		SEVERITY_TABS.some((t) => t.key === initialSeverity) ? initialSeverity : 'all'
+	);
+	let active = $state<string[]>(
+		initial.getAll('cve_flag').filter((k) => CVE_FILTERS.some((f) => f.key === k))
+	);
+	let sort = $state<{ key: string; dir: 1 | -1 }>(
+		CVE_SORTS.some((s) => s.key === initialSortKey)
+			? { key: initialSortKey, dir: initialSortDir === 'asc' ? 1 : -1 }
+			: { ...DEFAULT_SORT }
+	);
+	let pageIndex = $state(Math.max(0, (Number(initial.get('cve_page')) || 1) - 1));
 	let pageSize = $state(RESULTS_PAGE_SIZE);
 
 	let index = $state<CveIndex | null>(null);
@@ -95,7 +112,24 @@
 		untrack(() => void load(id));
 	});
 
+	function syncUrl() {
+		const params = new SvelteURLSearchParams(location.search);
+		if (query.trim()) params.set('cve_q', query.trim());
+		else params.delete('cve_q');
+		if (severity !== 'all') params.set('cve_sev', severity);
+		else params.delete('cve_sev');
+		params.delete('cve_flag');
+		for (const key of active) params.append('cve_flag', key);
+		if (sort.key !== DEFAULT_SORT.key || sort.dir !== DEFAULT_SORT.dir) {
+			params.set('cve_sort', `${sort.key}:${sort.dir === -1 ? 'desc' : 'asc'}`);
+		} else params.delete('cve_sort');
+		if (pageIndex > 0) params.set('cve_page', String(pageIndex + 1));
+		else params.delete('cve_page');
+		writeSearch(params, false);
+	}
+
 	function rerun() {
+		syncUrl();
 		if (projectId) void load(projectId);
 	}
 
@@ -177,7 +211,7 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
 	<FindingsTabs value="cve" />
 
 	<div class="overflow-hidden rounded-xl border bg-card">
@@ -237,18 +271,20 @@
 				{/each}
 				<div class="ml-auto flex items-center gap-1.5">
 					<SortMenu sorts={CVE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
-					<Button variant="ghost" size="icon" class="size-7" aria-label="Refresh" onclick={rerun}>
-						<RefreshCw class="size-3.5 {refreshing ? 'animate-spin' : ''}" />
+					<Button
+						variant="outline"
+						size="icon"
+						aria-label="Refresh"
+						disabled={refreshing}
+						onclick={rerun}
+					>
+						<RefreshCw class="size-4 {refreshing ? 'animate-spin' : ''}" />
 					</Button>
 				</div>
 			</div>
 
 			{#if loading}
-				<div class="flex flex-col gap-2 px-4 py-4">
-					{#each Array(6) as _, i (i)}
-						<Skeleton class="h-10 w-full" />
-					{/each}
-				</div>
+				<TableSkeleton lead={CVE_LEAD_COLUMNS} columns={CVE_COLUMNS} rows={6} />
 			{:else if errored}
 				<EmptyState icon={TriangleAlert} title="CVEs not loaded">
 					<Button variant="outline" size="sm" onclick={rerun}>Retry</Button>

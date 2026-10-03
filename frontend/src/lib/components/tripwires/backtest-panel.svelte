@@ -20,6 +20,7 @@
 
 	let backtest = $state<TripwireBacktest | null>(null);
 	let loading = $state(false);
+	let failure = $state<string | null>(null);
 	let seq = 0;
 
 	let spec = $derived(dimensionSpec(request.dimension));
@@ -35,6 +36,7 @@
 		untrack(() => {
 			if (!on) {
 				backtest = null;
+				failure = null;
 				return;
 			}
 			const mine = ++seq;
@@ -44,9 +46,11 @@
 					const result = await tripwiresApi.backtest(projectId, request);
 					if (mine !== seq) return;
 					backtest = result;
-				} catch {
+					failure = null;
+				} catch (e) {
 					if (mine !== seq) return;
 					backtest = null;
+					failure = e instanceof Error ? e.message : 'Backtest not loaded';
 				} finally {
 					if (mine === seq) loading = false;
 				}
@@ -65,6 +69,8 @@
 		<Skeleton class="h-12 w-full" />
 	{:else if backtest?.error}
 		<p class="text-xs text-destructive">{backtest.error.message}</p>
+	{:else if failure}
+		<p class="text-xs text-destructive">{failure}</p>
 	{:else if backtest}
 		<p class="text-sm">
 			<span class="font-semibold tabular-nums">{fired.length}</span>

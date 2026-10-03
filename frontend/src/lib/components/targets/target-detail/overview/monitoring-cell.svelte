@@ -54,7 +54,9 @@
 					{/if}
 				{:else}
 					<span>Not scheduled</span>
-					<a href={ROUTES.schedules} class="text-xs font-medium text-primary">Set a schedule</a>
+					<a href={ROUTES.schedules} class="text-xs font-medium text-primary hover:text-primary/80"
+						>Set a schedule</a
+					>
 				{/if}
 			</dd>
 		</div>

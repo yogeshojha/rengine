@@ -1,8 +1,8 @@
 import type { IconComponent } from '$lib/config/icons';
 import { keyTaken, topLayer } from '$lib/utilities/layers';
 
-export const SHEET_ROW = 'grid grid-cols-[8.5rem_1fr] items-start gap-3 py-2';
-export const SHEET_ROW_TIGHT = 'grid grid-cols-[7.5rem_1fr] items-start gap-3 py-2';
+export const SHEET_ROW = 'grid grid-cols-[8.5rem_minmax(0,1fr)] items-start gap-3 py-2';
+export const SHEET_ROW_TIGHT = 'grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3 py-2';
 export const SHEET_DT = 'pt-0.5 text-xs text-muted-foreground';
 // pt-2.5 centres the first row on the close button
 export const SHEET_HEAD = 'gap-2 border-b px-5 pt-2.5 pb-4';

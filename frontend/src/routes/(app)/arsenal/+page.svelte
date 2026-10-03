@@ -45,7 +45,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels.arsenal)}</title></svelte:head>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
 	<div>
 		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
 		<p class="mt-1 text-sm text-muted-foreground">Checks, wordlists and feeds</p>

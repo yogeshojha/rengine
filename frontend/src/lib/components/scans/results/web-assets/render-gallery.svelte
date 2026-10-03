@@ -52,11 +52,11 @@
 {:else if data && data.groups.length === 0}
 	<EmptyState
 		icon={Camera}
-		title="No screenshots to group"
+		title="No screenshots"
 		class="rounded-none border-0 bg-transparent py-16"
 	/>
 {:else if data}
-	<div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5">
+	<div class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b bg-muted/10 px-4 py-2">
 		<span class="text-xs text-muted-foreground">
 			<span class="font-medium text-foreground tabular-nums"
 				>{data.total_groups.toLocaleString()}</span
@@ -158,7 +158,7 @@
 						<Button
 							variant="ghost"
 							size="sm"
-							class="h-6 justify-start gap-1 px-1 text-2xs text-muted-foreground"
+							class="h-6 justify-start px-1 text-2xs text-muted-foreground"
 							onclick={() => toggle(g.hash)}
 						>
 							<ChevronDown class="size-3 transition-transform {open ? 'rotate-180' : ''}" />

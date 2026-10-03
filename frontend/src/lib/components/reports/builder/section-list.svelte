@@ -70,7 +70,7 @@
 			<DropdownMenu.Trigger>
 				{#snippet child({ props })}
 					<Button variant="outline" size="sm" {...props}>
-						<PlusIcon class="mr-1.5 size-3.5" />
+						<PlusIcon class="size-3.5" />
 						Add section
 					</Button>
 				{/snippet}
@@ -80,7 +80,7 @@
 					{#each reportCatalog.catalog?.groups ?? [] as group (group.key)}
 						{@const items = reportCatalog.sectionsByGroup(group.key)}
 						{#if items.length}
-							<DropdownMenu.Label class="text-2xs uppercase tracking-wide text-muted-foreground">
+							<DropdownMenu.Label class="text-2xs tracking-wide text-muted-foreground uppercase">
 								{group.label}
 							</DropdownMenu.Label>
 							{#each items as item (item.name)}
@@ -109,6 +109,7 @@
 					<span class="w-6 text-center font-mono text-xs text-muted-foreground">{index + 1}</span>
 					<Switch
 						checked={entry.enabled}
+						aria-label="Include {entry.title || spec?.title || entry.section}"
 						onCheckedChange={(v) => setEntry(index, { enabled: v })}
 					/>
 					<div class="min-w-0 flex-1">
@@ -136,8 +137,7 @@
 					<div class="flex shrink-0 items-center gap-0.5">
 						<Button
 							variant="ghost"
-							size="icon"
-							class="size-7"
+							size="icon-sm"
 							disabled={index === 0}
 							onclick={() => move(index, -1)}
 							aria-label="Move up"
@@ -146,8 +146,7 @@
 						</Button>
 						<Button
 							variant="ghost"
-							size="icon"
-							class="size-7"
+							size="icon-sm"
 							disabled={index === sections.length - 1}
 							onclick={() => move(index, 1)}
 							aria-label="Move down"
@@ -158,8 +157,7 @@
 							{#snippet child({ props })}
 								<Button
 									variant="ghost"
-									size="icon"
-									class="size-7"
+									size="icon-sm"
 									{...props}
 									onclick={() => (openConfig = openConfig === index ? null : index)}
 									aria-label="Settings"
@@ -170,8 +168,8 @@
 						</Collapsible.Trigger>
 						<Button
 							variant="ghost"
-							size="icon"
-							class="size-7 text-destructive"
+							size="icon-sm"
+							class="text-destructive"
 							onclick={() => remove(index)}
 							aria-label="Remove"
 						>
@@ -186,6 +184,7 @@
 							<span class="text-sm">Heading</span>
 							<Input
 								value={entry.title}
+								aria-label="Heading"
 								placeholder={spec?.title ?? ''}
 								class="h-9 max-w-md"
 								oninput={(e) => setEntry(index, { title: e.currentTarget.value })}

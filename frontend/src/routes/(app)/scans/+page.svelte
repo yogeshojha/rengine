@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
-	import { routeLabels } from '$lib/config/routes';
+	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { targetsApi } from '$lib/api/targets';
+	import { plural } from '$lib/utilities/strings';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
@@ -23,6 +26,42 @@
 	let rerunScan = $state<ScanRead | null>(null);
 	let targetFilters = $derived(page.url.searchParams.getAll('target'));
 	let targetFilter = $derived(targetFilters.length === 1 ? targetFilters[0] : undefined);
+	let targetValue = $state<string | null>(null);
+	let scopeLabel = $derived(
+		targetFilters.length > 1
+			? plural(targetFilters.length, 'target')
+			: (targetValue ??
+					scansStore.scans.find((s) => s.target_id === targetFilter)?.execution_config
+						.target_value ??
+					'Target')
+	);
+
+	$effect(() => {
+		const id = targetFilter;
+		targetValue = null;
+		if (!id) return;
+		let live = true;
+		targetsApi
+			.get(id)
+			.then((t) => {
+				if (live) targetValue = t.target_value;
+			})
+			.catch(() => {});
+		return () => {
+			live = false;
+		};
+	});
+
+	let lastProject: string | undefined;
+	$effect(() => {
+		const pid = projectsStore.activeProject?.id;
+		untrack(() => {
+			if (!pid) return;
+			const stale = lastProject !== undefined && lastProject !== pid;
+			lastProject = pid;
+			if (stale && targetFilters.length) goto(ROUTES.scans, { replaceState: true });
+		});
+	});
 
 	$effect(() => {
 		const status = page.url.searchParams.get('status');
@@ -84,6 +123,8 @@
 		onLaunch={newScan}
 		onRescan={rescan}
 		onRescanMany={rescanMany}
+		{scopeLabel}
+		onClearScope={() => goto(ROUTES.scans)}
 	/>
 </div>
 

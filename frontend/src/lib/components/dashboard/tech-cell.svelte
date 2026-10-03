@@ -6,6 +6,7 @@
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { exactToken, type Facet } from '$lib/utilities/scan-insights';
+	import { plural } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -49,7 +50,7 @@
 	</RankedBars>
 	{#snippet footer()}
 		{#if tech && tech.length > TOP}
-			<span>{tech.length - TOP} more technologies</span>
+			<span>{plural(tech.length - TOP, 'more technology', 'more technologies')}</span>
 		{/if}
 	{/snippet}
 </Cell>

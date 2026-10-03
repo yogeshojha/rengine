@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
@@ -32,6 +35,8 @@
 	let { open = $bindable() }: Props = $props();
 
 	let calls = $state<AiCall[] | null>(null);
+	let callsFailed = $state(false);
+	let callsError = $state<string | undefined>(undefined);
 	let hasMore = $state(false);
 	let loadingMore = $state(false);
 	let generation = 0;
@@ -43,22 +48,31 @@
 	const usage = $derived(status?.usage ?? null);
 	const cached = $derived(status?.cached_narratives ?? 0);
 
+	function loadCalls() {
+		const mine = ++generation;
+		calls = null;
+		callsFailed = false;
+		callsError = undefined;
+		hasMore = false;
+		ai.calls(RECENT_CALLS)
+			.then((page) => {
+				if (mine !== generation) return;
+				calls = page.items;
+				hasMore = page.has_more;
+			})
+			.catch((e) => {
+				if (mine !== generation) return;
+				callsFailed = true;
+				callsError = e instanceof Error ? e.message : undefined;
+				calls = [];
+			});
+	}
+
 	$effect(() => {
 		if (!open) return;
 		untrack(() => {
-			const mine = ++generation;
-			calls = null;
-			hasMore = false;
 			void ai.refreshStatus();
-			ai.calls(RECENT_CALLS)
-				.then((page) => {
-					if (mine !== generation) return;
-					calls = page.items;
-					hasMore = page.has_more;
-				})
-				.catch(() => {
-					if (mine === generation) calls = [];
-				});
+			loadCalls();
 		});
 	});
 
@@ -189,7 +203,21 @@
 
 				<section class="mt-4 flex flex-col">
 					<div class="px-5 pt-1 pb-2"><SectionHead title="Recent calls" /></div>
-					{#if calls === null}
+					{#if callsFailed}
+						<div class="px-5">
+							<EmptyState
+								compact
+								icon={TriangleAlertIcon}
+								title="Calls not loaded"
+								description={callsError}
+							>
+								<Button variant="outline" size="sm" onclick={() => loadCalls()}>
+									<RotateCwIcon class="size-3.5" />
+									Retry
+								</Button>
+							</EmptyState>
+						</div>
+					{:else if calls === null}
 						<div class="flex flex-col gap-2 px-5">
 							<Skeleton class="h-8 w-full" />
 							<Skeleton class="h-8 w-full" />
@@ -252,7 +280,7 @@
 									variant="ghost"
 									size="sm"
 									loading={loadingMore}
-									loadingLabel="Show more"
+									loadingLabel="Loading"
 									onclick={() => showMore()}
 								>
 									Show more
@@ -273,6 +301,7 @@
 	title="Clear cached narratives"
 	description={`${cached.toLocaleString()} cached narratives are removed.`}
 	confirmLabel="Clear"
+	loadingLabel="Clearing"
 	destructive
 	loading={clearing}
 	onOpenChange={(value) => {

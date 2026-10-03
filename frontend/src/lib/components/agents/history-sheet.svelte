@@ -20,8 +20,8 @@
 <Sheet.Root open={token !== null} {onOpenChange}>
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-2xl">
 		{#if token}
-			<Sheet.Header class="border-b px-5 py-4">
-				<Sheet.Title>{token.name}</Sheet.Title>
+			<Sheet.Header class="border-b px-5 py-4 pr-12">
+				<Sheet.Title class="wrap-anywhere">{token.name}</Sheet.Title>
 				<Sheet.Description>Recent calls</Sheet.Description>
 			</Sheet.Header>
 			<ScrollArea class="min-h-0 flex-1">

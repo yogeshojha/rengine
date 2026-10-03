@@ -99,7 +99,7 @@
 		font-size: 11px;
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.08em;
 		color: var(--muted-foreground);
 		margin: 12px 0 5px;
 	}

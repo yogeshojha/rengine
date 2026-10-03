@@ -178,7 +178,7 @@
 	<Tabs.Content value="host" class="overflow-hidden rounded-md border bg-card">
 		{#if v.host}
 			<div class="flex flex-wrap items-center gap-2 border-b px-3 py-1.5">
-				<span class="font-mono text-xs">{v.host}</span>
+				<span class="min-w-0 font-mono text-xs wrap-anywhere">{v.host}</span>
 				<span class="flex items-center gap-0.5">
 					{#each SEVERITY_ORDER as s (s)}
 						{#if v.host_findings?.[s]}

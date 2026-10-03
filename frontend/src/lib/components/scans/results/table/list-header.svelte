@@ -63,12 +63,15 @@
 	{#if col.sort}
 		<button
 			type="button"
-			class="flex items-center gap-1 uppercase tracking-wider hover:text-foreground"
+			class="flex items-center gap-1 uppercase hover:text-foreground {sortKey === col.sort
+				? 'text-foreground'
+				: ''}"
 			onclick={() => onSort(col.sort ?? col.key)}
 		>
 			{col.label}
 			{#if sortKey === col.sort}
 				{#if sortDir === 1}<ArrowUp class="size-3" />{:else}<ArrowDown class="size-3" />{/if}
+				<span class="sr-only">, sorted {sortDir === 1 ? 'ascending' : 'descending'}</span>
 			{/if}
 		</button>
 	{:else}
@@ -82,7 +85,7 @@
 	style={sticky ? `top: calc(var(--scan-tabs-h, 0px) + ${top}px)` : undefined}
 >
 	<div
-		class="flex items-center gap-3 border-b bg-muted/30 px-4 py-2 text-xs font-medium tracking-wider text-muted-foreground uppercase"
+		class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 	>
 		{#if onSelectAll}
 			<div class="hidden shrink-0 sm:flex">
@@ -107,7 +110,7 @@
 			</div>
 		{/each}
 		<div class={ACTIONS_PIN}>
-			<div class="{ACTIONS_BODY} bg-muted/30"></div>
+			<div class="{ACTIONS_BODY} bg-muted/20"></div>
 		</div>
 	</div>
 </div>

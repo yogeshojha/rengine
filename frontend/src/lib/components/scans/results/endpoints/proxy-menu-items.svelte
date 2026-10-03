@@ -32,7 +32,7 @@
 
 {#if connector}
 	<DropdownMenu.Item onclick={() => send(proxyTool.kind)}>
-		<span class="flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
+		<span class="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
 			<span class="size-1.5 rounded-full {presenceDot(connector.state)}"></span>
 		</span>
 		Send to {proxyName(connector, catalog)}
@@ -40,7 +40,7 @@
 	</DropdownMenu.Item>
 	<DropdownMenu.Sub>
 		<DropdownMenu.SubTrigger>
-			<span class="size-3.5"></span>
+			<span class="size-4" aria-hidden="true"></span>
 			Send to {proxyLabel(connector, catalog)}
 		</DropdownMenu.SubTrigger>
 		<DropdownMenu.SubContent class="w-40">

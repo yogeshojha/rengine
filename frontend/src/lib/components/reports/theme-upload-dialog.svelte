@@ -5,6 +5,8 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import YamlEditor from '$lib/components/yaml-editor.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import { toast } from 'svelte-sonner';
 	import { reportsApi } from '$lib/api/reports';
@@ -48,6 +50,21 @@ css: |
 	let busy = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
 
+	const dirty = $derived(content.trim() !== '');
+
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => {
+			content = '';
+			open = false;
+		}
+	);
+
+	function requestOpen(next: boolean) {
+		if (next) open = true;
+		else if (!busy) guard.close();
+	}
+
 	async function pick(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -57,10 +74,7 @@ css: |
 	}
 
 	async function upload() {
-		if (!content.trim()) {
-			toast.error('Theme file is empty. Paste one or choose a file.');
-			return;
-		}
+		if (!dirty) return;
 		busy = true;
 		try {
 			const theme = await reportsApi.uploadTheme(content);
@@ -76,8 +90,8 @@ css: |
 	}
 </script>
 
-<Dialog.Root bind:open>
-	<Dialog.Content class="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-3xl">
+<Dialog.Root bind:open={() => open, requestOpen}>
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Upload a theme</Dialog.Title>
 			<Dialog.Description>
@@ -85,12 +99,12 @@ css: |
 			</Dialog.Description>
 		</Dialog.Header>
 		<ScrollArea
-			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-13rem)]"
+			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-13rem)]"
 		>
-			<div class="space-y-3 px-6 py-5">
+			<div class="flex flex-col gap-4 px-6 py-5">
 				<div class="flex items-center gap-2">
 					<Button variant="outline" size="sm" onclick={() => fileInput?.click()}>
-						<UploadIcon class="mr-1.5 size-3.5" />
+						<UploadIcon class="size-3.5" />
 						Choose a file
 					</Button>
 					<Button variant="ghost" size="sm" onclick={() => (content = SAMPLE)}>Load example</Button>
@@ -102,8 +116,8 @@ css: |
 						onchange={pick}
 					/>
 				</div>
-				<div class="space-y-1.5">
-					<Label class="text-xs">Theme file</Label>
+				<div class="space-y-3">
+					<Label>Theme file</Label>
 					<div class="h-[26rem] overflow-hidden rounded-md border">
 						<YamlEditor
 							value={content}
@@ -117,8 +131,16 @@ css: |
 			</div>
 		</ScrollArea>
 		<Dialog.Footer class="border-t px-6 py-4">
-			<Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-			<LoadingButton loading={busy} onclick={upload}>Upload</LoadingButton>
+			<Button variant="outline" disabled={busy} onclick={() => guard.close()}>Cancel</Button>
+			<LoadingButton loading={busy} loadingLabel="Uploading" disabled={!dirty} onclick={upload}
+				>Upload</LoadingButton
+			>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>

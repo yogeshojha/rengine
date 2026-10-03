@@ -93,20 +93,20 @@
 
 		<div class="flex min-w-0 flex-wrap items-center gap-2">
 			{#if !isAdmin}
-				<span class="text-xs text-muted-foreground">Managed by administrators.</span>
+				<span class="text-xs text-muted-foreground">Managed by administrators</span>
 			{:else if connector}
 				<Button variant="outline" size="sm" onclick={onPause}>
 					{#if connector.paused}
-						<PlayIcon class="size-3.5" /> Resume
+						<PlayIcon class="size-4" /> Resume
 					{:else}
-						<PauseIcon class="size-3.5" /> Pause
+						<PauseIcon class="size-4" /> Pause
 					{/if}
 				</Button>
 				<Button variant="outline" size="sm" onclick={onSetup}>
-					<WrenchIcon class="size-3.5" /> Setup
+					<WrenchIcon class="size-4" /> Setup
 				</Button>
 				<Button variant="outline" size="sm" onclick={onSettings}>
-					<SettingsIcon class="size-3.5" /> Settings
+					<SettingsIcon class="size-4" /> Settings
 				</Button>
 				<Button
 					variant="outline"
@@ -114,10 +114,10 @@
 					class="text-destructive hover:text-destructive"
 					onclick={onDisconnect}
 				>
-					<UnplugIcon class="size-3.5" /> Disconnect
+					<UnplugIcon class="size-4" /> Disconnect
 				</Button>
 			{:else}
-				<LoadingButton size="sm" loading={connecting} onclick={onConnect}>
+				<LoadingButton size="sm" loading={connecting} loadingLabel="Connecting" onclick={onConnect}>
 					<PlugIcon class="size-4" />
 					Connect {spec.title}
 				</LoadingButton>

@@ -181,8 +181,14 @@
 		</ScrollArea>
 
 		{#if tab === LookalikeState.OPEN && shown.length > 1}
-			<Sheet.Footer class="border-t px-5 py-3 sm:flex-row sm:justify-start">
-				<LoadingButton size="sm" variant="outline" loading={bulkPending} onclick={markShown}>
+			<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
+				<LoadingButton
+					size="sm"
+					variant="outline"
+					loading={bulkPending}
+					loadingLabel="Marking"
+					onclick={markShown}
+				>
 					Mark {shown.length} reviewed
 				</LoadingButton>
 			</Sheet.Footer>

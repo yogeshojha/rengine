@@ -144,22 +144,22 @@
 				<DropdownMenu.Content align="end" class="w-48">
 					{#if row.state !== LookalikeState.REVIEWED}
 						<DropdownMenu.Item onclick={() => onReview(LookalikeState.REVIEWED)}>
-							<Check class="mr-2 size-3.5" /> Mark reviewed
+							<Check class="size-3.5" /> Mark reviewed
 						</DropdownMenu.Item>
 					{/if}
 					{#if row.state !== LookalikeState.IGNORED}
 						<DropdownMenu.Item onclick={() => onReview(LookalikeState.IGNORED)}>
-							<EyeOff class="mr-2 size-3.5" /> Ignore
+							<EyeOff class="size-3.5" /> Ignore
 						</DropdownMenu.Item>
 					{/if}
 					{#if row.state !== LookalikeState.OPEN}
 						<DropdownMenu.Item onclick={() => onReview(LookalikeState.OPEN)}>
-							<RotateCcw class="mr-2 size-3.5" /> Reopen
+							<RotateCcw class="size-3.5" /> Reopen
 						</DropdownMenu.Item>
 					{/if}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item onclick={() => copy(row.domain)}>
-						<Copy class="mr-2 size-3.5" /> Copy domain
+						<Copy class="size-3.5" /> Copy domain
 					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>

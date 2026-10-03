@@ -9,8 +9,7 @@
 	import { onboardingApi } from '$lib/api/onboarding';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { toast } from 'svelte-sonner';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
@@ -203,14 +202,9 @@
 	</div>
 
 	<div class="flex justify-center pt-2">
-		<Button size="lg" class="gap-2" onclick={launch} disabled={finishing}>
-			{#if finishing}
-				<Spinner class="size-4" />
-				Completing setup…
-			{:else}
-				Go to dashboard
-				<ArrowRightIcon class="size-4" />
-			{/if}
-		</Button>
+		<LoadingButton size="lg" onclick={launch} loading={finishing} loadingLabel="Completing setup">
+			Go to dashboard
+			<ArrowRightIcon class="size-4" />
+		</LoadingButton>
 	</div>
 </div>

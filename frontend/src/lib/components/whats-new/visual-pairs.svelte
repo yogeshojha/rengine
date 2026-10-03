@@ -25,12 +25,12 @@
 		Math.min(METER, Math.max(1, Math.ceil((d / VISUAL_MAX_DISTANCE) * METER * 2)));
 </script>
 
-<div class="grid grid-cols-[repeat(auto-fill,minmax(21rem,1fr))] gap-3">
+<div class="grid grid-cols-[repeat(auto-fill,minmax(min(21rem,100%),1fr))] gap-3">
 	{#each pairs as pair, i (pair.id)}
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
 		<article
 			data-visual-card={i}
-			class="group/pair flex flex-col overflow-clip rounded-xl border bg-card transition-shadow {cursor ===
+			class="group/pair flex flex-col overflow-clip rounded-lg border bg-card transition-shadow {cursor ===
 			i
 				? 'ring-2 ring-ring'
 				: ''}"
@@ -46,7 +46,7 @@
 				</button>
 				<CopyButton
 					value={pair.host}
-					class="size-7 opacity-0 group-hover/pair:opacity-100 focus-visible:opacity-100"
+					class="size-7 opacity-0 group-hover/pair:opacity-100 focus-visible:opacity-100 max-sm:opacity-100"
 				/>
 				<a
 					href={ROUTES.target(pair.target_id)}
@@ -57,7 +57,7 @@
 			</div>
 			<button
 				type="button"
-				class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 pt-3 text-left focus-visible:outline-none"
+				class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 pt-3 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
 				aria-label="Compare {pair.host} before and after"
 				onclick={() => onCompare(i)}
 			>

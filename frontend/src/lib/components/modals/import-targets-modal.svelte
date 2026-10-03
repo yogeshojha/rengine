@@ -8,6 +8,9 @@
 	import Upload from '@lucide/svelte/icons/upload';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import { Button } from '$lib/components/ui/button';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { Progress } from '$lib/components/ui/progress';
 	import { Label } from '$lib/components/ui/label';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -185,9 +188,21 @@
 			});
 	});
 
-	function handleOpenChange(isOpen: boolean) {
-		open = isOpen;
-	}
+	const dirty = $derived(
+		mode === 'preview' ||
+			(mode === 'input' &&
+				(manualText.trim().length > 0 ||
+					manualFile !== null ||
+					jsonText.trim().length > 0 ||
+					jsonFile !== null ||
+					csvFile !== null ||
+					selectedOrganizations.length > 0 ||
+					selectedTags.length > 0))
+	);
+	const guard = new DiscardGuard(
+		() => dirty,
+		() => (open = false)
+	);
 
 	function parseManualInput(text: string) {
 		return text
@@ -464,7 +479,7 @@
 				toast.success(`${plural(response.imported, 'target')} imported`);
 				if (wantsScan) await launchImported();
 			} else if (wantsScan) {
-				toast.warning('No new targets imported. No scan queued.');
+				toast.warning('No new targets imported. No scan queued');
 			}
 
 			if (response.failed > 0) {
@@ -516,7 +531,7 @@
 			toast.error(
 				scansStore.error
 					? `Targets imported. Scans not queued. ${scansStore.error}`
-					: 'Targets imported. Scans not queued.'
+					: 'Targets imported. Scans not queued'
 			);
 		}
 	}
@@ -538,9 +553,17 @@
 	);
 </script>
 
-<Dialog.Root {open} onOpenChange={handleOpenChange}>
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!busy) guard.close();
+		}
+	}
+>
 	<Dialog.Content
-		class="grid max-h-[85vh] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-[700px]"
+		class="grid max-h-[85vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
 		onInteractOutside={(e) => {
 			if (busy) e.preventDefault();
 		}}
@@ -548,25 +571,14 @@
 			if (busy) e.preventDefault();
 		}}
 	>
-		<Dialog.Header class="p-6 pb-4">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Import targets</Dialog.Title>
-			<Dialog.Description>
-				{#if mode === 'input'}
-					Paste a list or upload a file
-				{:else if mode === 'preview'}
-					Review targets before importing
-				{:else}
-					Import complete
-				{/if}
-			</Dialog.Description>
 		</Dialog.Header>
-
-		<Separator />
 
 		<ScrollArea class="min-h-0">
 			{#if mode === 'input'}
 				<Tabs.Root bind:value={activeTab} class="w-full">
-					<div class="px-6 pt-4">
+					<div class="px-6 pt-5">
 						<Tabs.List class="grid w-full grid-cols-3">
 							<Tabs.Trigger value="manual" class="gap-2">
 								<List class="h-4 w-4" />
@@ -583,9 +595,9 @@
 						</Tabs.List>
 					</div>
 
-					<div class="p-6 pt-4">
+					<div class="px-6 pt-4 pb-5">
 						<Tabs.Content value="manual" class="mt-0 space-y-4">
-							<div class="space-y-2">
+							<div class="space-y-3">
 								<Label>Target values</Label>
 								<FileUpload
 									accept=".txt"
@@ -605,7 +617,7 @@ https://app.example.com"
 						</Tabs.Content>
 
 						<Tabs.Content value="json" class="mt-0 space-y-4">
-							<div class="space-y-2">
+							<div class="space-y-3">
 								<Label>JSON</Label>
 								<FileUpload
 									accept=".json"
@@ -622,7 +634,7 @@ https://app.example.com"
 						</Tabs.Content>
 
 						<Tabs.Content value="csv" class="mt-0 space-y-4">
-							<div class="space-y-2">
+							<div class="space-y-3">
 								<Label>CSV file</Label>
 								<FileUpload
 									accept=".csv"
@@ -639,7 +651,7 @@ https://app.example.com"
 
 				<Separator />
 
-				<div class="space-y-4 p-6">
+				<div class="space-y-4 px-6 py-5">
 					<div class="space-y-0.5">
 						<Label>Applied to every target</Label>
 						{#if activeTab !== 'manual'}
@@ -650,8 +662,8 @@ https://app.example.com"
 					</div>
 
 					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="space-y-2">
-							<Label class="text-xs text-muted-foreground">Organizations</Label>
+						<div class="space-y-3">
+							<Label>Organizations</Label>
 							<MultiSelectCombobox
 								items={targetsStore.organizationItems}
 								selected={selectedOrganizations}
@@ -663,8 +675,8 @@ https://app.example.com"
 							/>
 						</div>
 
-						<div class="space-y-2">
-							<Label class="text-xs text-muted-foreground">Tags</Label>
+						<div class="space-y-3">
+							<Label>Tags</Label>
 							<TagMultiSelect
 								items={targetsStore.tagItems}
 								selected={selectedTags}
@@ -677,11 +689,11 @@ https://app.example.com"
 					</div>
 				</div>
 			{:else if mode === 'preview'}
-				<div class="p-6 space-y-4">
+				<div class="px-6 py-5">
 					<ImportPreview items={previewItems} />
 				</div>
 			{:else if mode === 'results' && importResults}
-				<div class="p-6">
+				<div class="px-6 py-5">
 					<ImportResults
 						total={importResults.total}
 						imported={importResults.imported}
@@ -693,9 +705,8 @@ https://app.example.com"
 			{/if}
 		</ScrollArea>
 
-		<Separator />
-
 		{#if mode !== 'results'}
+			<Separator />
 			<QuickScanFields
 				id="import-targets-scan"
 				title="Scan after importing"
@@ -708,60 +719,50 @@ https://app.example.com"
 				bind:pending={scanPending}
 				disabled={busy}
 			/>
-
-			<Separator />
 		{/if}
 
 		{#if isProcessing && validateTotal > 0}
 			<Progress value={validatePct} class="h-1 rounded-none" />
 		{/if}
-		<div class="flex items-center justify-between gap-2 p-4 bg-muted/30">
+		<div class="flex items-center justify-between gap-2 border-t px-6 py-4">
 			{#if mode === 'input'}
-				<Button variant="outline" disabled={busy} onclick={() => (open = false)}>Cancel</Button>
+				<Button variant="outline" disabled={busy} onclick={() => guard.close()}>Cancel</Button>
 				<div class="flex gap-2">
-					<Button
+					<LoadingButton
 						variant="outline"
 						onclick={handlePreview}
-						disabled={!hasInput || isProcessing || isImporting}
+						loading={isProcessing}
+						loadingLabel="Processing"
+						disabled={!hasInput || isImporting}
 					>
-						{#if isProcessing}
-							<Spinner />
-							Processing
-						{:else}
-							<Eye class="h-4 w-4 mr-2" />
-							Preview
-						{/if}
-					</Button>
-					<Button
+						<Eye class="size-4" />
+						Preview
+					</LoadingButton>
+					<LoadingButton
 						onclick={handleDirectImport}
-						disabled={!hasInput || isProcessing || isImporting || scanPending}
+						loading={isImporting}
+						loadingLabel={scanArmed ? 'Queuing' : 'Importing'}
+						disabled={!hasInput || isProcessing || scanPending}
 					>
-						{#if isImporting}
-							<Spinner />
-							{scanArmed ? 'Queuing' : 'Importing'}
-						{:else if scanArmed}
+						{#if scanArmed}
 							Import & scan
 						{:else}
-							<Upload class="h-4 w-4 mr-2" />
+							<Upload class="size-4" />
 							Import
 						{/if}
-					</Button>
+					</LoadingButton>
 				</div>
 			{:else if mode === 'preview'}
 				<Button variant="outline" onclick={() => (mode = 'input')}>Back</Button>
-				<Button
+				<LoadingButton
 					onclick={handleImportFromPreview}
-					disabled={!canImport || isImporting || scanPending}
+					loading={isImporting}
+					loadingLabel={scanArmed ? 'Queuing' : 'Importing'}
+					disabled={!canImport || scanPending}
 				>
-					{#if isImporting}
-						<Spinner />
-						{scanArmed ? 'Queuing' : 'Importing'}
-					{:else if scanArmed}
-						Import & scan {previewItems.filter((item) => !item.error).length}
-					{:else}
-						Import {previewItems.filter((item) => !item.error).length}
-					{/if}
-				</Button>
+					{scanArmed ? 'Import & scan' : 'Import'}
+					{previewItems.filter((item) => !item.error).length}
+				</LoadingButton>
 			{:else}
 				<Button variant="outline" onclick={handleImportMore} disabled={isImporting}>
 					Import more
@@ -778,7 +779,7 @@ https://app.example.com"
 						</span>
 					{/if}
 					<Button variant="outline" onclick={() => (open = false)} disabled={isImporting}>
-						<CircleCheck class="h-4 w-4 mr-2" />
+						<CircleCheck class="size-4" />
 						Done
 					</Button>
 					{#if queuedScans > 0}
@@ -801,4 +802,10 @@ https://app.example.com"
 		showLaunch = false;
 		launchIds = undefined;
 	}}
+/>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />

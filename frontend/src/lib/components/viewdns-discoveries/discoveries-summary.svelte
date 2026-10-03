@@ -1,6 +1,8 @@
 <script lang="ts">
 	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import SectionHead from '$lib/components/section-head.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import { targetsApi } from '$lib/api/targets';
 	import { targetsStore } from '$lib/stores/targets.svelte';
@@ -13,11 +15,11 @@
 	import { MAX_TARGETS_IMPORT } from '$lib/constants';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { plural } from '$lib/utilities/strings';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
-	import SearchX from '@lucide/svelte/icons/search-x';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Telescope from '@lucide/svelte/icons/telescope';
 	import UserRound from '@lucide/svelte/icons/user-round';
 	import Server from '@lucide/svelte/icons/server';
@@ -178,7 +180,10 @@
 
 		try {
 			const sr = sourceResults.find((s) => s.source === source && s.queryValue === enrichQuery);
-			if (!sr) return;
+			if (!sr) {
+				showEnrichDialog = false;
+				return;
+			}
 
 			const result = await sr.fetch(enrichQuery, false);
 			if (result) {
@@ -188,14 +193,16 @@
 					s.source === source && s.queryValue === enrichQuery ? { ...s, cache: result, domains } : s
 				);
 
-				toast.success(`Found ${domains.length} domains via ${DISCOVERY_SOURCE_LABELS[source]}`);
+				toast.success(
+					`${plural(domains.length, 'domain')} found via ${DISCOVERY_SOURCE_LABELS[source]}`
+				);
 				void matchTargets();
 			}
+			showEnrichDialog = false;
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Lookup not completed');
 		} finally {
 			isEnriching = false;
-			showEnrichDialog = false;
 		}
 	}
 
@@ -246,7 +253,7 @@
 			toast.success(
 				one ? `${one} added` : `${imported} ${imported === 1 ? 'target' : 'targets'} added`,
 				{
-					description: existing ? `${existing} already in this project.` : undefined
+					description: existing ? `${existing} already in this project` : undefined
 				}
 			);
 		} else if (existing) {
@@ -263,7 +270,9 @@
 {#if isLoading}
 	<PanelSkeleton stats rows={5} />
 {:else if error}
-	<EmptyState compact icon={SearchX} title="Discoveries not loaded" description={error} />
+	<EmptyState compact icon={TriangleAlert} title="Discoveries not loaded" description={error}>
+		<Button size="sm" variant="outline" onclick={() => loadCachedData()}>Retry</Button>
+	</EmptyState>
 {:else if noLookupsAvailable}
 	<EmptyState
 		compact
@@ -347,33 +356,30 @@
 
 		{#if previewDomains.length > 0}
 			<div class="space-y-2">
-				<p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Domains</p>
+				<SectionHead title="Domains" />
 				<div class="rounded-lg border border-border/60 divide-y divide-border/30">
 					{#each previewDomains as { domain, sources } (domain)}
 						{@const isAdding = adding.has(domain)}
 						{@const done = added.get(domain.toLowerCase())}
 						{@const targetId = done?.targetId ?? matched.get(domain.toLowerCase())?.targetId}
-						<div class="flex items-center justify-between gap-3 px-3 py-2 group">
+						<div class="flex items-center justify-between gap-3 px-3 py-1.5 group">
 							<div class="flex items-center gap-2 min-w-0">
 								<span class="text-sm font-mono truncate">{domain}</span>
 								{#each sources as source (source)}
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											{#snippet child({ props })}
-												<Badge
-													{...props}
-													variant="outline"
-													class="text-2xs font-normal shrink-0 h-4 px-1 text-muted-foreground border-border/60 cursor-default"
-												>
-													{SOURCE_SHORT[source]}
-												</Badge>
-											{/snippet}
-										</Tooltip.Trigger>
-										<Tooltip.Content>Found via {DISCOVERY_SOURCE_LABELS[source]}</Tooltip.Content>
-									</Tooltip.Root>
+									<Hint text="Found via {DISCOVERY_SOURCE_LABELS[source]}">
+										{#snippet child(props)}
+											<Badge
+												{...props}
+												variant="outline"
+												class="text-2xs font-normal shrink-0 h-4 px-1 text-muted-foreground border-border/60 cursor-default"
+											>
+												{SOURCE_SHORT[source]}
+											</Badge>
+										{/snippet}
+									</Hint>
 								{/each}
 							</div>
-							<div class="shrink-0">
+							<div class="flex h-7 shrink-0 items-center">
 								{#if targetId}
 									<a
 										href={ROUTES.target(targetId)}
@@ -390,22 +396,20 @@
 								{:else if isAdding}
 									<Spinner class="h-3.5 w-3.5 text-muted-foreground" />
 								{:else if isNew(domain)}
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											{#snippet child({ props })}
-												<Button
-													{...props}
-													variant="ghost"
-													size="icon"
-													class="h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-													onclick={() => addTargets([domain])}
-												>
-													<Plus class="h-3 w-3" />
-												</Button>
-											{/snippet}
-										</Tooltip.Trigger>
-										<Tooltip.Content>Add as target</Tooltip.Content>
-									</Tooltip.Root>
+									<Hint text="Add as target">
+										{#snippet child(props)}
+											<Button
+												{...props}
+												variant="ghost"
+												size="icon"
+												class="size-7 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+												aria-label="Add {domain} as target"
+												onclick={() => addTargets([domain])}
+											>
+												<Plus class="h-3 w-3" />
+											</Button>
+										{/snippet}
+									</Hint>
 								{/if}
 							</div>
 						</div>

@@ -15,7 +15,7 @@
 
 <Button {...rest} disabled={disabled || loading}>
 	{#if loading}
-		<Spinner class="mr-2" />
+		<Spinner />
 		{loadingLabel ?? ''}
 	{:else}
 		{@render children?.()}

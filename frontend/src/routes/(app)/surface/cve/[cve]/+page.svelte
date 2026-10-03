@@ -6,6 +6,7 @@
 	import Bug from '@lucide/svelte/icons/bug';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Flame from '@lucide/svelte/icons/flame';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Alert from '$lib/components/ui/alert';
 	import { Badge } from '$lib/components/ui/badge';
@@ -24,7 +25,7 @@
 	import { cvesApi } from '$lib/api/cves';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
-	import { BAND_LABELS } from '$lib/config/threat-intel';
+	import { BAND_LABELS, epssLabel } from '$lib/config/threat-intel';
 	import { nvdUrl } from '$lib/config/software';
 	import { formatShortDate, MS_PER_DAY, relativeTimeLong } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
@@ -76,7 +77,7 @@
 		clamped ? `${description.slice(0, DESCRIPTION_CLAMP).trimEnd()}…` : description
 	);
 	let cvss = $derived(report?.cvss_score == null ? null : report.cvss_score.toFixed(1));
-	let epss = $derived(report?.epss_score == null ? null : Math.round(report.epss_score * 100));
+	let epss = $derived(report?.epss_score == null ? null : epssLabel(report.epss_score));
 	let percentile = $derived(
 		report?.epss_percentile == null ? null : Math.round(report.epss_percentile * 100)
 	);
@@ -84,10 +85,10 @@
 
 <svelte:head><title>{pageTitle(cve || routeLabels.cves)}</title></svelte:head>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
 	<a
 		href={ROUTES.cves}
-		class="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+		class="inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeft class="size-3.5" />
 		{routeLabels.cves}
@@ -100,7 +101,9 @@
 			<Skeleton class="h-64" />
 		</div>
 	{:else if loadError || !report}
-		<EmptyState title="CVE not loaded" description={loadError ?? undefined} />
+		<EmptyState icon={TriangleAlert} title="CVE not loaded" description={loadError ?? undefined}>
+			<Button variant="outline" size="sm" onclick={() => void load(projectId, cve)}>Retry</Button>
+		</EmptyState>
 	{:else}
 		<header class="flex flex-wrap items-start justify-between gap-4">
 			<div class="flex min-w-0 flex-col gap-2">
@@ -178,7 +181,7 @@
 			</Alert.Alert>
 		{/if}
 
-		<Card.Root class="overflow-hidden py-0">
+		<Card.Root class="gap-0 overflow-hidden py-0">
 			<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b px-5 py-4">
 				<div class="flex min-w-0 flex-col gap-1">
 					{#if affected}
@@ -225,7 +228,7 @@
 		<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
 			<div class="flex min-w-0 flex-col gap-6">
 				{#if report.locations.length}
-					<Card.Root class="overflow-hidden py-0">
+					<Card.Root class="gap-0 overflow-hidden py-0">
 						<PanelHead title="Locations">
 							{report.locations_total.toLocaleString()}
 						</PanelHead>
@@ -248,7 +251,7 @@
 			</div>
 
 			<aside class="flex min-w-0 flex-col gap-6">
-				<Card.Root class="gap-0 py-0">
+				<Card.Root class="gap-0 overflow-hidden py-0">
 					<PanelHead title="Exploitation" />
 					<div class="flex flex-col gap-4 px-5 py-4">
 						<div class="flex items-center gap-3">
@@ -267,7 +270,7 @@
 								<dt class="text-xs text-muted-foreground">EPSS</dt>
 								<dd class="text-right tabular-nums">
 									{#if epss != null}
-										{epss}%
+										{epss}
 										{#if report.band}
 											<span class="text-xs text-muted-foreground">
 												· {BAND_LABELS[report.band] ?? report.band}
@@ -319,7 +322,7 @@
 				</Card.Root>
 
 				{#if report.by_target.length}
-					<Card.Root class="gap-0 py-0">
+					<Card.Root class="gap-0 overflow-hidden py-0">
 						<PanelHead title="By target">
 							{plural(report.by_target.length, 'target', 'targets')}
 						</PanelHead>

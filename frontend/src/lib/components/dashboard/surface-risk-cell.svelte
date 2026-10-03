@@ -14,6 +14,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { DashboardSurfaceRisk } from '$lib/types/dashboard';
 	import type { TargetScope } from '$lib/utilities/surface-scope';
+	import { plural } from '$lib/utilities/strings';
 
 	const routes = useScopedRoutes();
 
@@ -43,8 +44,8 @@
 		})
 	);
 	let actHref = $derived(routes.results(VULNS.tab, undefined, { [VULNS.queryParam]: ACT_QUERY }));
-	const STAT = 'flex min-w-0 flex-col rounded-md bg-muted/60 px-2.5 py-1.5';
-	const STAT_LINK = `${STAT} hover:bg-muted`;
+	const STAT = 'flex min-w-0 flex-col gap-0.5 rounded-lg border bg-muted/20 px-2.5 py-2';
+	const STAT_LINK = `${STAT} transition-colors hover:bg-muted/50`;
 </script>
 
 <Cell
@@ -64,13 +65,13 @@
 	{#if data}
 		<div class="grid grid-cols-3 gap-2">
 			<a href={liveHref} class={STAT_LINK}>
-				<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
+				<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 					{data.live.toLocaleString()}
 				</span>
 				<span class="text-2xs text-muted-foreground sm:truncate">live web assets</span>
 			</a>
 			<a href={findingsHref} class={STAT_LINK}>
-				<span class="text-lg leading-tight font-semibold tracking-tight tabular-nums">
+				<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 					{data.findings.toLocaleString()}
 				</span>
 				<span class="text-2xs text-muted-foreground sm:truncate">open findings</span>
@@ -78,7 +79,7 @@
 			<div class={STAT}>
 				<a
 					href={actionableHref}
-					class="text-lg leading-tight font-semibold tracking-tight tabular-nums hover:text-primary {data.actionable
+					class="text-lg leading-none font-semibold tracking-tight tabular-nums hover:text-primary {data.actionable
 						? 'text-sev-critical-ink'
 						: ''}"
 				>
@@ -94,10 +95,10 @@
 		{#if rows.length}
 			<SurfaceRiskRows {rows} onScope={onScope && ((id) => onScope({ targetIds: [id] }))} />
 		{:else}
-			<p class="py-6 text-center text-sm text-muted-foreground">Not scanned</p>
+			<span class="text-sm text-muted-foreground">Not scanned</span>
 		{/if}
 	{:else}
-		<p class="py-6 text-center text-sm text-muted-foreground">Surface against risk not loaded.</p>
+		<span class="text-sm text-muted-foreground">Surface against risk not loaded</span>
 	{/if}
 	{#snippet footer()}
 		<div class="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -113,7 +114,7 @@
 			{/each}
 		</div>
 		{#if more}
-			<span>{more.toLocaleString()} more scanned targets</span>
+			<span>{plural(more, 'more scanned target', 'more scanned targets')}</span>
 		{/if}
 	{/snippet}
 </Cell>

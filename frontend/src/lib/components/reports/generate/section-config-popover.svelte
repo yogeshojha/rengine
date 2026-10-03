@@ -30,7 +30,8 @@
 				aria-label="Settings for {section.title}"
 			>
 				<SlidersHorizontal class="size-3" />
-				{#if changed.length}<span class="size-1.5 rounded-full bg-primary"></span>{/if}
+				{#if changed.length}<span class="size-1.5 rounded-full bg-primary" aria-hidden="true"
+					></span>{/if}
 			</button>
 		{/snippet}
 	</Popover.Trigger>
@@ -48,7 +49,7 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="h-6 shrink-0 gap-1 px-1.5 text-xs text-muted-foreground"
+					class="h-6 shrink-0 px-1.5 text-xs text-muted-foreground"
 					onclick={() => plan.resetSection(section.name)}
 				>
 					<RotateCcw class="size-3" /> Reset

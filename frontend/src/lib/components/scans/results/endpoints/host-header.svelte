@@ -176,7 +176,7 @@
 
 		{#if brief.params.length}
 			<div class="flex flex-wrap items-center gap-1">
-				<span class="mr-1 text-2xs font-medium tracking-wider text-muted-foreground uppercase">
+				<span class="mr-1 text-2xs tracking-wide text-muted-foreground uppercase">
 					Parameters
 				</span>
 				{#each shownParams as p (p.name)}
@@ -229,10 +229,10 @@
 				</Button>
 			{/if}
 			{#if onSend && connectors.length}
-				<ProxySend {connectors} {catalog} {onSend} variant="outline" />
+				<ProxySend {connectors} {catalog} {onSend} variant="outline" class="h-8" />
 			{/if}
 			<Button variant="ghost" size="sm" class="h-8 gap-1.5 text-xs" onclick={onAcross}>
-				<Layers class="size-3" /> Paths across hosts
+				<Layers class="size-3" /> Paths across web assets
 			</Button>
 		</div>
 	{/if}

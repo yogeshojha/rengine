@@ -12,9 +12,10 @@
 	import * as Kbd from '$lib/components/ui/kbd';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
-	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -89,6 +90,9 @@
 	let previewSeq = 0;
 	let planRestored = false;
 	let prefilledFor = '';
+	let restored = $state(false);
+	let baseline = $state<string | null>(null);
+	let contextDirty = $state(false);
 
 	let project = $derived(projectsStore.activeProject);
 	let enginesReady = $derived(
@@ -128,12 +132,35 @@
 		])
 	);
 
+	const signature = () =>
+		JSON.stringify([
+			launch.targets.map((t) => t.key),
+			launch.rescan?.assets ?? null,
+			launch.mode,
+			launch.engineId,
+			launch.patch,
+			launch.intensity,
+			launch.contextId
+		]);
+	let dirty = $derived(
+		open &&
+			((baseline !== null && signature() !== baseline) || (view === 'newContext' && contextDirty))
+	);
+	const guard = new DiscardGuard(() => dirty, close);
+	const backGuard = new DiscardGuard(
+		() => contextDirty,
+		() => (view = 'launch')
+	);
+
 	$effect(() => {
 		if (!open) return;
 		const p = project;
 		if (!p) return;
 		untrack(() => {
 			planRestored = false;
+			restored = false;
+			baseline = null;
+			contextDirty = false;
 			prefilledFor = '';
 			view = 'launch';
 			whatRunsOpen = false;
@@ -152,6 +179,12 @@
 		if (rescan && !rechecks.schema) return;
 		planRestored = true;
 		untrack(() => (rescan ? startRescan(rescan) : restorePlan()));
+		restored = true;
+	});
+
+	$effect(() => {
+		if (!open || !restored || targetsLoading || baseline !== null) return;
+		baseline = untrack(signature);
 	});
 
 	function startRescan(seed: Omit<RescanSeed, 'rescannable'>) {
@@ -313,7 +346,7 @@
 					else unresolved += 1;
 				}
 				if (unresolved) {
-					toast.warning(`${unresolved} ${unresolved === 1 ? 'target' : 'targets'} not loaded.`);
+					toast.warning(`${unresolved} ${unresolved === 1 ? 'target' : 'targets'} not loaded`);
 				}
 			}
 			for (const value of values) {
@@ -379,11 +412,6 @@
 		onClose?.();
 	}
 
-	function handleOpenChange(next: boolean) {
-		if (!next) close();
-		else open = true;
-	}
-
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key !== 'Enter' || e.defaultPrevented || view !== 'launch') return;
 		const el = e.target as HTMLElement | null;
@@ -395,13 +423,21 @@
 	}
 </script>
 
-<Dialog.Root {open} onOpenChange={handleOpenChange}>
+<Dialog.Root
+	bind:open={
+		() => open,
+		(next) => {
+			if (next) open = true;
+			else if (!launching) guard.close();
+		}
+	}
+>
 	<Dialog.Content
-		class="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[680px]"
+		class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
 		onkeydown={handleKeydown}
 	>
 		{#if view === 'launch'}
-			<Dialog.Header class="px-6 pt-6 pb-0">
+			<Dialog.Header class="border-b px-6 py-4">
 				<Dialog.Title>{launch.rescan ? 'Rescan' : 'New scan'}</Dialog.Title>
 				<Dialog.Description class="sr-only">
 					{launch.rescan
@@ -411,9 +447,9 @@
 			</Dialog.Header>
 
 			<ScrollArea
-				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-10rem)]"
+				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(90vh-10rem)]"
 			>
-				<div class="flex flex-col gap-5 px-6 pt-5 pb-4">
+				<div class="flex flex-col gap-4 px-6 py-5">
 					{#if launch.rescan}
 						<RescanScope
 							assets={launch.rescan.assets}
@@ -478,13 +514,10 @@
 				</div>
 			</ScrollArea>
 
-			<Separator />
-
-			<div class="flex items-center gap-2 bg-muted/30 px-4 py-4 sm:gap-3 sm:px-6">
+			<div class="flex flex-wrap items-center gap-2 border-t px-6 py-4 sm:flex-nowrap">
 				{#if canSaveEngine}
 					<Button
 						variant="ghost"
-						size="sm"
 						class="hidden text-muted-foreground sm:inline-flex"
 						onclick={() => (saveOpen = true)}
 						disabled={busy}
@@ -494,28 +527,33 @@
 				{/if}
 				<span class="flex-1"></span>
 				{#if launch.blockReason && launch.catalog}
-					<span class="hidden text-xs text-muted-foreground sm:inline">{launch.blockReason}</span>
+					<span
+						class="order-first basis-full text-xs text-muted-foreground sm:order-none sm:basis-auto"
+						>{launch.blockReason}</span
+					>
 				{/if}
-				<Button variant="outline" onclick={close} disabled={launching}>Cancel</Button>
-				<Button onclick={handleLaunch} disabled={!launch.canLaunch || busy} class="min-w-0 gap-2">
-					{#if launching}
-						<Spinner class="size-4" />
-						Starting
-					{:else}
-						<Play class="size-4" />
-						<span>{launchLabel}</span>
-						{#if launch.canLaunch}
-							<Kbd.Root class="bg-primary-foreground/20 text-primary-foreground">
-								<CornerDownLeft class="size-3" />
-							</Kbd.Root>
-						{/if}
+				<Button variant="outline" onclick={() => guard.close()} disabled={launching}>Cancel</Button>
+				<LoadingButton
+					onclick={handleLaunch}
+					disabled={!launch.canLaunch || busy}
+					loading={launching}
+					loadingLabel="Starting"
+					class="min-w-0"
+				>
+					<Play class="size-4" />
+					<span>{launchLabel}</span>
+					{#if launch.canLaunch}
+						<Kbd.Root class="bg-primary-foreground/20 text-primary-foreground">
+							<CornerDownLeft class="size-3" />
+						</Kbd.Root>
 					{/if}
-				</Button>
+				</LoadingButton>
 			</div>
 		{:else}
 			<LaunchContextForm
 				targetValue={firstTarget?.value ?? ''}
-				onBack={() => (view = 'launch')}
+				bind:dirty={contextDirty}
+				onBack={backGuard.close}
 				onCreated={(id, name) => {
 					launch.contextId = id;
 					view = 'launch';
@@ -525,6 +563,18 @@
 		{/if}
 	</Dialog.Content>
 </Dialog.Root>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
+/>
+
+<UnsavedChangesDialog
+	open={backGuard.asking}
+	onOpenChange={(next) => (backGuard.asking = next)}
+	onConfirm={backGuard.discard}
+/>
 
 <SaveEngineDialog
 	bind:open={saveOpen}

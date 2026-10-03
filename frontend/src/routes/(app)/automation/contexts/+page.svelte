@@ -6,7 +6,7 @@
 	import { toast } from 'svelte-sonner';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
-	import AlertCircle from '@lucide/svelte/icons/alert-circle';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import ListChecks from '@lucide/svelte/icons/list-checks';
 	import Search from '@lucide/svelte/icons/search';
 	import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
@@ -21,10 +21,10 @@
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as Alert from '$lib/components/ui/alert';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
@@ -161,64 +161,62 @@
 		try {
 			await scanContextsStore.fetchContexts(project.id);
 			if (scanContextsStore.error) toast.error(scanContextsStore.error);
-			else toast.success('Contexts refreshed');
 		} finally {
 			isRefreshing = false;
 		}
 	}
 
 	const total = $derived(scanContextsStore.contexts.length);
+	const loaded = $derived(
+		Boolean(projectsStore.activeProject) &&
+			scanContextsStore.fetchedProjectId === projectsStore.activeProject?.id
+	);
+	const loadFailed = $derived(
+		!loaded && Boolean(scanContextsStore.error) && !scanContextsStore.isLoading
+	);
 </script>
 
 <svelte:head><title>{pageTitle(routeLabels.contexts)}</title></svelte:head>
 
-<div class="space-y-6">
-	<div class="flex flex-wrap items-start justify-between gap-4">
-		<div class="max-w-2xl">
+<div class="flex flex-col gap-6">
+	<div class="flex flex-wrap items-end justify-between gap-3">
+		<div class="min-w-0">
 			<h1 class="text-2xl font-semibold tracking-tight">Scan contexts</h1>
 			<p class="mt-1 text-sm text-muted-foreground">
 				Credentials, rate limits, scope rules and proxy settings for a scan
 			</p>
 		</div>
-		<div class="flex items-center gap-2">
-			<Button
-				variant="outline"
-				size="icon"
-				class="h-9 w-9"
-				aria-label="Refresh"
-				onclick={handleRefresh}
-				disabled={isRefreshing}
-			>
-				<RefreshCw class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" />
-			</Button>
-			<Button class="gap-2" onclick={() => handleNewContext()}>
-				<Plus class="h-4 w-4" />
+		<div class="flex flex-wrap items-center gap-2">
+			<Hint text="Refresh">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="outline"
+						size="icon-sm"
+						aria-label="Refresh"
+						onclick={handleRefresh}
+						disabled={isRefreshing}
+					>
+						<RefreshCw class="size-4 {isRefreshing ? 'animate-spin' : ''}" />
+					</Button>
+				{/snippet}
+			</Hint>
+			<Button size="sm" onclick={() => handleNewContext()}>
+				<Plus class="size-4" />
 				New context
 			</Button>
 		</div>
 	</div>
 
-	{#if scanContextsStore.error && !scanContextsStore.isLoading}
-		<Alert.Root variant="destructive">
-			<AlertCircle />
-			<Alert.Title>Scan contexts not loaded</Alert.Title>
-			<Alert.Description class="flex flex-wrap items-center justify-between gap-3">
-				<span>{scanContextsStore.error}</span>
-				<Button
-					variant="outline"
-					size="sm"
-					class="gap-1.5"
-					onclick={handleRefresh}
-					disabled={isRefreshing}
-				>
-					<RefreshCw class="h-3.5 w-3.5 {isRefreshing ? 'animate-spin' : ''}" />
-					Retry
-				</Button>
-			</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	{#if scanContextsStore.isLoading}
+	{#if loadFailed}
+		<EmptyState
+			icon={TriangleAlert}
+			title="Scan contexts not loaded"
+			description={scanContextsStore.error ?? undefined}
+		>
+			<Button variant="outline" size="sm" onclick={handleRefresh}>Retry</Button>
+		</EmptyState>
+	{:else if !loaded}
 		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 			{#each Array(3) as _, i (i)}
 				<div class="flex flex-col gap-3 rounded-xl border border-border p-4">
@@ -328,7 +326,7 @@
 	}}
 	onClear={clearSelection}
 >
-	<Button variant="ghost" size="sm" class="gap-2 font-medium" onclick={toggleSelectAll}>
+	<Button variant="ghost" size="sm" class="font-medium" onclick={toggleSelectAll}>
 		<ListChecks class="h-3.5 w-3.5 text-muted-foreground" />
 		{selectedIds.size >= total ? 'Deselect all' : 'Select all'}
 	</Button>

@@ -351,6 +351,10 @@
 		color: var(--muted-foreground);
 		transition: transform 0.15s ease;
 	}
+	:global(.stage-row .disclose:hover .chev),
+	:global(.stage-row .advanced-head:hover) {
+		color: var(--foreground);
+	}
 	:global(.stage-row[data-state='open'] > .head .disclose .chev) {
 		transform: rotate(90deg);
 	}

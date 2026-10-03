@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { Spinner } from '$lib/components/ui/spinner';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
 	interface Props {
@@ -31,8 +30,8 @@
 	}: Props = $props();
 </script>
 
-<AlertDialog.Root {open} {onOpenChange}>
-	<AlertDialog.Content>
+<AlertDialog.Root bind:open={() => open, (next) => onOpenChange(next)}>
+	<AlertDialog.Content escapeKeydownBehavior={loading ? 'ignore' : 'close'}>
 		<AlertDialog.Header>
 			<div class="flex items-center gap-3">
 				{#if destructive}
@@ -42,29 +41,26 @@
 						<TriangleAlert class="h-5 w-5" />
 					</div>
 				{/if}
-				<div>
+				<div class="min-w-0">
 					<AlertDialog.Title>{title}</AlertDialog.Title>
 					{#if description}
-						<AlertDialog.Description class="mt-1">{description}</AlertDialog.Description>
+						<AlertDialog.Description class="mt-1 wrap-anywhere"
+							>{description}</AlertDialog.Description
+						>
 					{/if}
 				</div>
 			</div>
 		</AlertDialog.Header>
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={loading}>{cancelLabel}</AlertDialog.Cancel>
-			<Button
+			<LoadingButton
 				variant={destructive ? 'destructive' : 'default'}
 				onclick={onConfirm}
-				disabled={loading}
-				class="gap-2"
+				{loading}
+				{loadingLabel}
 			>
-				{#if loading}
-					<Spinner class="h-4 w-4" />
-					{loadingLabel}
-				{:else}
-					{confirmLabel}
-				{/if}
-			</Button>
+				{confirmLabel}
+			</LoadingButton>
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>

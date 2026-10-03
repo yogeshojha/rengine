@@ -42,7 +42,7 @@
 	class={className}
 >
 	{#snippet tools()}
-		<Button variant="ghost" size="sm" class="h-6 px-2 text-xs" onclick={() => show(null)}>
+		<Button variant="outline" size="sm" class="h-7 px-2 text-xs" onclick={() => show(null)}>
 			Review
 		</Button>
 	{/snippet}

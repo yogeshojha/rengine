@@ -13,6 +13,8 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
+	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import NoteComposer from './note-composer.svelte';
 	import TriageBadge from './triage-badge.svelte';
 	import { canChangeNote, noteHref, noteSubject, scanLabel } from './subject';
@@ -38,7 +40,13 @@
 	let busy = $state(false);
 	let confirmDelete = $state(false);
 	let contentEl = $state<HTMLElement | null>(null);
+	let composer = $state<ReturnType<typeof NoteComposer> | null>(null);
 	let shownFor = '';
+
+	const guard = new DiscardGuard(
+		() => editing && (composer?.dirty() ?? false),
+		() => onOpenChange(false)
+	);
 
 	$effect(() => {
 		const next = note;
@@ -68,7 +76,7 @@
 				await notes.update(projectId, current.id, { status: resolved ? 'open' : 'resolved' })
 			);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Note not updated.');
+			toast.error(e instanceof Error ? e.message : 'Note not updated');
 		} finally {
 			busy = false;
 		}
@@ -83,7 +91,7 @@
 			changed(null);
 			onOpenChange(false);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Note not deleted.');
+			toast.error(e instanceof Error ? e.message : 'Note not deleted');
 		} finally {
 			busy = false;
 		}
@@ -94,7 +102,7 @@
 	<span class="text-muted-foreground/60" aria-hidden="true">·</span>
 {/snippet}
 
-<Sheet.Root {open} {onOpenChange}>
+<Sheet.Root bind:open={() => open, (next) => (next ? onOpenChange(true) : guard.close())}>
 	<Sheet.Content
 		bind:ref={contentEl}
 		side="right"
@@ -108,8 +116,8 @@
 		{#if current && subject}
 			{@const n = current}
 			{@const Icon = subject.icon}
-			<Sheet.Header class="gap-2 border-b px-5 pt-5 pr-12 pb-3">
-				<Sheet.Title class="text-base font-medium">Note</Sheet.Title>
+			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
+				<Sheet.Title>Note</Sheet.Title>
 				<div class="flex items-center gap-2">
 					<Sheet.Description
 						class="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs"
@@ -178,6 +186,7 @@
 				<div class="flex flex-col gap-6 px-5 py-4">
 					{#if editing}
 						<NoteComposer
+							bind:this={composer}
 							anchor={{
 								targetId: n.target_id,
 								scanId: n.scan_id,
@@ -227,7 +236,7 @@
 								<Button
 									variant="outline"
 									size="sm"
-									class="h-7 shrink-0 gap-1 px-2 text-xs"
+									class="h-7 shrink-0 px-2 text-xs"
 									href={openHref}
 								>
 									Open <ArrowRight class="size-3.5" />
@@ -266,4 +275,10 @@
 	loadingLabel="Deleting"
 	onOpenChange={(o) => (confirmDelete = o)}
 	onConfirm={remove}
+/>
+
+<UnsavedChangesDialog
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />

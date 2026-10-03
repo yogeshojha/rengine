@@ -24,7 +24,7 @@
 	});
 </script>
 
-<Card.Root class="gap-0 py-0">
+<Card.Root class="gap-0 overflow-hidden py-0">
 	<LibraryToolbar bind:tab bind:search {counts} placeholder="Search themes" />
 
 	{#if visible.length}

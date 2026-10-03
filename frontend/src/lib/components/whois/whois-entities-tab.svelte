@@ -73,7 +73,7 @@
 </script>
 
 {#if populatedRoles.length === 0}
-	<EmptyState icon={UserRound} title="No entities" />
+	<EmptyState compact icon={UserRound} title="No entities" />
 {:else}
 	<div class="space-y-4 py-1">
 		{#each populatedRoles as role (role)}

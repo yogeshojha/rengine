@@ -8,6 +8,7 @@
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
+	import FormField from '$lib/components/form-field.svelte';
 	import { toast } from 'svelte-sonner';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import CopyIcon from '@lucide/svelte/icons/copy';
@@ -49,6 +50,7 @@
 			onNext: next,
 			nextLabel: 'Continue',
 			nextLoading: busy,
+			nextLoadingLabel: verifying ? 'Verifying' : 'Preparing',
 			nextDisabled: hasBackupCodes && !backupCodesAck,
 			canSkip: !hasBackupCodes
 		});
@@ -117,7 +119,7 @@
 			copiedCodes = true;
 			setTimeout(() => (copiedCodes = false), 2000);
 		} else {
-			toast.error('Copy failed');
+			toast.error('Backup codes not copied');
 		}
 	}
 
@@ -133,42 +135,43 @@
 </script>
 
 {#if phase === 'intro'}
-	<div class="rounded-xl border bg-card p-6">
-		<div class="flex items-start gap-4">
+	<div class="rounded-lg border p-4">
+		<div class="flex items-start gap-3">
 			<div
 				class="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted text-foreground"
 			>
 				<ShieldCheckIcon class="size-[18px]" />
 			</div>
-			<div class="flex-1 space-y-1">
+			<div class="flex-1 space-y-0.5">
 				<h3 class="text-sm font-medium">Authenticator app</h3>
-				<p class="text-sm text-muted-foreground">
+				<p class="text-xs text-muted-foreground">
 					Google Authenticator, 1Password, Authy or any TOTP app.
 				</p>
 			</div>
 		</div>
 		<form
-			class="mt-6 space-y-3"
+			class="mt-4 space-y-3"
 			onsubmit={(e) => {
 				e.preventDefault();
 				startSetup();
 			}}
 		>
-			<div class="space-y-2">
-				<Label for="two-factor-password">Current password</Label>
-				<Input
-					id="two-factor-password"
-					type="password"
-					autocomplete="current-password"
-					class="max-w-72"
-					disabled={setupLoading}
-					bind:value={password}
-				/>
-			</div>
+			<FormField label="Current password">
+				{#snippet children({ id })}
+					<Input
+						{id}
+						type="password"
+						autocomplete="current-password"
+						class="max-w-72"
+						disabled={setupLoading}
+						bind:value={password}
+					/>
+				{/snippet}
+			</FormField>
 			<LoadingButton
 				type="submit"
 				loading={setupLoading}
-				loadingLabel="Set up two-factor"
+				loadingLabel="Preparing"
 				disabled={!password}
 			>
 				Set up two-factor
@@ -201,14 +204,12 @@
 		</div>
 
 		<div class="space-y-4">
-			<div class="space-y-1">
-				<Label class="text-sm font-medium">Enter the {TOTP_DIGITS}-digit code</Label>
-			</div>
-			<OtpInput value={code} onValueChange={onCodeChange} disabled={verifying} />
+			<FormField label="Enter the {TOTP_DIGITS}-digit code" error={errorMsg || undefined}>
+				{#snippet children({ id })}
+					<OtpInput {id} value={code} onValueChange={onCodeChange} disabled={verifying} />
+				{/snippet}
+			</FormField>
 
-			{#if errorMsg}
-				<p class="text-xs text-destructive">{errorMsg}</p>
-			{/if}
 			{#if showClockHint}
 				<p class="flex items-start gap-1.5 text-xs text-warning">
 					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
@@ -220,7 +221,7 @@
 				class="w-full sm:w-auto"
 				onclick={verify}
 				loading={verifying}
-				loadingLabel="Verify and enable"
+				loadingLabel="Verifying"
 				disabled={code.length !== TOTP_DIGITS}
 			>
 				Verify and enable
@@ -251,18 +252,18 @@
 		<Alert.Root>
 			<ShieldCheckIcon class="size-4" />
 			<Alert.Title>Two-factor authentication is on</Alert.Title>
-			<Alert.Description>A code is required at each sign-in.</Alert.Description>
+			<Alert.Description>A code is required at each login.</Alert.Description>
 		</Alert.Root>
 
 		{#if backupCodes.length}
-			<div class="rounded-xl border bg-card p-5">
+			<div class="rounded-lg border p-4">
 				<div class="flex items-start justify-between gap-3">
 					<div class="flex items-center gap-2">
 						<KeyRoundIcon class="size-4 text-muted-foreground" />
 						<h3 class="text-sm font-medium">Backup codes</h3>
 					</div>
 					<div class="flex shrink-0 items-center gap-1">
-						<Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2 text-xs" onclick={copyCodes}>
+						<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" onclick={copyCodes}>
 							{#if copiedCodes}
 								<CheckIcon class="size-4 text-foreground" />
 								Copied
@@ -271,12 +272,7 @@
 								Copy all
 							{/if}
 						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							class="h-7 gap-1.5 px-2 text-xs"
-							onclick={downloadCodes}
-						>
+						<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" onclick={downloadCodes}>
 							<DownloadIcon class="size-4" />
 							Download .txt
 						</Button>
@@ -295,7 +291,7 @@
 					{/each}
 				</div>
 				<Label
-					class="mt-4 flex cursor-pointer items-center gap-2 text-xs font-normal text-muted-foreground"
+					class="mt-4 flex cursor-pointer items-center gap-2 font-normal text-muted-foreground"
 				>
 					<Checkbox bind:checked={backupCodesAck} />
 					Backup codes saved

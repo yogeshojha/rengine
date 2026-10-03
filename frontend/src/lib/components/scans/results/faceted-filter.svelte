@@ -30,8 +30,7 @@
 			<Button
 				{...props}
 				variant="outline"
-				size="sm"
-				class="h-9 gap-2 {selected.length ? 'border-primary/50 bg-primary/5' : ''}"
+				class={selected.length ? 'border-primary/50 bg-primary/5' : ''}
 			>
 				<ListFilter class="h-4 w-4" />
 				{title}
@@ -45,7 +44,7 @@
 		<Command.Root>
 			<Command.Input placeholder={title} />
 			<Command.List class="max-h-none overflow-visible">
-				<Command.Empty>No matches.</Command.Empty>
+				<Command.Empty>No matches</Command.Empty>
 				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
 					<Command.Group>
 						{#each options as option (option.value)}
@@ -62,7 +61,7 @@
 									<Check class="size-3" />
 								</div>
 								<span class="truncate">{option.label}</span>
-								<span class="ml-auto font-mono text-xs text-muted-foreground"
+								<span class="ml-auto text-xs text-muted-foreground tabular-nums"
 									>{option.count.toLocaleString()}</span
 								>
 							</Command.Item>
