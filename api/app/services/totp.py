@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password_async, verify_password_async
 from shared.logging import get_logger
 from shared.models.user import User
 from shared.redis import async_client
@@ -36,7 +36,7 @@ async def _claim_step(user: User, step: int) -> bool:
         )
     except Exception as exc:
         logger.warning("totp replay guard unavailable", error=str(exc))
-        return True
+        return False
     return bool(claimed)
 
 
@@ -75,12 +75,24 @@ class TOTPService:
             msg = "2FA is enabled. Disable it before enrolling again."
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
         secret = self._require_secret(user)
-        if not pyotp.TOTP(secret).verify(code, valid_window=1):
+        totp = pyotp.TOTP(secret)
+        step = totp.timecode(utc_now())
+        matched = next(
+            (
+                step + offset
+                for offset in _STEP_OFFSETS
+                if pyotp.utils.strings_equal(
+                    str(code), totp.generate_otp(step + offset)
+                )
+            ),
+            None,
+        )
+        if matched is None or not await _claim_step(user, matched):
             msg = "Invalid verification code."
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
         codes = [_backup_code() for _ in range(_BACKUP_CODE_COUNT)]
         user.totp_enabled = True
-        user.totp_backup_codes = [hash_password(c) for c in codes]
+        user.totp_backup_codes = [await hash_password_async(c) for c in codes]
         user.updated_at = utc_now()
         self.session.add(user)
         await self.session.commit()
@@ -124,7 +136,7 @@ class TOTPService:
             return False
         stored = locked.totp_backup_codes or []
         for i, hashed in enumerate(stored):
-            if verify_password(code, hashed):
+            if await verify_password_async(code, hashed):
                 locked.totp_backup_codes = [h for j, h in enumerate(stored) if j != i]
                 locked.updated_at = utc_now()
                 self.session.add(locked)

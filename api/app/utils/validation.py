@@ -6,6 +6,7 @@ from app.config import settings
 
 MIN_PASSWORD_SCORE = 3
 MIN_PASSWORD_LENGTH = 10
+MAX_PASSWORD_LENGTH = 1024
 
 
 MIN_USERNAME_LENGTH = 4
@@ -16,6 +17,10 @@ def validate_password_strength(
     password: str,
     user_inputs: list[str] | None = None,
 ) -> str:
+    if len(password) > MAX_PASSWORD_LENGTH:
+        return_error = f"Password must be at most {MAX_PASSWORD_LENGTH} characters."
+        raise ValueError(return_error)
+
     if settings.DEBUG:
         return password
 

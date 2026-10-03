@@ -27,6 +27,7 @@ export interface ChangePasswordRequest {
 
 export interface ChangeUsernameRequest {
 	new_username: string;
+	current_password: string;
 }
 
 export interface ChangePasswordResponse {

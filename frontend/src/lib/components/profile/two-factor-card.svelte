@@ -31,6 +31,7 @@
 	let twoFactorLoading = $state(true);
 
 	let setupOpen = $state(false);
+	let setupPassword = $state('');
 	let setupSecret = $state('');
 	let setupQr = $state('');
 	let setupCode = $state('');
@@ -104,9 +105,11 @@
 	}
 
 	async function handleStartSetup() {
+		if (!setupPassword) return;
 		isSettingUp = true;
 		try {
-			const res = await twoFactorApi.setup();
+			const res = await twoFactorApi.setup(setupPassword);
+			setupPassword = '';
 			setupSecret = res.secret;
 			setupQr = res.qr;
 			setupCode = '';
@@ -396,9 +399,33 @@
 				</div>
 			{/if}
 		{:else}
-			<LoadingButton onclick={handleStartSetup} loading={isSettingUp} loadingLabel="Preparing">
-				Enable 2FA
-			</LoadingButton>
+			<form
+				class="space-y-3"
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleStartSetup();
+				}}
+			>
+				<div class="space-y-2">
+					<Label for="setup-password">Current password</Label>
+					<Input
+						id="setup-password"
+						type="password"
+						autocomplete="current-password"
+						class="max-w-72"
+						disabled={isSettingUp}
+						bind:value={setupPassword}
+					/>
+				</div>
+				<LoadingButton
+					type="submit"
+					loading={isSettingUp}
+					loadingLabel="Preparing"
+					disabled={!setupPassword}
+				>
+					Enable 2FA
+				</LoadingButton>
+			</form>
 		{/if}
 	</Card.Content>
 </Card.Root>

@@ -1,6 +1,6 @@
 from pydantic import field_validator
 
-from shared.config import BaseAppSettings
+from shared.config import SECRET_KEY_MIN_LENGTH, BaseAppSettings
 
 DEFAULT_ADMIN_PASSWORD = "rengine@123"  # noqa: S105
 API_V1_PREFIX = "/api/v1"
@@ -8,6 +8,7 @@ ALGORITHM = "HS256"
 
 
 class Settings(BaseAppSettings):
+    JWT_SECRET_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
@@ -29,6 +30,17 @@ class Settings(BaseAppSettings):
     def require_secret_key(cls, v: str) -> str:
         if not v:
             msg = "SECRET_KEY is not set. Generate one with: openssl rand -hex 32"
+            raise ValueError(msg)
+        return v
+
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret_key(cls, v: str, info) -> str:
+        if v and not info.data.get("DEBUG", False) and len(v) < SECRET_KEY_MIN_LENGTH:
+            msg = (
+                f"JWT_SECRET_KEY must be at least {SECRET_KEY_MIN_LENGTH} characters. "
+                "Generate one with: openssl rand -hex 32"
+            )
             raise ValueError(msg)
         return v
 

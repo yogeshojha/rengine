@@ -9,8 +9,9 @@ from sqlmodel import select
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.core.ratelimit import revoke_user_tokens
-from app.core.security import hash_password
+from app.core.security import hash_password_async
 from app.utils.validation import validate_password_strength, validate_username
+from shared.logging import get_logger
 from shared.models.user import (
     User,
     UserAdminCreate,
@@ -18,6 +19,8 @@ from shared.models.user import (
     UserRead,
     UserSummary,
 )
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -53,7 +56,7 @@ async def list_users(
 async def create_user(
     data: UserAdminCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
-    current_user: CurrentSuperuser,  # noqa: ARG001
+    current_user: CurrentSuperuser,
 ):
     username = data.username.strip()
     email = data.email.strip().lower()
@@ -81,12 +84,18 @@ async def create_user(
     user = User(
         email=email,
         username=username,
-        hashed_password=hash_password(data.password),
+        hashed_password=await hash_password_async(data.password),
         is_superuser=data.is_superuser,
     )
     session.add(user)
     await session.commit()
     await session.refresh(user)
+    logger.info(
+        "user created",
+        user=str(user.id),
+        superuser=user.is_superuser,
+        by=str(current_user.id),
+    )
     return user
 
 
@@ -114,6 +123,13 @@ async def update_user(
     await session.commit()
     if data.is_active is False:
         await revoke_user_tokens(user.id)
+    logger.info(
+        "user updated",
+        user=str(user.id),
+        active=data.is_active,
+        superuser=data.is_superuser,
+        by=str(current_user.id),
+    )
     await session.refresh(user)
     return user
 
@@ -158,4 +174,5 @@ async def delete_user(
             detail=f"{username} created records on this instance. Disable the account instead.",
         ) from e
 
+    logger.info("user deleted", user=str(uuid_id), by=str(current_user.id))
     return {"message": f"User {username} deleted"}

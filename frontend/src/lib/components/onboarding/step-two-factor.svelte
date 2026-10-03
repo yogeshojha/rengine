@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
@@ -53,6 +54,7 @@
 		});
 	});
 
+	let password = $state('');
 	let qr = $state('');
 	let qrFailed = $state(false);
 	let secret = $state('');
@@ -70,9 +72,11 @@
 	let showClockHint = $derived(failCount >= 2);
 
 	async function startSetup() {
+		if (!password) return;
 		setupLoading = true;
 		try {
-			const res = await twoFactorApi.setup();
+			const res = await twoFactorApi.setup(password);
+			password = '';
 			qr = res.qr;
 			qrFailed = false;
 			secret = res.secret;
@@ -143,14 +147,33 @@
 				</p>
 			</div>
 		</div>
-		<LoadingButton
-			class="mt-6"
-			onclick={startSetup}
-			loading={setupLoading}
-			loadingLabel="Set up two-factor"
+		<form
+			class="mt-6 space-y-3"
+			onsubmit={(e) => {
+				e.preventDefault();
+				startSetup();
+			}}
 		>
-			Set up two-factor
-		</LoadingButton>
+			<div class="space-y-2">
+				<Label for="two-factor-password">Current password</Label>
+				<Input
+					id="two-factor-password"
+					type="password"
+					autocomplete="current-password"
+					class="max-w-72"
+					disabled={setupLoading}
+					bind:value={password}
+				/>
+			</div>
+			<LoadingButton
+				type="submit"
+				loading={setupLoading}
+				loadingLabel="Set up two-factor"
+				disabled={!password}
+			>
+				Set up two-factor
+			</LoadingButton>
+		</form>
 	</div>
 {:else if phase === 'enroll'}
 	<div class="grid gap-8 sm:grid-cols-[auto_1fr] sm:items-start">

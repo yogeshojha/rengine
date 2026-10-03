@@ -6,8 +6,12 @@ export const twoFactorApi = {
 		return api.get<{ enabled: boolean }>('/auth/2fa/status');
 	},
 
-	setup: (): Promise<{ secret: string; otpauth_uri: string; qr: string }> => {
-		return api.post<{ secret: string; otpauth_uri: string; qr: string }>('/auth/2fa/setup');
+	setup: (
+		current_password: string
+	): Promise<{ secret: string; otpauth_uri: string; qr: string }> => {
+		return api.post<{ secret: string; otpauth_uri: string; qr: string }>('/auth/2fa/setup', {
+			current_password
+		});
 	},
 
 	verify: (code: string): Promise<{ enabled: boolean; backup_codes: string[] }> => {

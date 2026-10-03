@@ -12,6 +12,7 @@
 	import { MIN_USERNAME_LENGTH } from '$lib/constants';
 
 	let newUsername = $state('');
+	let currentPassword = $state('');
 	let isChangingUsername = $state(false);
 	let usernameDirty = $state(false);
 	let usernameSavedAt = $state<Date | null>(null);
@@ -26,7 +27,8 @@
 	const usernameValid = $derived(
 		!!newUsername &&
 			newUsername.length >= MIN_USERNAME_LENGTH &&
-			newUsername !== auth.user?.username
+			newUsername !== auth.user?.username &&
+			!!currentPassword
 	);
 
 	const handleUsernameChange = async () => {
@@ -43,14 +45,22 @@
 			toast.error(`Username must be at least ${MIN_USERNAME_LENGTH} characters`);
 			return;
 		}
+		if (!currentPassword) {
+			toast.error('Current password is required');
+			return;
+		}
 
 		isChangingUsername = true;
 		try {
-			await authApi.changeUsername({ new_username: newUsername });
+			await authApi.changeUsername({
+				new_username: newUsername,
+				current_password: currentPassword
+			});
 			await auth.checkAuth();
 			toast.success('Username changed');
 			usernameSavedAt = new Date();
 			newUsername = '';
+			currentPassword = '';
 			usernameDirty = false;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Username not changed');
@@ -105,6 +115,17 @@
 				{:else}
 					<p class="text-xs text-muted-foreground">At least {MIN_USERNAME_LENGTH} characters</p>
 				{/if}
+			</div>
+
+			<div class="space-y-2">
+				<Label for="username-current-password">Current password</Label>
+				<Input
+					id="username-current-password"
+					type="password"
+					autocomplete="current-password"
+					bind:value={currentPassword}
+					disabled={isChangingUsername}
+				/>
 			</div>
 
 			{#if usernameSavedAt}

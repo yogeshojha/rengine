@@ -13,7 +13,7 @@ from starlette.requests import Request
 from app.api import deps
 from app.api.v1 import auth, totp
 from app.api.v1.users import update_user
-from app.config import ALGORITHM, settings
+from app.config import ALGORITHM
 from app.core import ratelimit
 from app.core.security import (
     ISSUED_MS_CLAIM,
@@ -23,6 +23,7 @@ from app.core.security import (
     create_token,
     decode_token,
     hash_password,
+    signing_key,
 )
 from app.services.totp import TOTPService
 from shared.models.user import User, UserAdminUpdate
@@ -83,7 +84,7 @@ def _minted_earlier(user: User, token_type: str) -> str:
     payload = decode_token(create_token(str(user.id), token_type, timedelta(days=1)))
     payload["iat"] -= 5
     payload[ISSUED_MS_CLAIM] -= 5000
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, signing_key(), algorithm=ALGORITHM)
 
 
 def _cookie(response: Response, name: str) -> str | None:
@@ -192,6 +193,7 @@ async def test_login_returns_no_token_in_the_body(redis, flush_only):
     response = Response()
     body = await auth.login(
         auth.LoginRequest(username=user.username, password=OLD),
+        Request({"type": "http", "headers": [], "client": ("192.0.2.1", 1)}),
         response,
         flush_only,
     )

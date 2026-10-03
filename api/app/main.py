@@ -47,6 +47,9 @@ app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 
@@ -76,8 +79,4 @@ app.include_router(api_router, prefix=API_V1_PREFIX)
 
 @app.get("/")
 async def root():
-    return {
-        "message": "reNgine API",
-        "version": APP_VERSION,
-        "docs": "/docs",
-    }
+    return {"message": "reNgine API", "version": APP_VERSION}

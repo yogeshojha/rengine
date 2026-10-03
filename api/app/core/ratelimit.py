@@ -10,11 +10,21 @@ from shared.redis import async_client
 logger = logging.getLogger(__name__)
 
 
-async def too_many_attempts(key: str, *, limit: int) -> None:
+LIMITER_UNAVAILABLE = (
+    "The rate limiter is unavailable. Check that the redis service is running."
+)
+
+
+async def too_many_attempts(key: str, *, limit: int, fail_closed: bool = False) -> None:
     try:
         raw = await async_client().get(key)
     except Exception as exc:
         logger.warning("rate limiter read unavailable for %s: %s", key, exc)
+        if fail_closed:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=LIMITER_UNAVAILABLE,
+            ) from exc
         return
     if raw is not None and int(raw) >= limit:
         try:
@@ -63,11 +73,11 @@ async def is_token_revoked(jti: str) -> bool:
 
 
 async def grant_token_grace(jti: str, ttl_seconds: int) -> None:
-    """How long a rotated token stays usable."""
+    """How long a rotated token stays usable, counted from its first rotation."""
     if ttl_seconds <= 0:
         return
     try:
-        await async_client().set(f"grace:jti:{jti}", "1", ex=ttl_seconds)
+        await async_client().set(f"grace:jti:{jti}", "1", ex=ttl_seconds, nx=True)
     except Exception as exc:
         logger.warning("token grace unavailable for %s: %s", jti, exc)
 

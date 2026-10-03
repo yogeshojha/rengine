@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -14,6 +15,7 @@ from app.api.deps import (
     user_for_payload,
 )
 from app.config import settings
+from app.core.client_ip import client_id
 from app.core.database import get_session
 from app.core.ratelimit import (
     clear_failures,
@@ -36,23 +38,36 @@ from app.core.security import (
     create_refresh_token,
     create_token,
     decode_token,
-    hash_password,
-    verify_password,
+    hash_password_async,
+    verify_password_async,
 )
-from app.utils.validation import validate_password_strength, validate_username
+from app.utils.validation import (
+    MAX_PASSWORD_LENGTH,
+    MAX_USERNAME_LENGTH,
+    validate_password_strength,
+    validate_username,
+)
+from shared.logging import get_logger
 from shared.models.user import User, UserRead
 from shared.utils.datetime import utc_now
+
+logger = get_logger(__name__)
 
 _DUMMY_HASH = "$argon2id$v=19$m=65536,t=2,p=4$BFG/6RwwvAFTuluSmeDY5Q$ssCZOxGGhBFAM+3ub/t5TVPTUAyiL4Maz42kFYbcWts"
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 REFRESH_GRACE_SECONDS = 30
+LOGIN_FAILURE_LIMIT = 10
+LOGIN_ADDRESS_LIMIT = 50
+LOGIN_WINDOW_SECONDS = 900
+REAUTH_FAILURE_LIMIT = 5
+REAUTH_WINDOW_SECONDS = 900
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(max_length=MAX_USERNAME_LENGTH)
+    password: str = Field(max_length=MAX_PASSWORD_LENGTH)
 
 
 class LoginResponse(BaseModel):
@@ -63,8 +78,8 @@ class LoginResponse(BaseModel):
 class PasswordChangeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    current_password: str | None = None
-    new_password: str
+    current_password: str | None = Field(default=None, max_length=MAX_PASSWORD_LENGTH)
+    new_password: str = Field(max_length=MAX_PASSWORD_LENGTH)
 
     @field_validator("new_password")
     @classmethod
@@ -75,12 +90,36 @@ class PasswordChangeRequest(BaseModel):
 class UsernameChangeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    new_username: str = Field(max_length=50)
+    new_username: str = Field(max_length=MAX_USERNAME_LENGTH)
+    current_password: str = Field(max_length=MAX_PASSWORD_LENGTH)
 
     @field_validator("new_username")
     @classmethod
     def validate_username_field(cls, username: str) -> str:
         return validate_username(username)
+
+
+def reauth_key(user: User) -> str:
+    return f"auth:reauth:{user.id}"
+
+
+async def require_current_password(user: User, password: str | None) -> None:
+    """Refuse unless the password is the account's own."""
+    if not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is required",
+        )
+    key = reauth_key(user)
+    await too_many_attempts(key, limit=REAUTH_FAILURE_LIMIT, fail_closed=True)
+    if not await verify_password_async(password, user.hashed_password):
+        await record_failure(key, window_seconds=REAUTH_WINDOW_SECONDS)
+        logger.warning("password confirmation failed", user=str(user.id))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+    await clear_failures(key)
 
 
 def set_auth_cookies(
@@ -139,22 +178,27 @@ def clear_auth_cookies(response: Response) -> None:
 @router.post("/login", response_model=LoginResponse)
 async def login(
     login_data: LoginRequest,
+    request: Request,
     response: Response,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    rl_key = f"auth:login:{login_data.username.lower()}"
-    await too_many_attempts(rl_key, limit=10)
+    address = client_id(request)
+    account_key = f"auth:login:{login_data.username.lower()}:{address}"
+    address_key = f"auth:login-from:{address}"
+    await too_many_attempts(account_key, limit=LOGIN_FAILURE_LIMIT, fail_closed=True)
+    await too_many_attempts(address_key, limit=LOGIN_ADDRESS_LIMIT, fail_closed=True)
 
-    result = await session.execute(
+    user = await session.scalar(
         select(User).where(User.username == login_data.username)
     )
-    user = result.scalar_one_or_none()
+    valid = await verify_password_async(
+        login_data.password, user.hashed_password if user else _DUMMY_HASH
+    )
 
-    if not user:
-        verify_password(login_data.password, _DUMMY_HASH)
-
-    if not user or not verify_password(login_data.password, user.hashed_password):
-        await record_failure(rl_key, window_seconds=900)
+    if not user or not valid:
+        await record_failure(account_key, window_seconds=LOGIN_WINDOW_SECONDS)
+        await record_failure(address_key, window_seconds=LOGIN_WINDOW_SECONDS)
+        logger.warning("login failed", username=login_data.username, address=address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -162,21 +206,24 @@ async def login(
         )
 
     if not user.is_active:
+        logger.warning("login refused for inactive account", user=str(user.id))
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive",
         )
 
-    await clear_failures(rl_key)
+    await clear_failures(account_key)
 
     if user.totp_enabled:
         mfa_token = create_token(str(user.id), TOKEN_TYPE_MFA, timedelta(minutes=5))
+        logger.info("password accepted, second factor required", user=str(user.id))
         return LoginResponse(mfa_required=True, mfa_token=mfa_token)
 
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
 
     set_auth_cookies(response, access_token, refresh_token)
+    logger.info("login succeeded", user=str(user.id), address=address)
 
     return LoginResponse()
 
@@ -210,15 +257,17 @@ async def refresh_access_token(
             headers=BEARER_HEADERS,
         )
 
-    jti = payload.get("jti")
-    if jti and await is_token_revoked(jti) and not await is_token_in_grace(jti):
+    jti = payload["jti"]
+    user = await user_for_payload(payload, session)
+    if await is_token_revoked(jti) and not await is_token_in_grace(jti):
+        await revoke_user_tokens(user.id)
+        logger.warning("revoked refresh token presented", user=str(user.id))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token has been revoked",
             headers=BEARER_HEADERS,
         )
 
-    user = await user_for_payload(payload, session)
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -228,9 +277,8 @@ async def refresh_access_token(
     new_access_token = create_access_token(str(user.id))
     new_refresh_token = create_refresh_token(str(user.id))
 
-    if jti and payload.get("exp"):
-        await grant_token_grace(jti, REFRESH_GRACE_SECONDS)
-        await revoke_token(jti, int(payload["exp"] - utc_now().timestamp()))
+    await grant_token_grace(jti, REFRESH_GRACE_SECONDS)
+    await revoke_token(jti, int(payload["exp"] - utc_now().timestamp()))
 
     set_auth_cookies(response, new_access_token, new_refresh_token)
 
@@ -270,29 +318,24 @@ async def change_password(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    if not password_data.current_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is required",
+    await require_current_password(current_user, password_data.current_password)
+    try:
+        validate_password_strength(
+            password_data.new_password,
+            user_inputs=[current_user.email, current_user.username],
         )
-    rl_key = f"auth:change-password:{current_user.id}"
-    await too_many_attempts(rl_key, limit=5)
-    if not verify_password(
-        password_data.current_password, current_user.hashed_password
-    ):
-        await record_failure(rl_key, window_seconds=900)
+    except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Current password is incorrect",
-        )
-    await clear_failures(rl_key)
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
+        ) from e
 
-    current_user.hashed_password = hash_password(password_data.new_password)
+    current_user.hashed_password = await hash_password_async(password_data.new_password)
     current_user.updated_at = utc_now()
 
     session.add(current_user)
     await session.commit()
     await reissue_session(response, current_user)
+    logger.info("password changed", user=str(current_user.id))
 
     return {
         "message": "Password changed",
@@ -306,22 +349,35 @@ async def change_username(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    result = await session.execute(
+    await require_current_password(current_user, username_data.current_password)
+    existing_user = await session.scalar(
         select(User).where(User.username == username_data.new_username)
     )
-    existing_user = result.scalar_one_or_none()
-
     if existing_user and existing_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username is taken",
         )
 
+    previous = current_user.username
     current_user.username = username_data.new_username
     current_user.updated_at = utc_now()
 
     session.add(current_user)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username is taken",
+        ) from e
+    logger.info(
+        "username changed",
+        user=str(current_user.id),
+        previous=previous,
+        username=username_data.new_username,
+    )
 
     return {
         "message": "Username changed",
