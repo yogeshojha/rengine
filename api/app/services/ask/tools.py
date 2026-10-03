@@ -34,6 +34,9 @@ EXTRACTED_QUERY_FIELD = "extracted"
 COUNT_KEYS = ("total", "count", "occurrences", "matched")
 MAX_DETAIL = 200
 SECRETS_REFUSED = "Secret values are not read through Ask."
+FREE_TEXT_REFUSED = (
+    "Free text in a findings query also searches extracted values. Name a field."
+)
 NOT_OFFERED = "The tool is not available in Ask."
 NO_THREAD = "The tool call is not tied to an Ask thread."
 
@@ -81,25 +84,37 @@ def rows_in(data: Any) -> int | None:
     return None
 
 
-def _names_extracted(query: object) -> bool:
-    if not isinstance(query, str) or EXTRACTED_QUERY_FIELD not in query.lower():
-        return False
+def _finding_query_refusal(query: object) -> str | None:
+    """Why a findings query could read extracted values, or None."""
+    if not isinstance(query, str) or not query.strip():
+        return None
     try:
         tokens = tokenize(query, VULN_QUERY)
     except QuerySyntaxError:
-        return True
-    return any(t.field == EXTRACTED_QUERY_FIELD for t in tokens)
+        return SECRETS_REFUSED
+    if any(t.field == EXTRACTED_QUERY_FIELD for t in tokens):
+        return SECRETS_REFUSED
+    if any(t.kind == "TERM" for t in tokens):
+        return FREE_TEXT_REFUSED
+    return None
+
+
+def refusal(name: str, args: dict) -> str | None:
+    """Why Ask refuses a tool call that could read secret values, or None."""
+    dimension = args.get("dimension")
+    if dimension == SurfaceDimension.VULNERABILITIES.value:
+        if args.get("group_by") == EXTRACTED_QUERY_FIELD:
+            return SECRETS_REFUSED
+        return _finding_query_refusal(args.get("query"))
+    if dimension != SurfaceDimension.SECRETS.value:
+        return None
+    if name in ROW_TOOLS or (name, args.get("group_by")) == VALUE_GROUP:
+        return SECRETS_REFUSED
+    return None
 
 
 def reads_secrets(name: str, args: dict) -> bool:
-    dimension = args.get("dimension")
-    if dimension == SurfaceDimension.VULNERABILITIES.value:
-        return _names_extracted(args.get("query")) or (
-            args.get("group_by") == EXTRACTED_QUERY_FIELD
-        )
-    if dimension != SurfaceDimension.SECRETS.value:
-        return False
-    return name in ROW_TOOLS or (name, args.get("group_by")) == VALUE_GROUP
+    return refusal(name, args) is not None
 
 
 def scrub(value: Any) -> Any:
@@ -165,8 +180,8 @@ async def call(ctx: ToolContext, name: str, args: dict) -> tuple[str, TraceStep]
     started = time.monotonic()
     if name not in {spec.name for spec in offered()}:
         return NOT_OFFERED, _failed(name, started, NOT_OFFERED, args)
-    if reads_secrets(name, args):
-        return SECRETS_REFUSED, _failed(name, started, SECRETS_REFUSED, args)
+    if refused := refusal(name, args):
+        return refused, _failed(name, started, refused, args)
     if ctx.token.targets is None:
         return NO_THREAD, _failed(name, started, NO_THREAD, args)
     try:

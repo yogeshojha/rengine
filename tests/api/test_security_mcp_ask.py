@@ -582,6 +582,16 @@ def test_ask_refuses_a_query_on_extracted_values(args):
     assert tools.reads_secrets("query_assets", args)
 
 
-def test_ask_keeps_other_finding_queries():
-    args = {"dimension": "vulnerabilities", "query": "severity:high extractor"}
+def test_ask_keeps_finding_queries_that_name_fields():
+    args = {"dimension": "vulnerabilities", "query": "severity:high host:example.com"}
+    assert not tools.reads_secrets("query_assets", args)
+
+
+def test_ask_refuses_free_text_in_a_finding_query():
+    args = {"dimension": "vulnerabilities", "query": "severity:high AKIAZZVFMC"}
+    assert tools.refusal("query_assets", args) == tools.FREE_TEXT_REFUSED
+
+
+def test_ask_keeps_free_text_on_other_dimensions():
+    args = {"dimension": "hosts", "query": "admin"}
     assert not tools.reads_secrets("query_assets", args)
