@@ -50,7 +50,10 @@ async def test_login_sets_cookies_and_returns_no_token(session):
     response = Response()
 
     body = await login(
-        LoginRequest(username=user.username, password=STRONG), response, session
+        LoginRequest(username=user.username, password=STRONG),
+        Request({"type": "http", "headers": [], "client": ("192.0.2.1", 1)}),
+        response,
+        session,
     )
 
     assert body.model_dump() == {"mfa_required": False, "mfa_token": None}

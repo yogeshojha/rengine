@@ -37,6 +37,7 @@ def _client() -> httpx.AsyncClient:
 @pytest.fixture(autouse=True)
 def small_cap(monkeypatch):
     monkeypatch.setattr(body_limit, "MAX_REQUEST_BYTES", CAP)
+    monkeypatch.setattr(body_limit, "MAX_AUTH_REQUEST_BYTES", CAP)
 
 
 async def test_a_body_under_the_cap_passes():
