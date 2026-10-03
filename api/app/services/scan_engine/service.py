@@ -21,6 +21,7 @@ from app.services.scan_engine.validation import (
     _validate_stages,
     _validate_tool_options,
     _validate_yaml_source,
+    _without_secret_keys,
 )
 from shared.definitions.default_engine import (
     DEFAULT_ENGINE_DESCRIPTION,
@@ -28,6 +29,7 @@ from shared.definitions.default_engine import (
     DEFAULT_ENGINE_NAME,
     default_engine_stages,
 )
+from shared.definitions.launch import CREDENTIAL_CHANGE, ENGINE_NOUN
 from shared.enums.scan import SCAN_OPEN_STATUSES, Intensity
 from shared.models.scan import Scan
 from shared.models.scan_engine import (
@@ -36,6 +38,11 @@ from shared.models.scan_engine import (
     ScanEngineCreate,
     ScanEngineRead,
     ScanEngineUpdate,
+)
+from shared.services.credential_access import (
+    engine_carries_credentials,
+    may_use,
+    plain_tool_options,
 )
 from shared.utils.datetime import utc_now
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
@@ -64,7 +71,9 @@ def _renamed_source(source: str | None, name: str) -> str | None:
     return renamed if count else None
 
 
-def _to_read(engine: ScanEngine, usage: EngineUsage | None = None) -> ScanEngineRead:
+def _to_read(
+    engine: ScanEngine, usage: EngineUsage | None = None, *, superuser: bool = False
+) -> ScanEngineRead:
     return ScanEngineRead(
         usage=usage or EngineUsage(),
         id=engine.id,
@@ -76,13 +85,26 @@ def _to_read(engine: ScanEngine, usage: EngineUsage | None = None) -> ScanEngine
         global_headers=_mask_global_headers(engine.global_headers or []),
         stages=dict(engine.stages or {}),
         transport_overrides=dict(engine.transport_overrides or {}),
-        yaml_source=engine.yaml_source,
-        tool_options=_mask_tool_options(engine.tool_options),
+        yaml_source=_without_secret_keys(engine.yaml_source),
+        tool_options=_mask_tool_options(engine.tool_options, superuser=superuser),
         builtin=bool(engine.builtin),
+        carries_credentials=engine_carries_credentials(engine),
         created_at=engine.created_at,
         updated_at=engine.updated_at,
         last_used_at=engine.last_used_at,
     )
+
+
+def _check_change(
+    engine: ScanEngine, actor_id: UUID | None, superuser: bool, *, gains: bool = False
+) -> None:
+    if actor_id is None or may_use(engine.created_by, actor_id, superuser):
+        return
+    if gains or engine_carries_credentials(engine):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=CREDENTIAL_CHANGE.format(noun=ENGINE_NOUN, name=engine.name),
+        )
 
 
 async def _running_scans_for(session: AsyncSession, engine_id: UUID) -> int:
@@ -132,7 +154,7 @@ class ScanEngineService:
         self.session.add(engine)
         await self.session.commit()
         await self.session.refresh(engine)
-        return _to_read(engine)
+        return _to_read(engine, superuser=superuser)
 
     async def ensure_builtin(self, project_id: UUID, created_by: UUID) -> ScanEngine:
         """The project's built-in engine, created on first sight."""
@@ -168,7 +190,11 @@ class ScanEngineService:
         return result.scalar_one_or_none()
 
     async def list(
-        self, project_id: UUID, created_by: UUID | None = None
+        self,
+        project_id: UUID,
+        created_by: UUID | None = None,
+        *,
+        superuser: bool = False,
     ) -> list[ScanEngineRead]:
         if created_by is not None:
             await self.ensure_builtin(project_id, created_by)
@@ -180,12 +206,14 @@ class ScanEngineService:
         )
         engines = list(result.scalars().all())
         usage = await _usage_for(self.session, [e.id for e in engines])
-        return [_to_read(e, usage.get(e.id)) for e in engines]
+        return [_to_read(e, usage.get(e.id), superuser=superuser) for e in engines]
 
-    async def get(self, id: UUID, project_id: UUID) -> ScanEngineRead:
+    async def get(
+        self, id: UUID, project_id: UUID, *, superuser: bool = False
+    ) -> ScanEngineRead:
         engine = await self._get_or_404(id, project_id)
         usage = await _usage_for(self.session, [engine.id])
-        return _to_read(engine, usage.get(engine.id))
+        return _to_read(engine, usage.get(engine.id), superuser=superuser)
 
     async def update(
         self,
@@ -194,8 +222,10 @@ class ScanEngineService:
         data: ScanEngineUpdate,
         *,
         superuser: bool = False,
+        actor_id: UUID | None = None,
     ) -> ScanEngineRead:
         engine = await self._get_or_404(id, project_id)
+        _check_change(engine, actor_id, superuser, gains=bool(data.global_headers))
         tool_options = None
         if data.tool_options is not None:
             tool_options = _validate_tool_options(
@@ -228,10 +258,18 @@ class ScanEngineService:
         engine.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(engine)
-        return _to_read(engine)
+        return _to_read(engine, superuser=superuser)
 
-    async def delete(self, id: UUID, project_id: UUID) -> bool:
+    async def delete(
+        self,
+        id: UUID,
+        project_id: UUID,
+        *,
+        superuser: bool = False,
+        actor_id: UUID | None = None,
+    ) -> bool:
         engine = await self._get_or_404(id, project_id)
+        _check_change(engine, actor_id, superuser)
         if engine.builtin:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -261,9 +299,10 @@ class ScanEngineService:
         return True
 
     async def duplicate(
-        self, id: UUID, project_id: UUID, created_by: UUID
+        self, id: UUID, project_id: UUID, created_by: UUID, *, superuser: bool = False
     ) -> ScanEngineRead:
         original = await self._get_or_404(id, project_id)
+        keep = may_use(original.created_by, created_by, superuser)
 
         copy_name = f"{original.name} (copy)"
         engine = ScanEngine(
@@ -272,18 +311,24 @@ class ScanEngineService:
             name=copy_name,
             description=original.description,
             intensity=original.intensity,
-            global_headers=list(original.global_headers or []),
+            global_headers=list(original.global_headers or []) if keep else [],
             stages=dict(original.stages or {}),
             transport_overrides=dict(original.transport_overrides or {}),
-            yaml_source=_renamed_source(original.yaml_source, copy_name),
-            tool_options=dict(original.tool_options or {}),
+            yaml_source=_renamed_source(
+                _without_secret_keys(original.yaml_source), copy_name
+            ),
+            tool_options=dict(original.tool_options or {})
+            if keep
+            else plain_tool_options(original.tool_options),
         )
         self.session.add(engine)
         await self.session.commit()
         await self.session.refresh(engine)
-        return _to_read(engine)
+        return _to_read(engine, superuser=superuser)
 
-    async def export_yaml(self, id: UUID, project_id: UUID) -> str:
+    async def export_yaml(
+        self, id: UUID, project_id: UUID, *, superuser: bool = False
+    ) -> str:
         engine = await self._get_or_404(id, project_id)
         data = {
             "name": engine.name,
@@ -292,7 +337,9 @@ class ScanEngineService:
             "global_headers": _mask_global_headers(engine.global_headers or []),
             "stages": _full_stages(engine.stages),
             "transport_overrides": dict(engine.transport_overrides or {}),
-            "tool_options": _mask_tool_options(engine.tool_options),
+            "tool_options": _mask_tool_options(
+                engine.tool_options, superuser=superuser
+            ),
         }
         return yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
 

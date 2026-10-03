@@ -17,6 +17,8 @@
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { launchLocked } from '$lib/config/launch';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -249,8 +251,10 @@
 	});
 
 	function restorePlan() {
-		const exists = (id: string) => scanEnginesStore.engines.some((e) => e.id === id);
-		const contextExists = (id: string) => scanContextsStore.contexts.some((c) => c.id === id);
+		const exists = (id: string) =>
+			scanEnginesStore.engines.some((e) => e.id === id && !launchLocked(e, auth.user));
+		const contextExists = (id: string) =>
+			scanContextsStore.contexts.some((c) => c.id === id && !launchLocked(c, auth.user));
 		if (rerun) {
 			launch.restoreRun(rerun, exists, (id) => !!scanContextsStore.error || contextExists(id));
 		} else if (presetEngineId && exists(presetEngineId)) {
@@ -260,13 +264,13 @@
 			const engineId =
 				last?.engineId && exists(last.engineId)
 					? last.engineId
-					: (mostRecentEngine(scanEnginesStore.engines)?.id ?? null);
+					: (mostRecentEngine(scanEnginesStore.engines.filter((e) => exists(e.id)))?.id ?? null);
 			if (last) launch.rememberQuick(last.stages, last.intensity);
 			if (engineId) launch.applyEngine(engineId);
 			else launch.useQuick();
 			if (last?.contextId && contextExists(last.contextId)) launch.contextId = last.contextId;
 		}
-		if (presetContextId) launch.contextId = presetContextId;
+		if (presetContextId && contextExists(presetContextId)) launch.contextId = presetContextId;
 	}
 
 	$effect(() => {

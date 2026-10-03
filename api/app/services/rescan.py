@@ -92,11 +92,12 @@ class RescanService:
         scans: list[ScanRead] = []
         for group in resolved.groups:
             parent = await self._parent(group.scan_id, project_id)
+            context_id = data.context_id or parent.context_id
             scans.append(
                 await self.scans.create(
                     ScanCreate(
                         engine_id=None,
-                        context_id=data.context_id or parent.context_id,
+                        context_id=context_id,
                         target_id=parent.target_id,
                         overrides=overrides,
                         intensity=data.intensity
@@ -111,6 +112,7 @@ class RescanService:
                     ),
                     project_id,
                     created_by,
+                    reused_context=context_id == parent.context_id,
                 )
             )
         return FocusedRunRead(

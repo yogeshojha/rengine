@@ -59,7 +59,9 @@ async def list_engines(
     service: Annotated[ScanEngineService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.list(project_id, created_by=current_user.id)
+    return await service.list(
+        project_id, created_by=current_user.id, superuser=current_user.is_superuser
+    )
 
 
 @router.post("", response_model=ScanEngineRead, status_code=status.HTTP_201_CREATED)
@@ -97,11 +99,13 @@ async def import_engine(
 @router.get("/{id}", response_model=ScanEngineRead)
 async def get_engine(
     id: UUID,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.get(id=id, project_id=project_id)
+    return await service.get(
+        id=id, project_id=project_id, superuser=current_user.is_superuser
+    )
 
 
 @router.patch("/{id}", response_model=ScanEngineRead)
@@ -117,17 +121,23 @@ async def update_engine(
         project_id=project_id,
         data=data,
         superuser=current_user.is_superuser,
+        actor_id=current_user.id,
     )
 
 
 @router.delete("/{id}", response_model=dict)
 async def delete_engine(
     id: UUID,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    await service.delete(id=id, project_id=project_id)
+    await service.delete(
+        id=id,
+        project_id=project_id,
+        superuser=current_user.is_superuser,
+        actor_id=current_user.id,
+    )
     return {"deleted": True}
 
 
@@ -143,16 +153,21 @@ async def duplicate_engine(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.duplicate(
-        id=id, project_id=project_id, created_by=current_user.id
+        id=id,
+        project_id=project_id,
+        created_by=current_user.id,
+        superuser=current_user.is_superuser,
     )
 
 
 @router.get("/{id}/export", response_model=dict)
 async def export_engine(
     id: UUID,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    yaml_str = await service.export_yaml(id=id, project_id=project_id)
+    yaml_str = await service.export_yaml(
+        id=id, project_id=project_id, superuser=current_user.is_superuser
+    )
     return {"yaml": yaml_str}

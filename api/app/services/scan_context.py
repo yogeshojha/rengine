@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.definitions.launch import CONTEXT_NOUN, CREDENTIAL_CHANGE
 from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.enums.scan_context import AuthType
 from shared.models.proxy import Proxy
@@ -23,14 +24,16 @@ from shared.models.scan_context import (
     ScanContextUpdate,
 )
 from shared.models.scan_schedule import ScanSchedule
+from shared.models.user import User
+from shared.services.credential_access import context_carries_credentials, may_use
 from shared.services.scan_resolve import (
-    CREDENTIAL_HEADER,
     MASK,
     SECRET_FIELDS,
     _auth_summary,
     _mask_auth,
     _mask_headers,
     _reject_ctrl,
+    restore_masked_headers,
 )
 from shared.services.scope_filter import looks_like_domain, pattern_hazard
 from shared.utils.datetime import utc_now
@@ -98,11 +101,38 @@ def _to_read(ctx: ScanContext, usage: ContextUsage | None = None) -> ScanContext
         updated_at=ctx.updated_at,
         last_used_at=ctx.last_used_at,
         last_used_scan_id=ctx.last_used_scan_id,
+        carries_credentials=context_carries_credentials(ctx),
     )
 
 
 def _bad(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+def _forbidden(detail: str) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+
+
+_PROXY_ADMIN = "Setting a proxy requires administrator access."
+
+
+def _gains_credentials(ctx: ScanContext, data: ScanContextUpdate) -> bool:
+    auth_type = data.auth_type or ctx.auth_type or AuthType.NONE.value
+    headers = (
+        data.extra_headers if data.extra_headers is not None else ctx.extra_headers
+    )
+    return auth_type != AuthType.NONE.value or bool(headers)
+
+
+def _check_change(
+    ctx: ScanContext, actor: User | None, data: ScanContextUpdate | None = None
+) -> None:
+    if actor is None or may_use(ctx.created_by, actor.id, actor.is_superuser):
+        return
+    if context_carries_credentials(ctx) or (
+        data is not None and _gains_credentials(ctx, data)
+    ):
+        raise _forbidden(CREDENTIAL_CHANGE.format(noun=CONTEXT_NOUN, name=ctx.name))
 
 
 _MAX_LIST_ITEMS = 1000
@@ -278,16 +308,7 @@ def _apply_extra_headers_update(ctx: ScanContext, data: ScanContextUpdate) -> No
     _validate_list_caps("extra_headers", data.extra_headers)
     incoming = [h.model_dump() for h in data.extra_headers]
     _validate_extra_headers(incoming)
-    stored = {
-        (h.get("name") or "").lower(): h.get("value") for h in (ctx.extra_headers or [])
-    }
-    for h in incoming:
-        if h.get("value") == MASK and CREDENTIAL_HEADER.match(
-            (h.get("name") or "").strip()
-        ):
-            prev = stored.get((h.get("name") or "").lower())
-            h["value"] = prev if prev is not None else ""
-    ctx.extra_headers = incoming
+    ctx.extra_headers = restore_masked_headers(incoming, ctx.extra_headers)
 
 
 class ScanContextService:
@@ -306,6 +327,7 @@ class ScanContextService:
         project_id: UUID,
         created_by: UUID,
         data: ScanContextCreate,
+        actor: User | None = None,
     ) -> ScanContextRead:
         auth = data.auth or AuthConfig()
         auth_type = data.auth_type or auth.auth_type or AuthType.NONE.value
@@ -330,6 +352,12 @@ class ScanContextService:
         proxy_id = data.proxy_id
         if "proxy_id" not in data.model_fields_set:
             proxy_id = await self._default_proxy_id()
+        elif (
+            actor is not None
+            and not actor.is_superuser
+            and proxy_id != await self._default_proxy_id()
+        ):
+            raise _forbidden(_PROXY_ADMIN)
 
         auth_dict = _prune_auth(auth.model_dump(), auth_type)
 
@@ -340,7 +368,9 @@ class ScanContextService:
             description=data.description,
             auth_type=auth_type,
             auth=auth_dict,
-            extra_headers=[h.model_dump() for h in data.extra_headers],
+            extra_headers=restore_masked_headers(
+                [h.model_dump() for h in data.extra_headers], []
+            ),
             global_rate_limit_override=data.global_rate_limit_override,
             per_tool_rate_overrides=dict(data.per_tool_rate_overrides),
             thread_multiplier=data.thread_multiplier,
@@ -386,8 +416,17 @@ class ScanContextService:
         id: UUID,
         project_id: UUID,
         data: ScanContextUpdate,
+        actor: User | None = None,
     ) -> ScanContextRead:
         ctx = await self._get_or_404(id, project_id)
+        _check_change(ctx, actor, data)
+        if (
+            actor is not None
+            and not actor.is_superuser
+            and data.proxy_id is not None
+            and data.proxy_id != ctx.proxy_id
+        ):
+            raise _forbidden(_PROXY_ADMIN)
 
         if data.name is not None:
             ctx.name = data.name
@@ -439,8 +478,11 @@ class ScanContextService:
         await self.session.refresh(ctx)
         return _to_read(ctx)
 
-    async def delete(self, id: UUID, project_id: UUID) -> bool:
+    async def delete(
+        self, id: UUID, project_id: UUID, actor: User | None = None
+    ) -> bool:
         ctx = await self._get_or_404(id, project_id)
+        _check_change(ctx, actor)
         running = (
             await self.session.execute(
                 select(func.count())
@@ -471,18 +513,25 @@ class ScanContextService:
         return True
 
     async def duplicate(
-        self, id: UUID, project_id: UUID, created_by: UUID
+        self, id: UUID, project_id: UUID, created_by: UUID, actor: User | None = None
     ) -> ScanContextRead:
         original = await self._get_or_404(id, project_id)
+        keep = actor is None or may_use(
+            original.created_by, actor.id, actor.is_superuser
+        )
 
         ctx = ScanContext(
             project_id=project_id,
             created_by=created_by,
             name=f"{original.name} (copy)",
             description=original.description,
-            auth_type=original.auth_type,
-            auth=dict(original.auth or {}),
-            extra_headers=[dict(h) for h in (original.extra_headers or [])],
+            auth_type=original.auth_type if keep else AuthType.NONE.value,
+            auth=dict(original.auth or {})
+            if keep
+            else {"auth_type": AuthType.NONE.value},
+            extra_headers=[dict(h) for h in (original.extra_headers or [])]
+            if keep
+            else [],
             global_rate_limit_override=original.global_rate_limit_override,
             per_tool_rate_overrides=dict(original.per_tool_rate_overrides or {}),
             thread_multiplier=original.thread_multiplier,

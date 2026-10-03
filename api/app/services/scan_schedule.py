@@ -26,6 +26,7 @@ from shared.models.scan_schedule import (
     ScheduleTargetRef,
 )
 from shared.models.target import Target
+from shared.services.credential_access import launch_refusal, superuser_of
 from shared.services.schedule_timing import compute_next_run_at, describe_schedule
 from shared.utils.datetime import utc_now
 from shared.utils.uuid import uuid_list
@@ -121,6 +122,19 @@ class ScanScheduleService:
             msg = f"Targets not found: {', '.join(missing)}"
             raise _bad(msg)
         return list(rows)
+
+    async def _guard(self, engine, context, *user_ids: UUID) -> None:
+        for user_id in dict.fromkeys(user_ids):
+            problem = launch_refusal(
+                engine=engine,
+                context=context,
+                user_id=user_id,
+                superuser=await superuser_of(self.session, user_id),
+            )
+            if problem:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail=problem
+                )
 
     def _to_utc(self, dt: datetime, tz: str) -> datetime:
         if dt.tzinfo is None:
@@ -237,6 +251,7 @@ class ScanScheduleService:
         _validate_tz(tz)
         engine = await self._get_engine(data.engine_id, project_id)
         context = await self._get_context(data.context_id, project_id)
+        await self._guard(engine, context, created_by)
         targets = await self._targets(data.target_ids, project_id)
 
         sched = ScanSchedule(
@@ -277,9 +292,25 @@ class ScanScheduleService:
         return [self._to_read(s, targets, current_tz) for s in rows]
 
     async def update(
-        self, id: UUID, project_id: UUID, data: ScanScheduleUpdate
+        self,
+        id: UUID,
+        project_id: UUID,
+        data: ScanScheduleUpdate,
+        actor_id: UUID | None = None,
     ) -> ScanScheduleRead:
         sched = await self._get(id, project_id, for_update=True)
+        launch_fields = {"engine_id", "context_id", "target_ids"}
+        if actor_id is not None and launch_fields & data.model_fields_set:
+            engine = await self._get_engine(
+                data.engine_id or sched.engine_id, project_id
+            )
+            context = await self._get_context(
+                data.context_id
+                if "context_id" in data.model_fields_set
+                else sched.context_id,
+                project_id,
+            )
+            await self._guard(engine, context, actor_id, sched.created_by)
 
         if data.name is not None:
             sched.name = data.name.strip() or sched.name

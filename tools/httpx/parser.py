@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from shared.services.scan_resolve import redact_message
+from shared.services.scan_resolve import redact_sent
 from shared.services.web_hygiene import evaluate as evaluate_hygiene
 from shared.utils.datetime import utc_now
 from shared.utils.net import split_host_port
@@ -15,7 +15,7 @@ from tools.runner.fieldmap import F, parse_record
 def _redact_request(value: Any) -> str | None:
     if not value or not isinstance(value, str):
         return None
-    return redact_message(value)
+    return redact_sent(value)
 
 
 def _int(value: Any) -> int | None:

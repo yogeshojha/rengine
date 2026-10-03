@@ -9,6 +9,8 @@
 	import EffectPanel from '$lib/components/engines/effect-panel.svelte';
 	import YamlPane from '$lib/components/yaml-editor.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { ENGINE_NOUN, credentialLaunchRefusal, launchLocked } from '$lib/config/launch';
 	import { ROUTES } from '$lib/config/routes';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import Hint from '$lib/components/hint.svelte';
@@ -24,6 +26,7 @@
 	import { FOOTPRINT_LABEL, summarize } from '$lib/utilities/engine-summary';
 	import { mostRecentEngine, type LaunchMode } from '$lib/utilities/launch-plan';
 	import StagePill from './stage-pill.svelte';
+	import CredentialLock from './credential-lock.svelte';
 	import StageConfigPopover from './stage-config-popover.svelte';
 	import type { LaunchState } from './launch-state.svelte';
 
@@ -45,6 +48,7 @@
 	let view = $state<'pipeline' | 'yaml'>('pipeline');
 
 	let engines = $derived(scanEnginesStore.engines);
+	let usable = $derived(engines.filter((e) => !launchLocked(e, auth.user)));
 	let groups = $derived(launch.catalog?.groups ?? []);
 	let allSelected = $derived(
 		launch.quickStages.length > 0 &&
@@ -67,7 +71,7 @@
 
 	function setMode(value: string) {
 		if (value === 'engine' && launch.mode !== 'engine') {
-			launch.applyEngine(launch.engineId ?? mostRecentEngine(engines)?.id ?? null);
+			launch.applyEngine(launch.engineId ?? mostRecentEngine(usable)?.id ?? null);
 		} else if (value === 'quick' && launch.mode !== 'quick') {
 			launch.useQuick();
 		}
@@ -129,7 +133,13 @@
 						</Select.Trigger>
 						<Select.Content>
 							{#each engines as engine (engine.id)}
-								<Select.Item value={engine.id} label={engine.name}>{engine.name}</Select.Item>
+								{@const locked = launchLocked(engine, auth.user)}
+								<Select.Item value={engine.id} label={engine.name} disabled={locked}>
+									{engine.name}
+									{#if locked}
+										<CredentialLock reason={credentialLaunchRefusal(ENGINE_NOUN, engine.name)} />
+									{/if}
+								</Select.Item>
 							{/each}
 						</Select.Content>
 					</Select.Root>

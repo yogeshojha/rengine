@@ -99,6 +99,7 @@ from shared.services.celery_dispatch import (
     dispatch_scan_run,
     revoke_scan_tasks,
 )
+from shared.services.credential_access import launch_refusal, superuser_of
 from shared.services.launch_plan import AdHocEngine, plan_label
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.scan_factory import build_scan_row
@@ -346,13 +347,41 @@ class ScanService:
             target_value=value, target_type=target_type, project_id=project_id
         )
 
+    async def _guard_launch(self, engine, context, user_id: UUID) -> None:
+        problem = launch_refusal(
+            engine=engine,
+            context=context,
+            user_id=user_id,
+            superuser=await superuser_of(self.session, user_id),
+        )
+        if problem:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=problem)
+
+    async def _guard_seeds(self, data: ScanCreate, target: Target) -> None:
+        seeds = [seed.model_dump() for seed in data.seed_assets or []]
+        if not seeds:
+            return
+        problem = await target_seeds.launch_refusal(self.session, seeds, target)
+        if problem:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=problem)
+
     async def _resolve_and_validate(
-        self, data: ScanCreate, project_id: UUID, created_by: UUID | None = None
+        self,
+        data: ScanCreate,
+        project_id: UUID,
+        created_by: UUID | None = None,
+        *,
+        reused_context: bool = False,
     ):
         engine, context, proxy_url = await self._resolve_scope(
             data.engine_id, data.context_id, project_id
         )
+        if created_by is not None:
+            await self._guard_launch(
+                engine, None if reused_context else context, created_by
+            )
         target = await self._launch_target(data, project_id, created_by)
+        await self._guard_seeds(data, target)
         stored = await target_seeds.load_async(self.session, [target.id])
         engine, resolved = self._resolve_for(
             engine, context, target, proxy_url, data, stored.get(target.id)
@@ -485,9 +514,11 @@ class ScanService:
         created_by: UUID,
         schedule_id: UUID | None = None,
         schedule_type: str | None = None,
+        *,
+        reused_context: bool = False,
     ) -> ScanRead:
         engine, context, target, resolved = await self._resolve_and_validate(
-            data, project_id, created_by
+            data, project_id, created_by, reused_context=reused_context
         )
         if data.new_checks is not None:
             target.new_checks = data.new_checks
@@ -532,6 +563,7 @@ class ScanService:
         engine, context, proxy_url = await self._resolve_scope(
             data.engine_id, data.context_id, project_id
         )
+        await self._guard_launch(engine, context, created_by)
         targets = await self._batch_targets(data, project_id, created_by)
         if data.new_checks is not None:
             for target in targets:

@@ -17,7 +17,7 @@ from shared.enums.target import TargetType
 from shared.models.project import Project
 from shared.models.scan_engine import ScanEngineCreate, ScanEngineUpdate
 from shared.models.user import User
-from shared.services.scan_resolve import ResolvedScanConfig
+from shared.services.scan_resolve import MASK, ResolvedScanConfig
 from stages.subdomain.providers.base import ProviderContext
 from stages.subdomain.providers.subfinder import SubfinderProvider
 
@@ -82,20 +82,22 @@ async def test_a_member_cannot_change_tool_args(durable):
             created.id, pid, ScanEngineUpdate(tool_options={"nuclei": "-retries 3"})
         )
     assert refused.value.status_code == 403
-    assert (await svc.get(created.id, pid)).tool_options == _ARGS
+    assert (await svc.get(created.id, pid, superuser=True)).tool_options == _ARGS
 
 
 async def test_a_member_saving_the_engine_resends_its_tool_args_unchanged(durable):
     pid, uid = await _project(durable)
     svc = ScanEngineService(durable)
     created = await _engine_with_args(svc, pid, uid)
+    shown = await svc.get(created.id, pid)
+    assert shown.tool_options == {"nuclei": MASK}
     updated = await svc.update(
         created.id,
         pid,
-        ScanEngineUpdate(name="Renamed", tool_options=created.tool_options),
+        ScanEngineUpdate(name="Renamed", tool_options=shown.tool_options),
     )
     assert updated.name == "Renamed"
-    assert updated.tool_options == _ARGS
+    assert (await svc.get(created.id, pid, superuser=True)).tool_options == _ARGS
 
 
 async def test_a_member_duplicates_an_engine_carrying_tool_args(durable):
@@ -103,7 +105,8 @@ async def test_a_member_duplicates_an_engine_carrying_tool_args(durable):
     svc = ScanEngineService(durable)
     created = await _engine_with_args(svc, pid, uid)
     copy = await svc.duplicate(created.id, pid, uid)
-    assert copy.tool_options == created.tool_options
+    assert copy.tool_options == {"nuclei": MASK}
+    assert (await svc.get(copy.id, pid, superuser=True)).tool_options == _ARGS
 
 
 async def test_a_member_cannot_import_tool_args(durable):

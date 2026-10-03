@@ -21,7 +21,7 @@ from shared.models.api_key import (
 )
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.services.api_key.sync_api_key import open_key
-from shared.services.scan_resolve import mask_tail
+from shared.services.scan_resolve import MASK, mask_tail
 from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 
@@ -106,6 +106,12 @@ class APIKeyService:
                     f"{name} requires a username.",
                 )
 
+        if MASK in data.key_value:
+            raise _http_error(
+                HTTPStatus.BAD_REQUEST,
+                f"The {name} key carries a masked value. Enter the key again.",
+            )
+
         existing = await self.session.execute(
             select(APIKey).where(
                 APIKey.provider == data.provider,
@@ -137,7 +143,7 @@ class APIKeyService:
     async def update_key(self, key_id: str, data: APIKeyUpdate) -> APIKeyRead:
         api_key = await self._get_key_or_404(key_id)
 
-        if data.key_value is not None:
+        if data.key_value is not None and MASK not in data.key_value:
             api_key.key_value = encrypt_secret(data.key_value)
             api_key.last_test_at = None
             api_key.last_test_ok = None

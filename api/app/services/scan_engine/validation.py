@@ -11,7 +11,8 @@ from shared.enums.scan import INTENSITIES
 from shared.services.scan_resolve import (
     _CRED_FLAG,
     _HEADER_VALUE,
-    CREDENTIAL_HEADER,
+    _USER_FLAG,
+    _VAR_FLAG,
     MASK,
     PROXY_CREDS_RE,
     _reject_ctrl,
@@ -26,9 +27,20 @@ _MAX_YAML_LEN = 512 * 1024
 _INTENSITIES = set(INTENSITIES)
 _HEADER_NAME = re.compile(r"([\w-]+)\s*:\s*$")
 _PROXY_HOST = re.compile(r"[^/\s\"']*")
+_SECRET_KEYS = ("tool_options", "global_headers")
+_SECRET_KEY_BLOCK = re.compile(
+    rf"^[\"']?(?:{'|'.join(_SECRET_KEYS)})[\"']?[ \t]*:[^\n]*"
+    r"(?:\n(?:[ \t]+[^\n]*|[ \t]*(?=\n)))*\n?",
+    re.MULTILINE,
+)
+_SECRET_KEY_HINT = re.compile("|".join(_SECRET_KEYS))
 
 
-def _mask_tool_options(options: dict | None) -> dict[str, str]:
+def _mask_tool_options(
+    options: dict | None, *, superuser: bool = False
+) -> dict[str, str]:
+    if not superuser:
+        return {t: MASK if v else v for t, v in (options or {}).items()}
     return {t: redact_command(v) for t, v in (options or {}).items()}
 
 
@@ -41,8 +53,12 @@ def _secret_slots(text: str) -> list[tuple[int, int, str]]:
     for m in _HEADER_VALUE.finditer(text):
         name = _HEADER_NAME.search(m.group(1)).group(1)
         slots.setdefault(m.start(2), (m.end(2), f"header {name}".lower()))
+    for m in _VAR_FLAG.finditer(text):
+        slots.setdefault(m.start(3), (m.end(3), f"var {m.group(2)}".lower()))
+    for m in _USER_FLAG.finditer(text):
+        slots.setdefault(m.start(3), (m.end(3), f"user {m.group(2)}".lower()))
     for m in _CRED_FLAG.finditer(text):
-        flag = m.group(1)[:-1].lstrip("-")
+        flag = m.group(1).rstrip(" \t=").lstrip("-")
         slots.setdefault(m.start(2), (m.end(2), f"flag {flag}".lower()))
     return sorted((start, end, key) for start, (end, key) in slots.items())
 
@@ -54,6 +70,9 @@ def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[st
     for tool, value in (submitted or {}).items():
         if not value or MASK not in value or tool not in stored:
             out[tool] = value
+            continue
+        if value.strip() == MASK:
+            out[tool] = stored[tool]
             continue
         original = stored[tool] or ""
         runs: dict[str, list[str]] = defaultdict(list)
@@ -68,6 +87,20 @@ def _unmask_tool_options(submitted: dict | None, stored: dict | None) -> dict[st
             cursor = end
         out[tool] = "".join([*parts, value[cursor:]])
     return out
+
+
+def _without_secret_keys(source: str | None) -> str | None:
+    """The engine document with no tool_options or global_headers block."""
+    if not source or not _SECRET_KEY_HINT.search(source):
+        return source
+    stripped = _SECRET_KEY_BLOCK.sub("", source)
+    try:
+        data = load_document(stripped)
+    except (yaml.YAMLError, DocumentTooLargeError):
+        return None
+    if isinstance(data, dict) and any(key in data for key in _SECRET_KEYS):
+        return None
+    return stripped
 
 
 def _validate_yaml_source(source: str | None) -> str | None:
@@ -88,7 +121,7 @@ def _validate_yaml_source(source: str | None) -> str | None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid YAML: {exc}"
         ) from exc
-    return source
+    return _without_secret_keys(source)
 
 
 def _validate_tool_options(options: dict | None) -> dict[str, str]:
@@ -193,7 +226,7 @@ def _mask_global_headers(headers: list) -> list[str]:
     for line in headers or []:
         if isinstance(line, str) and ":" in line:
             name, value = line.split(":", 1)
-            if value.strip() and CREDENTIAL_HEADER.match(name.strip()):
+            if value.strip():
                 out.append(f"{name.strip()}: {MASK}")
                 continue
         out.append(line)
@@ -210,7 +243,7 @@ def _unmask_global_headers(incoming: list, stored: list) -> list[str]:
     for line in incoming or []:
         if isinstance(line, str) and ":" in line:
             name, value = line.split(":", 1)
-            if value.strip() == MASK and name.strip().lower() in stored_map:
+            if MASK in value and name.strip().lower() in stored_map:
                 out.append(f"{name.strip()}: {stored_map[name.strip().lower()]}")
                 continue
         out.append(line)

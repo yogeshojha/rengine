@@ -71,6 +71,23 @@ def _endpoint_key(ep: ProxyEndpoint) -> tuple:
     return (ep.scheme, ep.host, ep.port, ep.username)
 
 
+def _restore_passwords(
+    incoming: list[ProxyEndpoint], previous: list[ProxyEndpoint]
+) -> list[ProxyEndpoint]:
+    stored = {_endpoint_key(e): e.password for e in previous}
+    merged: list[ProxyEndpoint] = []
+    for ep in incoming:
+        if MASK not in (ep.password or ""):
+            merged.append(ep)
+            continue
+        key = _endpoint_key(ep)
+        if key not in stored:
+            msg = f"Enter the password again for {host_port(ep.host, ep.port)}."
+            raise _bad(msg)
+        merged.append(ep.model_copy(update={"password": stored[key]}))
+    return merged
+
+
 def _mask_url(ep: ProxyEndpoint) -> str:
     authority = host_port(ep.host, ep.port)
     if ep.username:
@@ -165,6 +182,7 @@ class ProxyService:
 
     async def create(self, data: ProxyCreate, created_by: UUID) -> ProxyRead:
         _validate_endpoints(data.endpoints)
+        _restore_passwords(data.endpoints, [])
 
         proxy = Proxy(
             name=data.name,
@@ -264,26 +282,7 @@ class ProxyService:
     def _merge_endpoints(
         self, proxy: Proxy, incoming: list[ProxyEndpoint]
     ) -> list[ProxyEndpoint]:
-        previous = _load_endpoints(proxy)
-        stored = {_endpoint_key(e): e.password for e in previous}
-        by_host_user: dict[tuple, list[str | None]] = {}
-        for ep in previous:
-            by_host_user.setdefault((ep.host, ep.username), []).append(ep.password)
-        merged: list[ProxyEndpoint] = []
-        for ep in incoming:
-            if ep.password != MASK:
-                merged.append(ep)
-                continue
-            key = _endpoint_key(ep)
-            if key in stored:
-                merged.append(ep.model_copy(update={"password": stored[key]}))
-                continue
-            same_user = by_host_user.get((ep.host, ep.username)) or []
-            if len(same_user) != 1:
-                msg = f"Enter the password again for {host_port(ep.host, ep.port)}."
-                raise _bad(msg)
-            merged.append(ep.model_copy(update={"password": same_user[0]}))
-        return merged
+        return _restore_passwords(incoming, _load_endpoints(proxy))
 
     async def _probe(self, ep: ProxyEndpoint, url: str) -> ProxyTestResult:
         start = time.monotonic()

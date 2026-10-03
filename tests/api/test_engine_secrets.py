@@ -45,8 +45,7 @@ def test_a_credential_header_is_masked_on_every_surface(name):
 
 
 @pytest.mark.parametrize("name", _READABLE)
-def test_a_plain_header_stays_readable(name):
-    assert _mask_headers([{"name": name, "value": "true"}])[0]["value"] == "true"
+def test_a_plain_header_stays_readable_in_a_message(name):
     assert f"{name}: true" in redact_message(f"HTTP/1.1 200 OK\r\n{name}: true\r\n\r\n")
 
 

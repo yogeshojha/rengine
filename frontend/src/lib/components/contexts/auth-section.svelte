@@ -267,7 +267,7 @@
 				/>
 				<Input
 					value={row.value}
-					placeholder="value"
+					placeholder={maskedNames.has(row.name.toLowerCase()) ? 'Stored' : 'value'}
 					class="h-9 flex-1 font-mono text-xs"
 					oninput={(e) => updateHeader(i, 'value', e.currentTarget.value)}
 				/>

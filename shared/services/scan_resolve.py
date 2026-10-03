@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, ClassVar
+from urllib.parse import unquote, urlsplit
 
 from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
@@ -11,6 +13,7 @@ from shared.definitions.constants import MAX_RATE
 from shared.definitions.intensity import tool_rate
 from shared.definitions.tools import denied_flag, parse_tool_args
 from shared.enums.scan_context import AuthType, HttpProtocol
+from shared.utils.net import redact_url_queries
 
 if TYPE_CHECKING:
     from fastapi import HTTPException
@@ -33,23 +36,33 @@ SECRET_FIELDS = {
 }
 
 _CREDENTIAL_NAME = (
-    r"(?:authorization|proxy-authorization|cookie|set-cookie|x-auth-token"
-    r"|x-csrf-token|(?!access-control-)"
-    r"(?=[^\s:\"']*(?:token|secret|key|session|passw|credential))[^\s:\"']*+)"
+    r"(?:authorization|proxy-authorization|x-authorization|authentication"
+    r"|cookie|set-cookie|x-csrf-token|x-auth[^\s:\"']*+|[^\s:\"']*-auth"
+    r"|(?!access-control-)(?=[^\s:\"']*(?:token|secret|key|session|passw"
+    r"|credential|signature|jwt|assertion))[^\s:\"']*+)"
 )
 CREDENTIAL_HEADER = re.compile(rf"^{_CREDENTIAL_NAME}$", re.IGNORECASE)
 
 PROXY_CREDS_RE = re.compile(r"(\w+://)([^/\s]*)@")
 
-_HEADER_FLAG = r"-{1,2}(?:headers|header|H)"
+_HEADER_FLAG = r"-{1,2}(?:headers|header|H)(?:\s+|=)"
 _HEADER_VALUE = re.compile(
-    rf'({_HEADER_FLAG}\s+["\']?[\w-]+\s*:\s*)([^"\'\n]+?)'
+    rf'({_HEADER_FLAG}["\']?[\w-]+\s*:\s*)([^"\'\n]+?)'
     r'(?=["\']|\s+-{1,2}[A-Za-z]|\s*$)',
     re.IGNORECASE,
 )
 _CRED_FLAG = re.compile(
-    r"((?:-{1,2}[\w-]*?(?:api[-_]?key|key|token|password|passwd|pass|secret|cookie)"
-    r"|(?<![\w-])-b)[ =])(\S+)",
+    r"((?:-{1,2}[\w-]*?(?:api[-_]?key|key|token|password|passwd|pass|secret|cookie"
+    r"|auth)|(?<![\w-])-b)(?:[ \t]+|=))(\"[^\"]*\"|'[^']*'|\S+)",
+    re.IGNORECASE,
+)
+_VAR_FLAG = re.compile(
+    r"((?<![\w-])-{1,2}var(?:[ \t]+|=)[\"']?([\w.-]+)=)([^\s\"']+)",
+    re.IGNORECASE,
+)
+_USER_FLAG = re.compile(
+    r"((?<![\w-])-{1,2}(?:u|user|proxy-user)(?:[ \t]+|=)[\"']?([^\s:/\"'@\[]+):)"
+    r"(?!//)(?!\d+(?:[\s\"'/,]|$))([^\s\"'@]+)",
     re.IGNORECASE,
 )
 _UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
@@ -78,13 +91,30 @@ def _mask_auth(auth: dict) -> dict:
 
 
 def _mask_headers(headers: list) -> list:
-    out = []
-    for h in headers or []:
-        name = h.get("name", "")
-        value = h.get("value", "")
-        if value and CREDENTIAL_HEADER.match(name.strip()):
-            value = MASK
-        out.append({"name": name, "value": value})
+    return [
+        {
+            "name": h.get("name", ""),
+            "value": MASK if h.get("value") else h.get("value", ""),
+        }
+        for h in headers or []
+    ]
+
+
+def restore_masked_headers(
+    incoming: list[dict], stored: list[dict] | None
+) -> list[dict]:
+    """Put the stored value back behind every header sent with a masked value."""
+    kept = {(h.get("name") or "").strip().lower(): h.get("value") for h in stored or []}
+    out: list[dict] = []
+    for h in incoming:
+        name = (h.get("name") or "").strip()
+        if MASK not in (h.get("value") or ""):
+            out.append(h)
+            continue
+        if kept.get(name.lower()) is None:
+            msg = f"The header '{name}' carries a masked value. Enter the value again."
+            raise _bad(msg)
+        out.append({**h, "value": kept[name.lower()]})
     return out
 
 
@@ -97,7 +127,19 @@ def redact_command(command: str) -> str:
     safe = _UNSAFE_CTRL.sub("", command or "")
     safe = PROXY_CREDS_RE.sub(rf"\1{MASK}@", safe)
     safe = _HEADER_VALUE.sub(rf"\1{MASK}", safe)
+    safe = _VAR_FLAG.sub(rf"\1{MASK}", safe)
+    safe = _USER_FLAG.sub(rf"\1{MASK}", safe)
     return _CRED_FLAG.sub(rf"\1{MASK}", safe)
+
+
+def command_secrets(command: str) -> list[str]:
+    """The values redact_command masks in a command line."""
+    found = [m.group(2) for m in PROXY_CREDS_RE.finditer(command or "")]
+    for pattern in (_HEADER_VALUE, _CRED_FLAG):
+        found += [m.group(2).strip("\"'") for m in pattern.finditer(command or "")]
+    for pattern in (_VAR_FLAG, _USER_FLAG):
+        found += [m.group(3) for m in pattern.finditer(command or "")]
+    return found
 
 
 def seal_headers(headers: dict[str, str] | None) -> dict[str, str]:
@@ -180,6 +222,70 @@ def redact_secrets(text: str | None, secrets: Iterable[str]) -> str | None:
 def redact_recorded(text: str | None, secrets: Iterable[str] = ()) -> str:
     """Mask credential flags and header values, then the caller's own secrets."""
     return redact_secrets(redact_command(text or ""), secrets) or ""
+
+
+def run_secrets(config: ResolvedScanConfig) -> list[str]:
+    """Every credential value a run carries, longest first."""
+    found: list[str] = []
+    for value in (config.headers or {}).values():
+        credential = (value or "").strip().partition(" ")[2].strip()
+        found += [value or "", "" if " " in credential else credential]
+    if config.proxy_url:
+        parts = urlsplit(config.proxy_url)
+        password = parts.password or ""
+        found += [
+            password,
+            unquote(password),
+            f"{unquote(parts.username or '')}:{unquote(password)}",
+            *command_secrets(config.proxy_url),
+        ]
+    for args in (config.tool_options or {}).values():
+        found += command_secrets(args or "")
+    unique = {value for value in found if len(value) >= MIN_SECRET_LENGTH}
+    return sorted(unique, key=len, reverse=True)
+
+
+_QUOTED_CREDENTIAL = re.compile(
+    rf"""((["']){_CREDENTIAL_NAME}\2\s*[:=]\s*)(["'])(.*?)\3""", re.IGNORECASE
+)
+
+
+def scrub_error(text: str | None, secrets: Iterable[str] = ()) -> str | None:
+    """Mask URL queries, credential flags, headers and values, then the run's secrets."""
+    if not text:
+        return text
+    safe = redact_url_queries(redact_command(text))
+    safe = _QUOTED_CREDENTIAL.sub(rf"\1\3{MASK}\3", safe)
+    safe = _ERROR_HEADER.sub(_masked_header, safe)
+    return redact_secrets(safe, secrets)
+
+
+_held: tuple[tuple[str, ...], tuple[str, ...]] = ((), ())
+
+
+@contextlib.contextmanager
+def holding_secrets(config: ResolvedScanConfig | None) -> Iterator[None]:
+    """Bind one run's header names and secrets. A prefork child runs one task at a time."""
+    global _held  # noqa: PLW0603
+    previous = _held
+    if config is not None:
+        _held = (tuple(config.headers or {}), tuple(run_secrets(config)))
+    try:
+        yield
+    finally:
+        _held = previous
+
+
+def held_secrets(extra: Iterable[str] = ()) -> list[str]:
+    """The bound run's secrets plus extra values, longest first."""
+    values = {*_held[1], *(v for v in extra if v and len(v) >= MIN_SECRET_LENGTH)}
+    return sorted(values, key=len, reverse=True)
+
+
+def redact_sent(text: str | None) -> str | None:
+    """Mask a request the bound run sent: its headers by name, its secrets, credentials."""
+    names, secrets = _held
+    return redact_message(redact_secrets(mask_header_values(text, names), secrets))
 
 
 def _auth_summary(auth: dict, extra_headers: list) -> str:  # noqa: PLR0911
@@ -529,13 +635,21 @@ def merge_engine_context(
     return config
 
 
+_HEADER_LINE = r"^([ \t]*{name}[ \t]*:[ \t]*)([^\r\n]*(?:\r?\n[ \t]+[^\r\n]*)*)"
 _MESSAGE_HEADER = re.compile(
-    rf"^({_CREDENTIAL_NAME}\s*:\s*)(.+?)\s*$",
-    re.IGNORECASE | re.MULTILINE,
+    _HEADER_LINE.format(name=_CREDENTIAL_NAME), re.IGNORECASE | re.MULTILINE
+)
+_ERROR_HEADER = re.compile(
+    rf"^([ \t]*{_CREDENTIAL_NAME}[ \t]*:[ \t]*)([^\r\n]*)", re.IGNORECASE | re.MULTILINE
 )
 _CREDENTIAL_HEADER_VALUE = re.compile(
-    rf'({_HEADER_FLAG}\s+["\']?{_CREDENTIAL_NAME}\s*:\s*)([^"\'\n]+?)'
+    rf'({_HEADER_FLAG}["\']?{_CREDENTIAL_NAME}\s*:\s*)([^"\'\n]+?)'
     r'(?=["\']|\s+-{1,2}[A-Za-z]|\s*$)',
+    re.IGNORECASE,
+)
+_QUERY_SECRET = re.compile(
+    r"([?&;](?:[\w.\-]*(?:token|secret|password|passwd|api[_-]?key|apikey|signature)"
+    r"|key|sig|auth|pass|pwd)=)([^&;#\s]*)",
     re.IGNORECASE,
 )
 
@@ -545,14 +659,39 @@ def redact_credentials(command: str) -> str:
     safe = _UNSAFE_CTRL.sub("", command or "")
     safe = PROXY_CREDS_RE.sub(rf"\1{MASK}@", safe)
     safe = _CREDENTIAL_HEADER_VALUE.sub(rf"\1{MASK}", safe)
+    safe = _USER_FLAG.sub(rf"\1{MASK}", safe)
     return _CRED_FLAG.sub(rf"\1{MASK}", safe)
 
 
-def redact_message(text: str | None) -> str | None:
-    """Mask credential header values in a raw HTTP request or response."""
-    if not text:
-        return text
+def _masked_header(found: re.Match) -> str:
+    return found.group(1) + MASK if found.group(2).strip() else found.group(0)
+
+
+def _split_message(text: str) -> tuple[str, str, str]:
     head, sep, body = text.partition("\r\n\r\n")
     if not sep:
         head, sep, body = text.partition("\n\n")
-    return _MESSAGE_HEADER.sub(rf"\g<1>{MASK}", head) + sep + body
+    return head, sep, body
+
+
+def mask_header_values(text: str | None, names: Iterable[str]) -> str | None:
+    """Mask the value of every named header in a raw HTTP message."""
+    names = sorted({n.strip() for n in names if n and n.strip()}, key=len, reverse=True)
+    if not text or not names:
+        return text
+    pattern = re.compile(
+        _HEADER_LINE.format(name=f"(?:{'|'.join(re.escape(n) for n in names)})"),
+        re.IGNORECASE | re.MULTILINE,
+    )
+    head, sep, body = _split_message(text)
+    return pattern.sub(_masked_header, head) + sep + body
+
+
+def redact_message(text: str | None) -> str | None:
+    """Mask credential header values and query parameters in a raw HTTP request or response."""
+    if not text:
+        return text
+    head, sep, body = _split_message(text)
+    line, newline, rest = head.partition("\n")
+    line = _QUERY_SECRET.sub(rf"\1{MASK}", line)
+    return _MESSAGE_HEADER.sub(_masked_header, line + newline + rest) + sep + body

@@ -37,6 +37,34 @@ _ASSIGNED_SECRET = re.compile(
     r"|access[_-]?key|private[_-]?key|credential)[\w.-]{0,128}[\"']?\s*[:=]\s*)"
     r"(\"[^\"\n]*\"|'[^'\n]*'|[^\s,;&}\"']+)"
 )
+_PROVIDER_KEY = re.compile(
+    r"(?<![\w-])(?:"
+    r"sk-(?:proj|svcacct|admin|ant|or-v1)-[\w-]{20,}"
+    r"|sk-[A-Za-z0-9]{20,}"
+    r"|(?:sk|rk|pk)_(?:live|test)_[A-Za-z0-9]{16,}"
+    r"|gsk_[A-Za-z0-9]{40,}"
+    r"|xai-[A-Za-z0-9]{40,}"
+    r"|pplx-[A-Za-z0-9]{40,}"
+    r"|r8_[A-Za-z0-9]{30,}"
+    r"|hf_[A-Za-z0-9]{30,}"
+    r"|gh[pousr]_[A-Za-z0-9]{30,}"
+    r"|github_pat_\w{40,}"
+    r"|glpat-[\w-]{20,}"
+    r"|xox[abposr]-[\w-]{10,}"
+    r"|(?:AKIA|ASIA)[0-9A-Z]{16}"
+    r"|AIza[\w-]{30,}"
+    r"|ATATT[\w=-]{20,}"
+    r"|ATBB[\w=.-]{20,}"
+    r"|NRAK-[A-Z0-9]{20,}"
+    r"|sbp_[a-f0-9]{40}"
+    r"|pul-[a-f0-9]{40}"
+    r"|dop_v1_[a-f0-9]{64}"
+    r"|npm_[A-Za-z0-9]{30,}"
+    r"|SG\.[\w-]{16,}\.[\w-]{16,}"
+    r"|eyJ[\w-]{8,}\.eyJ[\w-]{8,}\.[\w-]{8,}"
+    r")",
+)
+_BEARER = re.compile(r"(?i)(\bbearer\s+)([\w.~+/-]{16,}=*)")
 _SPACE = re.compile(r"\s+")
 VULN_TAB = SurfaceDimension.VULNERABILITIES.value
 
@@ -90,6 +118,8 @@ def mask_secrets(text: str, *, keep_lines: bool = False) -> str:
         span = text[found.start : found.end]
         fill = MASK + ("\n" * span.count("\n") if keep_lines else "")
         text = f"{text[: found.start]}{fill}{text[found.end :]}"
+    text = _PROVIDER_KEY.sub(MASK, text)
+    text = _BEARER.sub(rf"\1{MASK}", text)
     return _ASSIGNED_SECRET.sub(_masked_assignment, text)
 
 

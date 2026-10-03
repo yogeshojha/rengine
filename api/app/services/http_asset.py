@@ -12,8 +12,10 @@ from shared.models.http_asset import (
     HttpAssetRead,
     HygieneVerdict,
 )
+from shared.models.scan import Scan
 from shared.models.scan_surface import AssetSurface
 from shared.services import web_hygiene
+from shared.services.scan_resolve import mask_header_values, redact_message
 
 
 class HttpAssetService:
@@ -85,7 +87,10 @@ class HttpAssetService:
         )
 
     def _to_detail(
-        self, asset: HttpAsset, surface: AssetSurface | None = None
+        self,
+        asset: HttpAsset,
+        surface: AssetSurface | None = None,
+        sent: list[str] | None = None,
     ) -> HttpAssetDetail:
         verdicts = web_hygiene.evaluate_asset(asset).verdicts
         return HttpAssetDetail(
@@ -93,7 +98,9 @@ class HttpAssetService:
             **self._to_read(asset).model_dump(),
             tls_subject_dn=asset.tls_subject_dn,
             tls_issuer_cn=asset.tls_issuer_cn,
-            raw_request=asset.raw_request,
+            raw_request=redact_message(
+                mask_header_values(asset.raw_request, sent or [])
+            ),
             raw_response_header=asset.raw_response_header,
             response_body=asset.response_body,
             response_headers=dict(asset.response_headers or {}),
@@ -114,4 +121,8 @@ class HttpAssetService:
         surface = await ScanSurfaceService(self.session).for_asset(
             asset.scan_id, asset.id
         )
-        return self._to_detail(asset, surface)
+        config = await self.session.scalar(
+            select(Scan.execution_config).where(Scan.id == asset.scan_id)
+        )
+        sent = list((config or {}).get("headers") or {})
+        return self._to_detail(asset, surface, sent)

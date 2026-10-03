@@ -45,6 +45,7 @@ async def create_context(
         project_id=project_id,
         created_by=current_user.id,
         data=data,
+        actor=current_user,
     )
 
 
@@ -62,21 +63,23 @@ async def get_context(
 async def update_context(
     id: UUID,
     data: ScanContextUpdate,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.update(id=id, project_id=project_id, data=data)
+    return await service.update(
+        id=id, project_id=project_id, data=data, actor=current_user
+    )
 
 
 @router.delete("/{id}", response_model=dict)
 async def delete_context(
     id: UUID,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    await service.delete(id=id, project_id=project_id)
+    await service.delete(id=id, project_id=project_id, actor=current_user)
     return {"deleted": True}
 
 
@@ -92,5 +95,5 @@ async def duplicate_context(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.duplicate(
-        id=id, project_id=project_id, created_by=current_user.id
+        id=id, project_id=project_id, created_by=current_user.id, actor=current_user
     )

@@ -157,3 +157,4 @@ class ScanContextRead(BaseModel):
     last_used_at: datetime | None
     last_used_scan_id: uuid.UUID | None
     usage: ContextUsage = Field(default_factory=ContextUsage)
+    carries_credentials: bool = False

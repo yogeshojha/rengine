@@ -7,7 +7,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from shared.definitions.scan_surface import Tier
 from shared.definitions.vulnerabilities import SCANNER_LABELS, CoverageStatus, Scanner
 from shared.logging import get_logger
-from shared.services.scan_resolve import redact_secrets
+from shared.services.scan_resolve import held_secrets, redact_secrets
 from shared.services.scan_surface import SurfacePlan
 from shared.utils.datetime import utc_now
 from stages.vulnerability_scan.scanners.base import (
@@ -141,7 +141,7 @@ class DalfoxScanner(VulnScanner):
 
     def _fuzz(self, urls: list[str], coverage: Coverage) -> Coverage:  # noqa: PLR0915
         ctx = self.ctx
-        secrets_list = [v for v in (ctx.net.headers or {}).values() if v]
+        secrets_list = held_secrets((ctx.net.headers or {}).values())
         options = DalfoxOptions(
             workers=ctx.transport.threads,
             rate=ctx.transport.rate or 1,

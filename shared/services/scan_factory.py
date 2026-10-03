@@ -4,6 +4,7 @@ from shared.enums.scan import ScanScope, ScanStatus
 from shared.enums.scan_context import AuthType
 from shared.models.scan import Scan
 from shared.services import target_seeds
+from shared.services.credential_access import launch_refusal, superuser_of_sync
 from shared.services.proxy_resolve import scan_proxy_url
 from shared.services.scan_resolve import (
     ResolvedScanConfig,
@@ -92,6 +93,15 @@ def build_scan_for_target_sync(
         if context is None or context.project_id != project_id:
             msg = "Scan context not found."
             raise ScanFactoryError(msg)
+
+    problem = launch_refusal(
+        engine=engine,
+        context=context,
+        user_id=created_by,
+        superuser=superuser_of_sync(session, created_by),
+    )
+    if problem:
+        raise ScanFactoryError(problem)
 
     target = session.get(Target, target_id)
     if target is None or target.project_id != project_id:

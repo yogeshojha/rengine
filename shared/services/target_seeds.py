@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import contextlib
 import ipaddress
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select
+from sqlalchemy import select, union
 
 from shared.definitions.endpoints import parse_url
 from shared.definitions.rescan import ASSET_SEED_STAGE, MAX_RUN_ASSETS, SeedKind
 from shared.enums.subdomain import SubdomainSource
 from shared.enums.target import TargetType
+from shared.models.ip_address import IpAddress
+from shared.models.subdomain import Subdomain
 from shared.models.target_seed import MAX_SEED_VALUE_LEN, TargetSeed
 from shared.utils.validation import (
     normalize_domain,
@@ -34,6 +37,7 @@ _NOT_HOST = "Only host names and URLs can seed {target}."
 _NOT_SCANNED = (
     "Loopback, link-local, multicast and reserved address space is not scanned."
 )
+_NOT_ACCEPTED = "Seed {value} not accepted. {reason}"
 
 
 @dataclass(frozen=True)
@@ -117,10 +121,12 @@ def _address_scope(seed: Seed, target: Target) -> str | None:
     return None if inside else _OUT_OF_SCOPE.format(target=value)
 
 
+_NAMED = frozenset({TargetType.DOMAIN.value, TargetType.URL.value})
+
+
 def _scoped(seed: Seed, target: Target) -> str | None:
     """The reason a seed does not belong to this target, or None when it does."""
-    named = {TargetType.DOMAIN.value, TargetType.URL.value}
-    if target.target_type.value in named:
+    if target.target_type.value in _NAMED:
         return _named_scope(seed, target)
     return _address_scope(seed, target)
 
@@ -148,6 +154,63 @@ def parse(values: list[str], target: Target) -> tuple[list[Seed], list[Rejected]
             continue
         seeds.setdefault(seed.value, seed)
     return list(seeds.values()), rejected
+
+
+def _launch_seed(asset: dict) -> Seed:
+    kind = asset.get("kind") or ""
+    value = (asset.get("value") or "").strip()
+    if kind == SeedKind.HOST.value:
+        value = normalize_host(value) or value.lower()
+    elif kind == SeedKind.ADDRESS.value:
+        with contextlib.suppress(ValueError):
+            value = str(ipaddress.ip_address(value))
+    return Seed(kind, value)
+
+
+def _launch_scope(seed: Seed, target: Target) -> str | None:
+    """Stored-seed scope, narrowed for an ASN and widened for a URL on an address."""
+    kind = target.target_type.value
+    if kind == TargetType.ASN.value:
+        return _OUT_OF_SCOPE.format(target=target.target_value)
+    if seed.kind == SeedKind.URL.value and kind not in _NAMED:
+        try:
+            address = str(ipaddress.ip_address(_host_of(seed) or ""))
+        except ValueError:
+            return _NOT_ADDRESS.format(target=target.target_value)
+        return _address_scope(Seed(SeedKind.ADDRESS.value, address), target)
+    return _scoped(seed, target)
+
+
+async def _recorded(session, target_id: uuid.UUID, keys: set[str]) -> set[str]:
+    names = select(Subdomain.name.label("key")).where(
+        Subdomain.target_id == target_id, Subdomain.name.in_(sorted(keys))
+    )
+    addresses = select(IpAddress.ip.label("key")).where(
+        IpAddress.target_id == target_id, IpAddress.ip.in_(sorted(keys))
+    )
+    rows = await session.execute(union(names, addresses))
+    return {row[0] for row in rows}
+
+
+async def launch_refusal(session, assets: list[dict], target: Target) -> str | None:
+    """A launch seed outside the target that no scan of it recorded, or None."""
+    outside: dict[str, tuple[str, str]] = {}
+    for asset in assets:
+        seed = _launch_seed(asset)
+        reason = _launch_scope(seed, target)
+        if reason is None:
+            continue
+        key = seed.value if seed.kind == SeedKind.ADDRESS.value else _host_of(seed)
+        if not key or target.id is None:
+            return _NOT_ACCEPTED.format(value=seed.value, reason=reason)
+        outside.setdefault(key, (seed.value, reason))
+    if not outside:
+        return None
+    recorded = await _recorded(session, target.id, set(outside))
+    for key, (value, reason) in outside.items():
+        if key not in recorded:
+            return _NOT_ACCEPTED.format(value=value, reason=reason)
+    return None
 
 
 def as_assets(rows: list[TargetSeed]) -> list[dict]:

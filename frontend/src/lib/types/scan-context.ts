@@ -55,6 +55,7 @@ export interface ScanContextRead {
 	updated_at: string;
 	last_used_at: string | null;
 	last_used_scan_id: string | null;
+	carries_credentials: boolean;
 }
 
 export type ScanContextCreate = Omit<
@@ -69,6 +70,7 @@ export type ScanContextCreate = Omit<
 	| 'last_used_scan_id'
 	| 'usage'
 	| 'proxy_id'
+	| 'carries_credentials'
 > & {
 	auth?: Partial<AuthConfig>;
 	proxy_id?: string | null;

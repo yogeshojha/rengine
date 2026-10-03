@@ -3,7 +3,10 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
+	import CredentialLock from './credential-lock.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { CONTEXT_NOUN, credentialLaunchRefusal, launchLocked } from '$lib/config/launch';
 	import { SELECT_NONE } from '$lib/constants';
 	import { NO_CONTEXT_LABEL } from '$lib/types/scan-context';
 	import type { LaunchState } from './launch-state.svelte';
@@ -42,7 +45,13 @@
 		<Select.Content>
 			<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>{NO_CONTEXT_LABEL}</Select.Item>
 			{#each contexts as context (context.id)}
-				<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item>
+				{@const locked = launchLocked(context, auth.user)}
+				<Select.Item value={context.id} label={context.name} disabled={locked}>
+					{context.name}
+					{#if locked}
+						<CredentialLock reason={credentialLaunchRefusal(CONTEXT_NOUN, context.name)} />
+					{/if}
+				</Select.Item>
 			{/each}
 		</Select.Content>
 	</Select.Root>

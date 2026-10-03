@@ -11,6 +11,7 @@ from sqlmodel import Field, SQLModel
 from shared.definitions.intensity import clean_transport_overrides
 from shared.enums.scan import Intensity
 from shared.models.scan_context import HttpProtocol, ScanContextCreate
+from shared.models.types import EncryptedJSON
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
@@ -25,7 +26,7 @@ class ScanEngine(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=1000)
     intensity: str = Field(default=Intensity.NORMAL.value)
     global_headers: list = Field(
-        default_factory=list, sa_column=Column(JSON, nullable=False)
+        default_factory=list, sa_column=Column(EncryptedJSON, nullable=False)
     )
     stages: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     transport_overrides: dict = Field(
@@ -33,7 +34,7 @@ class ScanEngine(SQLModel, table=True):
     )
     yaml_source: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     tool_options: dict = Field(
-        default_factory=dict, sa_column=Column(JSON, nullable=False)
+        default_factory=dict, sa_column=Column(EncryptedJSON, nullable=False)
     )
     builtin: bool = Field(default=False)
     created_at: datetime = Field(default_factory=utc_now)
@@ -94,6 +95,7 @@ class ScanEngineRead(BaseModel):
     tool_options: dict[str, str] = PydanticField(default_factory=dict)
     usage: EngineUsage = PydanticField(default_factory=EngineUsage)
     builtin: bool = False
+    carries_credentials: bool = False
     created_at: datetime
     updated_at: datetime
     last_used_at: datetime | None

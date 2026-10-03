@@ -32,3 +32,14 @@ SEED_PRODUCES: dict[str, frozenset[str]] = {
 
 def seed_produces(target_type: str) -> frozenset[str]:
     return SEED_PRODUCES.get(target_type, frozenset())
+
+
+CONTEXT_NOUN = "Context"
+ENGINE_NOUN = "Engine"
+CREDENTIAL_LAUNCH = (
+    "{noun} {name} carries credentials. "
+    "Its creator or an administrator can launch with it."
+)
+CREDENTIAL_CHANGE = (
+    "{noun} {name} carries credentials. Its creator or an administrator can change it."
+)

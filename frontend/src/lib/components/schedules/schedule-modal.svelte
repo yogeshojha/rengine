@@ -19,6 +19,14 @@
 
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import CredentialLock from '$lib/components/scans/launch/credential-lock.svelte';
+	import {
+		CONTEXT_NOUN,
+		ENGINE_NOUN,
+		credentialLaunchRefusal,
+		launchLocked
+	} from '$lib/config/launch';
 	import { NO_CONTEXT_LABEL } from '$lib/types/scan-context';
 	import { scanSchedulesStore } from '$lib/stores/scan-schedules.svelte';
 	import { instanceSettingsStore } from '$lib/stores/instanceSettings.svelte';
@@ -292,7 +300,15 @@
 								<Select.Trigger id="schedule-engine" class="w-full">{engineLabel}</Select.Trigger>
 								<Select.Content>
 									{#each scanEnginesStore.engines as engine (engine.id)}
-										<Select.Item value={engine.id} label={engine.name}>{engine.name}</Select.Item>
+										{@const locked = launchLocked(engine, auth.user)}
+										<Select.Item value={engine.id} label={engine.name} disabled={locked}>
+											{engine.name}
+											{#if locked}
+												<CredentialLock
+													reason={credentialLaunchRefusal(ENGINE_NOUN, engine.name)}
+												/>
+											{/if}
+										</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>
@@ -310,8 +326,15 @@
 										{NO_CONTEXT_LABEL}
 									</Select.Item>
 									{#each scanContextsStore.contexts as context (context.id)}
-										<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item
-										>
+										{@const locked = launchLocked(context, auth.user)}
+										<Select.Item value={context.id} label={context.name} disabled={locked}>
+											{context.name}
+											{#if locked}
+												<CredentialLock
+													reason={credentialLaunchRefusal(CONTEXT_NOUN, context.name)}
+												/>
+											{/if}
+										</Select.Item>
 									{/each}
 								</Select.Content>
 							</Select.Root>

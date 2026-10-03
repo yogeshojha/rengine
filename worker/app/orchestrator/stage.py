@@ -24,7 +24,13 @@ from shared.services.orchestrator.tracking import (
     ScanActivityService,
     ScanCommandRecorder,
 )
-from shared.services.scan_resolve import ResolvedScanConfig, unseal_run_config
+from shared.services.scan_resolve import (
+    ResolvedScanConfig,
+    holding_secrets,
+    run_secrets,
+    scrub_error,
+    unseal_run_config,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.text import sentences
 from stages.base import StageAbortedError, StageContext
@@ -167,15 +173,17 @@ def run_stage(
 
     events.stage_started(activity_id=activity.id, stage=spec.name, title=spec.title)
 
+    secrets: list[str] = []
     try:
         resolved = load_resolved(scan.execution_config)
+        secrets = run_secrets(resolved)
         recorder = ScanCommandRecorder(
             session_factory=get_sync_session,
             scan_id=scan.id,
             project_id=scan.project_id,
             activity_id=activity.id,
             events=events,
-            secrets=resolved.headers.values(),
+            secrets=secrets,
         )
 
         if resolved.target_type not in spec.applies_to:
@@ -211,7 +219,7 @@ def run_stage(
             _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
             return
 
-        with aborting_on(ctx.is_aborted):
+        with aborting_on(ctx.is_aborted), holding_secrets(resolved):
             result = stage.run()
         # a killed tool returns normally
         if _scan_is_halted(scan.id):
@@ -227,7 +235,8 @@ def run_stage(
         )
         return
     except Exception as exc:
-        logger.error("stage %s failed for scan %s: %s", spec.name, scan.id, exc)
+        reason = scrub_error(str(exc), secrets)
+        logger.error("stage %s failed for scan %s: %s", spec.name, scan.id, reason)
         _fail_stage(
             activity_svc,
             events,
@@ -235,15 +244,15 @@ def run_stage(
             activity.id,
             ScanActivityStatus.FAILED,
             ids,
-            error=str(exc),
-            traceback=tb_mod.format_exc(),
+            error=reason,
+            traceback=scrub_error(tb_mod.format_exc(), secrets),
         )
         return
 
     status = (
         ScanActivityStatus.PARTIAL if result.partial else ScanActivityStatus.SUCCESS
     )
-    notes = sentences(result.warnings) or None
+    notes = scrub_error(sentences(result.warnings), secrets) or None
     activity_svc.finish(activity, status=status, result=result.counts, error=notes)
     try:
         _log_stage(

@@ -8,6 +8,8 @@ from shared.definitions.compliance import FRAMEWORK_BY_KEY
 from shared.definitions.reports import MAX_EVIDENCE_CHARS, SectionGroup
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, SEVERITY_ORDER, Severity
+from shared.services.issue_tracking.body import mask_secrets
+from shared.services.scan_resolve import redact_credentials, redact_message
 from shared.utils.text import strip_control
 
 _APPENDIX = "appendix_assets"
@@ -114,13 +116,17 @@ class FindingsDetailSection(Section):
                     "more": max(0, issue.count - cfg.max_assets),
                     "explainer": explainer,
                     "controls": _controls(issue) if cfg.show_controls and full else [],
-                    "request": _clip(sample.request, cfg.evidence_chars)
+                    "request": _clip(_message(sample.request), cfg.evidence_chars)
                     if cfg.show_evidence and full
                     else "",
-                    "response": _clip(sample.response, cfg.evidence_chars)
+                    "response": _clip(_message(sample.response), cfg.evidence_chars)
                     if cfg.show_evidence and full
                     else "",
-                    "curl": _clip(sample.curl, 600) if cfg.show_curl and full else "",
+                    "curl": _clip(
+                        mask_secrets(redact_credentials(sample.curl or "")), 600
+                    )
+                    if cfg.show_curl and full
+                    else "",
                 }
             )
         return {
@@ -181,6 +187,10 @@ def _controls(issue) -> list[str]:
             )
         out.append(f"{escape(spec.name)} {escape(spec.version)}: " + " · ".join(parts))
     return out
+
+
+def _message(value: str | None) -> str:
+    return mask_secrets(redact_message(value) or "")
 
 
 def _clip(value: str | None, length: int) -> str:

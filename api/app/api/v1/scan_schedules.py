@@ -49,11 +49,13 @@ async def list_schedules(
 async def update_schedule(
     id: UUID,
     data: ScanScheduleUpdate,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
-    return await service.update(id=id, project_id=project_id, data=data)
+    return await service.update(
+        id=id, project_id=project_id, data=data, actor_id=current_user.id
+    )
 
 
 @router.post("/{id}/pause", response_model=ScanScheduleRead)

@@ -155,6 +155,8 @@ def _mask_config(provider: str, config: dict) -> dict:
 def _server_moved(provider: str, stored: dict, incoming: dict) -> bool:
     if provider != NotificationProvider.EMAIL.value:
         return False
+    if bool(incoming.get("use_tls", True)) != bool(stored.get("use_tls", True)):
+        return True
     return any(
         str(incoming.get(field) or "") != str(stored.get(field) or "")
         for field in _EMAIL_SERVER_FIELDS
