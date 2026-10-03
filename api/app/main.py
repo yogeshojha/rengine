@@ -15,6 +15,7 @@ from app.core.db_errors import data_exception_handler
 from app.core.redis_sse_bridge import RedisSSEBridge
 from app.core.sanitize import RejectNulMiddleware
 from app.core.secret_errors import secret_decryption_handler
+from app.core.security import signing_key
 from app.core.throttle import GlobalRateLimitMiddleware
 from app.core.validation_errors import validation_error_handler
 from app.utils.helpers import create_initial_admin
@@ -31,6 +32,7 @@ redis_sse_bridge = RedisSSEBridge(settings.redis_url)
 async def lifespan(_app: FastAPI):
     logger.info("Starting Backend...")
     try:
+        signing_key()
         ai_ledger.install()
         await create_initial_admin()
         await check_capacity()

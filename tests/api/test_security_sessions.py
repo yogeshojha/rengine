@@ -240,6 +240,18 @@ def test_jwt_secret_key_is_used_when_set(monkeypatch):
         security.signing_key.cache_clear()
 
 
+@pytest.mark.parametrize("key", ["", "shared"])
+def test_production_refuses_a_missing_or_shared_signing_key(monkeypatch, key):
+    monkeypatch.setattr(settings, "DEBUG", False)
+    monkeypatch.setattr(settings, "JWT_SECRET_KEY", settings.SECRET_KEY if key else "")
+    security.signing_key.cache_clear()
+    try:
+        with pytest.raises(RuntimeError, match="JWT_SECRET_KEY"):
+            signing_key()
+    finally:
+        security.signing_key.cache_clear()
+
+
 def test_a_token_without_an_id_is_refused():
     payload = decode_token(
         create_token(str(uuid.uuid4()), TOKEN_TYPE_REFRESH, timedelta(minutes=5))

@@ -57,11 +57,23 @@ async def verify_password_async(plain_password: str, hashed_password: str) -> bo
         return await run_in_threadpool(verify_password, plain_password, hashed_password)
 
 
+SIGNING_KEY_MISSING = (
+    "JWT_SECRET_KEY is not set. Generate one with: openssl rand -hex 32, "
+    "and give it to the api service alone."
+)
+SIGNING_KEY_SHARED = "JWT_SECRET_KEY must differ from SECRET_KEY."
+
+
 @cache
 def signing_key() -> str:
-    """JWT_SECRET_KEY, else a key derived from SECRET_KEY for this purpose alone."""
-    if settings.JWT_SECRET_KEY:
-        return settings.JWT_SECRET_KEY
+    """JWT_SECRET_KEY; under DEBUG alone, a key derived from SECRET_KEY when unset."""
+    key = settings.JWT_SECRET_KEY
+    if key and key == settings.SECRET_KEY:
+        raise RuntimeError(SIGNING_KEY_SHARED)
+    if key:
+        return key
+    if not settings.DEBUG:
+        raise RuntimeError(SIGNING_KEY_MISSING)
     return hmac.new(
         settings.SECRET_KEY.encode(), b"rengine/jwt", hashlib.sha256
     ).hexdigest()

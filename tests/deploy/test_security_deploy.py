@@ -118,6 +118,13 @@ def test_only_the_api_reads_api_env():
     assert readers == {"api"}
 
 
+def test_prod_compose_blanks_api_secrets_outside_the_api():
+    services = _services("docker-compose.prod.yml")
+    for name in (*WORKERS, "channels", "migrate"):
+        environment = services[name]["environment"]
+        assert all(environment[key] == "" for key in API_ONLY), name
+
+
 def test_dev_compose_blanks_api_secrets_outside_the_api():
     services = _services("docker-compose.yml")
     for name in (*WORKERS, "channels"):

@@ -6,11 +6,17 @@ x-logging: &logging
     max-size: 20m
     max-file: "5"
 
+# the api's own secrets, blanked everywhere else
+x-api-only: &api-only
+  ADMIN_PASSWORD: ""
+  JWT_SECRET_KEY: ""
+
 x-worker-base: &worker-base
   init: true
   image: ${RENGINE_IMAGE:-yogeshojha/rengine}-worker:${RENGINE_TAG:-latest}
   env_file:
     - .env
+  environment: *api-only
   # without NET_RAW the file-capable naabu binary does not start
   cap_drop: [ALL]
   cap_add: [NET_RAW]
@@ -126,6 +132,7 @@ services:
     image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
     env_file:
       - .env
+    environment: *api-only
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     logging: *logging
@@ -248,6 +255,7 @@ services:
     image: ${RENGINE_IMAGE:-yogeshojha/rengine}-api:${RENGINE_TAG:-latest}
     env_file:
       - .env
+    environment: *api-only
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     command: uv run python -m channels
