@@ -13,6 +13,12 @@ from shared.definitions.constants import (
 
 INSPECT_TIMEOUT = 1.0
 
+# the file each worker touches and the compose healthcheck reads
+HEARTBEAT_PATH = "/tmp/worker-heartbeat"  # noqa: S108
+HEARTBEAT_SECONDS = 30.0
+# seconds a worker stays up after it left the running state
+STOPPED_GRACE_SECONDS = 60.0
+
 
 @dataclass(frozen=True)
 class QueueSpec:

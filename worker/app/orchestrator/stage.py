@@ -21,6 +21,7 @@ from shared.services.activity_log import ActivityLogService
 from shared.services.orchestrator.aggregate import derived_counts
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.orchestrator.tracking import (
+    MAX_STAGE_DELIVERIES,
     ScanActivityService,
     ScanCommandRecorder,
 )
@@ -45,6 +46,7 @@ _UNSETTLED_ACTIVITY_STATUSES = (
     ScanActivityStatus.RUNNING.value,
     ScanActivityStatus.PAUSED.value,
 )
+_WORKER_LOST = "The worker stopped twice during this stage. Stage not run again."
 
 
 def _throttled_abort(scan_id: uuid.UUID) -> Callable[[], bool]:
@@ -133,6 +135,58 @@ def apply_counts(session: Session, scan: Scan) -> None:
     session.commit()
 
 
+def _open_activity(
+    activity_svc: ScanActivityService,
+    events: ScanEventPublisher,
+    scan: Scan,
+    spec: StageSpec,
+    ids: "_ScanIds",
+    celery_task_id: str | None,
+) -> ScanActivity | None:
+    """The activity row of this run, or None when the stage does not start."""
+    _supersede_orphan_activities(activity_svc.session, scan, spec.name)
+
+    done = activity_svc.finished(scan.id, spec.name)
+    if done is not None:
+        logger.info(
+            "stage already finished, not run again",
+            scan_id=str(scan.id),
+            stage=spec.name,
+            status=done.status,
+        )
+        return None
+
+    redelivered = activity_svc.deliveries(scan.id, spec.name, celery_task_id)
+    activity = activity_svc.create(
+        scan, name=spec.name, title=spec.title, celery_task_id=celery_task_id
+    )
+
+    if redelivered >= MAX_STAGE_DELIVERIES:
+        logger.error(
+            "stage %s of scan %s lost its worker %s times, not run again",
+            spec.name,
+            scan.id,
+            redelivered,
+        )
+        _fail_stage(
+            activity_svc,
+            events,
+            spec,
+            activity.id,
+            ScanActivityStatus.FAILED,
+            ids,
+            error=_WORKER_LOST,
+        )
+        return None
+
+    if scan.status == ScanStatus.CANCELLED.value:
+        activity_svc.finish(activity, status=ScanActivityStatus.ABORTED)
+        _emit_stage_done(events, spec, activity, ScanActivityStatus.ABORTED.value)
+        return None
+
+    return activity
+
+
 def run_stage(
     session: Session,
     scan: Scan,
@@ -150,25 +204,8 @@ def run_stage(
     )
     _register_task_id(session, scan, celery_task_id)
 
-    _supersede_orphan_activities(session, scan, spec.name)
-
-    done = activity_svc.finished(scan.id, spec.name)
-    if done is not None:
-        logger.info(
-            "stage already finished, not run again",
-            scan_id=str(scan.id),
-            stage=spec.name,
-            status=done.status,
-        )
-        return
-
-    activity = activity_svc.create(
-        scan, name=spec.name, title=spec.title, celery_task_id=celery_task_id
-    )
-
-    if scan.status == ScanStatus.CANCELLED.value:
-        activity_svc.finish(activity, status=ScanActivityStatus.ABORTED)
-        _emit_stage_done(events, spec, activity, ScanActivityStatus.ABORTED.value)
+    activity = _open_activity(activity_svc, events, scan, spec, ids, celery_task_id)
+    if activity is None:
         return
 
     events.stage_started(activity_id=activity.id, stage=spec.name, title=spec.title)

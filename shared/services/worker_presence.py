@@ -8,6 +8,7 @@ from shared.logging import get_logger
 logger = get_logger(__name__)
 
 ANNOUNCE_SECONDS = 30.0
+BROKER_TIMEOUT_SECONDS = 5.0
 PRESENCE_TTL = int(ANNOUNCE_SECONDS * 3)
 STAGE_WORKER = "worker-scans@"
 _PREFIX = "rengine:scan-worker:"
@@ -18,8 +19,19 @@ _client: redis.Redis | None = None
 def _redis() -> redis.Redis:
     global _client  # noqa: PLW0603
     if _client is None:
-        _client = redis.from_url(base_settings().celery_broker_url)
+        _client = redis.from_url(
+            base_settings().celery_broker_url,
+            socket_connect_timeout=BROKER_TIMEOUT_SECONDS,
+            socket_timeout=BROKER_TIMEOUT_SECONDS,
+        )
     return _client
+
+
+def broker_answers() -> bool:
+    try:
+        return bool(_redis().ping())
+    except Exception:
+        return False
 
 
 def announce(hostname: str) -> None:

@@ -2,7 +2,7 @@ import logging
 import uuid
 from collections.abc import Callable, Iterable
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
@@ -16,6 +16,9 @@ from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
 logger = logging.getLogger(__name__)
+
+# starts one queued message gets for a stage
+MAX_STAGE_DELIVERIES = 2
 
 
 class ScanActivityService:
@@ -40,6 +43,23 @@ class ScanActivityService:
             )
             .limit(1)
         ).scalar_one_or_none()
+
+    def deliveries(self, scan_id, name: str, celery_task_id: str | None) -> int:
+        """Times one queued message has started this stage."""
+        if not celery_task_id:
+            return 0
+        return (
+            self.session.scalar(
+                select(func.count())
+                .select_from(ScanActivity)
+                .where(
+                    ScanActivity.scan_id == scan_id,
+                    ScanActivity.name == name,
+                    ScanActivity.celery_task_id == celery_task_id,
+                )
+            )
+            or 0
+        )
 
     def create(
         self,

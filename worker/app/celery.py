@@ -1,9 +1,16 @@
-from celery import Celery
+import gc
+import os
+import time
+from pathlib import Path
+
+from celery import Celery, bootsteps
+from celery.platforms import EX_FAILURE
 from celery.signals import (
     setup_logging,
     task_failure,
     task_postrun,
     task_prerun,
+    worker_before_create_process,
     worker_process_init,
     worker_ready,
     worker_shutdown,
@@ -19,8 +26,14 @@ from shared.definitions.constants import (
     SCANS_QUEUE,
 )
 from shared.definitions.issue_trackers import STATUS_REFRESH_SECONDS
+from shared.definitions.workers import (
+    HEARTBEAT_PATH,
+    HEARTBEAT_SECONDS,
+    STOPPED_GRACE_SECONDS,
+)
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
+from shared.utils.fork import release_sockets_to
 
 logger = get_logger(__name__)
 
@@ -295,12 +308,23 @@ def configure_logging(loglevel: int, **kwargs) -> None:  # noqa: ARG001
     setup_rengine_logging(level=settings.LOG_LEVEL)
 
 
+@worker_before_create_process.connect
+def freeze_heap(**_) -> None:
+    """Keep the parent's heap shared with the child about to fork."""
+    gc.collect()
+    gc.freeze()
+
+
 @worker_process_init.connect
 def on_process_init(**_) -> None:
     """Drop pooled sockets inherited from the parent."""
     from app import ai_ledger  # noqa: PLC0415
     from app.database import engine  # noqa: PLC0415
 
+    try:
+        release_sockets_to(settings.REDIS_PORT)
+    except OSError:
+        logger.warning("inherited broker sockets not released", exc_info=True)
     engine.dispose(close=False)
     ai_ledger.install()
 
@@ -309,10 +333,12 @@ def on_process_init(**_) -> None:
 def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     """Log when worker is ready."""
     logger.info("Worker ready: %s", sender.hostname)
+    from shared.services import worker_presence as presence  # noqa: PLC0415
+
+    _heartbeat(sender)
+    sender.timer.call_repeatedly(HEARTBEAT_SECONDS, _heartbeat, (sender,))
     consumed = celery_app.amqp.queues.consume_from
     if consumed.keys() & set(SCAN_QUEUES):
-        from shared.services import worker_presence as presence  # noqa: PLC0415
-
         presence.announce(sender.hostname)
         sender.timer.call_repeatedly(
             presence.ANNOUNCE_SECONDS, presence.announce, (sender.hostname,)
@@ -323,6 +349,49 @@ def on_worker_ready(sender, **kwargs) -> None:  # noqa: ARG001
     _warm_threat_intel()
     _warm_ip_ranges()
     _warm_ai_prices()
+
+
+def _consuming(consumer) -> bool:
+    """Whether the worker and its consumer are both running."""
+    return (
+        consumer.blueprint.state == bootsteps.RUN
+        and consumer.controller.blueprint.state == bootsteps.RUN
+    )
+
+
+_stopped_at: float | None = None
+
+
+def _exit_once_stopped() -> None:
+    """End a worker that left the running state and is still up after the grace."""
+    global _stopped_at  # noqa: PLW0603
+    now = time.monotonic()
+    if _stopped_at is None:
+        _stopped_at = now
+        return
+    if now - _stopped_at < STOPPED_GRACE_SECONDS:
+        return
+    logger.critical("worker stopped consuming and did not exit, exiting now")
+    os._exit(EX_FAILURE)
+
+
+def _heartbeat(consumer) -> None:
+    """Touch the heartbeat file while the worker consumes and the broker answers."""
+    global _stopped_at  # noqa: PLW0603
+    from shared.services import worker_presence as presence  # noqa: PLC0415
+
+    # the timer fires through a warm shutdown too
+    if not _consuming(consumer):
+        _exit_once_stopped()
+        return
+    _stopped_at = None
+    if not presence.broker_answers():
+        logger.warning("broker did not answer, heartbeat not written")
+        return
+    try:
+        Path(HEARTBEAT_PATH).touch()
+    except OSError:
+        logger.warning("heartbeat file not written", exc_info=True)
 
 
 def _warm_ai_prices() -> None:
