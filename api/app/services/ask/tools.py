@@ -13,11 +13,14 @@ from mcp.capabilities import Capability
 from mcp.context import TokenIdentity, ToolContext
 from mcp.errors import McpError
 from shared.definitions.ask import ASK_CLIENT, TOOL_TEXT_CHARS, TraceStatus
+from shared.definitions.asset_query import VULN_QUERY
 from shared.definitions.compare import WATCHED_FIELDS
 from shared.definitions.surface import SurfaceDimension
 from shared.models.ask import TraceStep
 from shared.models.user import User
 from shared.services.ai.agent import AgentTool
+from shared.services.asset_query import QuerySyntaxError
+from shared.services.asset_query.parser import tokenize
 from shared.services.issue_tracking.body import mask_secrets
 from shared.services.scan_resolve import MASK, redact_credentials
 
@@ -27,6 +30,7 @@ VALUE_GROUP = ("group_assets", "value")
 EXPLAIN_TOOL = "explain_finding"
 COMPARE_TOOL = "compare_runs"
 EXTRACTED_FIELD = "extracted_results"
+EXTRACTED_QUERY_FIELD = "extracted"
 COUNT_KEYS = ("total", "count", "occurrences", "matched")
 MAX_DETAIL = 200
 SECRETS_REFUSED = "Secret values are not read through Ask."
@@ -77,8 +81,23 @@ def rows_in(data: Any) -> int | None:
     return None
 
 
+def _names_extracted(query: object) -> bool:
+    if not isinstance(query, str) or EXTRACTED_QUERY_FIELD not in query.lower():
+        return False
+    try:
+        tokens = tokenize(query, VULN_QUERY)
+    except QuerySyntaxError:
+        return True
+    return any(t.field == EXTRACTED_QUERY_FIELD for t in tokens)
+
+
 def reads_secrets(name: str, args: dict) -> bool:
-    if args.get("dimension") != SurfaceDimension.SECRETS.value:
+    dimension = args.get("dimension")
+    if dimension == SurfaceDimension.VULNERABILITIES.value:
+        return _names_extracted(args.get("query")) or (
+            args.get("group_by") == EXTRACTED_QUERY_FIELD
+        )
+    if dimension != SurfaceDimension.SECRETS.value:
         return False
     return name in ROW_TOOLS or (name, args.get("group_by")) == VALUE_GROUP
 

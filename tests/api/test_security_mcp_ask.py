@@ -568,3 +568,20 @@ async def test_a_reply_is_refused_when_the_counter_is_down(estate, asked, monkey
     monkeypatch.setattr(budget, "async_client", down)
     frames = await _reply(estate, asked, [], {}, monkeypatch)
     assert frames == [("error", {"message": budget.COUNTER_DOWN})]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"dimension": "vulnerabilities", "query": "extracted:AKIA"},
+        {"dimension": "vulnerabilities", "query": "severity:high and -extracted=x"},
+        {"dimension": "vulnerabilities", "group_by": "extracted"},
+    ],
+)
+def test_ask_refuses_a_query_on_extracted_values(args):
+    assert tools.reads_secrets("query_assets", args)
+
+
+def test_ask_keeps_other_finding_queries():
+    args = {"dimension": "vulnerabilities", "query": "severity:high extractor"}
+    assert not tools.reads_secrets("query_assets", args)
