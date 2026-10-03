@@ -201,6 +201,59 @@ async def test_an_edit_cannot_mask_a_header_the_stored_request_did_not(estate, n
     assert "secret" not in kept.request
 
 
+@pytest.mark.parametrize(
+    "edited",
+    [
+        "GET / HTTP/1.1\nHost: attacker.invalid\nAuthorization: Bearer {mask}\n\n",
+        "GET http://attacker.invalid/ HTTP/1.1\nHost: {host}\n"
+        "Authorization: Bearer {mask}\n\n",
+        "GET / HTTP/1.1\nHost: {host}\nHost: attacker.invalid\n"
+        "Authorization: Bearer {mask}\n\n",
+    ],
+)
+async def test_an_edit_that_keeps_a_mask_keeps_the_stored_host(estate, now, edited):
+    finding = await _finding(
+        estate,
+        now,
+        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n",
+        {"headers": seal_headers({"Authorization": "Bearer real-token"})},
+    )
+    service, row, _ = await _connector(estate)
+    row.restore_credentials = True
+
+    with pytest.raises(HandoffError, match="keeps the stored host"):
+        await service.handoff(
+            row.id,
+            estate.project_id,
+            HandoffRequest(
+                finding_ids=[finding.id],
+                request=edited.format(host=HOST, mask=MASK),
+            ),
+        )
+    assert await service.take_actions(row) == []
+
+
+async def test_an_edit_without_masks_may_change_the_host(estate, now):
+    finding = await _finding(
+        estate,
+        now,
+        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n",
+        {"headers": seal_headers({"Authorization": "Bearer real-token"})},
+    )
+    service, row, _ = await _connector(estate)
+    row.restore_credentials = True
+    await service.handoff(
+        row.id,
+        estate.project_id,
+        HandoffRequest(
+            finding_ids=[finding.id],
+            request="GET / HTTP/1.1\nHost: other.invalid\nAuthorization: Bearer typed\n\n",
+        ),
+    )
+    (kept,) = await service.take_actions(row)
+    assert "real-token" not in kept.request
+
+
 async def test_an_edited_endpoint_request_gets_no_run_credentials(estate, now):
     await estate.scan(
         "example.com",

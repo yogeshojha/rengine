@@ -1067,6 +1067,11 @@ class ConnectorService:
         if added:
             msg = f"The stored request does not mask {', '.join(added)}. Replace the mask with a value."
             raise HandoffError(msg)
+        if handoff.masked_headers(request) and handoff.request_hosts(
+            request
+        ) != handoff.request_hosts(item.request):
+            msg = "A request that keeps masked values keeps the stored host."
+            raise HandoffError(msg)
         return replace(item, request=request, method=request.split(" ", 1)[0].upper())
 
     async def _built(

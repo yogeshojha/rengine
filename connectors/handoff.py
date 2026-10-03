@@ -279,6 +279,23 @@ def masked_headers(request: str | None) -> dict[str, str]:
     return out
 
 
+def request_hosts(request: str | None) -> set[str]:
+    """Every authority the request names: its Host headers and an absolute request target."""
+    if not request:
+        return set()
+    head = _split(normalise(request, None) or "")[0]
+    lines = head.split("\r\n")
+    hosts = {
+        match.group(2).strip().lower()
+        for line in lines[1:]
+        if (match := _HEADER_LINE.match(line)) and match.group(1).lower() == "host"
+    }
+    parts = lines[0].split(" ")
+    if len(parts) == 3 and "://" in parts[1]:  # noqa: PLR2004
+        hosts.add(urlsplit(parts[1]).netloc.lower())
+    return hosts
+
+
 def restore_headers(request: str | None, headers: dict[str, str]) -> str | None:
     """Put the run's own header values back where the store masked them."""
     if not request or not headers or MASK not in request:
