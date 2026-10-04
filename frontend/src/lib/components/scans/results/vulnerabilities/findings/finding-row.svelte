@@ -27,6 +27,7 @@
 	import { FCOL, NARROW } from './columns';
 	import { findingPrefs } from './prefs.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { EVIDENCE_HELP, EVIDENCE_LABELS, Evidence, evidenceToken } from '$lib/config/evidence';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { ExploitSignal, exploitTone } from '$lib/config/threat-intel';
 	import {
@@ -219,6 +220,23 @@
 							>
 								<Flame class="size-2.5" /> KEV
 							</button>
+						{/snippet}
+					</Hint>
+				{/if}
+				{#if v.evidence === Evidence.PROVEN}
+					<Hint text={EVIDENCE_HELP[Evidence.PROVEN]}>
+						{#snippet child(props)}
+							<button
+								{...props}
+								type="button"
+								class="rounded px-1 text-2xs font-semibold ring-1 ring-foreground/40 ring-inset {findingPrefs.shows(
+									'evidence'
+								)
+									? NARROW.evidence
+									: ''}"
+								onclick={(e) => pivot(e, evidenceToken(Evidence.PROVEN))}
+								>{EVIDENCE_LABELS[Evidence.PROVEN]}</button
+							>
 						{/snippet}
 					</Hint>
 				{/if}

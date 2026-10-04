@@ -18,6 +18,7 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
+	import { EVIDENCE_HELP, Evidence, evidenceToken } from '$lib/config/evidence';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import SeverityMark from './severity-mark.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -242,6 +243,26 @@
 									{it.corroborated === it.findings
 										? 'corroborated'
 										: `${it.corroborated} corroborated`}
+								</Badge>
+							</button>
+						{/snippet}
+					</Hint>
+				{/if}
+				{#if it.proven > 0}
+					<Hint
+						text={it.proven === it.findings
+							? EVIDENCE_HELP[Evidence.PROVEN]
+							: `${it.proven} of ${it.findings} findings proven by an out-of-band interaction`}
+					>
+						{#snippet child(props)}
+							<button
+								{...props}
+								type="button"
+								class="flex h-5 shrink-0 items-center"
+								onclick={(e) => pivot(e, evidenceToken(Evidence.PROVEN))}
+							>
+								<Badge variant="outline" class="px-1 text-2xs font-normal">
+									{it.proven === it.findings ? 'proven' : `${it.proven} proven`}
 								</Badge>
 							</button>
 						{/snippet}

@@ -10,6 +10,7 @@ import {
 	VULN_STATE_LABELS
 } from '$lib/config/vulnerabilities';
 import { epssLabel } from '$lib/config/threat-intel';
+import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 
 export interface AssetContext {
 	host: string | null;
@@ -131,6 +132,7 @@ export interface IssueRead {
 	locations: number;
 	sample_hosts: string[];
 	corroborated: number;
+	proven: number;
 	new_count: number;
 	states: Record<string, number>;
 	first_seen: string;
@@ -172,6 +174,7 @@ export interface VulnQuery {
 	cveOnly: boolean;
 	newOnly: boolean;
 	corroboratedOnly: boolean;
+	provenOnly: boolean;
 	includeInfo: boolean;
 	includeSuppressed: boolean;
 }
@@ -190,6 +193,7 @@ export function emptyVulnQuery(): VulnQuery {
 		cveOnly: false,
 		newOnly: false,
 		corroboratedOnly: false,
+		provenOnly: false,
 		includeInfo: true,
 		includeSuppressed: false
 	};
@@ -208,6 +212,7 @@ export interface VulnFilter {
 	cve: boolean;
 	new: boolean;
 	corroborated: boolean;
+	proven: boolean;
 	include_info: boolean;
 	include_suppressed: boolean;
 	sort: string;
@@ -335,6 +340,7 @@ export interface ScanVulnerabilities {
 	actionable: number;
 	new_count: number;
 	kev_count: number;
+	proven_count: number;
 	suppressed: number;
 	by_severity: SeverityCount[];
 	headline: string;
@@ -404,6 +410,7 @@ export function vulnActiveFacetCount(q: VulnQuery): number {
 		(q.cveOnly ? 1 : 0) +
 		(q.newOnly ? 1 : 0) +
 		(q.corroboratedOnly ? 1 : 0) +
+		(q.provenOnly ? 1 : 0) +
 		(q.includeInfo ? 0 : 1) +
 		(q.includeSuppressed ? 1 : 0)
 	);
@@ -445,6 +452,12 @@ export function vulnQueryChips(q: VulnQuery): VulnFilterChip[] {
 			label: 'Corroborated',
 			remove: (x) => ({ ...x, corroboratedOnly: false })
 		});
+	if (q.provenOnly)
+		chips.push({
+			id: 'proven',
+			label: EVIDENCE_LABELS[Evidence.PROVEN],
+			remove: (x) => ({ ...x, provenOnly: false })
+		});
 	if (!q.includeInfo)
 		chips.push({
 			id: 'info',
@@ -480,6 +493,7 @@ export function compileVulnQuery(
 		cve: q.cveOnly,
 		new: q.newOnly,
 		corroborated: q.corroboratedOnly,
+		proven: q.provenOnly,
 		include_info: q.includeInfo,
 		include_suppressed: q.includeSuppressed,
 		sort: sortKey,

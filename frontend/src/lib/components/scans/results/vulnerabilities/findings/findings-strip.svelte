@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { findingPrefs } from './prefs.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import {
 		SEVERITY_CHIP,
@@ -25,10 +26,12 @@
 		severities: string[];
 		newOn: boolean;
 		kevOn: boolean;
+		provenOn: boolean;
 		hostOn: (host: string) => boolean;
 		onSeverity: (severity: string) => void;
 		onNew: () => void;
 		onKev: () => void;
+		onProven: () => void;
 		onHost: (host: string) => void;
 	}
 
@@ -39,10 +42,12 @@
 		severities,
 		newOn,
 		kevOn,
+		provenOn,
 		hostOn,
 		onSeverity,
 		onNew,
 		onKev,
+		onProven,
 		onHost
 	}: Props = $props();
 
@@ -130,6 +135,18 @@
 					> known exploited
 				</button>
 			{/if}
+			{#if overview.proven_count || provenOn}
+				<button
+					type="button"
+					class="text-muted-foreground hover:text-foreground {provenOn ? 'underline' : ''}"
+					aria-pressed={provenOn}
+					onclick={onProven}
+				>
+					<span class="font-mono font-semibold text-foreground tabular-nums"
+						>{overview.proven_count.toLocaleString()}</span
+					> proven
+				</button>
+			{/if}
 			<span class="flex flex-wrap items-center gap-1">
 				{#each SHOWN as sev (sev)}
 					{@render sevChip(sev, true)}
@@ -202,6 +219,15 @@
 					</div>
 					{@render toggle('New', overview.new_count, newOn, onNew, 'text-info')}
 					{@render toggle('Known exploited', overview.kev_count, kevOn, onKev, 'text-destructive')}
+					{#if overview.proven_count || provenOn}
+						{@render toggle(
+							EVIDENCE_LABELS[Evidence.PROVEN],
+							overview.proven_count,
+							provenOn,
+							onProven,
+							'text-foreground'
+						)}
+					{/if}
 				</div>
 				<div class="flex flex-col gap-1">
 					<span class="text-2xs tracking-wide text-muted-foreground uppercase">

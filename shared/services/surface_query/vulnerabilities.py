@@ -8,6 +8,7 @@ from sqlalchemy import case, cast, func, not_, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.asset_query import VULN_QUERY
+from shared.definitions.evidence import Evidence
 from shared.definitions.vulnerabilities import ACTIONABLE_SEVERITIES, SEVERITY_ORDER
 from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import (
@@ -17,6 +18,7 @@ from shared.services.asset_query import (
     parse_query,
     vuln_corroborated,
     vuln_corroborated_ids,
+    vuln_evidence,
     vuln_is_new,
     vuln_state,
     vuln_suppressed,
@@ -74,6 +76,8 @@ def apply_filter(query, f: VulnerabilityFilter, scope: QueryScope):
         query = query.where(vuln_is_new(scope))
     if f.corroborated:
         query = query.where(vuln_corroborated(scope))
+    if f.proven:
+        query = query.where(vuln_evidence(scope, Evidence.PROVEN.value))
     if f.states:
         query = query.where(vuln_state(scope).in_(f.states))
     elif not f.include_suppressed:

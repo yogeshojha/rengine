@@ -19,6 +19,7 @@ export function findingsFilter(severities: string[], limit: number): VulnFilter 
 		cve: false,
 		new: false,
 		corroborated: false,
+		proven: false,
 		include_info: false,
 		include_suppressed: false,
 		sort: 'severity',

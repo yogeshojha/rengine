@@ -12,7 +12,7 @@
 		VulnState,
 		VULN_STATE_LABELS
 	} from '$lib/config/vulnerabilities';
-	import { Evidence, evidenceLabel } from '$lib/config/evidence';
+	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { epssLabel } from '$lib/config/threat-intel';
 	import type { ScanFindings } from '$lib/types/scan';
@@ -185,16 +185,12 @@
 									>New</span
 								>
 							{/if}
-							<span class="inline-flex items-center gap-1 text-2xs text-muted-foreground">
+							{#if f.evidence === Evidence.PROVEN}
 								<span
-									class="size-2 rounded-full border border-foreground/60 {f.evidence ===
-									Evidence.PROVEN
-										? 'bg-foreground/80'
-										: ''}"
-									aria-hidden="true"
-								></span>
-								{evidenceLabel(f.evidence)}
-							</span>
+									class="rounded px-1 text-2xs font-semibold ring-1 ring-foreground/40 ring-inset"
+									>{EVIDENCE_LABELS[Evidence.PROVEN]}</span
+								>
+							{/if}
 							{#if f.epss_score != null}
 								<span
 									class="rounded border border-border px-1 font-mono text-2xs text-muted-foreground"

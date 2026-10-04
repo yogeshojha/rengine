@@ -1142,10 +1142,12 @@
 		severities={query.severities}
 		newOn={query.newOnly}
 		kevOn={query.kevOnly}
+		provenOn={query.provenOnly}
 		hostOn={(h) => query.hosts.includes(h)}
 		onSeverity={toggleSeverity}
 		onNew={() => setQuery({ ...query, newOnly: !query.newOnly })}
 		onKev={() => setQuery({ ...query, kevOnly: !query.kevOnly })}
+		onProven={() => setQuery({ ...query, provenOnly: !query.provenOnly })}
 		onHost={toggleHost}
 	/>
 </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import FacetedFilter from '../faceted-filter.svelte';
+	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ViewControls from '../table/view-controls.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
@@ -60,6 +61,7 @@
 		{ value: 'kev', label: 'Known exploited' },
 		{ value: 'cve', label: 'Has a CVE' },
 		{ value: 'corroborated', label: 'Corroborated' },
+		{ value: 'proven', label: EVIDENCE_LABELS[Evidence.PROVEN] },
 		{ value: 'noinfo', label: 'Hide info' }
 	];
 
@@ -69,6 +71,7 @@
 			query.kevOnly && 'kev',
 			query.cveOnly && 'cve',
 			query.corroboratedOnly && 'corroborated',
+			query.provenOnly && 'proven',
 			!query.includeInfo && 'noinfo'
 		].filter((v): v is string => !!v)
 	);
@@ -80,6 +83,7 @@
 			kevOnly: values.includes('kev'),
 			cveOnly: values.includes('cve'),
 			corroboratedOnly: values.includes('corroborated'),
+			provenOnly: values.includes('proven'),
 			includeInfo: !values.includes('noinfo')
 		});
 	}

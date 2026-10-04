@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
+	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
@@ -59,6 +60,9 @@
 						<SeverityMark severity={v.severity} showLabel={false} class="shrink-0 sm:hidden" />
 						<span class="min-w-0 flex-1 text-sm wrap-anywhere">{v.template_name}</span>
 						{#if v.is_kev}<Badge variant="destructive">KEV</Badge>{/if}
+						{#if v.evidence === Evidence.PROVEN}<Badge variant="outline"
+								>{EVIDENCE_LABELS[Evidence.PROVEN]}</Badge
+							>{/if}
 					</span>
 					<span class="flex min-w-0 items-baseline gap-2 pl-4 sm:pl-[5.5rem]">
 						<span class="min-w-0 flex-1 font-mono text-xs text-muted-foreground wrap-anywhere">

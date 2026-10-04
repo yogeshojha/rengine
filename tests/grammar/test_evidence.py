@@ -136,6 +136,34 @@ async def test_proven_is_the_stored_column_and_never_also_corroborated(
     assert await _vulns(estate, "run", "is:recorded") == []
 
 
+async def test_the_proven_count_equals_the_proven_filter(estate, now) -> None:
+    await estate.scan("example.com", "run", at=now)
+    await _finding(estate, "run", at=now, template="plain-check")
+    for host in ("a.example.com", "b.example.com"):
+        await _finding(
+            estate,
+            "run",
+            at=now,
+            template="oob-check",
+            host=host,
+            interaction={"protocol": "dns", "unique_id": host},
+        )
+    await _finding(estate, "run", at=now, template="oob-check", host="c.example.com")
+
+    service = VulnerabilityService(estate.session)
+    scan = estate.scans["run"]
+    overview = await service.overview(scan)
+    page = await service.search(scan, VulnerabilityFilter(proven=True, limit=50))
+    issues = await service.issues(scan, VulnerabilityFilter(limit=50))
+
+    assert overview.proven_count == page.total == 2
+    assert {row.host for row in page.items} == {"a.example.com", "b.example.com"}
+    assert {i.template_id: (i.proven, i.findings) for i in issues.items} == {
+        "oob-check": (2, 3),
+        "plain-check": (0, 1),
+    }
+
+
 async def test_software_evidence_is_a_column_the_grammar_reads(estate, now) -> None:
     await estate.scan("example.com", "run", at=now)
     await _software(estate, "run", at=now)
