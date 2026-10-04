@@ -2,6 +2,7 @@
 	import CheckCheck from '@lucide/svelte/icons/check-check';
 	import { Badge } from '$lib/components/ui/badge';
 	import Hint from '$lib/components/hint.svelte';
+	import { CROSS_CHECKED_TOKEN } from '$lib/config/evidence';
 	import { CORROBORATION_BASIS_LABELS } from '$lib/config/vulnerabilities';
 	import type { Corroboration } from '$lib/utilities/vulns';
 
@@ -27,7 +28,7 @@
 	});
 
 	let crossScanner = $derived(peers.some((p) => p.scanner !== scanner));
-	let text = $derived(crossScanner ? `${hint}. Corroborated by a second scanner` : hint);
+	let text = $derived(crossScanner ? `${hint}. Cross-checked by a second scanner` : hint);
 </script>
 
 {#if peers.length}
@@ -40,17 +41,17 @@
 					class="flex h-5 shrink-0 items-center"
 					onclick={(e) => {
 						e.stopPropagation();
-						onFilter('is:corroborated');
+						onFilter(CROSS_CHECKED_TOKEN);
 					}}
 				>
 					<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
-						<CheckCheck class="size-2.5" /> corroborated
+						<CheckCheck class="size-2.5" /> cross-checked
 					</Badge>
 				</button>
 			{:else}
 				<span {...props} class="flex h-4 shrink-0 items-center">
 					<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
-						<CheckCheck class="size-2.5" /> corroborated
+						<CheckCheck class="size-2.5" /> cross-checked
 					</Badge>
 				</span>
 			{/if}

@@ -593,11 +593,11 @@ def vuln_corroborated(scope: ScopeLike):
 
 
 def vuln_evidence(scope: ScopeLike, value: str):
-    """One rung of the ladder. A proven finding is not also counted as corroborated."""
+    """One rung of the ladder. A proven finding is not also counted as cross-checked."""
     corroborated = Vulnerability.id.in_(vuln_corroborated_ids(scope))
     if value == Evidence.PROVEN.value:
         return Vulnerability.evidence == Evidence.PROVEN.value
-    if value == Evidence.CORROBORATED.value:
+    if value == Evidence.CROSS_CHECKED.value:
         return and_(Vulnerability.evidence != Evidence.PROVEN.value, corroborated)
     if value == Evidence.OBSERVED.value:
         return and_(

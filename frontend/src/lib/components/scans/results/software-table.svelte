@@ -58,6 +58,7 @@
 	import { ALL_TAB, TabCounts, countTabs, withTab } from '$lib/utilities/tab-counts.svelte';
 	import { SEVERITY_TABS } from '$lib/utilities/vulns';
 	import type { QueryError } from '$lib/types/asset-query';
+	import { EVIDENCE_LABELS, Evidence, evidenceToken } from '$lib/config/evidence';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type {
 		SoftwareCoverage,
@@ -128,7 +129,10 @@
 	const QUICK_FILTERS = [
 		{ token: 'is:new', label: 'New' },
 		{ token: 'is:kev', label: 'Known exploited' },
-		{ token: 'evidence:corroborated', label: 'Corroborated' },
+		{
+			token: evidenceToken(Evidence.CROSS_CHECKED),
+			label: EVIDENCE_LABELS[Evidence.CROSS_CHECKED]
+		},
 		{ token: 'is:firm', label: 'Firm' },
 		{ token: 'is:stated', label: 'Server stated' }
 	];

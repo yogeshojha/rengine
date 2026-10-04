@@ -449,7 +449,7 @@ export function vulnQueryChips(q: VulnQuery): VulnFilterChip[] {
 	if (q.corroboratedOnly)
 		chips.push({
 			id: 'corroborated',
-			label: 'Corroborated',
+			label: EVIDENCE_LABELS[Evidence.CROSS_CHECKED],
 			remove: (x) => ({ ...x, corroboratedOnly: false })
 		});
 	if (q.provenOnly)

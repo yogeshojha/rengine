@@ -671,7 +671,7 @@ def match_scan(
         text(_CORROBORATE),
         {
             **params,
-            "corroborated": Evidence.CORROBORATED.value,
+            "corroborated": Evidence.CROSS_CHECKED.value,
             "info": Severity.INFO.value,
             "suppressed": list(SUPPRESSED_STATES),
         },

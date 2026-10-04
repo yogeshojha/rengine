@@ -18,7 +18,12 @@
 	import HighlightText from '../table/highlight-text.svelte';
 	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
-	import { EVIDENCE_HELP, Evidence, evidenceToken } from '$lib/config/evidence';
+	import {
+		CROSS_CHECKED_TOKEN,
+		EVIDENCE_HELP,
+		Evidence,
+		evidenceToken
+	} from '$lib/config/evidence';
 	import OverflowPopover from '../table/overflow-popover.svelte';
 	import SeverityMark from './severity-mark.svelte';
 	import { stopProp } from '$lib/utilities';
@@ -228,21 +233,21 @@
 				{#if it.corroborated > 0}
 					<Hint
 						text={it.corroborated === it.findings
-							? 'Corroborated by another check at the same location'
-							: `${it.corroborated} of ${it.findings} findings corroborated by another check`}
+							? 'Cross-checked by another check at the same location'
+							: `${it.corroborated} of ${it.findings} findings cross-checked by another check`}
 					>
 						{#snippet child(props)}
 							<button
 								{...props}
 								type="button"
 								class="flex h-5 shrink-0 items-center"
-								onclick={(e) => pivot(e, 'is:corroborated')}
+								onclick={(e) => pivot(e, CROSS_CHECKED_TOKEN)}
 							>
 								<Badge variant="secondary" class="gap-1 px-1 text-2xs font-normal">
 									<CheckCheck class="size-2.5" />
 									{it.corroborated === it.findings
-										? 'corroborated'
-										: `${it.corroborated} corroborated`}
+										? 'cross-checked'
+										: `${it.corroborated} cross-checked`}
 								</Badge>
 							</button>
 						{/snippet}

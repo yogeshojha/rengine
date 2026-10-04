@@ -105,15 +105,15 @@ async def test_a_version_inference_corroborates_the_check_naming_its_cve(
     await _finding(estate, "run", at=now, template="nginx-cve", cves=[CVE])
     await _finding(estate, "run", at=now, template="other-check", cves=["CVE-2020-1"])
 
-    assert await _vulns(estate, "run", "evidence:corroborated") == ["nginx-cve"]
+    assert await _vulns(estate, "run", "evidence:cross-checked") == ["nginx-cve"]
     assert await _vulns(estate, "run", "evidence:observed") == ["other-check"]
-    assert await _vulns(estate, "run", "is:corroborated") == ["nginx-cve"]
+    assert await _vulns(estate, "run", "is:cross-checked") == ["nginx-cve"]
 
     page = await VulnerabilityService(estate.session).search(
         estate.scans["run"], VulnerabilityFilter(q="template=nginx-cve", limit=5)
     )
     row = page.items[0]
-    assert row.evidence == Evidence.CORROBORATED.value
+    assert row.evidence == Evidence.CROSS_CHECKED.value
     assert [p.shared for p in row.corroborated_by] == [[CVE]]
 
 
@@ -131,7 +131,7 @@ async def test_proven_is_the_stored_column_and_never_also_corroborated(
         interaction={"protocol": "dns", "unique_id": "abc"},
     )
     assert await _vulns(estate, "run", "evidence:proven") == ["oob-check"]
-    assert await _vulns(estate, "run", "evidence:corroborated") == []
+    assert await _vulns(estate, "run", "evidence:cross-checked") == []
     assert await _vulns(estate, "run", "is:proven") == ["oob-check"]
     assert await _vulns(estate, "run", "is:recorded") == []
 
@@ -176,10 +176,10 @@ async def test_software_evidence_is_a_column_the_grammar_reads(estate, now) -> N
     await estate.session.execute(
         SoftwareCve.__table__.update()
         .where(SoftwareCve.id == rows[0].id)
-        .values(evidence=Evidence.CORROBORATED.value)
+        .values(evidence=Evidence.CROSS_CHECKED.value)
     )
-    assert await _software_rows(estate, "run", "evidence:corroborated") == [CVE]
-    assert await _software_rows(estate, "run", "is:corroborated") == [CVE]
+    assert await _software_rows(estate, "run", "evidence:cross-checked") == [CVE]
+    assert await _software_rows(estate, "run", "is:cross-checked") == [CVE]
     assert await _software_rows(estate, "run", "evidence:inferred") == ["CVE-2020-2"]
 
 
@@ -211,7 +211,7 @@ async def test_the_cve_page_counts_equal_the_searches_they_open(estate, now) -> 
         assert step.software == len(software), step.evidence
         assert step.findings == len(findings), step.evidence
     assert steps[Evidence.INFERRED.value].software == 2
-    assert steps[Evidence.CORROBORATED.value].findings == 1
+    assert steps[Evidence.CROSS_CHECKED.value].findings == 1
     assert steps[Evidence.PROVEN.value].findings == 1
     assert steps[Evidence.OBSERVED.value].findings == 1
     assert report.assets == 2

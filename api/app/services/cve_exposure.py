@@ -567,7 +567,7 @@ class CveExposureService:
             if v.evidence == Evidence.PROVEN.value:
                 evidence = Evidence.PROVEN.value
             elif agreed:
-                evidence = Evidence.CORROBORATED.value
+                evidence = Evidence.CROSS_CHECKED.value
             else:
                 evidence = Evidence.OBSERVED.value
             out.append(

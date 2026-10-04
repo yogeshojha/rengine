@@ -38,7 +38,7 @@ class CveExposure(Tool):
     description = (
         "Every asset in the estate that carries one CVE, across both findings "
         "dimensions, counted on one evidence ladder. Inferred: a version fell in "
-        "the affected range. Observed: a check fired. Corroborated: two signals "
+        "the affected range. Observed: a check fired. Cross-checked: two signals "
         "agree. Proven: an out-of-band artifact came back. Includes the NVD, EPSS "
         "and KEV record and how long the exposure has been held."
     )

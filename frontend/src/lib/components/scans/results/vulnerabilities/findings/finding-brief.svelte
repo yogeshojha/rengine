@@ -234,7 +234,7 @@
 		</div>
 		{#if v.corroborated_by.length}
 			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/20 px-3 py-1.5 text-2xs">
-				<span class="text-muted-foreground">Corroborated by</span>
+				<span class="text-muted-foreground">Cross-checked by</span>
 				{#each v.corroborated_by as c (c.template_id)}
 					<button
 						type="button"

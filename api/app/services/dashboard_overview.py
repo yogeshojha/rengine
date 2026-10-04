@@ -632,7 +632,7 @@ class DashboardOverviewService:
             ),
             (
                 Vulnerability.id.in_(vuln_corroborated_ids(risk_ids)),
-                Evidence.CORROBORATED.value,
+                Evidence.CROSS_CHECKED.value,
             ),
             else_=Vulnerability.evidence,
         )

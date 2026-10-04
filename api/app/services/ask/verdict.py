@@ -94,7 +94,7 @@ def assess(
     if v.corroborated_by:
         add(
             FactTone.FOR,
-            f"Corroborated by {counted(len(v.corroborated_by), 'check')}",
+            f"Cross-checked by {counted(len(v.corroborated_by), 'check')}",
             detail=", ".join(c.template_name for c in v.corroborated_by[:3]),
         )
     if v.replays:

@@ -8,7 +8,7 @@ from enum import StrEnum
 class Evidence(StrEnum):
     INFERRED = "inferred"
     OBSERVED = "observed"
-    CORROBORATED = "corroborated"
+    CROSS_CHECKED = "cross-checked"
     PROVEN = "proven"
 
 
@@ -19,14 +19,14 @@ EVIDENCE_RANK: dict[str, int] = {value: i for i, value in enumerate(EVIDENCE_ORD
 EVIDENCE_LABELS: dict[str, str] = {
     Evidence.INFERRED.value: "Inferred",
     Evidence.OBSERVED.value: "Observed",
-    Evidence.CORROBORATED.value: "Corroborated",
+    Evidence.CROSS_CHECKED.value: "Cross-checked",
     Evidence.PROVEN.value: "Proven",
 }
 
 EVIDENCE_HELP: dict[str, str] = {
     Evidence.INFERRED.value: "The reported version falls inside the affected range.",
     Evidence.OBSERVED.value: "A check matched the response it received.",
-    Evidence.CORROBORATED.value: "Two independent signals agree at the same location.",
+    Evidence.CROSS_CHECKED.value: "Two independent signals agree at the same location.",
     Evidence.PROVEN.value: "The asset produced an out-of-band interaction.",
 }
 

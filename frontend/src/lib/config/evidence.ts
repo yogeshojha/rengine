@@ -1,30 +1,32 @@
 export enum Evidence {
 	INFERRED = 'inferred',
 	OBSERVED = 'observed',
-	CORROBORATED = 'corroborated',
+	CROSS_CHECKED = 'cross-checked',
 	PROVEN = 'proven'
 }
 
 export const EVIDENCE_ORDER: string[] = [
 	Evidence.INFERRED,
 	Evidence.OBSERVED,
-	Evidence.CORROBORATED,
+	Evidence.CROSS_CHECKED,
 	Evidence.PROVEN
 ];
 
 export const EVIDENCE_LABELS: Record<string, string> = {
 	[Evidence.INFERRED]: 'Inferred',
 	[Evidence.OBSERVED]: 'Observed',
-	[Evidence.CORROBORATED]: 'Corroborated',
+	[Evidence.CROSS_CHECKED]: 'Cross-checked',
 	[Evidence.PROVEN]: 'Proven'
 };
 
 export const EVIDENCE_HELP: Record<string, string> = {
 	[Evidence.INFERRED]: 'The reported version falls inside the affected range.',
 	[Evidence.OBSERVED]: 'A check matched the response it received.',
-	[Evidence.CORROBORATED]: 'Two independent signals agree at the same location.',
+	[Evidence.CROSS_CHECKED]: 'Two independent signals agree at the same location.',
 	[Evidence.PROVEN]: 'The asset produced an out-of-band interaction.'
 };
+
+export const CROSS_CHECKED_TOKEN = `is:${Evidence.CROSS_CHECKED}`;
 
 export function evidenceRank(value: string | null | undefined): number {
 	return EVIDENCE_ORDER.indexOf(value ?? '');

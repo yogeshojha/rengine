@@ -417,7 +417,7 @@ _VULN_LABELS: dict[str, dict[str, str]] = {
 def _evidence_case(scope: QueryScope):
     return case(
         (Vulnerability.evidence == Evidence.PROVEN.value, Evidence.PROVEN.value),
-        (preds.vuln_corroborated(scope), Evidence.CORROBORATED.value),
+        (preds.vuln_corroborated(scope), Evidence.CROSS_CHECKED.value),
         else_=Evidence.OBSERVED.value,
     )
 
