@@ -137,6 +137,7 @@
 <div
 	class="group relative border-b border-border/60 transition-colors
 		{checked || selected ? 'bg-primary/5' : focused || expanded ? 'bg-muted/30' : ''}"
+	role="none"
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
@@ -145,13 +146,12 @@
 			: 'py-2.5'}"
 		role="row"
 		tabindex="-1"
-		aria-selected={selected}
 		data-vuln-row-index={index}
 		onclick={onToggle}
 		onmouseenter={onFocus}
 	>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{FCOL.select} h-6" onclick={stopProp}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div class="{FCOL.select} h-6" role="cell" onclick={stopProp}>
 			<Checkbox
 				{checked}
 				onCheckedChange={onCheck}
@@ -162,7 +162,7 @@
 			/>
 		</div>
 
-		<div class="{FCOL.severity} flex flex-col items-start gap-1">
+		<div class="{FCOL.severity} flex flex-col items-start gap-1" role="cell">
 			<button
 				type="button"
 				class="inline-flex h-6 w-full items-center justify-center rounded-md px-1.5 text-2xs font-semibold tracking-wide uppercase focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {chip.chip} {suppressed
@@ -187,7 +187,7 @@
 			{/if}
 		</div>
 
-		<div class="{FCOL.finding} flex flex-col gap-0.5">
+		<div class="{FCOL.finding} flex flex-col gap-0.5" role="cell">
 			<div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
 				<button
 					type="button"
@@ -281,13 +281,13 @@
 		</div>
 
 		{#if projectWide}
-			<div class="{FCOL.target} h-6 items-center">
+			<div class="{FCOL.target} h-6 items-center" role="cell">
 				<TargetCell value={v.target_value} {onFilter} />
 			</div>
 		{/if}
 
 		{#if findingPrefs.shows('asset')}
-			<div class="{FCOL.asset} min-w-0 flex-col gap-0.5">
+			<div class="{FCOL.asset} min-w-0 flex-col gap-0.5" role="cell">
 				{#if v.host}
 					<div class="flex h-6 min-w-0 items-center gap-1.5">
 						{#if asset?.status_code != null}
@@ -359,7 +359,7 @@
 		{/if}
 
 		{#if findingPrefs.shows('related')}
-			<div class="{FCOL.related} min-w-0 flex-col gap-0.5">
+			<div class="{FCOL.related} min-w-0 flex-col gap-0.5" role="cell">
 				{#if v.host && hostTotal > 1}
 					<Hint text={onHost.map((c) => `${c.n} ${SEVERITY_LABELS[c.sev] ?? c.sev}`).join(' · ')}>
 						{#snippet child(props)}
@@ -415,7 +415,7 @@
 		{/if}
 
 		{#if findingPrefs.shows('risk')}
-			<div class="{FCOL.risk} min-w-0 items-start gap-2">
+			<div class="{FCOL.risk} min-w-0 items-start gap-2" role="cell">
 				<div class="flex min-w-0 flex-col gap-0.5">
 					{#if v.cve_ids.length}
 						<a
@@ -465,15 +465,15 @@
 		{/if}
 
 		{#if findingPrefs.shows('evidence')}
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="{FCOL.evidence} h-6 items-center" onclick={stopProp}>
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div class="{FCOL.evidence} h-6 items-center" role="cell" onclick={stopProp}>
 				<EvidenceMark evidence={v.evidence} showLabel onFilter={(t) => onFilter(t)} />
 			</div>
 		{/if}
 
 		{#if findingPrefs.shows('review')}
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="{FCOL.review} h-6 items-center" onclick={stopProp}>
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div class="{FCOL.review} h-6 items-center" role="cell" onclick={stopProp}>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
@@ -512,8 +512,8 @@
 		{/if}
 
 		{#if showIssue}
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="{FCOL.issue} min-h-6 flex-col items-start" onclick={stopProp}>
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div class="{FCOL.issue} min-h-6 flex-col items-start" role="cell" onclick={stopProp}>
 				{#each v.tickets ?? [] as ticket (ticket.issue_id)}
 					<TicketChip
 						state={ticket.state}
@@ -530,7 +530,10 @@
 		{/if}
 
 		{#if findingPrefs.shows('seen')}
-			<div class="{FCOL.seen} h-6 items-center text-xs text-muted-foreground tabular-nums">
+			<div
+				class="{FCOL.seen} h-6 items-center text-xs text-muted-foreground tabular-nums"
+				role="cell"
+			>
 				<Hint text={formatDateTime(v.discovered_at)}>
 					{#snippet child(props)}
 						<span {...props}>{relativeTime(v.discovered_at)}</span>
@@ -539,8 +542,8 @@
 			</div>
 		{/if}
 
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{FCOL.actions} items-center gap-0.5" onclick={stopProp}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div class="{FCOL.actions} items-center gap-0.5" role="cell" onclick={stopProp}>
 			<Button
 				variant="ghost"
 				size="icon"
@@ -610,8 +613,10 @@
 	</div>
 
 	{#if expanded}
-		<div class="px-4 pt-1 pb-4 @xl/findings:pl-12">
-			<FindingBrief {v} {projectId} {scanId} {onOpen} {onFilter} {onTab} {onTriage} {onRescan} />
+		<div role="row">
+			<div class="px-4 pt-1 pb-4 @xl/findings:pl-12" role="cell">
+				<FindingBrief {v} {projectId} {scanId} {onOpen} {onFilter} {onTab} {onTriage} {onRescan} />
+			</div>
 		</div>
 	{/if}
 </div>

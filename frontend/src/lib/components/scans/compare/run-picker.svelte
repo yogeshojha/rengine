@@ -4,7 +4,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { durationText } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { formatDateTime } from '$lib/utilities/dates';
 	import type { Snippet } from 'svelte';
 	import { runRows, type ComparableRun } from '$lib/types/compare';
@@ -40,7 +40,7 @@
 		>
 		{#if run.duration_seconds != null}
 			<span class="opacity-40">·</span>
-			<span class="tabular-nums">{durationText(run.duration_seconds)}</span>
+			<span class="tabular-nums">{formatSeconds(run.duration_seconds)}</span>
 		{/if}
 		<span class="opacity-40">·</span>
 		<span class="tabular-nums">{runRows(run.counts).toLocaleString()} rows</span>

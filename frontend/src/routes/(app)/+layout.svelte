@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto, onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
@@ -17,7 +17,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import CreateFirstProjectModal from '$lib/components/modals/create-first-project-modal.svelte';
-	import { crumbHref, getRouteLabel, ROUTES, UUID_REGEX } from '$lib/config/routes';
+	import { crumbHref, getRouteLabel, PROJECT_PARAM, ROUTES, UUID_REGEX } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
 
@@ -45,6 +45,33 @@
 		if (auth.isAuthenticated) {
 			untrack(() => projectsStore.fetchProjects());
 		}
+	});
+
+	function projectNamedBy(url: URL | undefined) {
+		const slug = url?.searchParams.get(PROJECT_PARAM);
+		if (!slug || slug === projectsStore.activeProject?.slug) return null;
+		return projectsStore.projects.find((p) => p.slug === slug) ?? null;
+	}
+
+	function settleProjectParam() {
+		if (!page.url.searchParams.has(PROJECT_PARAM)) return;
+		if (!projectsStore.hasFetched && !projectsStore.error) return;
+		const project = projectNamedBy(page.url);
+		if (project) projectsStore.setActiveProject(project);
+		const url = new URL(location.href);
+		url.searchParams.delete(PROJECT_PARAM);
+		void goto(url, { replaceState: true, keepFocus: true, noScroll: true });
+	}
+
+	onNavigate((navigation) => {
+		const project = projectNamedBy(navigation.to?.url);
+		if (project) projectsStore.setActiveProject(project);
+	});
+
+	afterNavigate(() => settleProjectParam());
+
+	$effect(() => {
+		if (projectsStore.hasFetched || projectsStore.error) untrack(settleProjectParam);
 	});
 
 	$effect(() => {

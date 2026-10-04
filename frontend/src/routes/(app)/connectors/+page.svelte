@@ -15,7 +15,7 @@
 	import LinkCard from '$lib/components/connectors/link-card.svelte';
 	import ConnectDialog from '$lib/components/connectors/connect-dialog.svelte';
 	import SettingsDialog from '$lib/components/connectors/settings-dialog.svelte';
-	import QueuePanel from '$lib/components/connectors/queue-panel.svelte';
+	import QueuePanel, { QUEUE_PARAMS } from '$lib/components/connectors/queue-panel.svelte';
 	import DiscoveredPanel from '$lib/components/connectors/discovered-panel.svelte';
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import { connectorsApi } from '$lib/api/connectors';
@@ -36,7 +36,8 @@
 		domains: 'New domains'
 	};
 
-	const initialTab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
+	const initialTab =
+		new URLSearchParams(browser ? location.search : page.url.search).get('tab') ?? DEFAULT_TAB;
 	let activeTab = $state<ConnectorTab>(
 		validTabs.has(initialTab) ? (initialTab as ConnectorTab) : DEFAULT_TAB
 	);
@@ -97,12 +98,25 @@
 		});
 	});
 
+	let urlProjectId: string | null = null;
+
 	$effect(() => {
+		const tab = activeTab;
+		const id = projectId;
+		void page.url;
 		if (!browser) return;
-		const url = new URL(page.url);
-		if (url.searchParams.get('tab') === activeTab) return;
-		url.searchParams.set('tab', activeTab);
-		replaceState(url, page.state);
+		untrack(() => {
+			const switched = urlProjectId !== null && id !== null && id !== urlProjectId;
+			if (id) urlProjectId = id;
+			const url = new URL(location.href);
+			if (tab === DEFAULT_TAB) url.searchParams.delete('tab');
+			else url.searchParams.set('tab', tab);
+			if (tab === 'domains' || switched) {
+				for (const key of QUEUE_PARAMS) url.searchParams.delete(key);
+			}
+			if (url.search === location.search) return;
+			replaceState(url, page.state);
+		});
 	});
 
 	$effect(() => {

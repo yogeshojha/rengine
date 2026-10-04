@@ -6,7 +6,7 @@
 	import type { Recheck } from '$lib/types/recheck';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { isRecheckLive, recheckFailed, recheckPaused } from '$lib/utilities/rechecks';
-	import { durationText } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 
 	interface Props {
 		scanId: string;
@@ -58,7 +58,7 @@
 					{/if}
 					<span class="ml-auto text-xs text-muted-foreground">
 						{entry.stage_titles.join(' · ')}{entry.duration_seconds != null
-							? ` · ${durationText(entry.duration_seconds)}`
+							? ` · ${formatSeconds(entry.duration_seconds)}`
 							: ''}
 					</span>
 				</div>

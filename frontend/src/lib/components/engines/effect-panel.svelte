@@ -6,6 +6,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import type { PreviewPhase, PreviewTool } from '$lib/types/scan';
 	import { phaseLabel, type StageCatalogEntry } from '$lib/types/scan-engine';
+	import { formatSeconds } from '$lib/utilities/format';
 
 	interface Props {
 		phases: PreviewPhase[];
@@ -32,7 +33,7 @@
 		const bits: string[] = [];
 		if (tool.rate) bits.push(`${tool.rate}/s`);
 		if (tool.threads) bits.push(`${tool.threads} threads`);
-		if (tool.timeout) bits.push(`${tool.timeout}s`);
+		if (tool.timeout) bits.push(formatSeconds(tool.timeout));
 		return bits.join(' · ');
 	}
 

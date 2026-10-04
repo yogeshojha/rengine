@@ -23,13 +23,9 @@ import { reports } from '$lib/stores/reports.svelte';
 import { whatsNewStore } from '$lib/stores/whats-new.svelte';
 import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 import { sidebarLayout } from '$lib/stores/sidebar-layout.svelte';
+import { compactCount, COMPACT_FROM_SHORT } from '$lib/utilities/numbers';
 
 export const LOCKED_NAV_ITEMS: readonly string[] = ['dashboard', 'settings'];
-
-const compact = (n: number) =>
-	new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
-		.format(n)
-		.toLowerCase();
 
 function visible(groups: NavGroup[]): NavGroup[] {
 	const out: NavGroup[] = [];
@@ -72,7 +68,9 @@ export function useSidebarNav() {
 					title: routeLabels['whats-new'],
 					url: ROUTES.whatsNew(),
 					icon: NewspaperIcon,
-					badge: whatsNewStore.unseen ? { label: compact(whatsNewStore.unseen) } : null
+					badge: whatsNewStore.unseen
+						? { label: compactCount(whatsNewStore.unseen, COMPACT_FROM_SHORT) }
+						: null
 				},
 				{ id: 'targets', title: routeLabels.targets, url: ROUTES.targets, icon: TargetIcon },
 				{ id: 'notes', title: routeLabels.notes, url: ROUTES.notes, icon: StickyNoteIcon }

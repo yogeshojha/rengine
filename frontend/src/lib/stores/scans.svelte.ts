@@ -11,12 +11,34 @@ import type {
 	ScanTimeRange
 } from '$lib/types/scan';
 import { SCAN_TIME_RANGES } from '$lib/types/scan';
-import { isLiveStatus } from '$lib/utilities/scan-status';
+import { isLiveStatus, scanStatusTab } from '$lib/utilities/scan-status';
 import { parseScanQuery, type ParsedScanQuery } from '$lib/utilities/scan-query';
 import type { PaginatedResponse } from '$lib/types/pagination';
+import { SvelteURLSearchParams } from 'svelte/reactivity';
 
 export const HISTORY_DAYS = 30;
 const DAY_MS = 86_400_000;
+const DEFAULT_SORT_KEY: ScanSortKey = 'started';
+const DEFAULT_SORT_DIR: ScanSortDir = 'desc';
+const DEFAULT_PAGE_SIZE = 25;
+
+export interface ScanView {
+	query?: string;
+	statuses?: ScanStatus[];
+	range?: ScanTimeRange;
+	startedFrom?: string | null;
+	startedTo?: string | null;
+	latest?: boolean;
+	sortKey?: ScanSortKey;
+	sortDir?: ScanSortDir;
+	page?: number;
+	pageSize?: number;
+}
+
+function rangeFrom(range: ScanTimeRange): string | null {
+	const n = SCAN_TIME_RANGES.find((r) => r.key === range)?.days;
+	return n ? new Date(Date.now() - n * DAY_MS).toISOString() : null;
+}
 
 interface ScanFilters {
 	projectId?: string;
@@ -45,8 +67,8 @@ function defaultFilters(): ScanFilters {
 		startedFrom: null,
 		startedTo: null,
 		latest: false,
-		sortKey: 'started',
-		sortDir: 'desc'
+		sortKey: DEFAULT_SORT_KEY,
+		sortDir: DEFAULT_SORT_DIR
 	};
 }
 
@@ -64,7 +86,7 @@ function createScansStore() {
 	let filters = $state<ScanFilters>(defaultFilters());
 	let pagination = $state<PaginationState>({
 		currentPage: 1,
-		pageSize: 25,
+		pageSize: DEFAULT_PAGE_SIZE,
 		totalItems: 0,
 		totalPages: 0
 	});
@@ -124,6 +146,10 @@ function createScansStore() {
 				size
 			});
 			if (seq !== loadSeq) return;
+			if (!res.items.length && res.pages > 0 && pagination.currentPage > res.pages) {
+				fetchAll(res.pages, silent);
+				return;
+			}
 			scans = res.items;
 			pagination.totalItems = res.total;
 			pagination.totalPages = res.pages;
@@ -178,6 +204,42 @@ function createScansStore() {
 	function reload() {
 		pagination.currentPage = 1;
 		fetchAll(1, false);
+	}
+
+	function toQueryString(): string {
+		const sp = new SvelteURLSearchParams();
+		for (const id of filters.targetIds) sp.append('target', id);
+		if (filters.query.trim()) sp.set('q', filters.query.trim());
+		const tab = scanStatusTab(filters.statuses);
+		if (tab !== 'all') sp.set('status', tab);
+		else for (const s of filters.statuses) sp.append('status', s);
+		if (filters.latest) sp.set('view', 'latest');
+		if (filters.startedFrom) sp.set('from', filters.startedFrom);
+		if (filters.startedTo) sp.set('to', filters.startedTo);
+		if (filters.sortKey !== DEFAULT_SORT_KEY) sp.set('sort', filters.sortKey);
+		if (filters.sortDir !== DEFAULT_SORT_DIR) sp.set('dir', filters.sortDir);
+		if (pagination.currentPage > 1) sp.set('page', String(pagination.currentPage));
+		if (pagination.pageSize !== DEFAULT_PAGE_SIZE) sp.set('size', String(pagination.pageSize));
+		return sp.toString();
+	}
+
+	function applyView(view: ScanView): boolean {
+		const before = toQueryString();
+		if (view.query !== undefined) filters.query = view.query;
+		if (view.statuses !== undefined) filters.statuses = view.statuses;
+		if (view.range !== undefined) {
+			filters.startedFrom = rangeFrom(view.range);
+			filters.startedTo = null;
+		}
+		if (view.startedFrom !== undefined) filters.startedFrom = view.startedFrom;
+		if (view.startedTo !== undefined) filters.startedTo = view.startedTo;
+		if (view.latest !== undefined) filters.latest = view.latest;
+		if (view.sortKey) filters.sortKey = view.sortKey;
+		if (view.sortDir) filters.sortDir = view.sortDir;
+		if (view.pageSize) pagination.pageSize = view.pageSize;
+		if (view.page) pagination.currentPage = view.page;
+		else if (toQueryString() !== before) pagination.currentPage = 1;
+		return toQueryString() !== before;
 	}
 
 	async function each(
@@ -238,7 +300,7 @@ function createScansStore() {
 			return hasLive;
 		},
 
-		init(projectId: string, targetIds: string[] = []) {
+		init(projectId: string, targetIds: string[] = [], view?: ScanView) {
 			const scopeChanged =
 				projectId !== filters.projectId || targetIds.join(',') !== filters.targetIds.join(',');
 			if (scopeChanged) {
@@ -249,11 +311,13 @@ function createScansStore() {
 				daily = null;
 				trends = {};
 				hasFetched = false;
-				fetchAll(1, false);
-				fetchStats();
-			} else if (!hasFetched && !isLoading) {
+				if (view) applyView(view);
 				fetchAll(undefined, false);
 				fetchStats();
+			} else {
+				const stale = !hasFetched && !isLoading;
+				if ((view && applyView(view)) || stale) fetchAll(undefined, false);
+				if (stale) fetchStats();
 			}
 		},
 
@@ -300,10 +364,7 @@ function createScansStore() {
 			reload();
 		},
 
-		setTimeRange(range: ScanTimeRange) {
-			const n = SCAN_TIME_RANGES.find((r) => r.key === range)?.days;
-			store.setRange(n ? new Date(Date.now() - n * DAY_MS).toISOString() : null, null);
-		},
+		toQueryString,
 
 		setSort(key: ScanSortKey, dir?: ScanSortDir) {
 			if (dir) {
@@ -432,7 +493,7 @@ function createScansStore() {
 			daily = null;
 			trends = {};
 			filters = defaultFilters();
-			pagination = { currentPage: 1, pageSize: 25, totalItems: 0, totalPages: 0 };
+			pagination = { currentPage: 1, pageSize: DEFAULT_PAGE_SIZE, totalItems: 0, totalPages: 0 };
 			error = null;
 			hasFetched = false;
 		}

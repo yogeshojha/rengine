@@ -385,21 +385,31 @@
 <svelte:window onkeydown={onKey} />
 
 {#snippet sortHead(text: string, key: ReportSort, cls: string)}
-	<button
-		type="button"
-		class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {filters.sort ===
-		key
-			? 'text-foreground'
-			: ''}"
-		onclick={() => sortBy(key)}
+	<div
+		role="columnheader"
+		class={cls}
+		aria-sort={filters.sort === key
+			? filters.order === 'desc'
+				? 'descending'
+				: 'ascending'
+			: undefined}
 	>
-		{text}
-		{#if filters.sort === key}
-			{#if filters.order === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
-					class="size-3"
-				/>{/if}
-		{/if}
-	</button>
+		<button
+			type="button"
+			class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {filters.sort ===
+			key
+				? 'text-foreground'
+				: ''}"
+			onclick={() => sortBy(key)}
+		>
+			{text}
+			{#if filters.sort === key}
+				{#if filters.order === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
+						class="size-3"
+					/>{/if}
+			{/if}
+		</button>
+	</div>
 {/snippet}
 
 {#snippet stat(title: string, value: string, sub: string, tab: string | null)}
@@ -938,13 +948,15 @@
 							class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 							role="row"
 						>
-							<div class={RCOL.report}>Report</div>
+							<div role="columnheader" class={RCOL.report}>Report</div>
 							{@render sortHead('Program', ReportSort.Program, RCOL.program)}
 							{@render sortHead('Severity', ReportSort.Severity, `${RCOL.severity} flex`)}
-							<div class={RCOL.state}>State</div>
+							<div role="columnheader" class={RCOL.state}>State</div>
 							{@render sortHead('Bounty', ReportSort.Bounty, RCOL.bounty)}
 							{@render sortHead('Submitted', ReportSort.Submitted, RCOL.submitted)}
-							<div class={RCOL.actions}></div>
+							<div role="columnheader" class={RCOL.actions}>
+								<span class="sr-only">Actions</span>
+							</div>
 						</div>
 						{#each reports as r (r.id)}
 							<ReportRow

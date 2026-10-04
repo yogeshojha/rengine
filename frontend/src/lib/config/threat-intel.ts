@@ -10,6 +10,7 @@ import ShieldOff from '@lucide/svelte/icons/shield-off';
 import Unplug from '@lucide/svelte/icons/unplug';
 import Zap from '@lucide/svelte/icons/zap';
 import type { BadgeVariant } from '$lib/components/ui/badge';
+import { compactCount } from '$lib/utilities/numbers';
 import type { IconComponent } from './icons';
 
 export enum FeedStatus {
@@ -185,8 +186,5 @@ export function percentileLabel(pct: number | null | undefined): string {
 }
 
 export function hostsLabel(hosts: number | null | undefined): string {
-	if (!hosts) return '';
-	if (hosts >= 1_000_000) return `${(hosts / 1_000_000).toFixed(1)}M`;
-	if (hosts >= 1_000) return `${Math.round(hosts / 1_000)}k`;
-	return String(hosts);
+	return hosts ? compactCount(hosts) : '';
 }

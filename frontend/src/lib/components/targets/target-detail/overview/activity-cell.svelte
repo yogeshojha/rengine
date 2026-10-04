@@ -9,7 +9,6 @@
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
 	import type { LiveRun } from '$lib/stores/live-scans.svelte';
 	import {
-		durationText,
 		elapsedSeconds,
 		elapsedText,
 		isLiveStatus,
@@ -18,7 +17,8 @@
 		SCAN_STATUS_LABEL,
 		SCAN_STATUS_PILL
 	} from '$lib/utilities/scan-status';
-	import { formatClock } from '$lib/utilities/dates';
+	import { dayHeading, formatClock } from '$lib/utilities/dates';
+	import { formatSeconds } from '$lib/utilities/format';
 
 	interface Props {
 		target: Target;
@@ -50,13 +50,6 @@
 		{ key: 'ips_found', spec: SURFACE[SurfaceDimension.IPS] },
 		{ key: 'vulnerabilities_found', spec: SURFACE[SurfaceDimension.VULNERABILITIES] }
 	];
-	const fmtDay = (iso: string) => {
-		const d = new Date(iso);
-		const today = new Date();
-		if (d.toDateString() === today.toDateString()) return 'Today';
-		return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-	};
-
 	const started = (s: ScanRead) => new Date(s.started_at ?? s.created_at).getTime();
 
 	let runs = $derived.by(() => {
@@ -85,7 +78,7 @@
 			if (e != null) parts.push(elapsedText(e));
 			return parts.join(' · ');
 		}
-		const took = s.duration_seconds != null ? durationText(s.duration_seconds) : null;
+		const took = s.duration_seconds != null ? formatSeconds(s.duration_seconds) : null;
 		if (s.status === 'cancelled') return took ? `stopped after ${took}` : 'stopped';
 		if (s.status === 'failed') return s.error ? s.error : 'failed';
 		const parts: string[] = [];
@@ -165,7 +158,7 @@
 			{@const counts = countsFor(s)}
 			<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
 				<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">
-					<span class="block font-medium text-foreground">{fmtDay(startedAt)}</span>
+					<span class="block font-medium text-foreground">{dayHeading(startedAt)}</span>
 					{formatClock(startedAt)}
 				</span>
 				<span class="relative flex justify-center">
@@ -254,7 +247,7 @@
 		{/each}
 		<li class="grid grid-cols-[5.5rem_1.25rem_minmax(0,1fr)] gap-x-2.5">
 			<span class="pt-0.5 text-right text-xs leading-tight text-muted-foreground">
-				<span class="block font-medium text-foreground">{fmtDay(target.created_at)}</span>
+				<span class="block font-medium text-foreground">{dayHeading(target.created_at)}</span>
 				{formatClock(target.created_at)}
 			</span>
 			<span class="relative flex justify-center">

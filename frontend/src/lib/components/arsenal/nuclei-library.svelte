@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { browser } from '$app/environment';
 	import { page as route } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -62,8 +63,59 @@
 	} from '$lib/types/vuln-template';
 	import { afterPause } from '$lib/utilities/debounce';
 
+	let { active = true }: { active?: boolean } = $props();
+
 	const PAGE_SIZE = 25;
 	const ALL = 'all';
+
+	interface Criteria {
+		search: string;
+		severity: string;
+		origin: string;
+		set: string;
+		onlyNew: boolean;
+		onlyCallback: boolean;
+	}
+
+	function markFrom(params: URLSearchParams): string | null {
+		const value = params.get('new');
+		return value && !Number.isNaN(Date.parse(value)) ? value : null;
+	}
+
+	function criteriaFrom(params: URLSearchParams): Criteria {
+		const severity = params.get('severity') ?? ALL;
+		const origin = params.get('origin') ?? ALL;
+		return {
+			search: params.get('q') ?? '',
+			severity: SEVERITY_ORDER.includes(severity) ? severity : ALL,
+			origin: Object.hasOwn(TEMPLATE_ORIGIN_LABELS, origin) ? origin : ALL,
+			set: params.get('set') || ALL,
+			onlyNew: markFrom(params) !== null,
+			onlyCallback: params.get('callback') === '1'
+		};
+	}
+
+	function criteriaFilter(c: Criteria) {
+		return {
+			q: c.search.trim() || null,
+			severities: c.severity === ALL ? [] : [c.severity],
+			origins: c.origin === ALL ? [] : [c.origin],
+			sets: c.set === ALL ? [] : [c.set],
+			callback: c.onlyCallback
+		};
+	}
+
+	function criteriaKey(c: Criteria): string {
+		return JSON.stringify({ ...criteriaFilter(c), onlyNew: c.onlyNew });
+	}
+
+	const landed = untrack(() => active)
+		? new URLSearchParams(browser ? location.search : route.url.search)
+		: new URLSearchParams();
+	const landedCriteria = criteriaFrom(landed);
+	const landedMark = markFrom(landed);
+	const landedPage = Number.parseInt(landed.get('page') ?? '', 10);
+	let appliedKey = criteriaKey(landedCriteria);
 
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 
@@ -81,17 +133,22 @@
 	let viewing = $state<VulnTemplateRead | null>(null);
 	let creating = $state(false);
 	let fileInput = $state<HTMLInputElement | null>(null);
-	let filter = $state<TemplateFilter>({ ...emptyTemplateFilter(), limit: PAGE_SIZE });
-	let search = $state('');
-	let severity = $state(ALL);
-	let origin = $state(ALL);
-	let set = $state(ALL);
-	let onlyNew = $state(false);
-	let onlyCallback = $state(false);
+	let filter = $state<TemplateFilter>({
+		...emptyTemplateFilter(),
+		...criteriaFilter(landedCriteria),
+		limit: PAGE_SIZE,
+		offset: landedPage > 1 ? (landedPage - 1) * PAGE_SIZE : 0
+	});
+	let search = $state(landedCriteria.search);
+	let severity = $state(landedCriteria.severity);
+	let origin = $state(landedCriteria.origin);
+	let set = $state(landedCriteria.set);
+	let onlyNew = $state(landedCriteria.onlyNew);
+	let onlyCallback = $state(landedCriteria.onlyCallback);
 	let oast = $state<OastRead | null>(null);
 	let oastFailed = $state(false);
 	let callbackOpen = $state(false);
-	let seenAt = $state<string | null>(null);
+	let seenAt = $state<string | null>(landedMark);
 	let reqId = 0;
 
 	let newCount = $state(0);
@@ -121,6 +178,19 @@
 
 	let marked = false;
 
+	async function countSince(mark: string): Promise<number> {
+		try {
+			const page = await vulnTemplatesApi.search({
+				...emptyTemplateFilter(),
+				new_since: mark,
+				limit: 1
+			});
+			return page.total;
+		} catch {
+			return 0;
+		}
+	}
+
 	async function loadStats() {
 		statsLoading = true;
 		try {
@@ -128,8 +198,8 @@
 			statsError = null;
 			if (!marked) {
 				marked = true;
-				seenAt = stats.seen_at;
-				newCount = stats.new;
+				seenAt = landedMark ?? stats.seen_at;
+				newCount = landedMark ? await countSince(landedMark) : stats.new;
 				void vulnTemplatesApi.seen().catch(() => undefined);
 			}
 		} catch (e) {
@@ -172,23 +242,45 @@
 	});
 
 	$effect(() => {
-		const q = search.trim() || null;
-		const sev = severity === ALL ? [] : [severity];
-		const org = origin === ALL ? [] : [origin];
-		const chosen = set === ALL ? [] : [set];
+		const next: Criteria = { search, severity, origin, set, onlyNew, onlyCallback };
 		const newSince = onlyNew ? seenAt : null;
-		const callback = onlyCallback;
 		untrack(() => {
+			const key = criteriaKey(next);
+			const changed = key !== appliedKey;
+			if (!changed && filter.new_since === newSince) return;
+			appliedKey = key;
 			filter = {
 				...filter,
-				q,
-				severities: sev,
-				origins: org,
-				sets: chosen,
+				...criteriaFilter(next),
 				new_since: newSince,
-				callback,
-				offset: 0
+				offset: changed ? 0 : filter.offset
 			};
+		});
+	});
+
+	$effect(() => {
+		const values: [string, string][] = [
+			['q', search.trim()],
+			['severity', severity === ALL ? '' : severity],
+			['set', set === ALL ? '' : set],
+			['origin', origin === ALL ? '' : origin],
+			['new', onlyNew && seenAt ? seenAt : ''],
+			['callback', onlyCallback ? '1' : ''],
+			['page', pageIndex > 0 ? String(pageIndex + 1) : '']
+		];
+		const shown = active;
+		void route.url;
+		if (!browser) return;
+		untrack(() => {
+			const url = new URL(location.href);
+			for (const [key, value] of values) {
+				if (shown && value) url.searchParams.set(key, value);
+				else url.searchParams.delete(key);
+			}
+			if (url.search === location.search) return;
+			try {
+				replaceState(url, {});
+			} catch {}
 		});
 	});
 
@@ -223,7 +315,7 @@
 
 	$effect(() => {
 		if (callbackOpen) return;
-		const params = untrack(() => new URLSearchParams(route.url.searchParams));
+		const params = untrack(() => new URLSearchParams(location.search));
 		if (params.get(PANEL_PARAM) !== CALLBACK_PANEL) return;
 		params.delete(PANEL_PARAM);
 		const qs = params.toString();
@@ -506,7 +598,7 @@
 				{/each}
 			</Select.Content>
 		</Select.Root>
-		{#if newCount > 0}
+		{#if newCount > 0 || onlyNew}
 			<ToggleGroup.Root
 				type="single"
 				value={onlyNew ? 'new' : ''}

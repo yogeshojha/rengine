@@ -23,7 +23,8 @@
 	const DEFAULT_TAB = ARSENAL_TABS[0];
 	const validTabs = new Set<string>(ARSENAL_TABS);
 
-	const initialTab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
+	const initialTab =
+		new URLSearchParams(browser ? location.search : page.url.search).get('tab') ?? DEFAULT_TAB;
 	let activeTab = $state<ArsenalTab>(
 		validTabs.has(initialTab) ? (initialTab as ArsenalTab) : DEFAULT_TAB
 	);
@@ -70,7 +71,11 @@
 		{#each ARSENAL_TABS as tab (tab)}
 			{@const Panel = TAB_META[tab].panel}
 			<Tabs.Content value={tab} class="mt-6">
-				<Panel />
+				{#if tab === 'nuclei'}
+					<NucleiLibrary active={activeTab === tab} />
+				{:else}
+					<Panel />
+				{/if}
 			</Tabs.Content>
 		{/each}
 	</Tabs.Root>

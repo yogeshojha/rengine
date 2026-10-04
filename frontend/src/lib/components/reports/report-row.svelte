@@ -19,7 +19,7 @@
 		ReportStatus,
 		isLive
 	} from '$lib/config/reports';
-	import { formatBytes } from '$lib/utilities/format';
+	import { formatBytes, formatSeconds } from '$lib/utilities/format';
 	import { reportsApi } from '$lib/api/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -117,7 +117,7 @@
 				</span>
 				<span>{report.template_name}</span>
 				{#if report.page_count}<span>{report.page_count} pages</span>{/if}
-				{#if report.duration_seconds}<span>{report.duration_seconds.toFixed(1)}s</span>{/if}
+				{#if report.duration_seconds}<span>{formatSeconds(report.duration_seconds)}</span>{/if}
 				<span>{relativeTime(report.created_at)}</span>
 				{#if warnings.length}
 					<Hint text={warnings.join(' · ')}>

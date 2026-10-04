@@ -165,16 +165,16 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<div class="@container/users w-full" role="table" aria-label="Users">
 			<div class={HEAD_ROW} role="row">
-				<div class={USER_COL.user}>User</div>
-				<div class={USER_COL.role}>Role</div>
-				<div class={USER_COL.twoFactor}>Two-factor</div>
-				<div class={USER_COL.created}>Added</div>
-				<div class={USER_COL.actions}></div>
+				<div class={USER_COL.user} role="columnheader">User</div>
+				<div class={USER_COL.role} role="columnheader">Role</div>
+				<div class={USER_COL.twoFactor} role="columnheader">Two-factor</div>
+				<div class={USER_COL.created} role="columnheader">Added</div>
+				<div class={USER_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 			</div>
 			{#each users as user (user.id)}
 				{@const isSelf = user.id === selfId}
 				<div class="{BODY_ROW} {user.is_active ? '' : 'text-muted-foreground'}" role="row">
-					<div class="{USER_COL.user} flex flex-col">
+					<div class="{USER_COL.user} flex flex-col" role="cell">
 						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
 							<span class="wrap-anywhere">{user.username}</span>
 							{#if isSelf}
@@ -186,18 +186,18 @@
 						</span>
 						<span class="text-2xs text-muted-foreground wrap-anywhere">{user.email}</span>
 					</div>
-					<div class="{USER_COL.role} text-sm">{roleLabel(user.is_superuser)}</div>
-					<div class="{USER_COL.twoFactor} text-sm">
+					<div class="{USER_COL.role} text-sm" role="cell">{roleLabel(user.is_superuser)}</div>
+					<div class="{USER_COL.twoFactor} text-sm" role="cell">
 						{#if user.totp_enabled}
 							On
 						{:else}
 							<span class="text-muted-foreground">Off</span>
 						{/if}
 					</div>
-					<div class="{USER_COL.created} text-xs text-muted-foreground tabular-nums">
+					<div class="{USER_COL.created} text-xs text-muted-foreground tabular-nums" role="cell">
 						{formatShortDate(user.created_at)}
 					</div>
-					<div class={USER_COL.actions}>
+					<div class={USER_COL.actions} role="cell">
 						{#if !isSelf}
 							<DropdownMenu.Root>
 								<DropdownMenu.Trigger>

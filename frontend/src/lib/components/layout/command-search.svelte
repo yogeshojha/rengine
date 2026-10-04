@@ -10,7 +10,7 @@
 	import Radar from '@lucide/svelte/icons/radar';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
-	import { goto, onNavigate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { setMode, resetMode } from 'mode-watcher';
@@ -207,25 +207,10 @@
 		action();
 	}
 
-	let switchTo: Project | null = null;
-
-	onNavigate(() => {
-		if (switchTo) projectsStore.setActiveProject(switchTo);
-		switchTo = null;
-	});
-
-	async function switchProject(project: Project) {
-		const redirect = projectSwitchRedirect(page.url.pathname);
-		if (!redirect) {
-			projectsStore.setActiveProject(project);
-			return;
-		}
-		switchTo = project;
-		try {
-			await goto(redirect);
-		} finally {
-			switchTo = null;
-		}
+	function switchProject(project: Project) {
+		const redirect = projectSwitchRedirect(page.url.pathname, project.slug);
+		if (redirect) void goto(redirect);
+		else projectsStore.setActiveProject(project);
 	}
 
 	async function copyLink() {
@@ -288,7 +273,7 @@
 				cancel: (scan) => (cancelTarget = scan),
 				cancelAll: () => (cancelAllOpen = true),
 				copyLink: () => void copyLink(),
-				switchProject: (project) => void switchProject(project),
+				switchProject: (project) => switchProject(project),
 				setTheme: (mode) => (mode === 'system' ? resetMode() : setMode(mode))
 			}
 		})

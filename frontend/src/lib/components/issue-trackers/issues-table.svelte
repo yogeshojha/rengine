@@ -24,16 +24,16 @@
 
 <div class="@container/issues w-full" role="table" aria-label="Filed issues">
 	<div class={HEAD_ROW} role="row">
-		<div class={ISSUE_COL.issue}>Issue</div>
-		<div class={ISSUE_COL.title}>Title</div>
-		<div class={ISSUE_COL.target}>Target</div>
-		<div class={ISSUE_COL.findings}>Findings</div>
-		<div class={ISSUE_COL.filed}>Filed</div>
-		<div class={ISSUE_COL.actions}></div>
+		<div class={ISSUE_COL.issue} role="columnheader">Issue</div>
+		<div class={ISSUE_COL.title} role="columnheader">Title</div>
+		<div class={ISSUE_COL.target} role="columnheader">Target</div>
+		<div class={ISSUE_COL.findings} role="columnheader">Findings</div>
+		<div class={ISSUE_COL.filed} role="columnheader">Filed</div>
+		<div class={ISSUE_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 	</div>
 	{#each issues as issue (issue.id)}
 		<div class={BODY_ROW} role="row">
-			<div class={ISSUE_COL.issue}>
+			<div class={ISSUE_COL.issue} role="cell">
 				<TicketChip
 					state={issue.state}
 					externalKey={issue.external_key}
@@ -44,7 +44,7 @@
 					trackerName={issue.tracker_name}
 				/>
 			</div>
-			<div class={ISSUE_COL.title}>
+			<div class={ISSUE_COL.title} role="cell">
 				<div class="text-sm leading-5 wrap-anywhere">{issue.title}</div>
 				<div class="flex flex-wrap items-center gap-2 text-2xs text-muted-foreground">
 					<SeverityMark severity={issue.severity} />
@@ -52,14 +52,14 @@
 					<span class="font-mono">{issue.destination}</span>
 				</div>
 			</div>
-			<div class="{ISSUE_COL.target} text-sm leading-5 wrap-anywhere">
+			<div class="{ISSUE_COL.target} text-sm leading-5 wrap-anywhere" role="cell">
 				{#if issue.target_value}
 					<a href={ROUTES.target(issue.target_id)} class="font-mono hover:text-primary">
 						{issue.target_value}
 					</a>
 				{/if}
 			</div>
-			<div class="{ISSUE_COL.findings} text-sm leading-5 tabular-nums">
+			<div class="{ISSUE_COL.findings} text-sm leading-5 tabular-nums" role="cell">
 				{issue.findings.toLocaleString()}
 				{#if issue.present < issue.findings}
 					<div class="text-2xs text-muted-foreground">
@@ -67,10 +67,10 @@
 					</div>
 				{/if}
 			</div>
-			<div class="{ISSUE_COL.filed} text-sm leading-5">
+			<div class="{ISSUE_COL.filed} text-sm leading-5" role="cell">
 				{issue.filed_at ? relativeTime(issue.filed_at) : ''}
 			</div>
-			<div class={ISSUE_COL.actions}>
+			<div class={ISSUE_COL.actions} role="cell">
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}

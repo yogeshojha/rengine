@@ -146,13 +146,10 @@ export const ROUTES = {
 	newEngine: () => `/automation/engines?${NEW_PARAM}=1`,
 	contexts: '/automation/contexts',
 	context: (id: string) => `/automation/contexts/${id}`,
-	newContext: (projectId?: string, template?: string) => {
-		const params = new URLSearchParams();
-		if (projectId) params.set('project', projectId);
-		if (template) params.set('template', template);
-		const query = params.toString();
-		return `/automation/contexts/new${query ? `?${query}` : ''}`;
-	},
+	newContext: (template?: string) =>
+		template
+			? `/automation/contexts/new?template=${encodeURIComponent(template)}`
+			: '/automation/contexts/new',
 	schedules: '/automation/schedules',
 	arsenal: (tab?: ArsenalTab) => (tab ? `/arsenal?tab=${tab}` : '/arsenal'),
 	callbackServer: () => `/arsenal?${PANEL_PARAM}=${CALLBACK_PANEL}`,
@@ -194,8 +191,15 @@ const PROJECT_SWITCH_REDIRECTS: { match: RegExp; list: string }[] = [
 	{ match: /^\/reports\/templates\/[^/]+/, list: ROUTES.reports('templates') }
 ];
 
-export function projectSwitchRedirect(path: string): string | null {
-	return PROJECT_SWITCH_REDIRECTS.find((r) => r.match.test(path))?.list ?? null;
+export const PROJECT_PARAM = 'project';
+
+export function projectSwitchRedirect(path: string, slug: string): string | null {
+	const list = PROJECT_SWITCH_REDIRECTS.find((r) => r.match.test(path))?.list;
+	if (!list) return null;
+	const [pathname, query] = list.split('?');
+	const params = new URLSearchParams(query);
+	params.set(PROJECT_PARAM, slug);
+	return `${pathname}?${params}`;
 }
 
 const CRUMB_LANDING: Record<string, string> = {

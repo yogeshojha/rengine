@@ -156,7 +156,8 @@
 				if (!urlReady) {
 					const before = targetsStore.toQueryString();
 					const otherProject = targetsStore.filters.projectSlug !== activeProject.slug;
-					targetsStore.applyQueryState(parseQuery(page.url.searchParams, otherProject));
+					const params = browser ? new URLSearchParams(location.search) : page.url.searchParams;
+					targetsStore.applyQueryState(parseQuery(params, otherProject));
 					changed = targetsStore.toQueryString() !== before;
 					urlReady = true;
 				}
@@ -689,21 +690,31 @@
 <svelte:window onkeydown={onKey} />
 
 {#snippet sortHead(label: string, key: SortKey, cls: string)}
-	<button
-		type="button"
-		class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {targetsStore
-			.filters.sortKey === key
-			? 'text-foreground'
-			: ''}"
-		onclick={() => handleSort(key)}
+	<div
+		role="columnheader"
+		class={cls}
+		aria-sort={targetsStore.filters.sortKey === key
+			? targetsStore.filters.sortDir === 'desc'
+				? 'descending'
+				: 'ascending'
+			: undefined}
 	>
-		{label}
-		{#if targetsStore.filters.sortKey === key}
-			{#if targetsStore.filters.sortDir === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
-					class="size-3"
-				/>{/if}
-		{/if}
-	</button>
+		<button
+			type="button"
+			class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {targetsStore
+				.filters.sortKey === key
+				? 'text-foreground'
+				: ''}"
+			onclick={() => handleSort(key)}
+		>
+			{label}
+			{#if targetsStore.filters.sortKey === key}
+				{#if targetsStore.filters.sortDir === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
+						class="size-3"
+					/>{/if}
+			{/if}
+		</button>
+	</div>
 {/snippet}
 
 <div class="flex flex-col gap-4">
@@ -867,7 +878,7 @@
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 					role="row"
 				>
-					<div class={TCOL.select}>
+					<div role="columnheader" class={TCOL.select}>
 						<Checkbox
 							checked={selectAllChecked === true}
 							indeterminate={selectAllChecked === 'indeterminate'}
@@ -876,15 +887,24 @@
 						/>
 					</div>
 					{@render sortHead('Target', 'name', `${TCOL.target} flex`)}
-					{#if targetPrefs.fits('run')}<div class={TCOL.run}>Last run</div>{/if}
-					{#if targetPrefs.fits('findings')}<div class={TCOL.findings}>Findings</div>{/if}
-					{#if targetPrefs.fits('assets')}<div class={TCOL.assets}>Assets</div>{/if}
-					{#if targetPrefs.fits('change')}<div class={TCOL.change}>Change</div>{/if}
-					{#if targetPrefs.fits('organizations')}<div class={TCOL.organizations}>
+					{#if targetPrefs.fits('run')}<div role="columnheader" class={TCOL.run}>Last run</div>{/if}
+					{#if targetPrefs.fits('findings')}<div role="columnheader" class={TCOL.findings}>
+							Findings
+						</div>{/if}
+					{#if targetPrefs.fits('assets')}<div role="columnheader" class={TCOL.assets}>
+							Assets
+						</div>{/if}
+					{#if targetPrefs.fits('change')}<div role="columnheader" class={TCOL.change}>
+							Change
+						</div>{/if}
+					{#if targetPrefs.fits('organizations')}<div
+							role="columnheader"
+							class={TCOL.organizations}
+						>
 							Organizations
 						</div>{/if}
-					{#if targetPrefs.fits('tags')}<div class={TCOL.tags}>Tags</div>{/if}
-					<div class={TCOL.actions}></div>
+					{#if targetPrefs.fits('tags')}<div role="columnheader" class={TCOL.tags}>Tags</div>{/if}
+					<div role="columnheader" class={TCOL.actions}><span class="sr-only">Actions</span></div>
 				</div>
 				{#each rows as target, i (target.id)}
 					<TargetRow

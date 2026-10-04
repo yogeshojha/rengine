@@ -12,6 +12,7 @@
 	import type { IconComponent } from '$lib/config/icons';
 	import { PRODUCT_NAME } from '$lib/constants';
 	import { plural } from '$lib/utilities/strings';
+	import { formatMilliseconds } from '$lib/utilities/format';
 	import { toast } from 'svelte-sonner';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
 	import ListIcon from '@lucide/svelte/icons/list';
@@ -166,8 +167,9 @@
 		try {
 			const result = await proxiesApi.test(await persist(endpoints, false));
 			if (result.success) {
-				const ms = result.latency_ms != null ? ` in ${result.latency_ms} ms` : '';
-				toast.success(`Proxy reachable${ms}`);
+				const took =
+					result.latency_ms != null ? ` in ${formatMilliseconds(result.latency_ms)}` : '';
+				toast.success(`Proxy reachable${took}`);
 			} else {
 				toast.error(result.message || 'Proxy test failed');
 			}

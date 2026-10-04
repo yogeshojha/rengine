@@ -391,23 +391,25 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<div class="@container/channels w-full" role="table" aria-label="Notification channels">
 			<div class={HEAD_ROW} role="row">
-				<div class={CHANNEL_COL.channel}>Channel</div>
-				<div class={CHANNEL_COL.events}>Events</div>
-				<div class={CHANNEL_COL.level}>Minimum level</div>
-				<div class={CHANNEL_COL.delivery}>Last delivery</div>
-				<div class={CHANNEL_COL.actions}></div>
+				<div class={CHANNEL_COL.channel} role="columnheader">Channel</div>
+				<div class={CHANNEL_COL.events} role="columnheader">Events</div>
+				<div class={CHANNEL_COL.level} role="columnheader">Minimum level</div>
+				<div class={CHANNEL_COL.delivery} role="columnheader">Last delivery</div>
+				<div class={CHANNEL_COL.actions} role="columnheader">
+					<span class="sr-only">Actions</span>
+				</div>
 			</div>
 			{#each channels as channel (channel.id)}
 				{@const meta = metaFor(channel.provider)}
 				{@const sent = delivery(channel)}
 				<div class="{BODY_ROW} {channel.is_active ? '' : 'text-muted-foreground'}" role="row">
-					<div class="{CHANNEL_COL.channel} flex flex-col">
+					<div class="{CHANNEL_COL.channel} flex flex-col" role="cell">
 						<span class="text-sm leading-5 font-medium wrap-anywhere">{channel.name}</span>
 						<span class="text-2xs text-muted-foreground">{meta.name}</span>
 					</div>
-					<div class="{CHANNEL_COL.events} text-sm">{eventSummary(channel)}</div>
-					<div class="{CHANNEL_COL.level} text-sm">{levelOf(channel)}</div>
-					<div class={CHANNEL_COL.delivery}>
+					<div class="{CHANNEL_COL.events} text-sm" role="cell">{eventSummary(channel)}</div>
+					<div class="{CHANNEL_COL.level} text-sm" role="cell">{levelOf(channel)}</div>
+					<div class={CHANNEL_COL.delivery} role="cell">
 						<CheckStatus
 							check={sent.check}
 							label={sent.label}
@@ -417,7 +419,7 @@
 							muted={sent.check !== 'failed'}
 						/>
 					</div>
-					<div class={CHANNEL_COL.actions}>
+					<div class={CHANNEL_COL.actions} role="cell">
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger>
 								{#snippet child({ props })}

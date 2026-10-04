@@ -1,4 +1,5 @@
 import type { MessageLevel } from '$lib/types/message-level';
+import { dayHeading } from '$lib/utilities/dates';
 
 export interface ActivityLog {
 	id: string;
@@ -317,21 +318,8 @@ export function groupByDay(clusters: ActivityCluster[]): ActivityDayGroup[] {
 	}
 
 	const now = new Date();
-	const today = dayKey(now);
-	const prev = new Date(now);
-	prev.setDate(prev.getDate() - 1);
-	const yesterday = dayKey(prev);
-
 	return Array.from(groups.entries()).map(([date, dayClusters]) => ({
-		label:
-			date === today
-				? 'Today'
-				: date === yesterday
-					? 'Yesterday'
-					: new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-							month: 'short',
-							day: 'numeric'
-						}),
+		label: dayHeading(date, now),
 		date,
 		clusters: dayClusters
 	}));

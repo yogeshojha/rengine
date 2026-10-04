@@ -7,7 +7,7 @@
 	import ScanStatusBadge from '$lib/components/scan-status-badge.svelte';
 	import RunPicker from './run-picker.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { durationText } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { formatDateTime } from '$lib/utilities/dates';
 	import { runRows, type ComparableRun, type RunSide } from '$lib/types/compare';
 	import type { ScanStatus } from '$lib/types/scan';
@@ -56,7 +56,7 @@
 			<span class="tabular-nums">{run.started_at ? formatDateTime(run.started_at) : ''}</span>
 			{#if run.duration_seconds != null}
 				<span class="opacity-40">·</span>
-				<span class="tabular-nums">{durationText(run.duration_seconds)}</span>
+				<span class="tabular-nums">{formatSeconds(run.duration_seconds)}</span>
 			{/if}
 			<span class="opacity-40">·</span>
 			<ScanStatusBadge status={run.status as ScanStatus} class="h-4 px-1.5 text-2xs" />

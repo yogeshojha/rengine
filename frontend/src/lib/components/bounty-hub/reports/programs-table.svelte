@@ -78,18 +78,24 @@
 </script>
 
 {#snippet head(label: string, key: Key, cls: string)}
-	<button
-		type="button"
-		class="{cls} items-center gap-1 tracking-wide uppercase hover:text-foreground {sortKey === key
-			? 'text-foreground'
-			: ''}"
-		onclick={() => sortBy(key)}
+	<div
+		role="columnheader"
+		class={cls}
+		aria-sort={sortKey === key ? (desc ? 'descending' : 'ascending') : undefined}
 	>
-		{label}
-		{#if sortKey === key}
-			{#if desc}<ArrowDown class="size-3" />{:else}<ArrowUp class="size-3" />{/if}
-		{/if}
-	</button>
+		<button
+			type="button"
+			class="{cls} items-center gap-1 tracking-wide uppercase hover:text-foreground {sortKey === key
+				? 'text-foreground'
+				: ''}"
+			onclick={() => sortBy(key)}
+		>
+			{label}
+			{#if sortKey === key}
+				{#if desc}<ArrowDown class="size-3" />{:else}<ArrowUp class="size-3" />{/if}
+			{/if}
+		</button>
+	</div>
 {/snippet}
 
 {#if rows.length === 0}
@@ -103,11 +109,11 @@
 			>
 				{@render head('Program', 'name', `${PCOL.program} flex`)}
 				{@render head('Reports', 'reports', `${PCOL.outcome} flex`)}
-				<div class={PCOL.severity}>Critical · high</div>
+				<div role="columnheader" class={PCOL.severity}>Critical · high</div>
 				{@render head('Paid', 'paid', PCOL.paid)}
 				{@render head('Earned', 'earned', PCOL.earned)}
 				{@render head('Last submitted', 'last', PCOL.last)}
-				<div class={PCOL.actions}></div>
+				<div role="columnheader" class={PCOL.actions}><span class="sr-only">Actions</span></div>
 			</div>
 			{#each rows as p (p.handle)}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -117,8 +123,8 @@
 					tabindex="-1"
 					onclick={() => onOpen(p.handle)}
 				>
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div class="{PCOL.program} min-w-0" onclick={(e) => e.stopPropagation()}>
+					<!-- svelte-ignore a11y_interactive_supports_focus -->
+					<div role="cell" class="{PCOL.program} min-w-0" onclick={(e) => e.stopPropagation()}>
 						<a
 							href={href(p)}
 							target={p.in_hub ? undefined : '_blank'}
@@ -130,7 +136,7 @@
 							{#if !p.in_hub}<span>Not in Bounty Hub</span>{/if}
 						</div>
 					</div>
-					<div class="{PCOL.outcome} flex flex-col gap-1">
+					<div role="cell" class="{PCOL.outcome} flex flex-col gap-1">
 						<div class="flex items-baseline justify-between gap-2 text-xs">
 							<span class="font-mono font-semibold tabular-nums">{p.reports}</span>
 							<span class="flex gap-2 font-mono text-2xs text-muted-foreground tabular-nums">
@@ -159,7 +165,7 @@
 							{/each}
 						</div>
 					</div>
-					<div class="{PCOL.severity} items-center gap-1">
+					<div role="cell" class="{PCOL.severity} items-center gap-1">
 						{#each [{ sev: Severity.CRITICAL, n: p.critical }, { sev: Severity.HIGH, n: p.high }] as c (c.sev)}
 							{#if c.n}
 								<Hint text="{c.n} {SEVERITY_LABELS[c.sev].toLowerCase()}">
@@ -177,17 +183,17 @@
 							{/if}
 						{/each}
 					</div>
-					<div class="{PCOL.paid} font-mono text-sm tabular-nums">
+					<div role="cell" class="{PCOL.paid} font-mono text-sm tabular-nums">
 						{#if p.paid_reports}{p.paid_reports}{:else}<span class="text-muted-foreground/50"
 								>·</span
 							>{/if}
 					</div>
-					<div class="{PCOL.earned} font-mono text-sm font-semibold tabular-nums">
+					<div role="cell" class="{PCOL.earned} font-mono text-sm font-semibold tabular-nums">
 						{#if p.earned.length}{formatMonies(p.earned)}{:else}<span
 								class="font-normal text-muted-foreground/50">·</span
 							>{/if}
 					</div>
-					<div class="{PCOL.last} text-xs text-muted-foreground tabular-nums">
+					<div role="cell" class="{PCOL.last} text-xs text-muted-foreground tabular-nums">
 						{#if p.last_submitted_at}
 							<Hint text={formatShortDate(p.last_submitted_at)}>
 								{#snippet child(props)}
@@ -196,7 +202,7 @@
 							</Hint>
 						{/if}
 					</div>
-					<div class={PCOL.actions}>
+					<div role="cell" class={PCOL.actions}>
 						<Hint text="Show reports">
 							{#snippet child(props)}
 								<Button

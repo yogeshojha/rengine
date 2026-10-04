@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -25,7 +26,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { RECENT_DAYS, RUN_PARAM, TRIPWIRE_PARAM } from '$lib/config/tripwires';
-	import { ROUTES, routeLabels } from '$lib/config/routes';
+	import { routeLabels } from '$lib/config/routes';
 	import type { Tripwire, TripwireTemplate } from '$lib/types/tripwire';
 	import { pageTitle } from '$lib/utilities/page-title';
 
@@ -35,7 +36,11 @@
 		{ key: 'paused', label: 'Paused' }
 	];
 
-	let tab = $state('all');
+	const DEFAULT_TAB = TABS[0].key;
+	const landedTab =
+		new URLSearchParams(browser ? location.search : page.url.search).get('tab') ?? DEFAULT_TAB;
+
+	let tab = $state(TABS.some((t) => t.key === landedTab) ? landedTab : DEFAULT_TAB);
 	let wizardOpen = $state(false);
 	let editing = $state<Tripwire | null>(null);
 	let draft = $state<TripwireDraft | null>(null);
@@ -85,9 +90,21 @@
 		return () => clearTimeout(timer);
 	});
 
+	let urlProjectId = '';
+
 	$effect(() => {
-		const runId = page.url.searchParams.get(RUN_PARAM);
-		const tripwireId = page.url.searchParams.get(TRIPWIRE_PARAM);
+		const id = projectId;
+		untrack(() => {
+			if (urlProjectId && id && id !== urlProjectId) closeHistory();
+			if (id) urlProjectId = id;
+		});
+	});
+
+	$effect(() => {
+		const url = page.url;
+		const params = browser ? new URLSearchParams(location.search) : url.searchParams;
+		const runId = params.get(RUN_PARAM);
+		const tripwireId = params.get(TRIPWIRE_PARAM);
 		const id = projectId;
 		const key = `${runId ?? ''}|${tripwireId ?? ''}`;
 		if (!id || landed === key || (!runId && !tripwireId)) return;
@@ -97,6 +114,25 @@
 			else if (tripwireId) historyId = tripwireId;
 		});
 	});
+
+	$effect(() => {
+		const value = tab;
+		void page.url;
+		untrack(() => writeQuery({ tab: value === DEFAULT_TAB ? null : value }));
+	});
+
+	function writeQuery(changes: Record<string, string | null>) {
+		if (!browser) return;
+		const url = new URL(location.href);
+		for (const [key, value] of Object.entries(changes)) {
+			if (value) url.searchParams.set(key, value);
+			else url.searchParams.delete(key);
+		}
+		if (url.search === location.search) return;
+		try {
+			replaceState(url, {});
+		} catch {}
+	}
 
 	async function land(runId: string, id: string) {
 		try {
@@ -143,14 +179,13 @@
 	function openHistory(tripwire: Tripwire) {
 		focusRunId = null;
 		historyId = tripwire.id;
+		writeQuery({ [TRIPWIRE_PARAM]: tripwire.id, [RUN_PARAM]: null });
 	}
 
 	function closeHistory() {
 		historyId = null;
 		focusRunId = null;
-		if (page.url.searchParams.has(RUN_PARAM) || page.url.searchParams.has(TRIPWIRE_PARAM)) {
-			replaceState(ROUTES.tripwires(), {});
-		}
+		writeQuery({ [RUN_PARAM]: null, [TRIPWIRE_PARAM]: null });
 	}
 
 	async function toggle(tripwire: Tripwire, enabled: boolean) {

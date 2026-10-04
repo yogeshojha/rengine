@@ -140,41 +140,48 @@
 							aria-label="Usage by feature"
 						>
 							<div class={HEAD_ROW} role="row">
-								<div class={USAGE_COL.feature}>Feature</div>
-								<div class={USAGE_COL.calls}>Calls</div>
-								<div class={USAGE_COL.cached}>Cached</div>
-								<div class={USAGE_COL.failed}>Failed</div>
-								<div class={USAGE_COL.input}>Input tokens</div>
-								<div class={USAGE_COL.output}>Output tokens</div>
-								<div class={USAGE_COL.cost}>Cost</div>
+								<div class={USAGE_COL.feature} role="columnheader">Feature</div>
+								<div class={USAGE_COL.calls} role="columnheader">Calls</div>
+								<div class={USAGE_COL.cached} role="columnheader">Cached</div>
+								<div class={USAGE_COL.failed} role="columnheader">Failed</div>
+								<div class={USAGE_COL.input} role="columnheader">Input tokens</div>
+								<div class={USAGE_COL.output} role="columnheader">Output tokens</div>
+								<div class={USAGE_COL.cost} role="columnheader">Cost</div>
 							</div>
 							{#each usage.by_feature as f (f.feature)}
 								<div class="{BODY_ROW} text-sm" role="row">
-									<div class={USAGE_COL.feature}>{f.label}</div>
-									<div class="{USAGE_COL.calls} tabular-nums">{f.calls.toLocaleString()}</div>
-									<div class="{USAGE_COL.cached} tabular-nums text-muted-foreground">
+									<div class={USAGE_COL.feature} role="cell">{f.label}</div>
+									<div class="{USAGE_COL.calls} tabular-nums" role="cell">
+										{f.calls.toLocaleString()}
+									</div>
+									<div class="{USAGE_COL.cached} tabular-nums text-muted-foreground" role="cell">
 										{f.cached.toLocaleString()}
 									</div>
 									<div
 										class="{USAGE_COL.failed} tabular-nums {f.failed
 											? 'text-destructive'
 											: 'text-muted-foreground'}"
+										role="cell"
 									>
 										{f.failed.toLocaleString()}
 									</div>
 									<Hint text={cacheHint(f.cache_read_tokens, f.cache_write_tokens)}>
 										{#snippet child(props)}
-											<div {...props} class="{USAGE_COL.input} font-mono text-xs tabular-nums">
+											<div
+												{...props}
+												class="{USAGE_COL.input} font-mono text-xs tabular-nums"
+												role="cell"
+											>
 												{tokens(f.input_tokens)}
 											</div>
 										{/snippet}
 									</Hint>
-									<div class="{USAGE_COL.output} font-mono text-xs tabular-nums">
+									<div class="{USAGE_COL.output} font-mono text-xs tabular-nums" role="cell">
 										{tokens(f.output_tokens)}
 									</div>
 									<Hint text={unpricedLabel(f.unpriced)}>
 										{#snippet child(props)}
-											<div {...props} class="{USAGE_COL.cost} tabular-nums">
+											<div {...props} class="{USAGE_COL.cost} tabular-nums" role="cell">
 												{formatCost(f.cost_usd)}
 											</div>
 										{/snippet}
@@ -226,39 +233,45 @@
 					{:else if calls.length}
 						<div class="@container/calls w-full border-t" role="table" aria-label="Recent calls">
 							<div class={HEAD_ROW} role="row">
-								<div class={CALL_COL.when}>When</div>
-								<div class={CALL_COL.feature}>Feature</div>
-								<div class={CALL_COL.model}>Model</div>
-								<div class={CALL_COL.input}>Input tokens</div>
-								<div class={CALL_COL.output}>Output tokens</div>
-								<div class={CALL_COL.cost}>Cost</div>
-								<div class={CALL_COL.outcome}>Outcome</div>
+								<div class={CALL_COL.when} role="columnheader">When</div>
+								<div class={CALL_COL.feature} role="columnheader">Feature</div>
+								<div class={CALL_COL.model} role="columnheader">Model</div>
+								<div class={CALL_COL.input} role="columnheader">Input tokens</div>
+								<div class={CALL_COL.output} role="columnheader">Output tokens</div>
+								<div class={CALL_COL.cost} role="columnheader">Cost</div>
+								<div class={CALL_COL.outcome} role="columnheader">Outcome</div>
 							</div>
 							{#each calls as call (call.id)}
 								<div class="{BODY_ROW} text-sm" role="row">
-									<div class="{CALL_COL.when} text-muted-foreground tabular-nums">
+									<div class="{CALL_COL.when} text-muted-foreground tabular-nums" role="cell">
 										{relativeTime(call.at)}
 									</div>
-									<div class={CALL_COL.feature}>{featureLabel(call.feature)}</div>
-									<div class="{CALL_COL.model} font-mono text-xs wrap-anywhere">{call.model}</div>
+									<div class={CALL_COL.feature} role="cell">{featureLabel(call.feature)}</div>
+									<div class="{CALL_COL.model} font-mono text-xs wrap-anywhere" role="cell">
+										{call.model}
+									</div>
 									<Hint text={cacheHint(call.cache_read_tokens, call.cache_write_tokens)}>
 										{#snippet child(props)}
-											<div {...props} class="{CALL_COL.input} font-mono text-xs tabular-nums">
+											<div
+												{...props}
+												class="{CALL_COL.input} font-mono text-xs tabular-nums"
+												role="cell"
+											>
 												{tokens(call.input_tokens)}
 											</div>
 										{/snippet}
 									</Hint>
-									<div class="{CALL_COL.output} font-mono text-xs tabular-nums">
+									<div class="{CALL_COL.output} font-mono text-xs tabular-nums" role="cell">
 										{tokens(call.output_tokens)}
 									</div>
 									<Hint text={costHint(call, providerLabel(call.provider))}>
 										{#snippet child(props)}
-											<div {...props} class="{CALL_COL.cost} tabular-nums">
+											<div {...props} class="{CALL_COL.cost} tabular-nums" role="cell">
 												{formatCost(call.cost_usd)}
 											</div>
 										{/snippet}
 									</Hint>
-									<div class={CALL_COL.outcome}>
+									<div class={CALL_COL.outcome} role="cell">
 										{#if call.cached}
 											<span class="text-muted-foreground">Cached</span>
 										{:else if call.ok}

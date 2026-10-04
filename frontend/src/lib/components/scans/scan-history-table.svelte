@@ -100,7 +100,7 @@
 	let shortcutsOpen = $state(false);
 	let now = $state(Date.now());
 	let searchEl = $state<HTMLInputElement | null>(null);
-	let queryText = $state(scansStore.filters.query);
+	let queryText = $derived(scansStore.filters.query);
 	let compare = $state<{ current: string; baseline: string | null } | null>(null);
 
 	let expanded = new SvelteSet<string>();
@@ -113,7 +113,6 @@
 	let filtered = $derived(scansStore.hasActiveFilters || scoped);
 
 	function clearAll() {
-		queryText = '';
 		scansStore.clearFilters();
 		if (scoped) onClearScope?.();
 	}
@@ -122,10 +121,7 @@
 		const project = projectsStore.activeProject;
 		const ids = targetId ? [targetId] : (targetIds ?? []);
 		if (project && projectsStore.hasFetched) {
-			untrack(() => {
-				scansStore.init(project.id, ids);
-				queryText = scansStore.filters.query;
-			});
+			untrack(() => scansStore.init(project.id, ids));
 		}
 	});
 
@@ -204,7 +200,6 @@
 	});
 
 	function setQuery(q: string, immediate = false) {
-		queryText = q;
 		scansStore.setQuery(q, immediate);
 	}
 
@@ -446,22 +441,32 @@
 
 <svelte:window onkeydown={onKey} />
 
-{#snippet sortHead(label: string, key: ScanSortKey, cls: string)}
-	<button
-		type="button"
-		class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {scansStore
-			.filters.sortKey === key
-			? 'text-foreground'
-			: ''}"
-		onclick={() => sortBy(key)}
+{#snippet sortHead(label: string, key: ScanSortKey, cls: string, end = false)}
+	{@const active = scansStore.filters.sortKey === key}
+	<div
+		class={cls}
+		role="columnheader"
+		aria-sort={active
+			? scansStore.filters.sortDir === 'desc'
+				? 'descending'
+				: 'ascending'
+			: undefined}
 	>
-		{label}
-		{#if scansStore.filters.sortKey === key}
-			{#if scansStore.filters.sortDir === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
-					class="size-3"
-				/>{/if}
-		{/if}
-	</button>
+		<button
+			type="button"
+			class="flex w-full items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {end
+				? 'justify-end'
+				: ''} {active ? 'text-foreground' : ''}"
+			onclick={() => sortBy(key)}
+		>
+			{label}
+			{#if active}
+				{#if scansStore.filters.sortDir === 'desc'}<ArrowDown class="size-3" />{:else}<ArrowUp
+						class="size-3"
+					/>{/if}
+			{/if}
+		</button>
+	</div>
 {/snippet}
 
 <Card.Root class="gap-0 overflow-hidden py-0">
@@ -798,12 +803,12 @@
 		</Empty.Root>
 	{:else}
 		<ScrollArea orientation="horizontal">
-			<div class="w-full min-w-[720px]" role="table" aria-label="Scan runs">
+			<div class="w-full min-w-[720px]" role="table" aria-label="Scans">
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 					role="row"
 				>
-					<div class="{COL.select} flex items-center">
+					<div class="{COL.select} flex items-center" role="columnheader">
 						<Checkbox
 							checked={selectAll === true}
 							indeterminate={selectAll === 'indeterminate'}
@@ -811,19 +816,23 @@
 							aria-label="Select all runs"
 						/>
 					</div>
-					<div class={COL.target}>{targetId ? 'Engine' : 'Target'}</div>
-					<div class={COL.status}>Status</div>
+					<div class={COL.target} role="columnheader">{targetId ? 'Engine' : 'Target'}</div>
+					<div class={COL.status} role="columnheader">Status</div>
 					{@render sortHead('Findings', 'vulnerabilities', `${COL.findings} flex`)}
-					{#if historyPrefs.shows('assets')}<div class={COL.assets}>Assets</div>{/if}
-					{#if historyPrefs.shows('change')}<div class={COL.change}>Change</div>{/if}
-					{#if historyPrefs.shows('engine')}<div class={COL.engine}>Engine</div>{/if}
-					{#if historyPrefs.shows('duration')}{@render sortHead(
-							'Duration',
-							'duration',
-							COL.duration
-						)}{/if}
-					{@render sortHead('Started', 'started', COL.started)}
-					<div class={COL.actions}></div>
+					{#if historyPrefs.shows('assets')}
+						<div class={COL.assets} role="columnheader">Assets</div>
+					{/if}
+					{#if historyPrefs.shows('change')}
+						<div class={COL.change} role="columnheader">Change</div>
+					{/if}
+					{#if !targetId && historyPrefs.shows('engine')}
+						<div class={COL.engine} role="columnheader">Engine</div>
+					{/if}
+					{#if historyPrefs.shows('duration')}
+						{@render sortHead('Duration', 'duration', COL.duration, true)}
+					{/if}
+					{@render sortHead('Started', 'started', COL.started, true)}
+					<div class={COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 				</div>
 				{#each visible as v (v.scan.id)}
 					<ScanRow
@@ -852,10 +861,16 @@
 						onChanged={changed}
 					/>
 					{#if !v.nested && earlier[v.scan.id] === 'loading'}
-						<div class="flex items-center gap-3 border-b py-2.5 pr-4 pl-10" aria-busy="true">
-							<Skeleton class="h-4 w-48" />
-							<Skeleton class="ml-auto h-4 w-24" />
-							<Skeleton class="h-4 w-16" />
+						<div role="row">
+							<div
+								class="flex items-center gap-3 border-b py-2.5 pr-4 pl-10"
+								role="cell"
+								aria-busy="true"
+							>
+								<Skeleton class="h-4 w-48" />
+								<Skeleton class="ml-auto h-4 w-24" />
+								<Skeleton class="h-4 w-16" />
+							</div>
 						</div>
 					{/if}
 				{/each}

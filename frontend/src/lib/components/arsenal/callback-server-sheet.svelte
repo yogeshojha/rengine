@@ -32,6 +32,7 @@
 		WAIT_STEPS
 	} from '$lib/config/oast';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { formatSeconds } from '$lib/utilities/format';
 	import type { OastRead, OastTest } from '$lib/types/oast';
 
 	interface Props {
@@ -97,12 +98,7 @@
 		}
 	});
 
-	function waitLabel(seconds: number): string {
-		if (seconds === 0) return 'No wait';
-		if (seconds < 60) return `${seconds} seconds`;
-		const minutes = seconds / 60;
-		return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
-	}
+	const waitLabel = (seconds: number) => (seconds === 0 ? 'No wait' : formatSeconds(seconds));
 
 	async function save() {
 		saving = true;

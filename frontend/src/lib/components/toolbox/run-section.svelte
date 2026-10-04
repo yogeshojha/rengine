@@ -10,6 +10,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { toolIcon } from '$lib/config/toolbox';
 	import { toolbox } from '$lib/stores/toolbox.svelte';
+	import { formatMilliseconds } from '$lib/utilities/format';
 	import type { ToolRun } from '$lib/types/toolbox';
 
 	interface Props {
@@ -26,13 +27,7 @@
 	const organization = $derived(
 		typeof run.raw?.organization === 'string' ? run.raw.organization : null
 	);
-	const took = $derived(
-		run.duration_ms === null
-			? ''
-			: run.duration_ms < 1000
-				? `${run.duration_ms} ms`
-				: `${(run.duration_ms / 1000).toFixed(1)} s`
-	);
+	const took = $derived(formatMilliseconds(run.duration_ms));
 
 	function pivotHref(): string {
 		const p = run.pivot;

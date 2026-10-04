@@ -17,7 +17,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { formatBytes } from '$lib/utilities/format';
+	import { formatBytes, formatMilliseconds } from '$lib/utilities/format';
 	import { externalHref } from '$lib/utilities/links';
 	import type { ThreatFeedRead, ThreatIntelStatus } from '$lib/types/threat-intel';
 
@@ -51,7 +51,7 @@
 	function transfer(feed: ThreatFeedRead): string {
 		if (!feed.bytes) return '';
 		const size = formatBytes(feed.bytes);
-		return feed.duration_ms ? `${size} in ${(feed.duration_ms / 1000).toFixed(1)}s` : size;
+		return feed.duration_ms ? `${size} in ${formatMilliseconds(feed.duration_ms)}` : size;
 	}
 
 	async function load(id: string | null) {

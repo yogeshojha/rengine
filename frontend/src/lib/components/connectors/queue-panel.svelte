@@ -1,7 +1,13 @@
+<script lang="ts" module>
+	export const QUEUE_PARAMS = ['state', 'host', 'q', 'page'] as const;
+</script>
+
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { goto, replaceState } from '$app/navigation';
+	import { page as route } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import RadarIcon from '@lucide/svelte/icons/radar';
@@ -55,7 +61,13 @@
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { plural, pluralWord } from '$lib/utilities/strings';
 	import { externalHref } from '$lib/utilities/links';
-	import type { Candidate, CandidateQuery, Connector, QueueView } from '$lib/types/connector';
+	import type {
+		Candidate,
+		CandidateQuery,
+		CandidateState,
+		Connector,
+		QueueView
+	} from '$lib/types/connector';
 
 	let {
 		connector,
@@ -87,14 +99,21 @@
 	const PAGE_SIZE = 50;
 	const PARAMS_SHOWN = 3;
 
-	let stateFilter = $state<string>('');
-	let host = $state<string>('');
-	let search = $state('');
-	let applied = $state('');
+	const landed = new URLSearchParams(browser ? location.search : route.url.search);
+	const landedState = landed.get('state') ?? '';
+	const landedPage = Number.parseInt(landed.get('page') ?? '', 10);
+
+	let stateFilter = $state<string>(
+		CANDIDATE_STATES.includes(landedState as CandidateState) ? landedState : ''
+	);
+	let host = $state<string>(landed.get('host') ?? '');
+	let search = $state(landed.get('q') ?? '');
+	let applied = $state(landed.get('q') ?? '');
 	let confirming = $state<{ action: 'scan' | 'ignore'; ids: string[] } | null>(null);
 	let openedId = $state<string | null>(null);
 	let now = $state(Date.now());
-	let pageNumber = $state(0);
+	let pageNumber = $state(landedPage > 1 ? landedPage - 1 : 0);
+	let shownView: QueueView | null = null;
 	let picked = new SvelteSet<string>();
 	const sending = new SvelteSet<string>();
 	let scanning = $state(false);
@@ -119,8 +138,33 @@
 	);
 
 	$effect(() => {
-		void view;
-		untrack(() => (pageNumber = 0));
+		const next = view;
+		untrack(() => {
+			if (shownView !== null && shownView !== next) pageNumber = 0;
+			shownView = next;
+		});
+	});
+
+	$effect(() => {
+		const values: [string, string][] = [
+			['state', stateFilter],
+			['host', host],
+			['q', search.trim()],
+			['page', pageNumber > 0 ? String(pageNumber + 1) : '']
+		];
+		void route.url;
+		if (!browser || !(view in VIEW_QUERY)) return;
+		untrack(() => {
+			const url = new URL(location.href);
+			for (const [key, value] of values) {
+				if (value) url.searchParams.set(key, value);
+				else url.searchParams.delete(key);
+			}
+			if (url.search === location.search) return;
+			try {
+				replaceState(url, route.state);
+			} catch {}
+		});
 	});
 
 	$effect(() => {
@@ -269,7 +313,7 @@
 		/>
 		<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
 	</div>
-	{#if hosts.length > 1}
+	{#if hosts.length > 1 || host}
 		<Select.Root
 			type="single"
 			value={host}

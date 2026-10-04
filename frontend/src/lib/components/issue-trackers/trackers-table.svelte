@@ -57,18 +57,18 @@
 
 <div class="@container/trackers w-full" role="table" aria-label="Issue trackers">
 	<div class={HEAD_ROW} role="row">
-		<div class={TRACKER_COL.tracker}>Tracker</div>
-		<div class={TRACKER_COL.destination}>Default destination</div>
-		<div class={TRACKER_COL.issues}>Issues</div>
-		<div class={TRACKER_COL.check}>Connection</div>
-		<div class={TRACKER_COL.actions}></div>
+		<div class={TRACKER_COL.tracker} role="columnheader">Tracker</div>
+		<div class={TRACKER_COL.destination} role="columnheader">Default destination</div>
+		<div class={TRACKER_COL.issues} role="columnheader">Issues</div>
+		<div class={TRACKER_COL.check} role="columnheader">Connection</div>
+		<div class={TRACKER_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 	</div>
 	{#each trackers as tracker (tracker.id)}
 		{@const spec = TRACKERS_BY_KIND[tracker.kind]}
 		{@const check = checkState(tracker.is_active, tracker.last_test_ok)}
 		{@const count = tally[tracker.id] ?? { total: 0, failed: 0 }}
 		<div class="{BODY_ROW} {tracker.is_active ? '' : 'text-muted-foreground'}" role="row">
-			<div class={TRACKER_COL.tracker}>
+			<div class={TRACKER_COL.tracker} role="cell">
 				{#if canAdmin}
 					<button
 						type="button"
@@ -84,7 +84,7 @@
 					{trackerLabel(tracker.kind)} · <span class="font-mono">{tracker.url}</span>
 				</div>
 			</div>
-			<div class="{TRACKER_COL.destination} text-sm leading-5 wrap-anywhere">
+			<div class="{TRACKER_COL.destination} text-sm leading-5 wrap-anywhere" role="cell">
 				{#if tracker.destination}
 					<span class="font-mono">{tracker.destination}</span>
 					{#if spec?.hasIssueType && tracker.issue_type}
@@ -94,7 +94,7 @@
 					<span class="text-muted-foreground">None</span>
 				{/if}
 			</div>
-			<div class="{TRACKER_COL.issues} text-sm leading-5 tabular-nums">
+			<div class="{TRACKER_COL.issues} text-sm leading-5 tabular-nums" role="cell">
 				{#if count.total}
 					<button
 						type="button"
@@ -110,7 +110,7 @@
 					<div class="text-2xs text-destructive">{count.failed.toLocaleString()} not filed</div>
 				{/if}
 			</div>
-			<div class="{TRACKER_COL.check} text-sm leading-5">
+			<div class="{TRACKER_COL.check} text-sm leading-5" role="cell">
 				<CheckStatus
 					{check}
 					label={CHECK_LABEL[check]}
@@ -120,7 +120,7 @@
 					<div class="text-2xs text-muted-foreground">{relativeTime(tracker.last_test_at)}</div>
 				{/if}
 			</div>
-			<div class={TRACKER_COL.actions}>
+			<div class={TRACKER_COL.actions} role="cell">
 				{#if canAdmin}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>

@@ -95,6 +95,30 @@ export function formatDay(isoDate: string, weekday = false): string {
 	});
 }
 
+const BARE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+const sameDay = (a: Date, b: Date) =>
+	a.getFullYear() === b.getFullYear() &&
+	a.getMonth() === b.getMonth() &&
+	a.getDate() === b.getDate();
+
+/** A local calendar day as `Today`, `Yesterday`, `Mon, Oct 3`, or `Oct 3, 2025` in an earlier year. */
+export function dayHeading(date: string | Date, now: Date = new Date()): string {
+	const at =
+		typeof date === 'string' ? new Date(BARE_DAY.test(date) ? `${date}T00:00:00` : date) : date;
+	if (Number.isNaN(at.getTime())) return '';
+	const yesterday = new Date(now);
+	yesterday.setDate(now.getDate() - 1);
+	if (sameDay(at, now)) return 'Today';
+	if (sameDay(at, yesterday)) return 'Yesterday';
+	return at.toLocaleDateString(
+		'en-US',
+		at.getFullYear() === now.getFullYear()
+			? { weekday: 'short', month: 'short', day: 'numeric' }
+			: { month: 'short', day: 'numeric', year: 'numeric' }
+	);
+}
+
 export function formatClock(date: string | Date, seconds = false): string {
 	return new Date(date).toLocaleTimeString('en-US', {
 		hour: 'numeric',

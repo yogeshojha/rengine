@@ -147,13 +147,12 @@
 			: 'py-2.5'}"
 		role="row"
 		tabindex="-1"
-		aria-selected={selected}
 		data-target-row-index={index}
 		onclick={onToggle}
 		onmouseenter={onFocus}
 	>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{TCOL.select} h-6" onclick={stopProp}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div role="cell" class="{TCOL.select} h-6" onclick={stopProp}>
 			<Checkbox
 				checked={selected}
 				onCheckedChange={onSelect}
@@ -164,7 +163,7 @@
 			/>
 		</div>
 
-		<div class="{TCOL.target} flex items-start gap-3">
+		<div role="cell" class="{TCOL.target} flex items-start gap-3">
 			<div class="min-w-0 flex-1">
 				<div class="flex min-w-0 items-center gap-1.5">
 					<a
@@ -277,7 +276,7 @@
 		</div>
 
 		{#if targetPrefs.fits('run')}
-			<div class="{TCOL.run} flex-col gap-1">
+			<div role="cell" class="{TCOL.run} flex-col gap-1">
 				{#if run}
 					<StatusCell scan={run} />
 					<Hint text={started ? formatDateTime(started) : null}>
@@ -297,7 +296,7 @@
 		{/if}
 
 		{#if targetPrefs.fits('findings')}
-			<div class="{TCOL.findings} h-6 items-center">
+			<div role="cell" class="{TCOL.findings} h-6 items-center">
 				{#if run}
 					<SeverityChips
 						{projectId}
@@ -315,7 +314,7 @@
 		{/if}
 
 		{#if targetPrefs.fits('assets')}
-			<div class="{TCOL.assets} h-6 items-center">
+			<div role="cell" class="{TCOL.assets} h-6 items-center">
 				{#if run}
 					<AssetsCell scan={run} />
 				{:else if !loaded}
@@ -325,7 +324,7 @@
 		{/if}
 
 		{#if targetPrefs.fits('change')}
-			<div class="{TCOL.change} h-6 items-center">
+			<div role="cell" class="{TCOL.change} h-6 items-center">
 				{#if run}
 					<ChangeCell {projectId} scan={run} onCompare={() => onCompare(run)} />
 				{:else if !loaded}
@@ -335,23 +334,21 @@
 		{/if}
 
 		{#if targetPrefs.fits('organizations')}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="{TCOL.organizations} h-6 items-center" onclick={stopProp}>
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div role="cell" class="{TCOL.organizations} h-6 items-center" onclick={stopProp}>
 				<TargetOrgPopover targetId={target.id} currentOrgs={target.organizations} />
 			</div>
 		{/if}
 
 		{#if targetPrefs.fits('tags')}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="{TCOL.tags} h-6 items-center" onclick={stopProp}>
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<div role="cell" class="{TCOL.tags} h-6 items-center" onclick={stopProp}>
 				<TargetTagPopover targetId={target.id} currentTags={target.tags} />
 			</div>
 		{/if}
 
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{TCOL.actions} items-center gap-0.5" onclick={stopProp}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div role="cell" class="{TCOL.actions} items-center gap-0.5" onclick={stopProp}>
 			<Hint text={scanning ? 'Scanning' : 'Scan'}>
 				{#snippet child(props)}
 					<Button
@@ -432,33 +429,42 @@
 	</div>
 
 	{#if expanded}
-		<div class="px-4 pt-1 pb-4 @xl/targets:pl-12">
-			{#if run}
-				<RunBrief {projectId} scan={run} {now} {onChanged} onHover={(s) => (highlight = s)} />
-			{:else}
-				<p class="rounded-md border bg-card px-3 py-4 text-sm text-muted-foreground">Not scanned</p>
-			{/if}
-			<div class="mt-3 flex flex-wrap items-center gap-2">
-				<Button size="sm" class="h-8 gap-1.5" href={ROUTES.target(target.id)}>
-					<ExternalLink class="size-3.5" /> Open target
-				</Button>
+		<div role="row" class="px-4 pt-1 pb-4 @xl/targets:pl-12">
+			<div role="cell">
 				{#if run}
-					<Button size="sm" variant="outline" class="h-8 gap-1.5" href={ROUTES.scan(run.id)}>
-						<ExternalLink class="size-3.5" /> Open latest run
-					</Button>
-					{#if !run.is_first_scan}
-						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={() => onCompare(run)}>
-							<GitCompare class="size-3.5" /> Compare with previous
-						</Button>
-					{/if}
+					<RunBrief {projectId} scan={run} {now} {onChanged} onHover={(s) => (highlight = s)} />
+				{:else}
+					<p class="rounded-md border bg-card px-3 py-4 text-sm text-muted-foreground">
+						Not scanned
+					</p>
 				{/if}
-				<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onScan}>
-					<Play class="size-3.5" />
-					{run ? 'Run again' : 'Scan'}
-				</Button>
-				<Button size="sm" variant="ghost" class="h-8 gap-1.5" onclick={onHistory}>
-					<History class="size-3.5" /> Scan history
-				</Button>
+				<div class="mt-3 flex flex-wrap items-center gap-2">
+					<Button size="sm" class="h-8 gap-1.5" href={ROUTES.target(target.id)}>
+						<ExternalLink class="size-3.5" /> Open target
+					</Button>
+					{#if run}
+						<Button size="sm" variant="outline" class="h-8 gap-1.5" href={ROUTES.scan(run.id)}>
+							<ExternalLink class="size-3.5" /> Open latest run
+						</Button>
+						{#if !run.is_first_scan}
+							<Button
+								size="sm"
+								variant="outline"
+								class="h-8 gap-1.5"
+								onclick={() => onCompare(run)}
+							>
+								<GitCompare class="size-3.5" /> Compare with previous
+							</Button>
+						{/if}
+					{/if}
+					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onScan}>
+						<Play class="size-3.5" />
+						{run ? 'Run again' : 'Scan'}
+					</Button>
+					<Button size="sm" variant="ghost" class="h-8 gap-1.5" onclick={onHistory}>
+						<History class="size-3.5" /> Scan history
+					</Button>
+				</div>
 			</div>
 		</div>
 	{/if}

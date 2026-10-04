@@ -9,7 +9,8 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
-	import { contextLabel, schemaArgs } from '$lib/utilities/mcp';
+	import { schemaArgs } from '$lib/utilities/mcp';
+	import { compactCount } from '$lib/utilities/numbers';
 	import {
 		MCP_CAPABILITIES,
 		MCP_CAPABILITY_LABELS,
@@ -99,7 +100,7 @@
 					{/if}
 				</div>
 				<Sheet.Description>
-					{tool.title} · {contextLabel(tool.context_tokens)} context tokens
+					{tool.title} · {compactCount(tool.context_tokens)} context tokens
 				</Sheet.Description>
 			</Sheet.Header>
 
@@ -202,7 +203,7 @@
 									{MCP_CAPABILITY_LABELS[group.cap]}
 								</span>
 								<span class="text-xs font-medium tracking-normal normal-case tabular-nums">
-									{group.rows.length} · {contextLabel(group.context)} context tokens{group.on
+									{group.rows.length} · {compactCount(group.context)} context tokens{group.on
 										? ''
 										: ' · off'}
 								</span>

@@ -1112,21 +1112,26 @@
 
 <svelte:window onkeydown={onKey} />
 
-{#snippet sortHead(label: string, key: string, cls: string)}
-	<button
-		type="button"
-		class="{cls} items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {sort.key ===
-		key
-			? 'text-foreground'
-			: ''}"
-		onclick={() => toggleSort(key)}
+{#snippet sortHead(label: string, key: string, cls: string, align = '')}
+	<div
+		role="columnheader"
+		class={cls}
+		aria-sort={sort.key === key ? (sort.dir === -1 ? 'descending' : 'ascending') : undefined}
 	>
-		{label}
-		{#if sort.key === key}
-			{#if sort.dir === -1}<ArrowDown class="size-3" />{:else}<ArrowUp class="size-3" />{/if}
-			<span class="sr-only">, sorted {sort.dir === -1 ? 'descending' : 'ascending'}</span>
-		{/if}
-	</button>
+		<button
+			type="button"
+			class="flex w-full min-w-0 items-center gap-1 text-left tracking-wide uppercase hover:text-foreground {align} {sort.key ===
+			key
+				? 'text-foreground'
+				: ''}"
+			onclick={() => toggleSort(key)}
+		>
+			{label}
+			{#if sort.key === key}
+				{#if sort.dir === -1}<ArrowDown class="size-3" />{:else}<ArrowUp class="size-3" />{/if}
+			{/if}
+		</button>
+	</div>
 {/snippet}
 
 <div class="mb-3">
@@ -1388,7 +1393,7 @@
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 					role="row"
 				>
-					<div class={FCOL.select}>
+					<div class={FCOL.select} role="columnheader">
 						<Checkbox
 							checked={selectAllChecked === true}
 							indeterminate={selectAllChecked === 'indeterminate'}
@@ -1398,13 +1403,13 @@
 					</div>
 					{@render sortHead('Severity', 'severity', `${FCOL.severity} flex`)}
 					{@render sortHead('Finding', 'name', `${FCOL.finding} flex`)}
-					{#if projectWide}<div class={FCOL.target}>Target</div>{/if}
+					{#if projectWide}<div class={FCOL.target} role="columnheader">Target</div>{/if}
 					{#if findingPrefs.shows('asset')}{@render sortHead(
 							FINDING_COLUMN_LABELS.asset,
 							'host',
 							FCOL.asset
 						)}{/if}
-					{#if findingPrefs.shows('related')}<div class={FCOL.related}>
+					{#if findingPrefs.shows('related')}<div class={FCOL.related} role="columnheader">
 							{FINDING_COLUMN_LABELS.related}
 						</div>{/if}
 					{#if findingPrefs.shows('risk')}{@render sortHead(
@@ -1412,22 +1417,25 @@
 							'exploit',
 							FCOL.risk
 						)}{/if}
-					{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence}>
+					{#if findingPrefs.shows('evidence')}<div class={FCOL.evidence} role="columnheader">
 							{FINDING_COLUMN_LABELS.evidence}
 						</div>{/if}
-					{#if findingPrefs.shows('review')}<div class={FCOL.review}>
+					{#if findingPrefs.shows('review')}<div class={FCOL.review} role="columnheader">
 							{FINDING_COLUMN_LABELS.review}
 						</div>{/if}
-					{#if showIssue}<div class={FCOL.issue}>{FINDING_COLUMN_LABELS.issue}</div>{/if}
+					{#if showIssue}<div class={FCOL.issue} role="columnheader">
+							{FINDING_COLUMN_LABELS.issue}
+						</div>{/if}
 					{#if findingPrefs.shows('seen')}{@render sortHead(
 							FINDING_COLUMN_LABELS.seen,
 							'seen',
-							FCOL.seen
+							FCOL.seen,
+							'justify-end'
 						)}{/if}
-					<div class={FCOL.actions}></div>
+					<div class={FCOL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 				</div>
 			</div>
-			<div class="transition-opacity {loading ? 'opacity-60' : ''}">
+			<div class="transition-opacity {loading ? 'opacity-60' : ''}" role="rowgroup">
 				{#each items as v, i (v.id)}
 					<FindingRow
 						{v}

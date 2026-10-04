@@ -7,7 +7,10 @@ import {
 	type McpToken
 } from '$lib/types/mcp';
 import { formatClock, MS_PER_DAY } from '$lib/utilities/dates';
+import { formatMilliseconds } from '$lib/utilities/format';
 import { safeHref } from '$lib/utilities/links';
+
+const HOUR_MS = 3_600_000;
 
 export const MCP_POLL_MS = 10_000;
 export const CONNECT_POLL_MS = 2_000;
@@ -108,34 +111,11 @@ export function groupBursts(calls: McpCall[], gapMs = BURST_GAP_MS): CallBurst[]
 	return out.sort((a, b) => b.ended.localeCompare(a.ended));
 }
 
-export function durationLabel(ms: number): string {
-	if (ms < 1000) return `${ms} ms`;
-	if (ms < 60_000) return `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`;
-	return `${Math.round(ms / 60_000)} min`;
-}
-
-export function spanLabel(ms: number): string {
-	if (ms < 60_000) return `${Math.max(1, Math.round(ms / 1000))} s`;
-	if (ms < 3_600_000) return `${Math.round(ms / 60_000)} min`;
-	return `${(ms / 3_600_000).toFixed(1)} h`;
-}
+export const spanLabel = (ms: number) => formatMilliseconds(Math.max(1000, ms));
 
 export const timeOfDay = (iso: string) => formatClock(iso);
 
 export const timeWithSeconds = (iso: string) => formatClock(iso, true);
-
-export function dayLabel(iso: string, now = new Date()): string {
-	const d = new Date(iso);
-	const today = now.toDateString();
-	const yesterday = new Date(now.getTime() - MS_PER_DAY).toDateString();
-	if (d.toDateString() === today) return 'Today';
-	if (d.toDateString() === yesterday) return 'Yesterday';
-	return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-export function contextLabel(tokens: number): string {
-	return tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : String(tokens);
-}
 
 export type ExpiryTone = 'none' | 'soon' | 'expired';
 
@@ -151,7 +131,8 @@ export function expiryLabel(token: McpToken): string {
 	const diff = new Date(token.expires_at).getTime() - Date.now();
 	if (diff <= 0) return 'Expired';
 	const days = Math.floor(diff / MS_PER_DAY);
-	if (days < 1) return `In ${Math.max(1, Math.floor(diff / 3_600_000))} h`;
+	const hours = Math.max(1, Math.floor(diff / HOUR_MS));
+	if (days < 1) return `In ${formatMilliseconds(hours * HOUR_MS)}`;
 	if (days <= EXPIRY_WARN_DAYS) return `In ${days} day${days === 1 ? '' : 's'}`;
 	return new Date(token.expires_at).toLocaleDateString('en-US', {
 		month: 'short',

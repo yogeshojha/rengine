@@ -12,7 +12,8 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { COMPARABILITY, type RunSide, type ScanComparison } from '$lib/types/compare';
 	import { formatDateTime } from '$lib/utilities/dates';
-	import { SCAN_STATUS_LABEL, formatSeconds } from '$lib/utilities/scan-status';
+	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import type { ScanStatus } from '$lib/types/scan';
 
 	interface Props {

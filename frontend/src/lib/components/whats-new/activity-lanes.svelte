@@ -8,6 +8,7 @@
 	} from '$lib/config/whats-new';
 	import { Severity, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import type { NewDay } from '$lib/types/whats-new';
+	import { dayHeading, formatDay } from '$lib/utilities/dates';
 
 	interface Props {
 		days: NewDay[];
@@ -59,7 +60,6 @@
 	let dragging = $state(false);
 
 	const cx = (i: number) => cw * (i + 0.5);
-	const today = () => new Date().toLocaleDateString('en-CA');
 
 	function position(iso: string | null): number | null {
 		if (!iso || !shown.length) return null;
@@ -117,14 +117,6 @@
 		const b = shown[hi].date;
 		if (lo === hi && from === a && !to) onPick(null, null);
 		else onPick(a, lo === hi ? null : b);
-	}
-	function label(date: string, long = false): string {
-		if (date === today()) return 'Today';
-		return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', {
-			...(long ? { weekday: 'short' } : {}),
-			month: 'short',
-			day: 'numeric'
-		});
 	}
 	let ticks = $derived(
 		shown
@@ -296,7 +288,7 @@
 						y={lanes.length * LANE + 14}
 						text-anchor={i === shown.length - 1 ? 'end' : 'middle'}
 						class="text-2xs"
-						style="fill: var(--muted-foreground)">{label(d.date)}</text
+						style="fill: var(--muted-foreground)">{formatDay(d.date)}</text
 					>
 				{/each}
 			</svg>
@@ -306,7 +298,7 @@
 					class="pointer-events-none absolute z-20 w-[11.75rem] rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md"
 					style="left: {tipLeft}px; top: {lanes.length * LANE + 6}px"
 				>
-					<div class="mb-1 font-medium">{label(hovered.date, true)}</div>
+					<div class="mb-1 font-medium">{dayHeading(hovered.date)}</div>
 					{#each tipRows as row (row.key)}
 						<div class="flex items-center justify-between gap-2 py-0.5">
 							<span class="flex items-center gap-1.5 text-muted-foreground">

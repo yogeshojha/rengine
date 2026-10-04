@@ -27,6 +27,7 @@
 	import { settingsActions } from '$lib/stores/settings-actions.svelte';
 	import { MASK } from '$lib/constants';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { formatMilliseconds } from '$lib/utilities/format';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import {
 		PROXY_SCHEMES,
@@ -175,7 +176,9 @@
 			if (result.success) {
 				toast.success(
 					result.message,
-					result.latency_ms != null ? { description: `${result.latency_ms} ms` } : undefined
+					result.latency_ms != null
+						? { description: formatMilliseconds(result.latency_ms) }
+						: undefined
 				);
 			} else {
 				toast.error(result.message);
@@ -255,16 +258,18 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<div class="@container/proxies w-full" role="table" aria-label="Proxies">
 			<div class={HEAD_ROW} role="row">
-				<div class={PROXY_COL.proxy}>Proxy</div>
-				<div class={PROXY_COL.endpoint}>Endpoint</div>
-				<div class={PROXY_COL.contexts}>Contexts</div>
-				<div class={PROXY_COL.status}>Status</div>
-				<div class={PROXY_COL.actions}></div>
+				<div class={PROXY_COL.proxy} role="columnheader">Proxy</div>
+				<div class={PROXY_COL.endpoint} role="columnheader">Endpoint</div>
+				<div class={PROXY_COL.contexts} role="columnheader">Contexts</div>
+				<div class={PROXY_COL.status} role="columnheader">Status</div>
+				<div class={PROXY_COL.actions} role="columnheader">
+					<span class="sr-only">Actions</span>
+				</div>
 			</div>
 			{#each proxies as proxy (proxy.id)}
 				{@const check = checkState(proxy.is_active, proxy.last_test_ok)}
 				<div class="{BODY_ROW} {proxy.is_active ? '' : 'text-muted-foreground'}" role="row">
-					<div class="{PROXY_COL.proxy} flex flex-col">
+					<div class="{PROXY_COL.proxy} flex flex-col" role="cell">
 						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
 							<span class="wrap-anywhere">{proxy.name}</span>
 							{#if proxy.is_default}
@@ -278,7 +283,7 @@
 									: 'Single endpoint')}
 						</span>
 					</div>
-					<div class="{PROXY_COL.endpoint} flex min-w-0 flex-col">
+					<div class="{PROXY_COL.endpoint} flex min-w-0 flex-col" role="cell">
 						<code class="truncate font-mono text-xs text-muted-foreground">
 							{proxy.endpoints[0]?.url_masked ?? ''}
 						</code>
@@ -288,10 +293,10 @@
 							</span>
 						{/if}
 					</div>
-					<div class="{PROXY_COL.contexts} text-sm tabular-nums">
+					<div class="{PROXY_COL.contexts} text-sm tabular-nums" role="cell">
 						{proxy.contexts || '—'}
 					</div>
-					<div class="{PROXY_COL.status} flex flex-col">
+					<div class="{PROXY_COL.status} flex flex-col" role="cell">
 						<CheckStatus
 							{check}
 							label={STATUS_LABEL[check]}
@@ -306,7 +311,7 @@
 							</span>
 						{/if}
 					</div>
-					<div class={PROXY_COL.actions}>
+					<div class={PROXY_COL.actions} role="cell">
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger>
 								{#snippet child({ props })}

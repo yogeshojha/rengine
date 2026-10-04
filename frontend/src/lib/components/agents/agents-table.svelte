@@ -48,13 +48,13 @@
 		class="flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 		role="row"
 	>
-		<div class={AGENT_COL.agent}>Agent</div>
-		<div class={AGENT_COL.access}>Access</div>
-		<div class={AGENT_COL.scope}>Scope</div>
-		<div class={AGENT_COL.last}>Last call</div>
-		<div class={AGENT_COL.expires}>Expires</div>
-		<div class={AGENT_COL.issuer}>Issued by</div>
-		<div class={AGENT_COL.actions}></div>
+		<div class={AGENT_COL.agent} role="columnheader">Agent</div>
+		<div class={AGENT_COL.access} role="columnheader">Access</div>
+		<div class={AGENT_COL.scope} role="columnheader">Scope</div>
+		<div class={AGENT_COL.last} role="columnheader">Last call</div>
+		<div class={AGENT_COL.expires} role="columnheader">Expires</div>
+		<div class={AGENT_COL.issuer} role="columnheader">Issued by</div>
+		<div class={AGENT_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 	</div>
 	{#each rows as token (token.id)}
 		{@const usable = tokenUsable(token)}
@@ -68,7 +68,7 @@
 				: 'text-muted-foreground'}"
 			role="row"
 		>
-			<div class="{AGENT_COL.agent} flex items-start gap-2.5">
+			<div class="{AGENT_COL.agent} flex items-start gap-2.5" role="cell">
 				<span class="flex h-5 shrink-0 items-center">
 					<span class="size-2 rounded-full {AGENT_PRESENCE_DOT[presence]}" aria-hidden="true"
 					></span>
@@ -93,7 +93,7 @@
 					</div>
 				</div>
 			</div>
-			<div class={AGENT_COL.access}>
+			<div class={AGENT_COL.access} role="cell">
 				{#if usable}
 					<div class="flex flex-col gap-1">
 						<RungMeter granted={token.capabilities} class="w-20" />
@@ -107,13 +107,13 @@
 					</div>
 				{/if}
 			</div>
-			<div class={AGENT_COL.scope}>
+			<div class={AGENT_COL.scope} role="cell">
 				<div class="text-sm leading-5 wrap-anywhere">{token.project_name ?? 'Every project'}</div>
 				<div class="text-2xs text-muted-foreground tabular-nums">
 					{token.targets.toLocaleString()} target{token.targets === 1 ? '' : 's'}
 				</div>
 			</div>
-			<div class="{AGENT_COL.last} text-sm leading-5">
+			<div class="{AGENT_COL.last} text-sm leading-5" role="cell">
 				{#if token.last_used_at}
 					{relativeTime(token.last_used_at)}
 					<div class="text-2xs text-muted-foreground tabular-nums">
@@ -129,6 +129,7 @@
 					: tone === 'expired'
 						? 'text-destructive'
 						: ''}"
+				role="cell"
 			>
 				{#if token.revoked}
 					<span class="text-muted-foreground">Revoked</span>
@@ -136,7 +137,7 @@
 					{expiryLabel(token)}
 				{/if}
 			</div>
-			<div class="{AGENT_COL.issuer} text-sm leading-5 wrap-anywhere">
+			<div class="{AGENT_COL.issuer} text-sm leading-5 wrap-anywhere" role="cell">
 				{#if token.issuer_valid}
 					{token.issuer}
 				{:else}
@@ -147,7 +148,7 @@
 					</Hint>
 				{/if}
 			</div>
-			<div class={AGENT_COL.actions}>
+			<div class={AGENT_COL.actions} role="cell">
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}

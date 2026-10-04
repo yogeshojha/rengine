@@ -2,7 +2,7 @@
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { durationLabel } from '$lib/utilities/mcp';
+	import { formatMilliseconds } from '$lib/utilities/format';
 	import {
 		chatName,
 		commandFor,
@@ -54,26 +54,29 @@
 			class="flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 			role="row"
 		>
-			<div class={CALL_COL.time}>Time</div>
-			<div class={CALL_COL.chat}>Chat</div>
-			<div class={CALL_COL.command}>Command</div>
-			<div class={CALL_COL.result}>Result</div>
+			<div class={CALL_COL.time} role="columnheader">Time</div>
+			<div class={CALL_COL.chat} role="columnheader">Chat</div>
+			<div class={CALL_COL.command} role="columnheader">Command</div>
+			<div class={CALL_COL.result} role="columnheader">Result</div>
 		</div>
 		{#each rows as call, i (call.at + call.tool + i)}
 			<div
 				class="flex items-center gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0"
 				role="row"
 			>
-				<div class="{CALL_COL.time} text-xs leading-5 text-muted-foreground tabular-nums">
+				<div
+					class="{CALL_COL.time} text-xs leading-5 text-muted-foreground tabular-nums"
+					role="cell"
+				>
 					{relativeTime(call.at)}
 				</div>
-				<div class="{CALL_COL.chat} text-sm leading-5 wrap-anywhere">
+				<div class="{CALL_COL.chat} text-sm leading-5 wrap-anywhere" role="cell">
 					{chatName(call.token_name)}
 				</div>
-				<div class="{CALL_COL.command} font-mono text-xs leading-5 wrap-anywhere">
+				<div class="{CALL_COL.command} font-mono text-xs leading-5 wrap-anywhere" role="cell">
 					{call.command ?? `/${commandFor(call.tool, commands)}`}
 				</div>
-				<div class="{CALL_COL.result} items-start gap-2 text-xs leading-5">
+				<div class="{CALL_COL.result} items-start gap-2 text-xs leading-5" role="cell">
 					<span class="flex h-5 shrink-0 items-center">
 						<span
 							class="size-1.5 rounded-full {call.ok ? 'bg-success' : 'bg-destructive'}"
@@ -81,7 +84,8 @@
 						></span>
 					</span>
 					{#if call.ok}
-						<span class="text-muted-foreground tabular-nums">{durationLabel(call.duration_ms)}</span
+						<span class="text-muted-foreground tabular-nums"
+							>{formatMilliseconds(call.duration_ms)}</span
 						>
 					{:else}
 						<span class="text-destructive wrap-anywhere">{call.detail ?? 'Failed'}</span>

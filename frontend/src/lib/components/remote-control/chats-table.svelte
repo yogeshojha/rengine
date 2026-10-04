@@ -57,12 +57,12 @@
 			class="flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 			role="row"
 		>
-			<div class={CHAT_COL.chat}>Chat</div>
-			<div class={CHAT_COL.account}>Account</div>
-			<div class={CHAT_COL.project}>Project</div>
-			<div class={CHAT_COL.capabilities}>Capabilities</div>
-			<div class={CHAT_COL.last}>Last command</div>
-			<div class={CHAT_COL.actions}></div>
+			<div class={CHAT_COL.chat} role="columnheader">Chat</div>
+			<div class={CHAT_COL.account} role="columnheader">Account</div>
+			<div class={CHAT_COL.project} role="columnheader">Project</div>
+			<div class={CHAT_COL.capabilities} role="columnheader">Capabilities</div>
+			<div class={CHAT_COL.last} role="columnheader">Last command</div>
+			<div class={CHAT_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 		</div>
 		{#each chats as chat (chat.id)}
 			{@const usable = chatUsable(chat)}
@@ -72,7 +72,7 @@
 					: 'text-muted-foreground'}"
 				role="row"
 			>
-				<div class={CHAT_COL.chat}>
+				<div class={CHAT_COL.chat} role="cell">
 					<div class="text-sm leading-5 font-medium wrap-anywhere">
 						{chat.display || chat.external_id}
 					</div>
@@ -80,19 +80,19 @@
 						<div class="text-2xs text-muted-foreground">{CHAT_STATE_LABELS[chat.state]}</div>
 					{/if}
 				</div>
-				<div class={CHAT_COL.account}>
+				<div class={CHAT_COL.account} role="cell">
 					<div class="text-sm leading-5 wrap-anywhere">{chat.username ?? 'No account'}</div>
 					{#if usable && chat.username && !chat.totp_enabled}
 						<div class="text-2xs text-warning">No authenticator</div>
 					{/if}
 				</div>
-				<div class="{CHAT_COL.project} text-sm leading-5 wrap-anywhere">
+				<div class="{CHAT_COL.project} text-sm leading-5 wrap-anywhere" role="cell">
 					{chat.project_name ?? 'None'}
 				</div>
-				<div class={CHAT_COL.capabilities}>
+				<div class={CHAT_COL.capabilities} role="cell">
 					{#if usable}<CapabilityLadder {chat} />{/if}
 				</div>
-				<div class={CHAT_COL.last}>
+				<div class={CHAT_COL.last} role="cell">
 					{#if chat.last_command && chat.last_seen_at}
 						<div class="font-mono text-xs leading-5 wrap-anywhere">/{chat.last_command}</div>
 						<div class="text-2xs text-muted-foreground">{relativeTime(chat.last_seen_at)}</div>
@@ -100,7 +100,7 @@
 						<span class="text-sm leading-5 text-muted-foreground">Unused</span>
 					{/if}
 				</div>
-				<div class={CHAT_COL.actions}>
+				<div class={CHAT_COL.actions} role="cell">
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}

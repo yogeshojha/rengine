@@ -16,7 +16,7 @@
 	import { surfaceSpec } from '$lib/config/surface';
 	import { ROUTES } from '$lib/config/routes';
 	import { screenshotUrl } from '$lib/utilities/media';
-	import { durationText } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { formatDateTime } from '$lib/utilities/dates';
 	import { cn } from '$lib/utils';
 	import { CHANGE_VERB, type ChangeRow, type RunSide } from '$lib/types/compare';
@@ -60,7 +60,7 @@
 		<span class="truncate text-2xs text-muted-foreground tabular-nums">
 			{[
 				side.started_at ? formatDateTime(side.started_at) : '',
-				side.duration_seconds != null ? durationText(side.duration_seconds) : ''
+				side.duration_seconds != null ? formatSeconds(side.duration_seconds) : ''
 			]
 				.filter(Boolean)
 				.join(' · ')}

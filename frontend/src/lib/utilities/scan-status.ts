@@ -17,6 +17,7 @@ import type {
 import type { BadgeVariant } from '$lib/components/ui/badge';
 import type { IconComponent } from '$lib/config/icons';
 import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
+import { formatSeconds } from '$lib/utilities/format';
 
 export const SCAN_STATUS_LABEL: Record<ScanStatus, string> = {
 	pending: 'Queued',
@@ -178,32 +179,9 @@ export function elapsedSeconds(scan: ScanRead, now: number = Date.now()): number
 	return Math.max(0, ran);
 }
 
-export function formatSeconds(total: number): string {
-	const t = Math.round(total);
-	if (t < 60) return `${t}s`;
-	const minutes = Math.floor(t / 60);
-	if (minutes < 60) {
-		const s = t % 60;
-		return s ? `${minutes}m ${s}s` : `${minutes}m`;
-	}
-	const h = Math.floor(minutes / 60);
-	const m = minutes % 60;
-	return m ? `${h}h ${m}m` : `${h}h`;
-}
-
 export function elapsedText(total: number): string {
 	const minutes = Math.floor(total / 60);
-	if (minutes < 1) return '<1m';
-	if (minutes < 60) return `${minutes}m`;
-	const h = Math.floor(minutes / 60);
-	const m = minutes % 60;
-	return m ? `${h}h ${m}m` : `${h}h`;
-}
-
-export function durationText(seconds: number | null, fractional = false): string {
-	if (seconds == null) return '';
-	if (seconds < 60) return fractional ? `${seconds.toFixed(1)}s` : `${Math.round(seconds)}s`;
-	return formatSeconds(seconds);
+	return minutes < 1 ? '<1m' : formatSeconds(minutes * 60);
 }
 
 export function durationLabel(scan: ScanRead, now: number = Date.now()): string {

@@ -2,22 +2,25 @@
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { goto, replaceState } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { targetsApi } from '$lib/api/targets';
 	import { plural } from '$lib/utilities/strings';
+	import { SCAN_STATUS_TABS } from '$lib/utilities/scan-status';
 
 	import { projectsStore } from '$lib/stores/projects.svelte';
-	import { scansStore } from '$lib/stores/scans.svelte';
+	import { scansStore, type ScanView } from '$lib/stores/scans.svelte';
 	import ScanHistoryTable from '$lib/components/scans/scan-history-table.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { untrack } from 'svelte';
 	import {
+		SCAN_SORT_KEYS,
 		SCAN_STATUSES,
 		SCAN_TIME_RANGES,
 		type ScanRead,
-		type ScanStatus,
-		type ScanTimeRange
+		type ScanSortKey,
+		type ScanStatus
 	} from '$lib/types/scan';
 
 	let showLaunch = $state(false);
@@ -63,19 +66,62 @@
 		});
 	});
 
-	$effect(() => {
-		const status = page.url.searchParams.get('status');
-		const range = page.url.searchParams.get('range');
-		const ready =
-			Boolean(scansStore.filters.projectId) &&
-			scansStore.filters.projectId === projectsStore.activeProject?.id;
-		if (!ready) return;
+	function parseView(params: URLSearchParams): ScanView {
+		const n = (v: string | null) => {
+			const parsed = parseInt(v ?? '', 10);
+			return Number.isFinite(parsed) ? parsed : undefined;
+		};
+		const date = (key: string) => {
+			const v = params.get(key);
+			return v && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null;
+		};
+		const dated = params.has('from') || params.has('to');
+		const sort = params.get('sort') as ScanSortKey | null;
+		const dir = params.get('dir');
+		const size = n(params.get('size'));
+		const pageNo = n(params.get('page'));
+		return {
+			query: params.get('q') ?? undefined,
+			statuses: params.has('status')
+				? params
+						.getAll('status')
+						.flatMap(
+							(s) =>
+								SCAN_STATUS_TABS.find((t) => t.key === s)?.statuses ??
+								(SCAN_STATUSES.includes(s as ScanStatus) ? [s as ScanStatus] : [])
+						)
+				: undefined,
+			range: dated ? undefined : SCAN_TIME_RANGES.find((r) => r.key === params.get('range'))?.key,
+			startedFrom: dated ? date('from') : undefined,
+			startedTo: dated ? date('to') : undefined,
+			latest: params.has('view') ? params.get('view') === 'latest' : undefined,
+			sortKey: sort && SCAN_SORT_KEYS.includes(sort) ? sort : undefined,
+			sortDir: dir === 'asc' || dir === 'desc' ? dir : undefined,
+			page: pageNo !== undefined && pageNo >= 1 ? pageNo : undefined,
+			pageSize: size !== undefined && size >= 1 && size <= 100 ? size : undefined
+		};
+	}
+
+	let appliedHref = $state<string | null>(null);
+
+	$effect.pre(() => {
+		const pid = projectsStore.activeProject?.id;
+		const href = page.url.href;
+		if (!pid || !projectsStore.hasFetched) return;
 		untrack(() => {
-			if (status && SCAN_STATUSES.includes(status as ScanStatus))
-				scansStore.setStatuses([status as ScanStatus]);
-			if (range && SCAN_TIME_RANGES.some((r) => r.key === range))
-				scansStore.setTimeRange(range as ScanTimeRange);
+			if (href === appliedHref) return;
+			const params = browser ? new URLSearchParams(location.search) : page.url.searchParams;
+			scansStore.init(pid, targetFilters, parseView(params));
+			appliedHref = href;
 		});
+	});
+
+	$effect(() => {
+		const qs = scansStore.toQueryString();
+		if (!browser || appliedHref !== page.url.href) return;
+		try {
+			replaceState(qs ? `?${qs}` : location.pathname, {});
+		} catch {}
 	});
 
 	function newScan() {

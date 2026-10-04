@@ -7,7 +7,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import PanelHead from '$lib/components/panel-head.svelte';
-	import { durationText, isLiveStatus, SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
+	import { isLiveStatus, SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { ROUTES } from '$lib/config/routes';
 	import type { ScanRead } from '$lib/types/scan';
 	import { formatDateTime } from '$lib/utilities/dates';
@@ -43,7 +44,9 @@
 	{@const added =
 		s.status === 'completed' && s.is_first_scan !== true ? (s.new_subdomains ?? 0) : 0}
 	{@const dur =
-		s.duration_seconds != null && !isLiveStatus(s.status) ? durationText(s.duration_seconds) : null}
+		s.duration_seconds != null && !isLiveStatus(s.status)
+			? formatSeconds(s.duration_seconds)
+			: null}
 	{@const state = s.status === 'completed' ? null : SCAN_STATUS_LABEL[s.status]}
 	<span class="flex min-w-0 flex-col">
 		<span class="flex items-center gap-1.5">

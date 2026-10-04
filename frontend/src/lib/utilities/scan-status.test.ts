@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	activitySummary,
 	scanCountPills,
-	formatSeconds,
+	durationLabel,
 	elapsedSeconds,
 	elapsedText,
 	scanStatusTabCount
@@ -58,13 +58,19 @@ describe('elapsedText', () => {
 	});
 });
 
-describe('formatSeconds', () => {
-	it('drops the empty part', () => {
-		expect(formatSeconds(45)).toBe('45s');
-		expect(formatSeconds(120)).toBe('2m');
-		expect(formatSeconds(125)).toBe('2m 5s');
-		expect(formatSeconds(7200)).toBe('2h');
-		expect(formatSeconds(7260)).toBe('2h 1m');
+describe('durationLabel', () => {
+	it('reads a settled run in the shared duration form', () => {
+		expect(durationLabel(scan({ duration_seconds: 192 }))).toBe('3m 12s');
+		expect(durationLabel(scan({ duration_seconds: 3840 }))).toBe('1h 4m');
+		expect(durationLabel(scan({ duration_seconds: 0.85 }))).toBe('850ms');
+		expect(durationLabel(scan({ duration_seconds: null }))).toBe('—');
+	});
+
+	it('reads a live run by its elapsed minutes', () => {
+		const now = Date.parse('2026-09-16T10:10:00Z');
+		expect(
+			durationLabel(scan({ status: 'running', started_at: '2026-09-16T10:00:00Z' }), now)
+		).toBe('10m');
 	});
 });
 

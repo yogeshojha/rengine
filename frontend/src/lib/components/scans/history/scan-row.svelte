@@ -84,9 +84,13 @@
 
 <div
 	id="scan-row-{scan.id}"
+	role="none"
 	class="group relative border-b border-border/60 transition-colors
 		{expanded ? 'bg-muted/25' : ''} {selected ? 'bg-primary/5' : ''}"
 >
+	{#if nested}
+		<span class="absolute top-0 bottom-0 left-6 w-px bg-border" aria-hidden="true"></span>
+	{/if}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="flex cursor-pointer items-center gap-3 px-4 {compact
@@ -94,14 +98,10 @@
 			: 'py-2.5'} hover:bg-muted/30 {focused ? 'bg-muted/40' : ''} {nested ? 'pl-10' : ''}"
 		role="row"
 		tabindex="-1"
-		aria-selected={selected}
 		onclick={onOpen}
 	>
-		{#if nested}
-			<span class="absolute top-0 bottom-0 left-6 w-px bg-border" aria-hidden="true"></span>
-		{/if}
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{COL.select} flex items-center" onclick={(e) => e.stopPropagation()}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div class="{COL.select} flex items-center" role="cell" onclick={(e) => e.stopPropagation()}>
 			<Checkbox
 				checked={selected}
 				onCheckedChange={onSelect}
@@ -111,11 +111,11 @@
 					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
 			/>
 		</div>
-		<div class={COL.target}>
+		<div class={COL.target} role="cell">
 			<TargetCell {scan} {showTarget} {trend} {now} {earlierOpen} {onEarlier} {onJump} />
 		</div>
-		<div class={COL.status}><StatusCell {scan} /></div>
-		<div class={COL.findings}>
+		<div class={COL.status} role="cell"><StatusCell {scan} /></div>
+		<div class={COL.findings} role="cell">
 			<SeverityChips
 				{projectId}
 				scanId={scan.id}
@@ -125,13 +125,13 @@
 			/>
 		</div>
 		{#if historyPrefs.shows('assets')}
-			<div class={COL.assets}><AssetsCell {scan} /></div>
+			<div class={COL.assets} role="cell"><AssetsCell {scan} /></div>
 		{/if}
 		{#if historyPrefs.shows('change')}
-			<div class={COL.change}><ChangeCell {projectId} {scan} {onCompare} /></div>
+			<div class={COL.change} role="cell"><ChangeCell {projectId} {scan} {onCompare} /></div>
 		{/if}
-		{#if historyPrefs.shows('engine')}
-			<div class={COL.engine}>
+		{#if showTarget && historyPrefs.shows('engine')}
+			<div class={COL.engine} role="cell">
 				<div class="truncate text-sm">{scan.engine_name}</div>
 				<div class="text-2xs text-muted-foreground">
 					{INTENSITY_LABELS[scan.execution_config.intensity as Intensity] ??
@@ -144,19 +144,24 @@
 				class="{COL.duration} font-mono text-xs tabular-nums {live
 					? 'text-info'
 					: 'text-muted-foreground'}"
+				role="cell"
 			>
 				{durationLabel(scan, now)}
 			</div>
 		{/if}
-		<div class="{COL.started} text-xs text-muted-foreground tabular-nums">
+		<div class="{COL.started} text-xs text-muted-foreground tabular-nums" role="cell">
 			<Hint text={formatDateTime(started)}>
 				{#snippet child(props)}
 					<span {...props}>{relativeTime(started)}</span>
 				{/snippet}
 			</Hint>
 		</div>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{COL.actions} items-center gap-0.5" onclick={(e) => e.stopPropagation()}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div
+			class="{COL.actions} items-center gap-0.5"
+			role="cell"
+			onclick={(e) => e.stopPropagation()}
+		>
 			<Button
 				variant="ghost"
 				size="icon"
@@ -202,39 +207,47 @@
 		</div>
 	</div>
 	{#if expanded}
-		<div class="px-4 pt-1 pb-4 {nested ? 'pl-10' : 'sm:pl-13'}">
-			<RunBrief {projectId} {scan} {now} {onChanged} onHover={(s) => (highlight = s)} />
-			<div class="mt-3 flex flex-wrap items-center gap-2">
-				<Button size="sm" class="h-8 gap-1.5" href={ROUTES.scan(scan.id)}>
-					<ExternalLink class="size-3.5" /> Open results
-				</Button>
-				{#if !scan.is_first_scan}
-					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onCompare}>
-						<GitCompare class="size-3.5" /> Compare with previous
+		<div class="px-4 pt-1 pb-4 {nested ? 'pl-10' : 'sm:pl-13'}" role="row">
+			<div role="cell">
+				<RunBrief {projectId} {scan} {now} {onChanged} onHover={(s) => (highlight = s)} />
+				<div class="mt-3 flex flex-wrap items-center gap-2">
+					<Button size="sm" class="h-8 gap-1.5" href={ROUTES.scan(scan.id)}>
+						<ExternalLink class="size-3.5" /> Open results
 					</Button>
-				{/if}
-				{#if scan.status === 'running'}
-					<Hint text="Running stages restart on resume.">
-						{#snippet child(props)}
-							<Button {...props} size="sm" variant="outline" class="h-8 gap-1.5" onclick={onPause}>
-								<Pause class="size-3.5" /> Pause
-							</Button>
-						{/snippet}
-					</Hint>
-				{:else if scan.status === 'paused'}
-					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onResume}>
-						<Play class="size-3.5" /> Resume
-					</Button>
-				{/if}
-				{#if open}
-					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onCancel}>
-						<Ban class="size-3.5" /> Cancel
-					</Button>
-				{:else if onRescan}
-					<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onRescan}>
-						<Play class="size-3.5" /> Run again
-					</Button>
-				{/if}
+					{#if !scan.is_first_scan}
+						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onCompare}>
+							<GitCompare class="size-3.5" /> Compare with previous
+						</Button>
+					{/if}
+					{#if scan.status === 'running'}
+						<Hint text="Running stages restart on resume.">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									size="sm"
+									variant="outline"
+									class="h-8 gap-1.5"
+									onclick={onPause}
+								>
+									<Pause class="size-3.5" /> Pause
+								</Button>
+							{/snippet}
+						</Hint>
+					{:else if scan.status === 'paused'}
+						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onResume}>
+							<Play class="size-3.5" /> Resume
+						</Button>
+					{/if}
+					{#if open}
+						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onCancel}>
+							<Ban class="size-3.5" /> Cancel
+						</Button>
+					{:else if onRescan}
+						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onRescan}>
+							<Play class="size-3.5" /> Run again
+						</Button>
+					{/if}
+				</div>
 			</div>
 		</div>
 	{/if}

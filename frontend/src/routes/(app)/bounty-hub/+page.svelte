@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import NewspaperIcon from '@lucide/svelte/icons/newspaper';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { toast } from 'svelte-sonner';
+	import { browser } from '$app/environment';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
@@ -32,6 +34,7 @@
 	import {
 		DEFAULT_PROGRAM_SORT,
 		PROGRAM_PAGE_SIZE,
+		PROGRAM_SORTS,
 		REFRESH_POLLS,
 		REFRESH_POLL_MS,
 		SYNC_INTERVAL_LABELS
@@ -46,27 +49,83 @@
 	} from '$lib/config/routes';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import type {
-		BountyProgram,
-		BountyProgramFilters,
-		BountyStatus
+	import {
+		ProgramSource,
+		ProgramState,
+		SubmissionState,
+		type BountyProgram,
+		type BountyProgramFilters,
+		type BountyStatus
 	} from '$lib/types/bounty-program';
+
+	const PAGE_SIZES = [PROGRAM_PAGE_SIZE, 50, 100];
+
+	const VIEW_PARAMS = [
+		'tab',
+		'q',
+		'platforms',
+		'sources',
+		'state',
+		'submission',
+		'bounty',
+		'bookmarked',
+		'joined',
+		'scope',
+		'sort',
+		'page',
+		'size'
+	];
+
+	function parseView(params: URLSearchParams) {
+		const oneOf = <T extends string>(key: string, values: readonly T[]) => {
+			const value = params.get(key);
+			return value && (values as readonly string[]).includes(value) ? (value as T) : null;
+		};
+		const bounty = params.get('bounty');
+		const requestedPage = parseInt(params.get('page') ?? '', 10);
+		const requestedSize = parseInt(params.get('size') ?? '', 10);
+		return {
+			tab: oneOf<BountyHubTab>('tab', BOUNTY_HUB_TABS),
+			filters: {
+				q: params.get('q') ?? undefined,
+				platforms: params.getAll('platforms'),
+				sources: params
+					.getAll('sources')
+					.filter((s) => (Object.values(ProgramSource) as string[]).includes(s)),
+				state: oneOf('state', Object.values(ProgramState)),
+				submission: oneOf('submission', Object.values(SubmissionState)),
+				bounty: bounty === 'true' ? true : bounty === 'false' ? false : null,
+				bookmarked: params.get('bookmarked') === 'true' ? true : null,
+				joined: params.get('joined') === 'true' ? true : null,
+				scope: oneOf('scope', ['importable', 'none'] as const),
+				sort:
+					oneOf<string>(
+						'sort',
+						PROGRAM_SORTS.map((s) => s.value)
+					) ?? DEFAULT_PROGRAM_SORT
+			} satisfies BountyProgramFilters,
+			pageIndex: requestedPage > 1 ? requestedPage - 1 : 0,
+			pageSize: requestedSize >= 1 && requestedSize <= 100 ? requestedSize : PROGRAM_PAGE_SIZE
+		};
+	}
+
+	const arrival = parseView(page.url.searchParams);
 
 	let status = $state<BountyStatus | null>(null);
 	let statusError = $state<string | null>(null);
 	let programs = $state<BountyProgram[]>([]);
 	let programsError = $state<string | null>(null);
 	let total = $state(0);
-	let pageIndex = $state(0);
-	let pageSize = $state(PROGRAM_PAGE_SIZE);
+	let pageIndex = $state(arrival.pageIndex);
+	let pageSize = $state(arrival.pageSize);
 	let loading = $state(true);
 	let programsSeq = 0;
 	let syncing = $state(false);
 	let selected = $state<BountyProgram | null>(null);
 	let sheetOpen = $state(false);
-	let filters = $state<BountyProgramFilters>({ sort: DEFAULT_PROGRAM_SORT });
-	let tab = $state<BountyHubTab>('programs');
-	let tabChosen = $state(false);
+	let filters = $state<BountyProgramFilters>(arrival.filters);
+	let tab = $state<BountyHubTab>(arrival.tab ?? 'programs');
+	let tabChosen = $state(arrival.tab !== null);
 	let watchOpen = $state(false);
 	let selectedWatch = $state<Watch | null>(null);
 	let watchFilter = $state<WatchHostFilter>(WatchHostFilter.All);
@@ -95,6 +154,57 @@
 
 	const projectId = $derived(projectsStore.activeProject?.id);
 	const filterKey = $derived(JSON.stringify(filters));
+	const autoTab = $derived<BountyHubTab | null>(
+		projectId && watchesStore.fetchedProjectId === projectId
+			? watchesStore.watches.length > 0
+				? 'watching'
+				: 'programs'
+			: null
+	);
+	const listPath = page.url.pathname;
+
+	function viewParams(): URLSearchParams {
+		const params = new SvelteURLSearchParams();
+		if (tabChosen && tab !== autoTab) params.set('tab', tab);
+		const q = filters.q?.trim();
+		if (q) params.set('q', q);
+		for (const platform of filters.platforms ?? []) params.append('platforms', platform);
+		for (const source of filters.sources ?? []) params.append('sources', source);
+		if (filters.state) params.set('state', filters.state);
+		if (filters.submission) params.set('submission', filters.submission);
+		if (filters.bounty != null) params.set('bounty', String(filters.bounty));
+		if (filters.bookmarked) params.set('bookmarked', 'true');
+		if (filters.joined) params.set('joined', 'true');
+		if (filters.scope) params.set('scope', filters.scope);
+		if (filters.sort && filters.sort !== DEFAULT_PROGRAM_SORT) params.set('sort', filters.sort);
+		if (pageIndex > 0) params.set('page', String(pageIndex + 1));
+		if (pageSize !== PROGRAM_PAGE_SIZE) params.set('size', String(pageSize));
+		return params;
+	}
+
+	function withView(path: string): string {
+		const url = new URL(path, page.url.origin);
+		const own = new Set(url.searchParams.keys());
+		for (const [key, value] of viewParams()) if (!own.has(key)) url.searchParams.append(key, value);
+		return `${url.pathname}${url.search}`;
+	}
+
+	$effect(() => {
+		const view = viewParams().toString();
+		if (!browser) return;
+		untrack(() => {
+			if (location.pathname !== listPath) return;
+			const url = new URL(location.href);
+			for (const key of VIEW_PARAMS) url.searchParams.delete(key);
+			for (const [key, value] of new URLSearchParams(view)) url.searchParams.append(key, value);
+			if (url.search === location.search) return;
+			void goto(`${url.pathname}${url.search}`, {
+				replaceState: true,
+				noScroll: true,
+				keepFocus: true
+			});
+		});
+	});
 
 	async function loadStatus() {
 		try {
@@ -117,6 +227,11 @@
 		try {
 			const result = await bountyProgramsApi.list(f, index + 1, size, project);
 			if (seq !== programsSeq) return;
+			const last = Math.max(1, Math.ceil(result.total / size));
+			if (result.total > 0 && index + 1 > last) {
+				pageIndex = last - 1;
+				return;
+			}
 			programs = result.items;
 			total = result.total;
 			programsError = null;
@@ -133,6 +248,19 @@
 
 	$effect(() => {
 		void loadStatus();
+	});
+
+	let shownProject: string | undefined;
+	$effect(() => {
+		const id = projectId;
+		if (!id) return;
+		untrack(() => {
+			if (shownProject && shownProject !== id) {
+				filters = { sort: filters.sort };
+				pageIndex = 0;
+			}
+			shownProject = id;
+		});
 	});
 
 	$effect(() => {
@@ -161,7 +289,7 @@
 				void watchesStore.fetch(id).then(() => {
 					if (!tabChosen && watchesStore.watches.length > 0) tab = 'watching';
 				});
-			}
+			} else if (!tabChosen && watchesStore.watches.length > 0) tab = 'watching';
 			void watchesApi
 				.stream()
 				.then((st) => (stream = st))
@@ -191,7 +319,7 @@
 			.then((w) => openWatch(w))
 			.catch(() => {
 				toast.error('Watch not found');
-				void goto(ROUTES.bountyHubTab('watching'), {
+				void goto(withView(ROUTES.bountyHubTab('watching')), {
 					replaceState: true,
 					noScroll: true,
 					keepFocus: true
@@ -214,7 +342,7 @@
 	function onWatchOpen(value: boolean) {
 		watchOpen = value;
 		if (!value && page.url.searchParams.has('watch')) {
-			void goto(ROUTES.bountyHubTab('watching'), {
+			void goto(withView(ROUTES.bountyHubTab('watching')), {
 				replaceState: true,
 				noScroll: true,
 				keepFocus: true
@@ -225,7 +353,7 @@
 	function onWatched(watch: Watch) {
 		watchesStore.upsert(watch);
 		sheetOpen = false;
-		void goto(ROUTES.bountyWatch(watch.id), { noScroll: true, keepFocus: true });
+		void goto(withView(ROUTES.bountyWatch(watch.id)), { noScroll: true, keepFocus: true });
 	}
 
 	let deepLinked = $state<string | null>(null);
@@ -256,7 +384,7 @@
 	});
 
 	function openProgram(handle: string, platform: string) {
-		void goto(ROUTES.bountyHub(handle, platform), { noScroll: true, keepFocus: true });
+		void goto(withView(ROUTES.bountyHub(handle, platform)), { noScroll: true, keepFocus: true });
 	}
 
 	function onFilters(next: BountyProgramFilters) {
@@ -272,7 +400,11 @@
 	function onSheetOpen(value: boolean) {
 		sheetOpen = value;
 		if (!value && page.url.searchParams.has('program')) {
-			void goto(ROUTES.bountyHub(), { replaceState: true, noScroll: true, keepFocus: true });
+			void goto(withView(ROUTES.bountyHub()), {
+				replaceState: true,
+				noScroll: true,
+				keepFocus: true
+			});
 		}
 	}
 
@@ -447,6 +579,7 @@
 							page={pageIndex}
 							{pageSize}
 							{total}
+							sizes={PAGE_SIZES}
 							noun="program"
 							onPage={(p) => (pageIndex = p)}
 							onPageSize={(s) => {
@@ -486,7 +619,7 @@
 	onWatch={onWatched}
 	onOpenWatch={(id) => {
 		sheetOpen = false;
-		void goto(ROUTES.bountyWatch(id), { noScroll: true, keepFocus: true });
+		void goto(withView(ROUTES.bountyWatch(id)), { noScroll: true, keepFocus: true });
 	}}
 />
 

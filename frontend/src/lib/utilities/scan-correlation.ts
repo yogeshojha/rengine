@@ -1,3 +1,5 @@
+import { formatSeconds } from '$lib/utilities/format';
+
 export type StatusClass = 'success' | 'info' | 'warning' | 'destructive' | 'muted';
 
 export function httpStatusClass(code: number | null | undefined): StatusClass {
@@ -65,9 +67,7 @@ export function httpStatusReason(code: number | null | undefined): string {
 }
 
 export function formatResponseTime(seconds: number | null | undefined): string {
-	if (seconds == null) return '—';
-	if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
-	return `${seconds.toFixed(2)}s`;
+	return seconds == null ? '—' : formatSeconds(seconds);
 }
 
 const PRIVATE_V4 = [

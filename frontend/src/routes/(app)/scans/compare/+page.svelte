@@ -27,7 +27,7 @@
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { seedKindFor } from '$lib/utilities/rechecks';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { durationText } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { plural } from '$lib/utilities/strings';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
@@ -113,7 +113,7 @@
 		const b = comparison?.current.started_at;
 		if (!a || !b) return '';
 		const seconds = Math.abs(new Date(b).getTime() - new Date(a).getTime()) / 1000;
-		return `${durationText(seconds)} apart`;
+		return `${formatSeconds(seconds)} apart`;
 	});
 
 	// ---------- url state ----------

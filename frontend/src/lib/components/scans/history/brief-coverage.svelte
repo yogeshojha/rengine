@@ -5,9 +5,9 @@
 	import {
 		ACTIVITY_STATUS_LABEL,
 		activityStatusClass,
-		durationText,
 		isOpenStatus
 	} from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 
 	interface Props {
@@ -135,7 +135,7 @@
 					</div>
 					<div class="text-right font-mono text-2xs tabular-nums {activityStatusClass(r.a.status)}">
 						{r.a.status === 'success'
-							? durationText(r.a.duration_seconds)
+							? formatSeconds(r.a.duration_seconds)
 							: ACTIVITY_STATUS_LABEL[r.a.status]}
 					</div>
 				</li>

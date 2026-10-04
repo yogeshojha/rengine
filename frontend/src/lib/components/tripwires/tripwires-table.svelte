@@ -50,19 +50,19 @@
 
 <div class="@container/tripwires w-full" role="table" aria-label="Tripwires">
 	<div class={HEAD_ROW} role="row">
-		<div class={TRIPWIRE_COL.tripwire}>Tripwire</div>
-		<div class={TRIPWIRE_COL.fires}>Fires on</div>
-		<div class={TRIPWIRE_COL.scope}>Scope</div>
-		<div class={TRIPWIRE_COL.then}>Then</div>
-		<div class={TRIPWIRE_COL.last}>Last fired</div>
-		<div class={TRIPWIRE_COL.recent}>Fired, {RECENT_DAYS}d</div>
-		<div class={TRIPWIRE_COL.enabled}></div>
-		<div class={TRIPWIRE_COL.actions}></div>
+		<div class={TRIPWIRE_COL.tripwire} role="columnheader">Tripwire</div>
+		<div class={TRIPWIRE_COL.fires} role="columnheader">Fires on</div>
+		<div class={TRIPWIRE_COL.scope} role="columnheader">Scope</div>
+		<div class={TRIPWIRE_COL.then} role="columnheader">Then</div>
+		<div class={TRIPWIRE_COL.last} role="columnheader">Last fired</div>
+		<div class={TRIPWIRE_COL.recent} role="columnheader">Fired, {RECENT_DAYS}d</div>
+		<div class={TRIPWIRE_COL.enabled} role="columnheader"><span class="sr-only">Enabled</span></div>
+		<div class={TRIPWIRE_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 	</div>
 	{#each tripwires as tripwire (tripwire.id)}
 		{@const spec = dimensionSpec(tripwire.dimension)}
 		<div class="{BODY_ROW} {tripwire.enabled ? '' : 'opacity-60'}" role="row">
-			<div class="{TRIPWIRE_COL.tripwire} flex flex-col gap-1">
+			<div class="{TRIPWIRE_COL.tripwire} flex flex-col gap-1" role="cell">
 				<button
 					type="button"
 					class="w-fit text-left text-sm leading-5 font-medium wrap-anywhere hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -79,7 +79,7 @@
 					/>
 				</div>
 			</div>
-			<div class={TRIPWIRE_COL.fires}>
+			<div class={TRIPWIRE_COL.fires} role="cell">
 				<div class="flex flex-col items-start gap-1">
 					<Badge variant="outline" class="font-normal">{fireOnLabel(tripwire.fire_on)}</Badge>
 					{#if tripwire.trigger === TripwireTrigger.ScanLive}
@@ -87,7 +87,7 @@
 					{/if}
 				</div>
 			</div>
-			<div class="{TRIPWIRE_COL.scope} truncate text-sm">
+			<div class="{TRIPWIRE_COL.scope} truncate text-sm" role="cell">
 				<Hint
 					text={tripwire.scope.labels.length > SHOWN_LABELS
 						? tripwire.scope.labels.join(', ')
@@ -98,7 +98,7 @@
 					{/snippet}
 				</Hint>
 			</div>
-			<div class="{TRIPWIRE_COL.then} flex flex-wrap gap-1">
+			<div class="{TRIPWIRE_COL.then} flex flex-wrap gap-1" role="cell">
 				{#each thenChips(tripwire) as chip (chip.label)}
 					<Hint text={chip.hint}>
 						{#snippet child(props)}
@@ -110,20 +110,20 @@
 					<span class="text-2xs text-muted-foreground">No action</span>
 				{/if}
 			</div>
-			<div class="{TRIPWIRE_COL.last} text-sm text-muted-foreground">
+			<div class="{TRIPWIRE_COL.last} text-sm text-muted-foreground" role="cell">
 				{tripwire.last_fired_at ? relativeTime(tripwire.last_fired_at) : 'Not fired'}
 			</div>
-			<div class="{TRIPWIRE_COL.recent} text-sm tabular-nums">
+			<div class="{TRIPWIRE_COL.recent} text-sm tabular-nums" role="cell">
 				{tripwire.recent_fired > 0 ? tripwire.recent_fired.toLocaleString() : ''}
 			</div>
-			<div class={TRIPWIRE_COL.enabled}>
+			<div class={TRIPWIRE_COL.enabled} role="cell">
 				<Switch
 					checked={tripwire.enabled}
 					onCheckedChange={(v) => onToggle(tripwire, v)}
 					aria-label={tripwire.enabled ? 'Pause tripwire' : 'Resume tripwire'}
 				/>
 			</div>
-			<div class={TRIPWIRE_COL.actions}>
+			<div class={TRIPWIRE_COL.actions} role="cell">
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}

@@ -13,11 +13,20 @@
 		activeId: string | null;
 		limit?: number;
 		error?: string | null;
+		class?: string;
 		onOpen: (run: ToolRun) => void;
 		onClear: () => Promise<void>;
 	}
 
-	let { runs, activeId, limit = 6, error = null, onOpen, onClear }: Props = $props();
+	let {
+		runs,
+		activeId,
+		limit = 6,
+		error = null,
+		class: className,
+		onOpen,
+		onClear
+	}: Props = $props();
 
 	let confirming = $state(false);
 	let clearing = $state(false);
@@ -48,11 +57,11 @@
 </script>
 
 {#if !shown.length && error}
-	<div class="shrink-0 border-t p-2">
+	<div class={cn('shrink-0 border-t p-2', className)}>
 		<p class="px-2 py-1 text-2xs text-muted-foreground">Recent runs not loaded.</p>
 	</div>
 {:else if shown.length}
-	<div class="shrink-0 border-t p-2">
+	<div class={cn('shrink-0 border-t p-2', className)}>
 		<div class="flex items-center justify-between px-2 pb-1">
 			<p class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Recent</p>
 			<Hint text="Runs are kept for seven days">

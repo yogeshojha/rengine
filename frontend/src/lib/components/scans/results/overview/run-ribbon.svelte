@@ -11,12 +11,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import StageDialog from './stage-dialog.svelte';
-	import {
-		durationLabel,
-		durationText,
-		elapsedText,
-		isOpenStatus
-	} from '$lib/utilities/scan-status';
+	import { durationLabel, elapsedText, isOpenStatus } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { plannedStages, stageRows } from '$lib/utilities/scan-progress';
 	import type { StageStepState } from '$lib/utilities/scan-progress';
 	import { cn } from '$lib/utils';
@@ -202,11 +198,11 @@
 		const parts = [s.title];
 		if (s.startedAt) parts.push(formatClock(s.startedAt));
 		if (s.state === 'running') parts.push(`running ${elapsedText(s.seconds ?? 0)}`);
-		else if (s.paused) parts.push(`${durationText(s.seconds)} · paused`);
+		else if (s.paused) parts.push(`${formatSeconds(s.seconds)} · paused`);
 		else if (s.state === 'pending') parts.push(unfinished ? 'queued' : 'did not run');
 		else if (s.state === 'failed') parts.push(s.stopped ? 'stopped' : 'failed');
-		else if (s.degraded) parts.push(`${durationText(s.seconds)} · partial`);
-		else parts.push(durationText(s.seconds));
+		else if (s.degraded) parts.push(`${formatSeconds(s.seconds)} · partial`);
+		else parts.push(formatSeconds(s.seconds));
 		return parts.join(' · ');
 	}
 
@@ -336,11 +332,11 @@
 										{#if s.state === 'running'}
 											{elapsedText(s.seconds ?? 0)}
 										{:else if s.paused}
-											{durationText(s.seconds)}
+											{formatSeconds(s.seconds)}
 										{:else if s.state === 'pending'}
 											{unfinished ? 'Queued' : '—'}
 										{:else}
-											{durationText(s.seconds)}
+											{formatSeconds(s.seconds)}
 										{/if}
 									</span>
 								</button>

@@ -7,7 +7,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import {
-		dayLabel,
 		groupBursts,
 		inAppHref,
 		isChange,
@@ -16,6 +15,7 @@
 		timeOfDay,
 		timeWithSeconds
 	} from '$lib/utilities/mcp';
+	import { dayHeading } from '$lib/utilities/dates';
 	import { TOUCHES_TARGETS, type McpCall, type McpCapability } from '$lib/types/mcp';
 
 	interface Props {
@@ -104,7 +104,7 @@
 						<span class="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
 							<span class="flex flex-wrap items-baseline gap-x-2.5 leading-5">
 								<span class="text-sm font-medium">
-									{dayLabel(burst.ended)}
+									{dayHeading(burst.ended)}
 									{timeOfDay(burst.started)}
 								</span>
 

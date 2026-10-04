@@ -251,21 +251,23 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<div class="@container/keys w-full" role="table" aria-label="API keys">
 			<div class={HEAD_ROW} role="row">
-				<div class={KEY_COL.provider}>Provider</div>
-				<div class={KEY_COL.key}>Key</div>
-				<div class={KEY_COL.status}>Status</div>
-				<div class={KEY_COL.tested}>Last tested</div>
-				<div class="{KEY_COL.actions} normal-case tracking-normal tabular-nums">
+				<div class={KEY_COL.provider} role="columnheader">Provider</div>
+				<div class={KEY_COL.key} role="columnheader">Key</div>
+				<div class={KEY_COL.status} role="columnheader">Status</div>
+				<div class={KEY_COL.tested} role="columnheader">Last tested</div>
+				<div class="{KEY_COL.actions} normal-case tracking-normal tabular-nums" role="columnheader">
 					{setCount} of {providers.length} set
 				</div>
 			</div>
 			{#each groups as group (group.group)}
-				<div class={GROUP_ROW} role="row">{group.label}</div>
+				<div class={GROUP_ROW} role="row">
+					<div role="cell" aria-colspan={5}>{group.label}</div>
+				</div>
 				{#each group.items as provider (provider.provider)}
 					{@const key = keys.get(provider.provider)}
 					{@const check = stateOf(provider)}
 					<div class={BODY_ROW} role="row">
-						<div class="{KEY_COL.provider} flex flex-col">
+						<div class="{KEY_COL.provider} flex flex-col" role="cell">
 							<span class="flex items-center gap-1.5 text-sm leading-5 font-medium">
 								{provider.name}
 								<a
@@ -280,7 +282,7 @@
 							</span>
 							<span class="text-2xs text-muted-foreground">{provider.description}</span>
 						</div>
-						<div class={KEY_COL.key}>
+						<div class={KEY_COL.key} role="cell">
 							{#if key}
 								<div class="flex items-center gap-1">
 									<span class="flex min-w-0 flex-col">
@@ -344,7 +346,7 @@
 								<span class="text-xs text-muted-foreground">Not set</span>
 							{/if}
 						</div>
-						<div class={KEY_COL.status}>
+						<div class={KEY_COL.status} role="cell">
 							{#if key}
 								<CheckStatus
 									{check}
@@ -358,10 +360,10 @@
 								<CheckStatus check="off" label="Not set" muted />
 							{/if}
 						</div>
-						<div class="{KEY_COL.tested} text-xs text-muted-foreground tabular-nums">
+						<div class="{KEY_COL.tested} text-xs text-muted-foreground tabular-nums" role="cell">
 							{key?.last_test_at ? relativeTime(key.last_test_at) : 'Never'}
 						</div>
-						<div class={KEY_COL.actions}>
+						<div class={KEY_COL.actions} role="cell">
 							{#if key}
 								<DropdownMenu.Root>
 									<DropdownMenu.Trigger>

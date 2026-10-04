@@ -5,7 +5,9 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Button } from '$lib/components/ui/button';
+	import { Toggle } from '$lib/components/ui/toggle';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import History from '@lucide/svelte/icons/history';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ToolList from './tool-list.svelte';
@@ -16,6 +18,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { MODE_HELP, MODE_LABELS, toolIcon } from '$lib/config/toolbox';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { toast } from 'svelte-sonner';
 	import { untrack } from 'svelte';
 	import type { ToolboxLaunch, ToolRun } from '$lib/types/toolbox';
@@ -31,7 +34,11 @@
 	let values = $state<Record<string, Record<string, unknown>>>({});
 	let shown = $state<Record<string, string>>({});
 	let form: ReturnType<typeof ToolForm> | null = $state(null);
+	let recent = $state(false);
 
+	const narrow = new IsMobile();
+	const hasRecent = $derived(toolbox.runs.length > 0 || Boolean(toolbox.historyError));
+	const browsing = $derived(recent && narrow.current);
 	const projectId = $derived(projectsStore.activeProject?.id);
 	const tool = $derived(selected ? toolbox.tool(selected) : undefined);
 	const Icon = $derived(tool ? toolIcon(tool.icon) : null);
@@ -56,6 +63,10 @@
 	});
 
 	$effect(() => {
+		if (!open) recent = false;
+	});
+
+	$effect(() => {
 		if (!open || !tool) return;
 		localStorage.setItem(STORAGE_KEYS.toolboxLastTool, tool.name);
 		untrack(() => queueMicrotask(() => form?.focus()));
@@ -66,6 +77,7 @@
 		if (!open || !pending || !toolbox.tools.length) return;
 		launch = null;
 		untrack(() => {
+			recent = false;
 			const value = pending.value.trim();
 			if (!value) {
 				if (pending.tool && toolbox.tool(pending.tool)) selected = pending.tool;
@@ -149,6 +161,7 @@
 	}
 
 	function replay(previous: ToolRun) {
+		recent = false;
 		selected = previous.tool;
 		shown = { ...shown, [previous.tool]: previous.id };
 		values = { ...values, [previous.tool]: { ...previous.input } };
@@ -197,15 +210,17 @@
 
 			<section class="flex min-h-0 min-w-0 flex-col">
 				{#if toolbox.tools.length}
-					<div class="border-b px-4 py-3 md:hidden">
+					<div class="flex gap-2 border-b px-4 py-3 md:hidden">
 						<Select.Root
 							type="single"
 							value={selected ?? ''}
 							onValueChange={(name) => {
-								if (name) selected = name;
+								if (!name) return;
+								selected = name;
+								recent = false;
 							}}
 						>
-							<Select.Trigger class="w-full" aria-label="Tool">
+							<Select.Trigger class="min-w-0 flex-1" aria-label="Tool">
 								{tool?.title ?? 'Tool'}
 							</Select.Trigger>
 							<Select.Content>
@@ -222,9 +237,35 @@
 								{/each}
 							</Select.Content>
 						</Select.Root>
+						{#if hasRecent || browsing}
+							<Toggle
+								variant="outline"
+								size="sm"
+								pressed={browsing}
+								onPressedChange={(v) => (recent = v)}
+								class="h-9"
+							>
+								<History />
+								Recent
+							</Toggle>
+						{/if}
 					</div>
 				{/if}
-				{#if tool}
+				{#if browsing}
+					<ScrollArea class="min-h-0 flex-1">
+						<RecentRuns
+							runs={toolbox.runs}
+							error={toolbox.historyError}
+							activeId={run?.id ?? null}
+							class="border-t-0"
+							onOpen={replay}
+							onClear={clearHistory}
+						/>
+						{#if !hasRecent}
+							<EmptyState compact title="No recent runs" class="m-4" />
+						{/if}
+					</ScrollArea>
+				{:else if tool}
 					<div class="space-y-2.5 border-b px-4 py-3">
 						<div class="flex items-start gap-2">
 							{#if Icon}

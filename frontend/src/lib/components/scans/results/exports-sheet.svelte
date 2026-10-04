@@ -81,7 +81,7 @@
 			await exportsStore.remove(removing.id);
 			removing = null;
 		} catch {
-			toast.error('Export not removed');
+			toast.error('Export not deleted');
 		} finally {
 			busy = false;
 		}
@@ -166,7 +166,7 @@
 										class="size-7"
 										disabled={live}
 										onclick={() => (removing = row)}
-										aria-label="Remove export"
+										aria-label="Delete export"
 									>
 										<Trash2 class="size-3.5" />
 									</Button>
@@ -225,12 +225,12 @@
 
 <ConfirmDialog
 	open={removing !== null}
-	title="Remove export"
+	title="Delete export"
 	description={removing
 		? `${label(removing.dimension)} ${FORMAT_LABELS[removing.export_format] ?? removing.export_format} export ${removing.status === ExportStatus.COMPLETED ? 'and its file are' : 'is'} removed.`
 		: ''}
-	confirmLabel="Remove"
-	loadingLabel="Removing"
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	destructive
 	loading={busy}
 	onOpenChange={(value) => {

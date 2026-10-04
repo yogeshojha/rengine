@@ -1,5 +1,6 @@
 import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest';
 import {
+	dayHeading,
 	formatDay,
 	relativeTime,
 	relativeTimeLong,
@@ -133,6 +134,47 @@ describe('formatDay', () => {
 	it('reads a calendar date in UTC', () => {
 		expect(formatDay('2026-09-11')).toBe('Sep 11');
 		expect(formatDay('2026-09-11', true)).toBe('Fri, Sep 11');
+	});
+});
+
+describe('dayHeading', () => {
+	const now = new Date(2026, 9, 3, 15, 30);
+
+	it.each([
+		[new Date(2026, 9, 3, 0, 5), 'Today'],
+		[new Date(2026, 9, 3, 23, 59), 'Today'],
+		[new Date(2026, 9, 2, 23, 59), 'Yesterday'],
+		[new Date(2026, 9, 2, 0, 0), 'Yesterday'],
+		[new Date(2026, 9, 1, 12, 0), 'Thu, Oct 1'],
+		[new Date(2026, 0, 5, 12, 0), 'Mon, Jan 5'],
+		[new Date(2025, 9, 3, 12, 0), 'Oct 3, 2025'],
+		[new Date(2025, 11, 30, 12, 0), 'Dec 30, 2025']
+	])('reads %s as %s', (date, expected) => {
+		expect(dayHeading(date, now)).toBe(expected);
+	});
+
+	it('reads a bare calendar day in local time', () => {
+		expect(dayHeading('2026-10-03', now)).toBe('Today');
+		expect(dayHeading('2026-10-02', now)).toBe('Yesterday');
+		expect(dayHeading('2026-09-28', now)).toBe('Mon, Sep 28');
+	});
+
+	it('takes a timestamp string', () => {
+		expect(dayHeading(new Date(2026, 9, 2, 8).toISOString(), now)).toBe('Yesterday');
+	});
+
+	it('crosses a year boundary to yesterday', () => {
+		const newYear = new Date(2026, 0, 1, 9, 0);
+		expect(dayHeading(new Date(2025, 11, 31, 22, 0), newYear)).toBe('Yesterday');
+		expect(dayHeading(new Date(2025, 11, 30, 22, 0), newYear)).toBe('Dec 30, 2025');
+	});
+
+	it('reads an invalid date as empty', () => {
+		expect(dayHeading('not a date', now)).toBe('');
+	});
+
+	it('defaults to the current day', () => {
+		expect(dayHeading(NOW)).toBe('Today');
 	});
 });
 

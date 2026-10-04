@@ -270,6 +270,55 @@
 	}
 </script>
 
+{#snippet estimateBlock(divided: string)}
+	<div class={cn('space-y-1.5 text-xs', divided)}>
+		{#if estimate}
+			{#each STATS as [label, key] (key)}
+				<div class="flex items-baseline justify-between gap-3">
+					<span class="text-muted-foreground">{label}</span>
+					<span class="tabular-nums">
+						{#if before(key) !== null}
+							<span class="mr-1.5 text-muted-foreground/70 line-through">
+								{before(key)?.toLocaleString()}
+							</span>
+						{/if}
+						<span class="font-medium">{estimate[key].toLocaleString()}</span>
+					</span>
+				</div>
+			{/each}
+			{#if estimate.ai_calls}
+				<div class="flex items-baseline justify-between gap-3">
+					<span class="text-muted-foreground">Model calls</span>
+					<span class="font-medium tabular-nums">
+						{estimate.ai_calls}{#if estimate.ai_cost_usd}
+							· ${estimate.ai_cost_usd.toFixed(2)}{/if}
+					</span>
+				</div>
+			{/if}
+		{:else if estimating}
+			{#each [1, 2, 3, 4] as n (n)}<Skeleton class="h-4 w-full" />{/each}
+		{:else if estimateError}
+			<p class="flex items-start gap-1.5 text-destructive">
+				<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
+				<span>Estimate not loaded. {estimateError}</span>
+			</p>
+		{:else}
+			<p class="text-muted-foreground">No subject. Select a scan or a target.</p>
+		{/if}
+	</div>
+
+	{#if estimate?.warnings.length}
+		<div class={cn('space-y-1.5', divided)}>
+			{#each estimate.warnings as warning (warning)}
+				<p class="flex items-start gap-1.5 text-xs text-warning">
+					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
+					<span>{warning}</span>
+				</p>
+			{/each}
+		</div>
+	{/if}
+{/snippet}
+
 <Dialog.Root bind:open={() => open, requestOpen}>
 	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
 		<Dialog.Header class="border-b px-6 py-4">
@@ -574,54 +623,13 @@
 						<Skeleton class="aspect-[1/1.414] w-full" />
 					{/if}
 
-					<div class="space-y-1.5 border-t pt-4 text-xs">
-						{#if estimate}
-							{#each STATS as [label, key] (key)}
-								<div class="flex items-baseline justify-between gap-3">
-									<span class="text-muted-foreground">{label}</span>
-									<span class="tabular-nums">
-										{#if before(key) !== null}
-											<span class="mr-1.5 text-muted-foreground/70 line-through">
-												{before(key)?.toLocaleString()}
-											</span>
-										{/if}
-										<span class="font-medium">{estimate[key].toLocaleString()}</span>
-									</span>
-								</div>
-							{/each}
-							{#if estimate.ai_calls}
-								<div class="flex items-baseline justify-between gap-3">
-									<span class="text-muted-foreground">Model calls</span>
-									<span class="font-medium tabular-nums">
-										{estimate.ai_calls}{#if estimate.ai_cost_usd}
-											· ${estimate.ai_cost_usd.toFixed(2)}{/if}
-									</span>
-								</div>
-							{/if}
-						{:else if estimating}
-							{#each [1, 2, 3, 4] as n (n)}<Skeleton class="h-4 w-full" />{/each}
-						{:else if estimateError}
-							<p class="flex items-start gap-1.5 text-destructive">
-								<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
-								<span>Estimate not loaded. {estimateError}</span>
-							</p>
-						{:else}
-							<p class="text-muted-foreground">No subject. Select a scan or a target.</p>
-						{/if}
-					</div>
-
-					{#if estimate?.warnings.length}
-						<div class="space-y-1.5 border-t pt-4">
-							{#each estimate.warnings as warning (warning)}
-								<p class="flex items-start gap-1.5 text-xs text-warning">
-									<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
-									<span>{warning}</span>
-								</p>
-							{/each}
-						</div>
-					{/if}
+					{@render estimateBlock('border-t pt-4')}
 				</div>
 			</aside>
+		</div>
+
+		<div class="space-y-3 border-t bg-muted/25 px-6 py-3 md:hidden">
+			{@render estimateBlock('')}
 		</div>
 
 		<Dialog.Footer class="justify-between border-t px-6 py-4 sm:justify-between">

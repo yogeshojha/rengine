@@ -82,7 +82,7 @@
 		type NewWindowKey,
 		type SignalKey
 	} from '$lib/config/whats-new';
-	import { formatClock, formatShortDate } from '$lib/utilities/dates';
+	import { dayHeading, formatClock, formatDay, formatShortDate } from '$lib/utilities/dates';
 	import { rowHref } from '$lib/utilities/whats-new';
 	import type { NewFeed, NewGroup, NewItem, VisualFeed, VisualPair } from '$lib/types/whats-new';
 
@@ -181,12 +181,6 @@
 		return i < 0 ? ['', ''] : [v.slice(0, i), v.slice(i + 1)];
 	};
 
-	const dayLabel = (d: string) =>
-		new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', {
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'UTC'
-		});
 	let windowWords = $derived(
 		NEW_WINDOWS.find((w) => w.key === feed?.window)?.words ?? feed?.window ?? ''
 	);
@@ -194,8 +188,8 @@
 		if (!feed) return '';
 		if (feed.basis === NewBasis.DAYS && dayFrom) {
 			return dayTo && dayTo !== dayFrom
-				? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
-				: dayLabel(dayFrom);
+				? `${formatDay(dayFrom)} to ${formatDay(dayTo)}`
+				: formatDay(dayFrom);
 		}
 		return `${formatShortDate(feed.since)}, ${formatClock(feed.since)}`;
 	});
@@ -231,14 +225,6 @@
 		return (g.counts[signal] ?? 0) > 0;
 	}
 	const dayKey = (iso: string) => new Date(iso).toDateString();
-	function dayHeading(iso: string): string {
-		const at = new Date(iso);
-		const today = new Date();
-		const yesterday = new Date(today.getTime() - 86_400_000);
-		if (at.toDateString() === today.toDateString()) return 'Today';
-		if (at.toDateString() === yesterday.toDateString()) return 'Yesterday';
-		return at.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-	}
 
 	let entries = $derived.by<Entry[]>(() => {
 		const out: Entry[] = [];
@@ -332,8 +318,8 @@
 				key: 'day',
 				label:
 					dayTo && dayTo !== dayFrom
-						? `${dayLabel(dayFrom)} to ${dayLabel(dayTo)}`
-						: dayLabel(dayFrom),
+						? `${formatDay(dayFrom)} to ${formatDay(dayTo)}`
+						: formatDay(dayFrom),
 				remove: () => pickDays(null, null)
 			});
 		}

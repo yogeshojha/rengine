@@ -107,7 +107,7 @@
 			toast.error('No active project');
 			return;
 		}
-		goto(ROUTES.newContext(project.id, template));
+		goto(ROUTES.newContext(template));
 	}
 
 	async function handleDuplicate(context: ScanContextRead) {

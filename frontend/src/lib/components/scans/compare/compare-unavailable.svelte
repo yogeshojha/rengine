@@ -7,7 +7,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { ROUTES } from '$lib/config/routes';
-	import { durationText } from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import { formatDateTime } from '$lib/utilities/dates';
 	import { runRows, type ComparableRun } from '$lib/types/compare';
 
@@ -60,7 +60,7 @@
 							<span class="text-xs text-muted-foreground tabular-nums">
 								{[
 									run.started_at ? formatDateTime(run.started_at) : '',
-									run.duration_seconds != null ? durationText(run.duration_seconds) : ''
+									run.duration_seconds != null ? formatSeconds(run.duration_seconds) : ''
 								]
 									.filter(Boolean)
 									.join(' · ')}

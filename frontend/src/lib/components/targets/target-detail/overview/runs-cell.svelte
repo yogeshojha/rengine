@@ -5,6 +5,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { compactCount, COMPACT_FROM_SHORT } from '$lib/utilities/numbers';
 	import type { ScanRead } from '$lib/types/scan';
 	import { completedCensusRuns } from './derive';
 
@@ -39,8 +40,6 @@
 	let barW = $derived(Math.max(4, Math.min(28, slot * 0.55)));
 	const y = (v: number) => PAD.top + plotH - (v / max) * plotH;
 	let ticks = $derived([0, max / 2, max].map((v) => ({ v, y: y(v) })));
-	const fmt = (v: number) =>
-		v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : Math.round(v).toString();
 	let every = $derived(points.length <= 6 ? 1 : Math.ceil(points.length / 6));
 	let first = $derived(points[0]?.value ?? 0);
 	let last = $derived(points.at(-1)?.value ?? 0);
@@ -80,7 +79,7 @@
 		{#each ticks as t (t.v)}
 			<line x1={PAD.left} x2={W - PAD.right} y1={t.y} y2={t.y} class="stroke-border/60" />
 			<text x={PAD.left - 6} y={t.y + 3} text-anchor="end" class="fill-muted-foreground text-2xs"
-				>{fmt(t.v)}</text
+				>{compactCount(t.v, COMPACT_FROM_SHORT)}</text
 			>
 		{/each}
 		{#each points as p, i (p.scan.id)}

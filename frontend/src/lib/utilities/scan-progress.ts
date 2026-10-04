@@ -1,12 +1,8 @@
 import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
 import type { StageCatalogEntry } from '$lib/types/scan-engine';
 import type { LiveRun } from '$lib/stores/live-scans.svelte';
-import {
-	activityRan,
-	activitySummary,
-	elapsedText,
-	formatSeconds
-} from '$lib/utilities/scan-status';
+import { activityRan, activitySummary, elapsedText } from '$lib/utilities/scan-status';
+import { formatSeconds } from '$lib/utilities/format';
 
 export function plannedStages(scan: ScanRead, catalog: StageCatalogEntry[]): StageCatalogEntry[] {
 	const cfg = scan.execution_config.stages ?? {};

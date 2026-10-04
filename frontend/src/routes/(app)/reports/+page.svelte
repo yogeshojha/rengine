@@ -47,10 +47,13 @@
 
 	const DEFAULT_TAB: ReportTab = 'reports';
 	const valid = new Set<string>(REPORT_TABS);
-	const initial = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
+	const shownParams = () =>
+		browser ? new URLSearchParams(location.search) : page.url.searchParams;
+	const landed = shownParams();
+	const initial = landed.get('tab') ?? DEFAULT_TAB;
 
 	let activeTab = $state<ReportTab>(valid.has(initial) ? (initial as ReportTab) : DEFAULT_TAB);
-	let search = $state('');
+	let search = $state(landed.get('q') ?? '');
 	let generateOpen = $state(false);
 	let generateTemplate = $state('');
 	let uploadOpen = $state(false);
@@ -137,10 +140,13 @@
 		selectedIds.clear();
 	}
 
+	let shownProject = '';
 	$effect(() => {
 		const id = projectId;
 		if (!id) return;
 		untrack(() => {
+			if (shownProject && shownProject !== id) search = '';
+			shownProject = id;
 			void reportsStore.fetch(id);
 			void reportsStore.fetchTemplates(id);
 			void reportCatalog.fetch();
@@ -148,18 +154,25 @@
 	});
 
 	$effect(() => {
-		const tab = page.url.searchParams.get('tab') ?? DEFAULT_TAB;
+		void page.url.href;
+		const shown = untrack(shownParams);
+		const tab = shown.get('tab') ?? DEFAULT_TAB;
+		const q = shown.get('q') ?? '';
 		untrack(() => {
 			if (valid.has(tab) && tab !== activeTab) activeTab = tab as ReportTab;
+			if (q !== search.trim()) search = q;
 		});
 	});
 
 	$effect(() => {
 		const tab = activeTab;
+		const q = search.trim();
 		if (!browser) return;
-		const params = untrack(() => new URLSearchParams(page.url.searchParams));
+		const params = untrack(shownParams);
 		if (tab === DEFAULT_TAB) params.delete('tab');
 		else params.set('tab', tab);
+		if (q) params.set('q', q);
+		else params.delete('q');
 		const qs = params.toString();
 		try {
 			replaceState(qs ? `?${qs}` : location.pathname, {});
@@ -169,6 +182,7 @@
 	});
 
 	let defaultsDirty = $state(false);
+	let brandingResets = $state(0);
 	let leaveTabOpen = $state(false);
 	let pendingTab = $state<ReportTab | null>(null);
 
@@ -258,7 +272,15 @@
 		</div>
 	</div>
 
-	<Tabs.Root value={activeTab} onValueChange={(v) => v && requestTab(v as ReportTab)}>
+	<Tabs.Root
+		activationMode="manual"
+		bind:value={
+			() => activeTab,
+			(v) => {
+				if (v) requestTab(v as ReportTab);
+			}
+		}
+	>
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<ScrollArea orientation="horizontal" class="w-full max-w-full sm:w-fit">
 				<Tabs.List class="w-max min-w-full">
@@ -450,7 +472,9 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="branding" class="mt-6">
-			<DefaultsPanel onDirtyChange={(v) => (defaultsDirty = v)} />
+			{#key brandingResets}
+				<DefaultsPanel onDirtyChange={(v) => (defaultsDirty = v)} />
+			{/key}
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
@@ -493,6 +517,8 @@
 		const tab = pendingTab;
 		pendingTab = null;
 		defaultsDirty = false;
+		brandingResets++;
+		leaveTabOpen = false;
 		if (tab) activeTab = tab;
 	}}
 />

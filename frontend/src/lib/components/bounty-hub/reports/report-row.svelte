@@ -87,6 +87,7 @@
 		: focused
 			? 'bg-muted/30'
 			: ''}"
+	role="none"
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
@@ -97,7 +98,7 @@
 		tabindex="-1"
 		onclick={onToggle}
 	>
-		<div class={RCOL.report}>
+		<div role="cell" class={RCOL.report}>
 			<div class="flex min-w-0 items-center gap-1.5">
 				<span class="truncate text-sm font-medium">{report.title}</span>
 			</div>
@@ -114,8 +115,8 @@
 				<span class="truncate md:hidden">{programName}</span>
 			</div>
 		</div>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class={RCOL.program} onclick={(e) => e.stopPropagation()}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div role="cell" class={RCOL.program} onclick={(e) => e.stopPropagation()}>
 			{#if programHref}
 				<a
 					href={programHref}
@@ -136,7 +137,7 @@
 				</button>
 			{/if}
 		</div>
-		<div class={RCOL.severity}>
+		<div role="cell" class={RCOL.severity}>
 			{#if sev}
 				<span
 					class="inline-flex h-6 items-center gap-1 rounded-md px-1.5 font-mono text-2xs font-semibold {SEVERITY_CHIP[
@@ -152,7 +153,7 @@
 				<span class="text-xs text-muted-foreground">Not rated</span>
 			{/if}
 		</div>
-		<div class={RCOL.state}>
+		<div role="cell" class={RCOL.state}>
 			<div class="flex items-center gap-1.5 text-sm">
 				<span class="flex h-5 items-center" aria-hidden="true">
 					<span class="size-1.5 rounded-full" style="background: {REPORT_STAGE_FILL[report.stage]}"
@@ -166,14 +167,14 @@
 				</div>
 			{/if}
 		</div>
-		<div class="{RCOL.bounty} font-mono text-sm tabular-nums">
+		<div role="cell" class="{RCOL.bounty} font-mono text-sm tabular-nums">
 			{#if report.awarded.length}
 				<span class="font-semibold">{formatMonies(report.awarded)}</span>
 			{:else}
 				<span class="text-muted-foreground/50">·</span>
 			{/if}
 		</div>
-		<div class="{RCOL.submitted} text-xs text-muted-foreground tabular-nums">
+		<div role="cell" class="{RCOL.submitted} text-xs text-muted-foreground tabular-nums">
 			{#if report.submitted_at}
 				<Hint text={formatShortDate(report.submitted_at)}>
 					{#snippet child(props)}
@@ -182,8 +183,12 @@
 				</Hint>
 			{/if}
 		</div>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="{RCOL.actions} items-center gap-0.5" onclick={(e) => e.stopPropagation()}>
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
+		<div
+			role="cell"
+			class="{RCOL.actions} items-center gap-0.5"
+			onclick={(e) => e.stopPropagation()}
+		>
 			<Button
 				variant="ghost"
 				size="icon"
@@ -228,126 +233,130 @@
 	</div>
 
 	{#if expanded}
-		<div
-			class="grid gap-3 px-4 pt-1 pb-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]"
-		>
-			<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
-				<SectionHead title="Timeline" />
-				<ol class="flex flex-col">
-					{#each steps as s, i (i)}
-						<li class="relative flex gap-3 pb-2.5 last:pb-0">
-							{#if i < steps.length - 1}
-								<span class="absolute top-4 bottom-0 left-[3px] w-px bg-border" aria-hidden="true"
-								></span>
-							{/if}
-							<span class="flex h-5 items-center" aria-hidden="true">
-								<span class="size-[7px] rounded-full" style="background: {s.tone}"></span>
-							</span>
-							<span class="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm">
-								<span class="truncate">{s.label}</span>
-								<span class="shrink-0 font-mono text-2xs text-muted-foreground">
-									{formatShortDate(s.at!)}
+		<div role="row">
+			<div
+				role="cell"
+				class="grid gap-3 px-4 pt-1 pb-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]"
+			>
+				<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
+					<SectionHead title="Timeline" />
+					<ol class="flex flex-col">
+						{#each steps as s, i (i)}
+							<li class="relative flex gap-3 pb-2.5 last:pb-0">
+								{#if i < steps.length - 1}
+									<span class="absolute top-4 bottom-0 left-[3px] w-px bg-border" aria-hidden="true"
+									></span>
+								{/if}
+								<span class="flex h-5 items-center" aria-hidden="true">
+									<span class="size-[7px] rounded-full" style="background: {s.tone}"></span>
 								</span>
-							</span>
-						</li>
-					{/each}
-				</ol>
-				{#if report.last_program_activity_at}
-					<p class="border-t pt-2 text-2xs text-muted-foreground">
-						Last program activity {relativeTime(report.last_program_activity_at)}
-					</p>
-				{/if}
-			</section>
-
-			<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
-				<SectionHead title="Program" />
-				{#if report.program_handle}
-					<div class="flex min-w-0 flex-col">
-						{#if programHref}
-							<a
-								href={programHref}
-								target={report.program_in_hub ? undefined : '_blank'}
-								rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
-								class="truncate text-sm font-medium hover:text-primary">{programName}</a
-							>
-						{/if}
-						<span class="font-mono text-2xs text-muted-foreground">@{report.program_handle}</span>
-					</div>
-					{#if program}
-						<dl class="grid grid-cols-3 gap-2 text-center">
-							{#each [{ k: 'Reports', v: String(program.reports) }, { k: 'Resolved', v: String(program.resolved) }, { k: 'Earned', v: program.earned.length ? formatMonies(program.earned) : '0' }] as cell (cell.k)}
-								<div class="rounded-md bg-muted/30 px-1 py-1.5">
-									<dt class="text-2xs text-muted-foreground">{cell.k}</dt>
-									<dd class="font-mono text-sm font-semibold tabular-nums">{cell.v}</dd>
-								</div>
-							{/each}
-						</dl>
+								<span class="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm">
+									<span class="truncate">{s.label}</span>
+									<span class="shrink-0 font-mono text-2xs text-muted-foreground">
+										{formatShortDate(s.at!)}
+									</span>
+								</span>
+							</li>
+						{/each}
+					</ol>
+					{#if report.last_program_activity_at}
+						<p class="border-t pt-2 text-2xs text-muted-foreground">
+							Last program activity {relativeTime(report.last_program_activity_at)}
+						</p>
 					{/if}
-					<div class="mt-auto flex flex-wrap gap-2">
+				</section>
+
+				<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
+					<SectionHead title="Program" />
+					{#if report.program_handle}
+						<div class="flex min-w-0 flex-col">
+							{#if programHref}
+								<a
+									href={programHref}
+									target={report.program_in_hub ? undefined : '_blank'}
+									rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
+									class="truncate text-sm font-medium hover:text-primary">{programName}</a
+								>
+							{/if}
+							<span class="font-mono text-2xs text-muted-foreground">@{report.program_handle}</span>
+						</div>
+						{#if program}
+							<dl class="grid grid-cols-3 gap-2 text-center">
+								{#each [{ k: 'Reports', v: String(program.reports) }, { k: 'Resolved', v: String(program.resolved) }, { k: 'Earned', v: program.earned.length ? formatMonies(program.earned) : '0' }] as cell (cell.k)}
+									<div class="rounded-md bg-muted/30 px-1 py-1.5">
+										<dt class="text-2xs text-muted-foreground">{cell.k}</dt>
+										<dd class="font-mono text-sm font-semibold tabular-nums">{cell.v}</dd>
+									</div>
+								{/each}
+							</dl>
+						{/if}
+						<div class="mt-auto flex flex-wrap gap-2">
+							<Button
+								size="sm"
+								variant="outline"
+								class="h-7 text-xs"
+								onclick={() => onProgram(report.program_handle!)}
+							>
+								<Filter class="size-3" /> Filter to this program
+							</Button>
+							{#if report.program_in_hub && programHref}
+								<Button size="sm" variant="outline" class="h-7 text-xs" href={programHref}>
+									<Award class="size-3" /> Open program
+								</Button>
+							{/if}
+						</div>
+					{:else}
+						<span class="text-sm text-muted-foreground">No program</span>
+					{/if}
+				</section>
+
+				<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
+					<SectionHead title="Finding" />
+					<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
+						{#if report.weakness}
+							<dt class="text-muted-foreground">Weakness</dt>
+							<dd class="min-w-0">
+								<button
+									type="button"
+									class="truncate text-left hover:text-primary"
+									onclick={() => onSearch(report.weakness!)}>{report.weakness}</button
+								>
+							</dd>
+						{/if}
+						{#if report.asset_identifier}
+							<dt class="text-muted-foreground">Asset</dt>
+							<dd class="flex min-w-0 items-center gap-1">
+								<button
+									type="button"
+									class="truncate text-left font-mono text-xs hover:text-primary"
+									onclick={() => onSearch(report.asset_identifier!)}
+									>{report.asset_identifier}</button
+								>
+								<CopyButton value={report.asset_identifier} class="shrink-0" />
+							</dd>
+						{/if}
+						{#if sev}
+							<dt class="text-muted-foreground">Severity</dt>
+							<dd>
+								{SEVERITY_LABELS[sev]}{report.severity_score != null
+									? ` · ${report.severity_score.toFixed(1)}`
+									: ''}
+							</dd>
+						{/if}
+					</dl>
+					<div class="mt-auto">
 						<Button
 							size="sm"
-							variant="outline"
 							class="h-7 text-xs"
-							onclick={() => onProgram(report.program_handle!)}
+							href={externalHref(report.url)}
+							target="_blank"
+							rel="noopener noreferrer"
 						>
-							<Filter class="size-3" /> Filter to this program
+							<ExternalLink class="size-3" /> Open on {platformLabel}
 						</Button>
-						{#if report.program_in_hub && programHref}
-							<Button size="sm" variant="outline" class="h-7 text-xs" href={programHref}>
-								<Award class="size-3" /> Open program
-							</Button>
-						{/if}
 					</div>
-				{:else}
-					<span class="text-sm text-muted-foreground">No program</span>
-				{/if}
-			</section>
-
-			<section class="flex flex-col gap-2 rounded-lg border bg-card p-3">
-				<SectionHead title="Finding" />
-				<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
-					{#if report.weakness}
-						<dt class="text-muted-foreground">Weakness</dt>
-						<dd class="min-w-0">
-							<button
-								type="button"
-								class="truncate text-left hover:text-primary"
-								onclick={() => onSearch(report.weakness!)}>{report.weakness}</button
-							>
-						</dd>
-					{/if}
-					{#if report.asset_identifier}
-						<dt class="text-muted-foreground">Asset</dt>
-						<dd class="flex min-w-0 items-center gap-1">
-							<button
-								type="button"
-								class="truncate text-left font-mono text-xs hover:text-primary"
-								onclick={() => onSearch(report.asset_identifier!)}>{report.asset_identifier}</button
-							>
-							<CopyButton value={report.asset_identifier} class="shrink-0" />
-						</dd>
-					{/if}
-					{#if sev}
-						<dt class="text-muted-foreground">Severity</dt>
-						<dd>
-							{SEVERITY_LABELS[sev]}{report.severity_score != null
-								? ` · ${report.severity_score.toFixed(1)}`
-								: ''}
-						</dd>
-					{/if}
-				</dl>
-				<div class="mt-auto">
-					<Button
-						size="sm"
-						class="h-7 text-xs"
-						href={externalHref(report.url)}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						<ExternalLink class="size-3" /> Open on {platformLabel}
-					</Button>
-				</div>
-			</section>
+				</section>
+			</div>
 		</div>
 	{/if}
 </div>

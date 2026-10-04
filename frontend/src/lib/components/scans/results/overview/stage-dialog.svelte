@@ -17,9 +17,9 @@
 	import {
 		activityStatusIcon,
 		activityStatusClass,
-		ACTIVITY_STATUS_LABEL,
-		durationText
+		ACTIVITY_STATUS_LABEL
 	} from '$lib/utilities/scan-status';
+	import { formatSeconds } from '$lib/utilities/format';
 	import type { BadgeVariant } from '$lib/components/ui/badge';
 	import type {
 		ScanActivityRead,
@@ -125,7 +125,7 @@
 		if (!activity) return description;
 		const parts: string[] = [];
 		if (activity.started_at) parts.push(`Started ${formatClock(activity.started_at)}`);
-		const dur = durationText(activity.duration_seconds);
+		const dur = formatSeconds(activity.duration_seconds);
 		if (dur) parts.push(dur);
 		if (commands)
 			parts.push(`${commands.length} ${commands.length === 1 ? 'command' : 'commands'}`);
@@ -230,8 +230,8 @@
 														class="ml-auto flex shrink-0 gap-2 text-muted-foreground tabular-nums"
 													>
 														{#if c.return_code != null}<span>rc {c.return_code}</span>{/if}
-														{#if durationText(c.duration_seconds, true)}
-															<span>{durationText(c.duration_seconds, true)}</span>
+														{#if formatSeconds(c.duration_seconds)}
+															<span>{formatSeconds(c.duration_seconds)}</span>
 														{/if}
 													</span>
 												</span>

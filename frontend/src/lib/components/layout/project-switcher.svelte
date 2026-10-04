@@ -13,7 +13,7 @@
 	import AddProjectModal from '$lib/components/modals/add-project-modal.svelte';
 	import ProjectIcon from '../project-icons.svelte';
 	import { page } from '$app/state';
-	import { goto, onNavigate } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { projectSwitchRedirect } from '$lib/config/routes';
 
 	const sidebar = useSidebar();
@@ -24,26 +24,12 @@
 	let modeLabel = $derived(MODE_LABELS[coerceInstanceMode(capabilitiesStore.mode)]);
 
 	let showAddModal = $state(false);
-	let switchTo: (typeof projects)[0] | null = null;
 
-	onNavigate(() => {
-		if (switchTo) projectsStore.setActiveProject(switchTo);
-		switchTo = null;
-	});
-
-	async function handleProjectSelect(project: (typeof projects)[0]) {
+	function handleProjectSelect(project: (typeof projects)[0]) {
 		if (project.id === activeProject?.id) return;
-		const redirect = projectSwitchRedirect(page.url.pathname);
-		if (!redirect) {
-			projectsStore.setActiveProject(project);
-			return;
-		}
-		switchTo = project;
-		try {
-			await goto(redirect);
-		} finally {
-			switchTo = null;
-		}
+		const redirect = projectSwitchRedirect(page.url.pathname, project.slug);
+		if (redirect) void goto(redirect);
+		else projectsStore.setActiveProject(project);
 	}
 </script>
 
@@ -105,10 +91,7 @@
 
 					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
 						{#each projects as project (project.id)}
-							<DropdownMenu.Item
-								onSelect={() => void handleProjectSelect(project)}
-								class="gap-2 p-2"
-							>
+							<DropdownMenu.Item onSelect={() => handleProjectSelect(project)} class="gap-2 p-2">
 								<div class="flex size-6 items-center justify-center rounded-md border">
 									<ProjectIcon {project} class="size-4" />
 								</div>
