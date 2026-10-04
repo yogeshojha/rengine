@@ -73,13 +73,9 @@ _NO_PROVIDER = "Choose a provider."
 _NO_KEY = "Enter the API key for this server."
 _NO_URL = "Enter the server URL."
 _NO_MODEL = "Choose a model."
-_NO_PRICE = "Enter an input and an output price."
 _BAD_CURSOR = "Cursor not read. Pass the at and id of the last row, joined by a comma."
-_PRICE_FIELDS = frozenset(
-    {"input_per_mtok", "output_per_mtok", "cache_read_per_mtok", "cache_write_per_mtok"}
-)
 ONBOARDING_KEY = "ai_connection_id"
-_ONBOARDING_FIELDS = {"api_key", "base_url", "workspace_id", "model", *_PRICE_FIELDS}
+_ONBOARDING_FIELDS = {"api_key", "base_url", "workspace_id", "model"}
 
 
 def _clean_base_url(value: str) -> str:
@@ -112,50 +108,11 @@ def _optional(value: str | None) -> str | None:
     return (value or "").strip() or None
 
 
-def _sent_rates(data: AiConnectionCreate | AiConnectionUpdate) -> Rates | None:
-    """The price sent with a model, an input and an output rate or none."""
-    if data.input_per_mtok is None or data.output_per_mtok is None:
-        return None
-    return Rates(
-        data.input_per_mtok,
-        data.output_per_mtok,
-        data.cache_read_per_mtok,
-        data.cache_write_per_mtok,
-    )
-
-
 async def _model_rates(provider: str, model: str, base_url: str) -> Rates | None:
     """A model's price from the curated catalog, then the live catalog."""
     return curated_rates(model) or await run_in_threadpool(
         prices.lookup, provider, model, base_url=base_url
     )
-
-
-async def _price(
-    row: AiConnection,
-    data: AiConnectionCreate | AiConnectionUpdate,
-    provider: str,
-    model: str,
-    base_url: str,
-    *,
-    fresh: bool,
-) -> None:
-    """Store the row's price: the user's own when set, else the listed one."""
-    sent = _sent_rates(data)
-    if data.custom_price:
-        if sent is None:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, _NO_PRICE)
-        rates.store(row, sent)
-        row.custom_price = True
-        return
-    cleared = sent is None and bool(_PRICE_FIELDS & data.model_fields_set)
-    dropped = data.custom_price is False and row.custom_price
-    if sent is not None:
-        rates.store(row, sent)
-    elif fresh or cleared or dropped:
-        rates.store(row, await _model_rates(provider, model, base_url))
-    if sent is not None or fresh or cleared or data.custom_price is False:
-        row.custom_price = False
 
 
 def call_cursor(before: str | None) -> tuple[datetime, uuid.UUID] | None:
@@ -191,11 +148,6 @@ def _read(row: AiConnection, *, in_use: bool, full: bool) -> AiConnectionRead:
         name=row.name,
         provider=row.provider,
         model=row.model,
-        input_per_mtok=row.input_per_mtok,
-        output_per_mtok=row.output_per_mtok,
-        cache_read_per_mtok=row.cache_read_per_mtok,
-        cache_write_per_mtok=row.cache_write_per_mtok,
-        custom_price=row.custom_price,
         base_url=row.base_url if full else None,
         workspace_id=row.workspace_id if full else None,
         key_masked=mask_tail(key) if key else None,
@@ -431,7 +383,7 @@ class AiSettingsService:
                 else None
             ),
         )
-        await _price(row, data, provider, model, base_url, fresh=True)
+        rates.store(row, await _model_rates(provider, model, base_url))
         self.session.add(row)
         await self._commit(row.name, flush=True)
         return row
@@ -443,9 +395,11 @@ class AiSettingsService:
             settings.ai_connection_id = row.id
             settings.updated_at = utc_now()
         await self._commit(row.name)
+        await self._server_price(row)
         return _read(row, in_use=settings.ai_connection_id == row.id, full=True)
 
-    async def _change(self, row: AiConnection, data: AiConnectionUpdate) -> None:
+    async def _change(self, row: AiConnection, data: AiConnectionUpdate) -> bool:
+        """Apply an update and say whether the model or its server changed."""
         provider = (
             self._provider(data.provider) if data.provider is not None else row.provider
         )
@@ -489,22 +443,25 @@ class AiSettingsService:
             row.last_test_at = None
             row.last_test_ok = None
             row.last_test_message = None
-        await _price(
-            row, data, provider, model, base_url, fresh=moved or model != row.model
-        )
+        repriced = moved or model != row.model
+        if repriced:
+            rates.store(row, await _model_rates(provider, model, base_url))
         row.provider = provider
         row.base_url = base_url or None
         row.model = model
         row.workspace_id = workspace
         row.updated_at = utc_now()
+        return repriced
 
     async def update_connection(
         self, connection_id: uuid.UUID, data: AiConnectionUpdate
     ) -> AiConnectionRead:
         settings = await self._settings()
         row = await self._connection(connection_id)
-        await self._change(row, data)
+        repriced = await self._change(row, data)
         await self._commit(row.name)
+        if repriced:
+            await self._server_price(row)
         return _read(row, in_use=settings.ai_connection_id == row.id, full=True)
 
     async def delete_connection(self, connection_id: uuid.UUID) -> None:
@@ -521,6 +478,12 @@ class AiSettingsService:
         """Store today's price for the row's model."""
         await self.session.commit()
         rates.apply(row, await run_in_threadpool(rates.lookup, row))
+
+    async def _server_price(self, row: AiConnection) -> None:
+        """Store the price the row's server lists for its model."""
+        if row.provider in BASE_URL_PROVIDERS:
+            await self._reprice(row)
+            await self.session.commit()
 
     async def use_connection(self, connection_id: uuid.UUID) -> AiConnectionRead:
         row = await self._connection(connection_id)
@@ -683,13 +646,16 @@ class AiSettingsService:
                 **(settings.onboarding_state or {}),
                 ONBOARDING_KEY: str(row.id),
             }
+            repriced = True
         else:
-            await self._change(
+            repriced = await self._change(
                 row, AiConnectionUpdate(**fields, provider=data.provider)
             )
         settings.ai_connection_id = row.id
         settings.ai_enabled = True
         await self._commit(row.name)
+        if repriced:
+            await self._server_price(row)
         return self._onboarding_read(settings, row)
 
     # ---------- tests ----------
@@ -744,7 +710,6 @@ class AiSettingsService:
             output_per_mtok=priced.output_per_mtok if priced else None,
             cache_read_per_mtok=priced.cache_read_per_mtok if priced else None,
             cache_write_per_mtok=priced.cache_write_per_mtok if priced else None,
-            custom_price=priced.custom_price if priced else False,
         )
         label = row.name if same and row else PROVIDER_LABELS[provider]
         await self.session.commit()

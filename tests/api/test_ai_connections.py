@@ -204,12 +204,13 @@ async def test_deleting_the_provider_in_use_leaves_none_in_use(estate, flush_onl
     assert again.in_use
 
 
-async def test_load_config_resolves_the_provider_in_use(estate, flush_only):
+async def test_load_config_resolves_the_provider_in_use(
+    estate, flush_only, monkeypatch
+):
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(1.26, 3.96))
     service = AiSettingsService(flush_only)
     await service.create_connection(_anthropic())
-    routed = await service.create_connection(
-        _router(input_per_mtok=1.26, output_per_mtok=3.96)
-    )
+    routed = await service.create_connection(_router())
     await service.update(AiSettingsUpdate(enabled=True, features={"ask": False}))
 
     cfg = await load_config_async(flush_only)
@@ -355,38 +356,35 @@ async def test_a_moved_server_clears_the_test(estate, flush_only, monkeypatch):
 # ---------- listed prices ----------
 
 
-async def test_a_listed_price_is_kept_with_its_model(estate, flush_only):
+async def _rates(session, connection_id: uuid.UUID) -> tuple:
+    row = await session.get(AiConnection, connection_id)
+    return row.input_per_mtok, row.output_per_mtok
+
+
+async def test_a_listed_price_is_kept_with_its_model(estate, flush_only, monkeypatch):
+    own = {"qwen/qwen3-coder": Rates(0.3, 1.2)}
+    monkeypatch.setattr(client, "listed_rates", lambda cfg: own.get(cfg.model))
     service = AiSettingsService(flush_only)
-    routed = await service.create_connection(
-        _router(input_per_mtok=0.3, output_per_mtok=1.2)
-    )
-    assert (routed.input_per_mtok, routed.output_per_mtok) == (0.3, 1.2)
+    routed = await service.create_connection(_router())
+    assert await _rates(flush_only, routed.id) == (0.3, 1.2)
 
-    renamed = await service.update_connection(
-        routed.id, AiConnectionUpdate(name="Router")
-    )
-    assert (renamed.input_per_mtok, renamed.output_per_mtok) == (0.3, 1.2)
+    own["qwen/qwen3-coder"] = Rates(0.4, 1.6)
+    await service.update_connection(routed.id, AiConnectionUpdate(name="Router"))
+    assert await _rates(flush_only, routed.id) == (0.3, 1.2)
 
-    repriced = await service.update_connection(
-        routed.id, AiConnectionUpdate(input_per_mtok=0.4, output_per_mtok=1.6)
-    )
-    assert (repriced.input_per_mtok, repriced.output_per_mtok) == (0.4, 1.6)
-
-    unlisted = await service.update_connection(
+    await service.update_connection(
         routed.id, AiConnectionUpdate(model="vendor/unlisted")
     )
-    assert (unlisted.input_per_mtok, unlisted.output_per_mtok) == (None, None)
-
-    half = await service.update_connection(
-        routed.id, AiConnectionUpdate(model="z-ai/glm-5.3", input_per_mtok=1.26)
-    )
-    assert (half.input_per_mtok, half.output_per_mtok) == (None, None)
+    assert await _rates(flush_only, routed.id) == (None, None)
 
 
-def test_a_listed_price_must_be_a_price():
-    for value in (-1, 10_001):
-        with pytest.raises(ValidationError):
-            AiConnectionUpdate(input_per_mtok=value, output_per_mtok=1.0)
+def test_a_price_is_not_taken_from_the_client():
+    with pytest.raises(ValidationError):
+        AiConnectionUpdate(input_per_mtok=0.4, output_per_mtok=1.6)
+    with pytest.raises(ValidationError):
+        AiConnectionCreate(provider="anthropic", custom_price=True)
+    with pytest.raises(ValidationError):
+        AiOnboarding(enabled=True, provider="anthropic", input_per_mtok=1.0)
     with pytest.raises(ValidationError):
         AiConnectionCreate(provider="anthropic", fast_model="claude-haiku-4-5")
 
@@ -744,7 +742,9 @@ def test_ask_takes_a_keyless_local_server_and_names_a_missing_provider():
 # ---------- onboarding ----------
 
 
-async def test_onboarding_saves_one_provider_and_updates_it(estate, flush_only):
+async def test_onboarding_saves_one_provider_and_updates_it(
+    estate, flush_only, monkeypatch
+):
     service = AiSettingsService(flush_only)
     first = await service.onboard(
         AiOnboarding(
@@ -777,6 +777,7 @@ async def test_onboarding_saves_one_provider_and_updates_it(estate, flush_only):
     )
     assert (await service.onboarding()).connection.id == first.connection.id
 
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(0.3, 1.2))
     routed = await service.onboard(
         AiOnboarding(
             enabled=True,
@@ -784,16 +785,12 @@ async def test_onboarding_saves_one_provider_and_updates_it(estate, flush_only):
             base_url="https://openrouter.ai/api/v1",
             api_key=ROUTER_KEY,
             model="qwen/qwen3-coder",
-            input_per_mtok=0.3,
-            output_per_mtok=1.2,
         )
     )
-    assert (routed.connection.input_per_mtok, routed.connection.output_per_mtok) == (
-        0.3,
-        1.2,
-    )
+    assert await _rates(flush_only, routed.connection.id) == (0.3, 1.2)
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(9.0, 9.0))
     kept = await service.onboard(AiOnboarding(enabled=True))
-    assert kept.connection.input_per_mtok == 0.3
+    assert await _rates(flush_only, kept.connection.id) == (0.3, 1.2)
 
     off = await service.onboard(AiOnboarding(enabled=False))
     assert not off.enabled

@@ -2,11 +2,9 @@
 	import { untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CircleXIcon from '@lucide/svelte/icons/circle-x';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -18,21 +16,8 @@
 	import ModelPicker from './model-picker.svelte';
 	import { ai } from '$lib/stores/ai.svelte';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
-	import {
-		DEFAULT_AI_PROVIDER,
-		MAX_CONNECTION_NAME,
-		connectionName,
-		optionPrice,
-		parseRate,
-		ratePair
-	} from '$lib/config/ai';
-	import type {
-		AiConnection,
-		AiConnectionCreate,
-		AiModelOption,
-		AiModelsRequest,
-		AiTestResult
-	} from '$lib/types/ai';
+	import { DEFAULT_AI_PROVIDER, MAX_CONNECTION_NAME, connectionName } from '$lib/config/ai';
+	import type { AiConnection, AiModelsRequest, AiTestResult } from '$lib/types/ai';
 
 	interface Props {
 		open: boolean;
@@ -51,13 +36,6 @@
 	let showKey = $state(false);
 	let workspaceId = $state('');
 	let model = $state('');
-	let picked = $state<AiModelOption | null>(null);
-	let listing = $state(false);
-	let priceOpen = $state(false);
-	let inputRate = $state('');
-	let outputRate = $state('');
-	let readRate = $state('');
-	let writeRate = $state('');
 	let testing = $state(false);
 	let tested = $state<{ draft: string; result: AiTestResult } | null>(null);
 	let initial = $state('');
@@ -80,36 +58,6 @@
 	const workspace = $derived(spec?.workspace ? workspaceId.trim() : '');
 	const draft = $derived(JSON.stringify([provider, serverUrl, freshKey, workspace, model.trim()]));
 	const result = $derived(tested?.draft === draft ? tested.result : null);
-	const listed = $derived(
-		picked?.id === model.trim() && picked.input_per_mtok !== null && picked.output_per_mtok !== null
-			? picked
-			: null
-	);
-	const kept = $derived(
-		sameServer && connection && !connection.custom_price && connection.model === model.trim()
-			? connection
-			: null
-	);
-	const basis = $derived(listed ?? kept);
-	const typed = $derived([inputRate, outputRate, readRate, writeRate].map(parseRate));
-	const customPrice = $derived(typed.some((rate) => rate !== undefined));
-	const shownPrice = $derived.by(() => {
-		const [input, output] = typed;
-		if (customPrice && typeof input === 'number' && typeof output === 'number')
-			return ratePair(input, output);
-		if (basis?.input_per_mtok != null && basis.output_per_mtok != null)
-			return ratePair(basis.input_per_mtok, basis.output_per_mtok);
-		return listing ? '' : 'Not listed';
-	});
-	const placeholders = $derived(
-		[
-			basis?.input_per_mtok ?? 0,
-			basis?.output_per_mtok ?? 0,
-			basis?.cache_read_per_mtok,
-			basis?.cache_write_per_mtok
-		].map((rate) => (rate == null ? '' : rate ? String(rate) : '0.00'))
-	);
-
 	const form = $derived(
 		JSON.stringify([
 			provider,
@@ -117,11 +65,7 @@
 			baseUrl.trim(),
 			apiKey.trim(),
 			workspaceId.trim(),
-			model.trim(),
-			inputRate,
-			outputRate,
-			readRate,
-			writeRate
+			model.trim()
 		])
 	);
 	const guard = new DiscardGuard(
@@ -151,8 +95,6 @@
 			showKey = false;
 			workspaceId = row?.workspace_id ?? '';
 			model = row?.model ?? ai.provider(provider)?.default_model ?? '';
-			priceOpen = false;
-			typePrice(row?.custom_price ? row : null);
 			typedName = row?.name ?? '';
 			nameTouched = !!row && row.name !== connectionName(ai.provider(row.provider), baseUrl, taken);
 			tested = null;
@@ -164,7 +106,7 @@
 	function pickProvider(value: string) {
 		if (!value || value === provider) return;
 		provider = value;
-		pickModel(ai.provider(value)?.default_model ?? '');
+		model = ai.provider(value)?.default_model ?? '';
 	}
 
 	function rename(value: string) {
@@ -172,7 +114,7 @@
 		nameTouched = true;
 	}
 
-	type Field = 'provider' | 'url' | 'key' | 'model' | 'price';
+	type Field = 'provider' | 'url' | 'key' | 'model';
 
 	function missing(): { field: Field; message: string } | null {
 		if (!spec) return { field: 'provider', message: 'Choose a provider' };
@@ -180,10 +122,6 @@
 			return { field: 'url', message: 'Server URL is required' };
 		if (keyMissing) return { field: 'key', message: 'API key is required' };
 		if (!model.trim()) return { field: 'model', message: 'Choose a model' };
-		if (typed.some((rate) => rate === null))
-			return { field: 'price', message: 'Price must be a number' };
-		if (customPrice && (typed[0] === undefined || typed[1] === undefined))
-			return { field: 'price', message: 'Input and output price are both required' };
 		return null;
 	}
 
@@ -208,46 +146,13 @@
 		tested = answer ? { draft: sent, result: answer } : null;
 	}
 
-	function priceFields(): Partial<AiConnectionCreate> {
-		if (!customPrice) return { custom_price: false, ...optionPrice(listed) };
-		const [input, output, read, write] = typed;
-		return {
-			custom_price: true,
-			input_per_mtok: input ?? undefined,
-			output_per_mtok: output ?? undefined,
-			...(typeof read === 'number' ? { cache_read_per_mtok: read } : {}),
-			...(typeof write === 'number' ? { cache_write_per_mtok: write } : {})
-		};
-	}
-
-	function typePrice(row: AiConnection | null) {
-		const text = (rate: number | null | undefined) => (rate == null ? '' : String(rate));
-		inputRate = text(row?.input_per_mtok);
-		outputRate = text(row?.output_per_mtok);
-		readRate = text(row?.cache_read_per_mtok);
-		writeRate = text(row?.cache_write_per_mtok);
-	}
-
-	function pickModel(value: string) {
-		if (value === model) return;
-		model = value;
-		typePrice(
-			sameServer && connection?.custom_price && connection.model === value ? connection : null
-		);
-	}
-
 	async function save() {
 		attempted = true;
-		const reason = missing();
-		if (reason) {
-			if (reason.field === 'price') priceOpen = true;
-			return;
-		}
+		if (missing()) return;
 		const body = {
 			name: name.trim() || undefined,
 			provider,
 			model: model.trim(),
-			...priceFields(),
 			...(spec?.needs_base_url ? { base_url: serverUrl } : {}),
 			...(freshKey ? { api_key: freshKey } : {}),
 			...(spec?.workspace ? { workspace_id: workspace } : {})
@@ -358,84 +263,9 @@
 				{/if}
 				<FormField label="Model" error={errorFor('model')}>
 					{#snippet children({ id })}
-						<ModelPicker
-							{id}
-							{provider}
-							{request}
-							bind:value={() => model, pickModel}
-							bind:selected={picked}
-							bind:loading={listing}
-						/>
+						<ModelPicker {id} {provider} {request} bind:value={model} />
 					{/snippet}
 				</FormField>
-				{#if model.trim()}
-					<Collapsible.Root bind:open={priceOpen}>
-						<Collapsible.Trigger
-							class="flex w-full items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-						>
-							<ChevronRightIcon
-								class="size-3 transition-transform {priceOpen ? 'rotate-90' : ''}"
-							/>
-							Price
-							<span class="font-normal tabular-nums">{shownPrice}</span>
-						</Collapsible.Trigger>
-						<Collapsible.Content>
-							<div class="grid grid-cols-2 gap-3 pt-3">
-								<FormField label="Input per 1M tokens">
-									{#snippet children({ id })}
-										<Input
-											{id}
-											bind:value={inputRate}
-											inputmode="decimal"
-											placeholder={placeholders[0]}
-											autocomplete="off"
-											class="font-mono text-xs tabular-nums"
-										/>
-									{/snippet}
-								</FormField>
-								<FormField label="Output per 1M tokens">
-									{#snippet children({ id })}
-										<Input
-											{id}
-											bind:value={outputRate}
-											inputmode="decimal"
-											placeholder={placeholders[1]}
-											autocomplete="off"
-											class="font-mono text-xs tabular-nums"
-										/>
-									{/snippet}
-								</FormField>
-								<FormField label="Cache read per 1M tokens">
-									{#snippet children({ id })}
-										<Input
-											{id}
-											bind:value={readRate}
-											inputmode="decimal"
-											placeholder={placeholders[2]}
-											autocomplete="off"
-											class="font-mono text-xs tabular-nums"
-										/>
-									{/snippet}
-								</FormField>
-								<FormField label="Cache write per 1M tokens">
-									{#snippet children({ id })}
-										<Input
-											{id}
-											bind:value={writeRate}
-											inputmode="decimal"
-											placeholder={placeholders[3]}
-											autocomplete="off"
-											class="font-mono text-xs tabular-nums"
-										/>
-									{/snippet}
-								</FormField>
-							</div>
-						</Collapsible.Content>
-					</Collapsible.Root>
-					{#if errorFor('price')}
-						<p class="text-sm text-destructive" role="alert">{errorFor('price')}</p>
-					{/if}
-				{/if}
 				{#if result}
 					<p class="flex items-start gap-1.5 text-xs">
 						{#if result.success}

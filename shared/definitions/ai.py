@@ -23,7 +23,6 @@ MAX_BASE_URL = 300
 MAX_WORKSPACE_ID = 80
 MAX_API_KEY = 400
 MAX_TEST_MESSAGE = 500
-MAX_PRICE_PER_MTOK = 10_000.0
 MAX_CALLS_PAGE = 50
 MAX_COST_SOURCE = 16
 MAX_CATALOG_ID = 120
@@ -499,7 +498,6 @@ def us_premium(model: str) -> bool:
 class CostSource(StrEnum):
     PROVIDER = "provider"
     LIST = "list"
-    CUSTOM = "custom"
 
 
 @dataclass(frozen=True)

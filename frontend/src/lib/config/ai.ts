@@ -1,4 +1,4 @@
-import type { AiCall, AiConnectionCreate, AiModelOption, AiProvider } from '$lib/types/ai';
+import type { AiCall, AiProvider } from '$lib/types/ai';
 
 export const AIProvider = {
 	OPENAI: 'openai',
@@ -18,13 +18,11 @@ export const RECENT_CALLS = 5;
 /** Mirror of shared/definitions/ai.py:CostSource. */
 export const CostSource = {
 	PROVIDER: 'provider',
-	LIST: 'list',
-	CUSTOM: 'custom'
+	LIST: 'list'
 } as const;
 
 const PRICE_LABELS: Record<string, string> = {
-	[CostSource.LIST]: 'List price',
-	[CostSource.CUSTOM]: 'Custom price'
+	[CostSource.LIST]: 'List price'
 };
 
 const RATE = new Intl.NumberFormat('en-US', {
@@ -72,34 +70,6 @@ export function cacheHint(reads: number, writes: number): string | null {
 
 export function unpricedLabel(count: number): string | null {
 	return count ? `${COUNT.format(count)} unpriced` : null;
-}
-
-/** The price fields of a picked model. */
-export function optionPrice(
-	option: AiModelOption | null
-): Pick<
-	AiConnectionCreate,
-	'input_per_mtok' | 'output_per_mtok' | 'cache_read_per_mtok' | 'cache_write_per_mtok'
-> {
-	if (option?.input_per_mtok == null || option.output_per_mtok == null) return {};
-	return {
-		input_per_mtok: option.input_per_mtok,
-		output_per_mtok: option.output_per_mtok,
-		...(option.cache_read_per_mtok != null
-			? { cache_read_per_mtok: option.cache_read_per_mtok }
-			: {}),
-		...(option.cache_write_per_mtok != null
-			? { cache_write_per_mtok: option.cache_write_per_mtok }
-			: {})
-	};
-}
-
-/** A typed price per 1M tokens, undefined when empty and null when not a price. */
-export function parseRate(text: string): number | null | undefined {
-	const value = text.trim();
-	if (!value) return undefined;
-	const rate = Number(value);
-	return Number.isFinite(rate) && rate >= 0 ? rate : null;
 }
 
 export function callCursor(call: Pick<AiCall, 'at' | 'id'>): string {

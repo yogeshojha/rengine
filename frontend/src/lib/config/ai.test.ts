@@ -8,8 +8,6 @@ import {
 	costHint,
 	formatCost,
 	formatRate,
-	optionPrice,
-	parseRate,
 	ratePair,
 	unpricedLabel
 } from './ai';
@@ -83,12 +81,8 @@ describe('cost hints', () => {
 		expect(costHint({ ...listed, cost_source: null }, 'Anthropic')).toBeNull();
 	});
 
-	it('names a price set on the provider', () => {
-		const custom = { cost_source: CostSource.CUSTOM, input_per_mtok: 0, output_per_mtok: 0 };
-		expect(costHint(custom, 'OpenAI-compatible')).toBe(
-			'Custom price, $0.00 and $0.00 per 1M tokens'
-		);
-		expect(costHint({ ...custom, cost_source: 'other' }, 'OpenAI-compatible')).toBeNull();
+	it('names no source it does not know', () => {
+		expect(costHint({ ...listed, cost_source: 'other' }, 'Anthropic')).toBeNull();
 	});
 
 	it('writes a rate pair per million tokens', () => {
@@ -105,35 +99,5 @@ describe('cost hints', () => {
 	it('names unpriced calls only when some exist', () => {
 		expect(unpricedLabel(3)).toBe('3 unpriced');
 		expect(unpricedLabel(0)).toBeNull();
-	});
-});
-
-describe('prices sent with a model', () => {
-	const option = {
-		id: 'claude-opus-5-5',
-		label: 'Claude Opus 5.5',
-		input_per_mtok: 4,
-		output_per_mtok: 20,
-		cache_read_per_mtok: 0.2,
-		cache_write_per_mtok: null,
-		recommended: true
-	};
-
-	it('carries the listed rates, cache rates included', () => {
-		expect(optionPrice(option)).toEqual({
-			input_per_mtok: 4,
-			output_per_mtok: 20,
-			cache_read_per_mtok: 0.2
-		});
-		expect(optionPrice({ ...option, output_per_mtok: null })).toEqual({});
-		expect(optionPrice(null)).toEqual({});
-	});
-
-	it('reads a typed price, telling empty from not a price', () => {
-		expect(parseRate(' 1.26 ')).toBe(1.26);
-		expect(parseRate('0')).toBe(0);
-		expect(parseRate('')).toBeUndefined();
-		expect(parseRate('-1')).toBeNull();
-		expect(parseRate('abc')).toBeNull();
 	});
 });

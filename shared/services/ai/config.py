@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from sqlalchemy import select
 
@@ -12,7 +12,6 @@ from shared.definitions.ai import (
     REQUEST_TIMEOUT,
     WORKSPACE_PROVIDERS,
     Charge,
-    CostSource,
     Rates,
     Usage,
     curated_rates,
@@ -43,7 +42,6 @@ class AIConfig:
     output_per_mtok: float | None = None
     cache_read_per_mtok: float | None = None
     cache_write_per_mtok: float | None = None
-    custom_price: bool = False
 
     @property
     def available(self) -> bool:
@@ -83,20 +81,8 @@ class AIConfig:
             self.provider, model, base_url=self.base_url
         )
 
-    def priced(self, usage: Usage, rates: Rates | None, model: str) -> Charge:
-        """A call's charge at the given rates, labelled custom when they are the user's own."""
-        charge = price(usage, rates, self.provider)
-        if (
-            self.custom_price
-            and charge.source == CostSource.LIST.value
-            and charge.rates == self.listed_price(model)
-        ):
-            return replace(charge, source=CostSource.CUSTOM.value)
-        return charge
-
     def charge(self, usage: Usage, model: str | None = None) -> Charge:
-        model = model or self.model
-        return self.priced(usage, self.rates(model), model)
+        return price(usage, self.rates(model or self.model), self.provider)
 
     def cost(self, usage: Usage, model: str | None = None) -> float | None:
         return self.charge(usage, model).usd
@@ -125,7 +111,6 @@ def connection_config(
         output_per_mtok=row.output_per_mtok,
         cache_read_per_mtok=row.cache_read_per_mtok,
         cache_write_per_mtok=row.cache_write_per_mtok,
-        custom_price=row.custom_price,
     )
 
 

@@ -17,8 +17,7 @@
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { aiApi } from '$lib/api/ai';
 	import { ai } from '$lib/stores/ai.svelte';
-	import { optionPrice } from '$lib/config/ai';
-	import type { AiConnection, AiModelOption, AiModelsRequest } from '$lib/types/ai';
+	import type { AiConnection, AiModelsRequest } from '$lib/types/ai';
 	import type { StepProps } from '$lib/types/onboarding';
 
 	let { next, setFooter }: StepProps = $props();
@@ -29,7 +28,6 @@
 	let provider = $state('');
 	let apiKey = $state('');
 	let model = $state('');
-	let picked = $state<AiModelOption | null>(null);
 	let baseUrl = $state('');
 	let showKey = $state(false);
 	let features = $state<Record<string, boolean>>({});
@@ -105,10 +103,6 @@
 		else toast.error(result.message);
 	}
 
-	function listedPrice() {
-		return optionPrice(picked?.id === model.trim() ? picked : null);
-	}
-
 	async function handleNext() {
 		if (enabled && spec?.needs_base_url && !serverUrl) {
 			toast.error('Server URL is required');
@@ -130,7 +124,6 @@
 							enabled: true,
 							provider,
 							model: model.trim(),
-							...listedPrice(),
 							features,
 							...(serverUrl ? { base_url: serverUrl } : {}),
 							...(freshKey ? { api_key: freshKey } : {})
@@ -238,14 +231,7 @@
 
 		<FormField label="Model">
 			{#snippet children({ id })}
-				<ModelPicker
-					{id}
-					{provider}
-					{request}
-					bind:value={model}
-					bind:selected={picked}
-					disabled={saving}
-				/>
+				<ModelPicker {id} {provider} {request} bind:value={model} disabled={saving} />
 			{/snippet}
 		</FormField>
 

@@ -31,6 +31,7 @@ from shared.models.project import Project
 from shared.models.proxy import Proxy, ProxyEndpoint, ProxyTestResult
 from shared.models.scan_context import ScanContext, ScanContextCreate
 from shared.models.user import User, UserAdminCreate, UserAdminUpdate
+from shared.services.ai import client
 from shared.services.api_key.async_api_key import APIKeyService
 from shared.services.notifier import _RECORD_DELIVERY, _delivery_rows
 from shared.services.proxy_resolve import resolve_proxy_url
@@ -384,6 +385,11 @@ async def test_general_settings_do_not_write_the_ai_connection(estate, flush_onl
 
 
 # ---------- ai ----------
+
+
+@pytest.fixture(autouse=True)
+def unlisted(monkeypatch):
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: None)
 
 
 async def _stored_ai(session):

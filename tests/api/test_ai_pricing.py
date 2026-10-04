@@ -10,7 +10,6 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-from fastapi import HTTPException
 from sqlalchemy import delete, select, text
 
 from app.services import ai_settings
@@ -55,7 +54,7 @@ from shared.services.ai.client import (
     list_models,
     openai_usage,
 )
-from shared.services.ai.config import AIConfig, connection_config
+from shared.services.ai.config import AIConfig
 from shared.utils.datetime import utc_now
 
 pytestmark = pytest.mark.api
@@ -1317,8 +1316,16 @@ def _stored(row) -> tuple:
     )
 
 
-async def test_saving_stores_the_picked_model_price(estate, flush_only, price_cache):
+async def _saved(session, connection) -> tuple:
+    return _stored(await session.get(AiConnection, connection.id))
+
+
+async def test_saving_stores_the_listed_price(
+    estate, flush_only, price_cache, monkeypatch
+):
     _seed(price_cache)
+    own = {"z-ai/glm-5.3": Rates(1.26, 3.96, 0.2)}
+    monkeypatch.setattr(client, "listed_rates", lambda cfg: own.get(cfg.model))
     service = AiSettingsService(flush_only)
     curated = await service.create_connection(
         AiConnectionCreate(
@@ -1333,9 +1340,6 @@ async def test_saving_stores_the_picked_model_price(estate, flush_only, price_ca
             provider="openai_compatible",
             base_url="https://router.example/v1",
             model="z-ai/glm-5.3",
-            input_per_mtok=1.26,
-            output_per_mtok=3.96,
-            cache_read_per_mtok=0.2,
         )
     )
     manual = await service.create_connection(
@@ -1353,122 +1357,38 @@ async def test_saving_stores_the_picked_model_price(estate, flush_only, price_ca
         )
     )
 
-    assert _stored(curated) == (4.0, 20.0, 0.2, 5.0)
-    assert _stored(live) == (5.0, 30.0, 0.5, None)
-    assert _stored(listed) == (1.26, 3.96, 0.2, None)
-    assert _stored(manual) == (None, None, None, None)
-    assert _stored(vllm) == (None, None, None, None)
-    assert not any(c.custom_price for c in (curated, live, listed, manual, vllm))
+    assert await _saved(flush_only, curated) == (4.0, 20.0, 0.2, 5.0)
+    assert await _saved(flush_only, live) == (5.0, 30.0, 0.5, None)
+    assert await _saved(flush_only, listed) == (1.26, 3.96, 0.2, None)
+    assert await _saved(flush_only, manual) == (None, None, None, None)
+    assert await _saved(flush_only, vllm) == (None, None, None, None)
 
 
-async def test_a_custom_price_is_kept_and_named_on_each_call(
-    estate, flush_only, price_cache, monkeypatch
+async def test_a_save_that_keeps_the_model_keeps_the_stored_price(
+    estate, flush_only, monkeypatch
 ):
-    _seed(price_cache)
-    service = AiSettingsService(flush_only)
-    local = await service.create_connection(
-        AiConnectionCreate(
-            provider="openai_compatible",
-            base_url=OPENROUTER,
-            model="openai/gpt-oss-120b",
-            input_per_mtok=0.0,
-            output_per_mtok=0.0,
-            custom_price=True,
-        )
-    )
-    assert (local.custom_price, _stored(local)) == (True, (0.0, 0.0, None, None))
-    row = await flush_only.get(AiConnection, local.id)
-
-    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(9.0, 9.0))
-    assert rates.apply(row, rates.lookup(row)) is False
-    monkeypatch.setattr(prices, "load", lambda _s: None)
-    await flush_only.run_sync(rates.refresh_all)
-    assert rates.stored(row) == Rates(0.0, 0.0)
-
-    charge = connection_config(row).charge(Usage(10_000, 2_000))
-    assert (charge.usd, charge.source) == (0.0, CostSource.CUSTOM.value)
-    listed = _cfg("openai_compatible", "openai/gpt-oss-120b", base_url=OPENROUTER)
-    assert listed.charge(Usage(10_000, 2_000)).source == CostSource.LIST.value
-
-
-async def test_a_custom_price_needs_an_input_and_an_output(estate, flush_only):
-    with pytest.raises(HTTPException) as err:
-        await AiSettingsService(flush_only).create_connection(
-            AiConnectionCreate(
-                provider="openai_compatible",
-                base_url="http://vllm:8000/v1",
-                model="m",
-                input_per_mtok=1.0,
-                custom_price=True,
-            )
-        )
-    assert err.value.status_code == 400
-
-
-async def test_clearing_a_custom_price_returns_to_the_listed_one(
-    estate, flush_only, price_cache
-):
-    _seed(price_cache)
-    service = AiSettingsService(flush_only)
-    priced = await service.create_connection(
-        AiConnectionCreate(
-            provider="openai",
-            api_key="sk-x",
-            model="gpt-5.5",
-            input_per_mtok=0.3,
-            output_per_mtok=1.2,
-            custom_price=True,
-        )
-    )
-    cleared = await service.update_connection(
-        priced.id, AiConnectionUpdate(custom_price=False)
-    )
-    assert (cleared.custom_price, _stored(cleared)) == (False, (5.0, 30.0, 0.5, None))
-
-    local = await service.create_connection(
-        AiConnectionCreate(
-            provider="openai_compatible",
-            base_url="http://vllm:8000/v1",
-            model="openai/gpt-oss-120b",
-            input_per_mtok=0.3,
-            output_per_mtok=1.2,
-            custom_price=True,
-        )
-    )
-    unset = await service.update_connection(
-        local.id, AiConnectionUpdate(custom_price=False)
-    )
-    assert _stored(unset) == (None, None, None, None)
-
-
-async def test_a_save_without_a_price_keeps_the_stored_one(estate, flush_only):
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(1.26, 3.96, 0.234))
     service = AiSettingsService(flush_only)
     routed = await service.create_connection(
         AiConnectionCreate(
             provider="openai_compatible",
             base_url="https://api.orcarouter.ai/v1",
             model="z-ai/glm-5.3",
-            input_per_mtok=1.26,
-            output_per_mtok=3.96,
-            cache_read_per_mtok=0.234,
         )
     )
-    renamed = await service.update_connection(
-        routed.id, AiConnectionUpdate(name="Orca", custom_price=False)
-    )
-    assert _stored(renamed) == (1.26, 3.96, 0.234, None)
 
-    set_ = AiConnectionUpdate(
-        custom_price=True,
-        input_per_mtok=1.0,
-        output_per_mtok=3.0,
-        cache_read_per_mtok=0.1,
+    monkeypatch.setattr(
+        client, "listed_rates", lambda cfg: Rates(1.0, 3.0, 0.1) if cfg.model else None
     )
-    await service.update_connection(routed.id, set_)
-    again = await service.update_connection(
-        routed.id, set_.model_copy(update={"name": "Orca 2"})
+    renamed = await service.update_connection(
+        routed.id, AiConnectionUpdate(name="Orca")
     )
-    assert (again.custom_price, _stored(again)) == (True, (1.0, 3.0, 0.1, None))
+    assert await _saved(flush_only, renamed) == (1.26, 3.96, 0.234, None)
+
+    moved = await service.update_connection(
+        routed.id, AiConnectionUpdate(model="z-ai/glm-5.4")
+    )
+    assert await _saved(flush_only, moved) == (1.0, 3.0, 0.1, None)
 
 
 async def test_an_unread_server_list_keeps_the_stored_price(price_cache, monkeypatch):
@@ -1501,9 +1421,7 @@ async def test_an_unread_server_list_keeps_the_stored_price(price_cache, monkeyp
 
 
 async def test_use_answers_from_the_stored_row(estate, flush_only, monkeypatch):
-    monkeypatch.setattr(
-        client, "listed_rates", lambda _cfg: pytest.fail("Use read the server's list")
-    )
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(1.26, 3.96))
     service = AiSettingsService(flush_only)
     routed = await service.create_connection(
         AiConnectionCreate(
@@ -1511,13 +1429,14 @@ async def test_use_answers_from_the_stored_row(estate, flush_only, monkeypatch):
             base_url="https://router.example/v1",
             api_key="sk-or-x",
             model="z-ai/glm-5.3",
-            input_per_mtok=1.26,
-            output_per_mtok=3.96,
         )
+    )
+    monkeypatch.setattr(
+        client, "listed_rates", lambda _cfg: pytest.fail("Use read the server's list")
     )
     used = await service.use_connection(routed.id)
     assert used.in_use
-    assert (used.input_per_mtok, used.output_per_mtok) == (1.26, 3.96)
+    assert await _saved(flush_only, used) == (1.26, 3.96, None, None)
 
 
 async def test_test_reprices_only_once_the_server_answered(
@@ -1537,7 +1456,7 @@ async def test_test_reprices_only_once_the_server_answered(
             raise AIError(msg, usage=Usage())
         return SimpleNamespace(model=cfg.model, latency_ms=1)
 
-    monkeypatch.setattr(client, "listed_rates", listed)
+    monkeypatch.setattr(client, "listed_rates", lambda _cfg: Rates(1.26, 3.96))
     monkeypatch.setattr(ai_settings, "complete", ping)
     service = AiSettingsService(flush_only)
     routed = await service.create_connection(
@@ -1546,10 +1465,9 @@ async def test_test_reprices_only_once_the_server_answered(
             base_url="https://router.example/v1",
             api_key="sk-or-x",
             model="z-ai/glm-5.3",
-            input_per_mtok=1.26,
-            output_per_mtok=3.96,
         )
     )
+    monkeypatch.setattr(client, "listed_rates", listed)
 
     failed = await service.test_connection(routed.id)
     assert (failed.success, reads) == (False, [])

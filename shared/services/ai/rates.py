@@ -34,8 +34,8 @@ def store(row: AiConnection, rates: Rates | None) -> None:
 
 
 def apply(row: AiConnection, rates: Rates | None) -> bool:
-    """Store a found price over the stored one, except a price the user set."""
-    if row.custom_price or rates is None or rates == stored(row):
+    """Store a found price over the stored one."""
+    if rates is None or rates == stored(row):
         return False
     store(row, rates)
     row.updated_at = utc_now()

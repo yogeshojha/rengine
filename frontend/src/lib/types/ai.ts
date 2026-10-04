@@ -66,11 +66,6 @@ export interface AiConnection {
 	name: string;
 	provider: string;
 	model: string;
-	input_per_mtok: number | null;
-	output_per_mtok: number | null;
-	cache_read_per_mtok: number | null;
-	cache_write_per_mtok: number | null;
-	custom_price: boolean;
 	base_url: string | null;
 	workspace_id: string | null;
 	key_masked: string | null;
@@ -86,11 +81,6 @@ export interface AiConnectionCreate {
 	api_key?: string;
 	base_url?: string;
 	model?: string;
-	input_per_mtok?: number;
-	output_per_mtok?: number;
-	cache_read_per_mtok?: number;
-	cache_write_per_mtok?: number;
-	custom_price?: boolean;
 	workspace_id?: string;
 	use?: boolean;
 }
@@ -185,10 +175,6 @@ export interface AiOnboarding {
 	base_url?: string;
 	workspace_id?: string;
 	model?: string;
-	input_per_mtok?: number;
-	output_per_mtok?: number;
-	cache_read_per_mtok?: number;
-	cache_write_per_mtok?: number;
 	features?: Record<string, boolean>;
 }
 

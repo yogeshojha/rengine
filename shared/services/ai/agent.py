@@ -19,6 +19,7 @@ from shared.definitions.ai import (
     Charge,
     Effort,
     Usage,
+    price,
 )
 from shared.enums.instance import AIProvider
 from shared.services.ai import ledger
@@ -221,7 +222,7 @@ async def converse(
     def write(
         usage: Usage, *, ok: bool, error: str | None = None, rounds: int = 0
     ) -> Charge:
-        charge = cfg.priced(usage, rates, model)
+        charge = price(usage, rates, cfg.provider)
         ledger.record(
             CallRecord(
                 task=task,

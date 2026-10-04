@@ -13,7 +13,6 @@ from shared.definitions.ai import (
     MAX_CONNECTION_NAME,
     MAX_COST_SOURCE,
     MAX_MODEL_ID,
-    MAX_PRICE_PER_MTOK,
     MAX_PROVIDER,
     MAX_TEST_MESSAGE,
     MAX_WORKSPACE_ID,
@@ -87,7 +86,6 @@ class AiConnection(SQLModel, table=True):
     output_per_mtok: float | None = Field(default=None)
     cache_read_per_mtok: float | None = Field(default=None)
     cache_write_per_mtok: float | None = Field(default=None)
-    custom_price: bool = Field(default=False)
     workspace_id: str | None = Field(default=None, max_length=MAX_WORKSPACE_ID)
     last_test_at: datetime | None = Field(default=None)
     last_test_ok: bool | None = Field(default=None)
@@ -113,11 +111,6 @@ class AiConnectionRead(BaseModel):
     name: str
     provider: str
     model: str
-    input_per_mtok: float | None = None
-    output_per_mtok: float | None = None
-    cache_read_per_mtok: float | None = None
-    cache_write_per_mtok: float | None = None
-    custom_price: bool = False
     base_url: str | None = None
     workspace_id: str | None = None
     key_masked: str | None = None
@@ -135,19 +128,6 @@ class AiConnectionCreate(BaseModel):
     api_key: str | None = PydanticField(default=None, max_length=MAX_API_KEY)
     base_url: str | None = PydanticField(default=None, max_length=MAX_BASE_URL)
     model: str | None = PydanticField(default=None, max_length=MAX_MODEL_ID)
-    input_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    output_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    cache_read_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    cache_write_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    custom_price: bool = False
     workspace_id: str | None = PydanticField(default=None, max_length=MAX_WORKSPACE_ID)
     use: bool = False
 
@@ -160,19 +140,6 @@ class AiConnectionUpdate(BaseModel):
     api_key: str | None = PydanticField(default=None, max_length=MAX_API_KEY)
     base_url: str | None = PydanticField(default=None, max_length=MAX_BASE_URL)
     model: str | None = PydanticField(default=None, max_length=MAX_MODEL_ID)
-    input_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    output_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    cache_read_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    cache_write_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    custom_price: bool | None = None
     workspace_id: str | None = PydanticField(default=None, max_length=MAX_WORKSPACE_ID)
 
 
@@ -210,18 +177,6 @@ class AiOnboarding(BaseModel):
     base_url: str | None = PydanticField(default=None, max_length=MAX_BASE_URL)
     workspace_id: str | None = PydanticField(default=None, max_length=MAX_WORKSPACE_ID)
     model: str | None = PydanticField(default=None, max_length=MAX_MODEL_ID)
-    input_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    output_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    cache_read_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
-    cache_write_per_mtok: float | None = PydanticField(
-        default=None, ge=0, le=MAX_PRICE_PER_MTOK
-    )
     features: dict[str, bool] | None = None
 
 

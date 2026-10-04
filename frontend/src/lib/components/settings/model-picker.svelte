@@ -16,29 +16,26 @@
 	interface Props {
 		provider: string;
 		value: string;
-		selected?: AiModelOption | null;
 		request: AiModelsRequest | null;
 		id?: string;
 		placeholder?: string;
 		disabled?: boolean;
-		loading?: boolean;
 	}
 
 	let {
 		provider,
 		value = $bindable(),
-		selected = $bindable(null),
 		request,
 		id,
 		placeholder = 'Choose a model',
-		disabled = false,
-		loading = $bindable(false)
+		disabled = false
 	}: Props = $props();
 
 	const DEBOUNCE_MS = 500;
 	const PRICE_COL = 'w-16 shrink-0 text-right tabular-nums';
 
 	let open = $state(false);
+	let loading = $state(false);
 	let search = $state('');
 	let listed = $state<{ provider: string; models: AiModelOption[] } | null>(null);
 	let error = $state<string | null>(null);
@@ -74,10 +71,6 @@
 	const priced = $derived(
 		options.some((m) => m.input_per_mtok !== null || m.output_per_mtok !== null)
 	);
-
-	$effect.pre(() => {
-		selected = current;
-	});
 
 	async function load(force = false) {
 		const body = request;
