@@ -13,6 +13,7 @@ from sqlalchemy import (
     or_,
     select,
     true,
+    tuple_,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import INET, JSONB
@@ -22,8 +23,15 @@ from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
 from shared.definitions.domain_posture import QUERY_VALUES as POSTURE_VALUES
 from shared.definitions.hygiene import QUERY_VALUES as HYGIENE_VALUES
+from shared.definitions.infostealer import ANY as STEALER_ANY
+from shared.definitions.infostealer import AUDIENCE_ORDER as STEALER_AUDIENCES
+from shared.definitions.infostealer import CREDENTIALS_FIELD as STEALER_CREDENTIALS
+from shared.definitions.infostealer import NONE as STEALER_NONE
+from shared.definitions.infostealer import QUERY_FIELD as STEALER_FIELD
+from shared.definitions.infostealer import QUERY_VALUES as STEALER_VALUES
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
+from shared.models.infostealer import InfostealerLogin
 from shared.models.interest import InterestSignal
 from shared.models.port import Port
 from shared.models.subdomain import Subdomain
@@ -263,6 +271,44 @@ def _posture(cmp: Compare):
     return negate(matched) if cmp.op is Op.NE else matched
 
 
+def _stealer_hosts(audiences: list[str] | None):
+    hosts = select(InfostealerLogin.target_id, InfostealerLogin.host)
+    if audiences is not None:
+        hosts = hosts.where(InfostealerLogin.audience.in_(audiences))
+    return tuple_(Subdomain.target_id, Subdomain.name).in_(hosts)
+
+
+def _infostealer(cmp: Compare):
+    values = [v.lower() for v in cmp.values]
+    for raw, value in zip(cmp.values, values, strict=True):
+        if value not in STEALER_VALUES:
+            msg = f"Unknown infostealer value {raw!r}."
+            hint = f"Try one of: {', '.join(STEALER_VALUES)}"
+            raise QuerySyntaxError(msg, cmp.start, cmp.end, hint)
+    audiences = [v for v in values if v in STEALER_AUDIENCES]
+    parts = []
+    if audiences:
+        parts.append(_stealer_hosts(audiences))
+    if STEALER_ANY in values:
+        parts.append(_stealer_hosts(None))
+    if STEALER_NONE in values:
+        parts.append(negate(_stealer_hosts(None)))
+    matched = or_(*parts)
+    return negate(matched) if cmp.op is Op.NE else matched
+
+
+def _stealer_credentials():
+    return (
+        select(func.coalesce(func.sum(InfostealerLogin.credentials), 0))
+        .where(
+            InfostealerLogin.target_id == Subdomain.target_id,
+            InfostealerLogin.host == Subdomain.name,
+        )
+        .correlate(Subdomain)
+        .scalar_subquery()
+    )
+
+
 def _ai(cmp: Compare, ctx: QueryContext):
     services = cast(Subdomain.ai_services, JSONB)
     state = tri_state(cmp)
@@ -348,6 +394,10 @@ _SUBDOMAIN_BUILDERS = {
     "hygiene": lambda c, _ctx: _hygiene(c),
     "posture": lambda c, _ctx: _posture(c),
     "ai": _ai,
+    STEALER_FIELD: lambda c, _ctx: _infostealer(c),
+    STEALER_CREDENTIALS: lambda c, _ctx: number_match(
+        _stealer_credentials(), c, int_coerce(c)
+    ),
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),

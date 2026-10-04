@@ -7,6 +7,7 @@ from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
 from shared.definitions.constants import MAX_TARGET_BULK, MAX_TARGETS_IMPORT
+from shared.definitions.infostealer import MAX_ERROR_LENGTH
 from shared.definitions.rescan import MAX_RUN_ASSETS
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
@@ -121,6 +122,9 @@ class Target(TargetBase, table=True):
         default=None, foreign_key="dns_lookups.id", index=True, ondelete="SET NULL"
     )
 
+    infostealer_status: TaskStatus = Field(default=TaskStatus.PENDING, index=True)
+    infostealer_error: str | None = Field(default=None, max_length=MAX_ERROR_LENGTH)
+
     organizations: list["Organization"] = Relationship(
         link_model=TargetOrganization,
         sa_relationship_kwargs={"lazy": "selectin"},
@@ -204,6 +208,8 @@ class TargetRead(TargetBase):
     dns_error: str | None = None
     dns_lookup_id: uuid.UUID | None = None
     dns: DnsLookupSummary | None = None
+    infostealer_status: TaskStatus = TaskStatus.PENDING
+    infostealer_error: str | None = None
     organizations: list[OrganizationSummary] = Field(default_factory=list)
     tags: list[TagSummary] = Field(default_factory=list)
     seed_scans: bool = True

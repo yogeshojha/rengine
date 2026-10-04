@@ -24,7 +24,7 @@ from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
-from shared.services import target_seeds
+from shared.services import infostealer, target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.services.scope_filter import matches_any
@@ -206,18 +206,20 @@ class SubdomainStage(Stage):
             tool_options=dict(resolved.tool_options or {}),
         )
 
-        provider_classes = self._select_providers(cfg, activity)
-        results = self._run_providers(
-            provider_classes,
-            pctx,
-            activity,
-            on_result=lambda result: self._write_names(
+        def write(result: ProviderResult) -> None:
+            self._write_names(
                 self._sift(
                     merge_and_filter([result], domain, resolved.included_subdomains),
                     domain,
                 )[0]
-            ),
-        )
+            )
+
+        provider_classes = self._select_providers(cfg, activity)
+        results = self._run_providers(provider_classes, pctx, activity, on_result=write)
+        stealer = self._infostealer_names(activity)
+        if stealer is not None:
+            results.append(stealer)
+            write(stealer)
         self._check_abort()
 
         merged, dropped = self._sift(
@@ -543,6 +545,18 @@ class SubdomainStage(Stage):
     def _prefetch_keys(self) -> dict[str, str | None]:
         svc = SyncAPIKeyService(self.session)
         return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
+
+    def _infostealer_names(self, activity: ActivityLogService) -> ProviderResult | None:
+        if not infostealer.lookups_enabled(self.session):
+            return None
+        names = infostealer.hosts(self.session, self.ctx.target_id)
+        if not names:
+            return None
+        result = ProviderResult(
+            source=SubdomainSource.HUDSON_ROCK, subdomains=names, raw_count=len(names)
+        )
+        self._log_provider(activity, result)
+        return result
 
     def _select_providers(
         self, cfg: SubdomainConfig, activity: ActivityLogService

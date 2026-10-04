@@ -22,6 +22,8 @@ class ActivityEvent(Enum):
     TARGET_ENRICHMENT_DNS_FAILED = "target.enrichment.dns.failed"
     TARGET_ENRICHMENT_BGP_COMPLETED = "target.enrichment.bgp.completed"
     TARGET_ENRICHMENT_BGP_FAILED = "target.enrichment.bgp.failed"
+    TARGET_ENRICHMENT_INFOSTEALER_COMPLETED = "target.enrichment.infostealer.completed"
+    TARGET_ENRICHMENT_INFOSTEALER_FAILED = "target.enrichment.infostealer.failed"
 
     # scan events
     SCAN_STARTED = "scan.started"

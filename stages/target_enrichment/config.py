@@ -9,5 +9,5 @@ class TargetEnrichmentConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Target enrichment",
-        description="Resolve the target and attach DNS, WHOIS and BGP context.",
+        description="Resolve the target and attach DNS, WHOIS, BGP and infostealer context.",
     )

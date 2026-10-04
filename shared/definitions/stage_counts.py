@@ -45,6 +45,7 @@ STAGE_COUNT_LABELS: dict[str, Label] = {
     "fingerprinted": noun(_SERVICES, after="identified"),
     "hosts": noun(_WEB, after="fuzzed"),
     "http_assets": HTTP_SERVICE_NOUN,
+    "infostealer_hosts": ("infostealer hostname", "infostealer hostnames"),
     "ips": noun(_IPS),
     "known_ports": noun(_SERVICES, before="known"),
     "lookalike_threats": (

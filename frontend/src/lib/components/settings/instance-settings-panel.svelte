@@ -19,6 +19,7 @@
 	import { INSTANCE_MODES, MODE_LABELS, coerceInstanceMode } from '$lib/config/capabilities';
 	import { AUTOMATIC, CONCURRENT_SCAN_CHOICES } from '$lib/config/scan-admission';
 	import { SCAN_RETENTION, SCREENSHOT_RETENTION, retentionLabel } from '$lib/config/retention';
+	import { SOURCE_NAME } from '$lib/config/infostealer';
 	import type { InstanceSettingsUpdate } from '$lib/types/instance-settings';
 
 	let loading = $state(true);
@@ -192,6 +193,18 @@
 				checked={settings.cert_recheck_enabled}
 				disabled={locked}
 				onCheckedChange={(v) => save({ cert_recheck_enabled: v }, 'Certificate re-check')}
+			/>
+		</SettingRow>
+		<SettingRow
+			label="Infostealer lookups"
+			help="Sends each domain target to {SOURCE_NAME}"
+			for="instance-infostealer"
+		>
+			<Switch
+				id="instance-infostealer"
+				checked={settings.infostealer_lookups}
+				disabled={locked}
+				onCheckedChange={(v) => save({ infostealer_lookups: v }, 'Infostealer lookups')}
 			/>
 		</SettingRow>
 

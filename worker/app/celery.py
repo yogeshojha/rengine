@@ -116,6 +116,7 @@ celery_app.conf.task_routes = {
 celery_app.autodiscover_tasks(
     [
         "app.tasks.whois",
+        "app.tasks.infostealer",
         "app.tasks.ripestat",
         "app.tasks.dns",
         "app.tasks.scan",

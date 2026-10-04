@@ -86,6 +86,8 @@ export interface Target extends TargetBase {
 	dns_error: string | null;
 	dns_lookup_id: string | null;
 	dns: DnsSummaryData | null;
+	infostealer_status: TaskStatus;
+	infostealer_error: string | null;
 	organizations: OrganizationSummary[];
 	tags: TagSummary[];
 	seed_scans: boolean;
@@ -95,7 +97,7 @@ export interface Target extends TargetBase {
 
 export type SeedKind = 'host' | 'address' | 'url';
 
-export type EnrichmentKind = 'whois' | 'dns' | 'bgp';
+export type EnrichmentKind = 'whois' | 'dns' | 'bgp' | 'infostealer';
 
 export const HOSTNAME_TARGET_TYPES: readonly TargetType[] = [TargetType.DOMAIN, TargetType.URL];
 export const NETWORK_TARGET_TYPES: readonly TargetType[] = [
@@ -105,6 +107,7 @@ export const NETWORK_TARGET_TYPES: readonly TargetType[] = [
 ];
 export const dnsApplies = (t: TargetType) => HOSTNAME_TARGET_TYPES.includes(t);
 export const bgpApplies = (t: TargetType) => NETWORK_TARGET_TYPES.includes(t);
+export const infostealerApplies = dnsApplies;
 
 export interface TargetSeed {
 	id: string;

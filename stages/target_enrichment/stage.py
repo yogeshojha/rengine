@@ -14,11 +14,14 @@ from shared.models.bgp_summary import TargetBgpSummary
 from shared.models.dns import DnsLookup
 from shared.models.target import Target
 from shared.models.whois import WhoisRecord
+from shared.services import infostealer
+from shared.services.asset_query.lead_cache import bump_sync
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_ip
 from stages.base import Stage, StageResult
 from stages.target_enrichment.config import TargetEnrichmentConfig
 from tools.dnsx.service import DnsxService
+from tools.hudsonrock.client import HudsonRockClient
 from tools.whois.service import WhoisNotApplicableError, WhoisService
 
 logger = get_logger(__name__)
@@ -36,7 +39,9 @@ def _is_stale(queried_at: datetime | None) -> bool:
 class TargetEnrichmentStage(Stage):
     name = "target_enrichment"
     title = "Target Enrichment"
-    description = "Resolve the target and attach DNS, WHOIS and BGP context."
+    description = (
+        "Resolve the target and attach DNS, WHOIS, BGP and infostealer context."
+    )
     phase = Phase.DISCOVERY.value
     group = StageGroup.HOSTS.value
     role = StageRole.SUPPORT.value
@@ -56,17 +61,20 @@ class TargetEnrichmentStage(Stage):
         dns_records = self._ensure_dns(target)
         whois_present = self._ensure_whois(target)
         bgp_present = self._read_bgp()
+        stealer_hosts = self._ensure_infostealer(target)
 
         self.emit_progress(
             f"{dns_records} DNS records, "
             f"WHOIS {'stored' if whois_present else 'absent'}, "
-            f"BGP {'stored' if bgp_present else 'absent'}"
+            f"BGP {'stored' if bgp_present else 'absent'}, "
+            f"{stealer_hosts} infostealer hostnames"
         )
         return StageResult(
             counts={
                 "dns_records": dns_records,
                 "whois": int(whois_present),
                 "bgp": int(bgp_present),
+                "infostealer_hosts": stealer_hosts,
             },
             warnings=self._notes,
             partial=bool(self._notes),
@@ -130,6 +138,24 @@ class TargetEnrichmentStage(Stage):
                 logger.warning("in-scan WHOIS refresh failed: %s", exc)
                 self._notes.append(f"WHOIS was not refreshed. {exc}")
         return record is not None
+
+    def _ensure_infostealer(self, target: Target) -> int:
+        domain = infostealer.lookup_domain(target.target_value, target.target_type)
+        if domain is None or not infostealer.lookups_enabled(self.session):
+            return 0
+        if infostealer.is_stale(infostealer.stored(self.session, target.id)):
+            try:
+                report = HudsonRockClient().search_domain(domain)
+                infostealer.store(self.session, target.id, report)
+                infostealer.mark(target, TaskStatus.SUCCESS)
+                self.session.add(target)
+                self.session.commit()
+                bump_sync([target.id])
+            except Exception as exc:
+                self.session.rollback()
+                logger.warning("in-scan infostealer refresh failed: %s", exc)
+                self._notes.append(f"Infostealer report was not refreshed. {exc}")
+        return len(infostealer.hosts(self.session, target.id))
 
     def _read_bgp(self) -> bool:
         bgp = self.session.execute(

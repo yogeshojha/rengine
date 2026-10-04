@@ -55,6 +55,7 @@ class InstanceSettings(SQLModel, table=True):
     )
     threat_intel_auto_sync: bool = Field(default=True)
     cert_recheck_enabled: bool = Field(default=False)
+    infostealer_lookups: bool = Field(default=True)
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)
     bounty_events_seen_at: datetime | None = Field(default=None)
@@ -84,6 +85,7 @@ class InstanceSettingsUpdate(BaseModel):
     scan_history_retention_days: int | None = None
     screenshot_retention_days: int | None = None
     cert_recheck_enabled: bool | None = None
+    infostealer_lookups: bool | None = None
     concurrent_scans: int | None = PydanticField(
         default=None, ge=AUTOMATIC, le=MAX_CONCURRENT_SCANS
     )
@@ -103,6 +105,7 @@ class InstanceSettingsRead(BaseModel):
     scan_history_retention_days: int
     screenshot_retention_days: int
     cert_recheck_enabled: bool
+    infostealer_lookups: bool = True
     concurrent_scans: int = AUTOMATIC
     concurrent_scans_auto: int | None = None
     capabilities: list[str]

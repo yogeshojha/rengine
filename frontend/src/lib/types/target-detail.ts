@@ -7,6 +7,7 @@ import type {
 	DnsSummaryData
 } from './target';
 import type { WhoisRecordRead } from './whois';
+import type { InfostealerSummary } from './infostealer';
 import type {
 	AnnouncedPrefixRead,
 	ASNNeighbourRead,
@@ -83,4 +84,8 @@ export interface TargetDetailRead {
 
 	bgp_status: TaskStatus;
 	bgp: TargetBgpDetailResponse | null;
+
+	infostealer_status: TaskStatus;
+	infostealer_error: string | null;
+	infostealer: InfostealerSummary | null;
 }

@@ -17,6 +17,15 @@ from shared.definitions.evidence import EVIDENCE_ORDER, Evidence
 from shared.definitions.hygiene import (
     QUERY_VALUES as HYGIENE_VALUES,
 )
+from shared.definitions.infostealer import (
+    CREDENTIALS_FIELD as INFOSTEALER_CREDENTIALS_FIELD,
+)
+from shared.definitions.infostealer import (
+    QUERY_FIELD as INFOSTEALER_FIELD,
+)
+from shared.definitions.infostealer import (
+    QUERY_VALUES as INFOSTEALER_VALUES,
+)
 from shared.definitions.interest import (
     BAND_ORDER,
     KIND_KEYS,
@@ -158,6 +167,7 @@ GROUPS: tuple[str, ...] = (
     "Response",
     "Hygiene",
     "AI",
+    "Infostealers",
     "Network",
     "Certificates",
     "Findings",
@@ -499,6 +509,25 @@ FIELDS: tuple[QueryField, ...] = (
         group="AI",
         description="Model an AI service on the web asset listed. yes or no filters on presence.",
         example="ai.model~llama",
+    ),
+    QueryField(
+        name=INFOSTEALER_FIELD,
+        type=FieldType.ENUM,
+        group="Infostealers",
+        description=(
+            "Audience of a web asset login found in infostealer logs: employee or "
+            "user. Also takes any or none."
+        ),
+        example="infostealer:employee",
+        aliases=("stealer",),
+        values=INFOSTEALER_VALUES,
+    ),
+    QueryField(
+        name=INFOSTEALER_CREDENTIALS_FIELD,
+        type=FieldType.NUMBER,
+        group="Infostealers",
+        description="Credentials for the web asset's logins found in infostealer logs.",
+        example="infostealer.credentials>10",
     ),
     QueryField(
         name="cert",

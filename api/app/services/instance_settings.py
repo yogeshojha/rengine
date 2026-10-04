@@ -100,6 +100,7 @@ class InstanceSettingsService:
             scan_history_retention_days=settings.scan_history_retention_days,
             screenshot_retention_days=settings.screenshot_retention_days,
             cert_recheck_enabled=settings.cert_recheck_enabled,
+            infostealer_lookups=settings.infostealer_lookups,
             concurrent_scans=settings.concurrent_scans,
             capabilities=capabilities_for(settings.mode),
             created_at=settings.created_at,
@@ -145,6 +146,8 @@ class InstanceSettingsService:
             settings.screenshot_retention_days = data.screenshot_retention_days
         if data.cert_recheck_enabled is not None:
             settings.cert_recheck_enabled = data.cert_recheck_enabled
+        if data.infostealer_lookups is not None:
+            settings.infostealer_lookups = data.infostealer_lookups
         limit_changed = _apply_limit(settings, data.concurrent_scans)
         settings.updated_at = utc_now()
         await self.session.commit()

@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.services.infostealer import InfostealerService
 from app.services.target_filters import (
     SignalName,
     SortDir,
@@ -88,6 +89,7 @@ from shared.services import target_seeds
 from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_dns_lookups,
+    dispatch_infostealer_lookups,
     dispatch_ripestat_enrichment,
     dispatch_whois_lookups,
 )
@@ -440,6 +442,13 @@ class TargetService:
             ):
                 target.bgp_status = TaskStatus.PENDING
                 eligible.append(target)
+            elif (
+                kind == EnrichmentKind.INFOSTEALER
+                and target.target_type in HOSTNAME_TARGET_TYPES
+            ):
+                target.infostealer_status = TaskStatus.PENDING
+                target.infostealer_error = None
+                eligible.append(target)
             else:
                 continue
             target.updated_at = utc_now()
@@ -452,6 +461,8 @@ class TargetService:
                 dispatch_whois_lookups(ids)
             elif kind == EnrichmentKind.DNS:
                 dispatch_dns_lookups(ids)
+            elif kind == EnrichmentKind.INFOSTEALER:
+                dispatch_infostealer_lookups(ids)
             else:
                 dispatch_ripestat_enrichment(ids)
         return len(ids)
@@ -1016,6 +1027,7 @@ class TargetService:
             dns = self._to_dns_lookup_read(target.dns_lookup)
 
         bgp = await self._build_bgp_detail(target)
+        infostealer = await InfostealerService(self.session).summary(target.id)
         organizations, tags = _org_tags(target)
 
         return TargetDetailRead(
@@ -1037,6 +1049,9 @@ class TargetService:
             dns=dns,
             bgp_status=target.bgp_status,
             bgp=bgp,
+            infostealer_status=target.infostealer_status,
+            infostealer_error=target.infostealer_error,
+            infostealer=infostealer,
         )
 
     async def get_target_dns(self, target_id: str) -> TargetDnsDetailResponse:
@@ -1112,6 +1127,39 @@ class TargetService:
             enrichment_type=EnrichmentKind.WHOIS,
             status="queued",
             message=f"WHOIS lookup queued for {target.target_value}",
+        )
+
+    async def refresh_target_infostealer(
+        self, target_id: str
+    ) -> EnrichmentRefreshResponse:
+        target = await self._get_target_or_404(target_id)
+
+        if target.target_type not in HOSTNAME_TARGET_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Infostealer lookup applies to domain and URL targets only.",
+            )
+
+        target.infostealer_status = TaskStatus.PENDING
+        target.infostealer_error = None
+        target.updated_at = utc_now()
+        await self.session.commit()
+
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
+            title=f"Infostealer lookup queued for {target.target_value}",
+            target_id=target.id,
+            project_id=target.project_id,
+        )
+        await self.session.commit()
+
+        dispatch_infostealer_lookups([str(target.id)])
+
+        return EnrichmentRefreshResponse(
+            target_id=target.id,
+            enrichment_type=EnrichmentKind.INFOSTEALER,
+            status="queued",
+            message=f"Infostealer lookup queued for {target.target_value}",
         )
 
     async def refresh_target_bgp(self, target_id: str) -> EnrichmentRefreshResponse:
@@ -1488,3 +1536,5 @@ class TargetService:
         bgp_ids = [str(t.id) for t in targets if t.target_type in NETWORK_TARGET_TYPES]
         if bgp_ids:
             dispatch_ripestat_enrichment(bgp_ids)
+
+        dispatch_infostealer_lookups(all_ids)

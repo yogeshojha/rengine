@@ -15,6 +15,7 @@
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import NotePanel from '$lib/components/notes/note-panel.svelte';
 	import Network from '@lucide/svelte/icons/network';
+	import KeyRound from '@lucide/svelte/icons/key-round';
 
 	import { targetsApi } from '$lib/api/targets';
 	import type { ProgramMatch } from '$lib/types/relations';
@@ -34,12 +35,13 @@
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { activityScope } from '$lib/stores/activity-scope.svelte';
-	import { bgpApplies, dnsApplies } from '$lib/types/target';
+	import { bgpApplies, dnsApplies, infostealerApplies } from '$lib/types/target';
 	import type { EnrichmentKind, Target } from '$lib/types/target';
 	import { DnsRecordType } from '$lib/types/dns';
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { TargetDetailRead } from '$lib/types/target-detail';
 	import type { TargetSummaryRead } from '$lib/types/target-summary';
+	import type { InfostealerReport } from '$lib/types/infostealer';
 	import type { ScanRead, ScanStatus } from '$lib/types/scan';
 	import type { HostingComposition } from '$lib/types/hosting';
 	import type { InterestPage } from '$lib/types/interest';
@@ -102,6 +104,8 @@
 	import DnsTab from '$lib/components/targets/target-detail/dns/dns-tab.svelte';
 	import WhoisTab from '$lib/components/targets/target-detail/whois/whois-tab.svelte';
 	import BgpTab from '$lib/components/targets/target-detail/bgp/bgp-tab.svelte';
+	import InfostealerTab from '$lib/components/targets/target-detail/infostealer/infostealer-tab.svelte';
+	import InfostealerCell from '$lib/components/targets/target-detail/overview/infostealer-cell.svelte';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { IconComponent } from '$lib/config/icons';
@@ -110,7 +114,7 @@
 	import { downloadBlob } from '$lib/utilities/download';
 	import { csvCell } from '$lib/utilities/csv';
 
-	const TABS = ['overview', 'web-assets', 'dns', 'whois', 'bgp', 'notes'] as const;
+	const TABS = ['overview', 'web-assets', 'dns', 'whois', 'bgp', 'infostealer', 'notes'] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: Record<TabKey, { label: string; icon: IconComponent }> = {
 		overview: { label: 'Overview', icon: LayoutDashboard },
@@ -121,7 +125,14 @@
 		dns: { label: 'DNS', icon: Network },
 		whois: { label: 'WHOIS', icon: FileText },
 		bgp: { label: 'BGP', icon: Router },
+		infostealer: { label: 'Infostealers', icon: KeyRound },
 		notes: { label: 'Notes', icon: StickyNote }
+	};
+	const ENRICHMENT_LABELS: Record<EnrichmentKind, string> = {
+		dns: 'DNS',
+		whois: 'WHOIS',
+		bgp: 'BGP',
+		infostealer: 'Infostealer'
 	};
 	const ENRICHMENT_POLL_MS = 2500;
 	const MAX_ENRICHMENT_POLLS = 30;
@@ -166,6 +177,8 @@
 	let exposure = $state<ScanExposure | null>(null);
 	let vulns = $state<ScanVulnerabilities | null>(null);
 	let software = $state<{ facets: SoftwareFacets; coverage: SoftwareCoverage } | null>(null);
+	let stealer = $state<InfostealerReport | null>(null);
+	let stealerLoading = $state(false);
 	let extrasLoading = $state(false);
 	const notLoaded = new SvelteSet<string>();
 
@@ -185,9 +198,14 @@
 
 	let showDns = $derived(!!target && dnsApplies(target.target_type));
 	let showBgp = $derived(!!target && bgpApplies(target.target_type));
+	let showStealer = $derived(!!target && infostealerApplies(target.target_type));
 	let whoisStatus = $derived(detail?.whois_status ?? target?.whois_status ?? TaskStatus.PENDING);
 	let dnsStatus = $derived(detail?.dns_status ?? target?.dns_status ?? TaskStatus.PENDING);
 	let bgpStatus = $derived(detail?.bgp_status ?? target?.bgp_status ?? TaskStatus.PENDING);
+	let stealerStatus = $derived(
+		detail?.infostealer_status ?? target?.infostealer_status ?? TaskStatus.SKIPPED
+	);
+	let stealerTotal = $derived(detail?.infostealer?.total ?? 0);
 	let intel = $derived(target ? buildTargetIntel(target, detail) : { rail: [], checks: [] });
 	let latest = $derived(summary?.latest_scan ?? null);
 	let live = $derived(!!latest && isLiveStatus(latest.status as ScanStatus));
@@ -207,6 +225,7 @@
 		'web-assets': summary?.inventory_total,
 		dns: detail?.dns ? dnsRecords : undefined,
 		bgp: detail?.bgp?.announced_prefixes.length || undefined,
+		infostealer: stealerTotal ? detail?.infostealer?.host_count : undefined,
 		notes: notesTotal ?? undefined
 	});
 	let bgpHasData = $derived(
@@ -228,6 +247,8 @@
 					return detailLoading || !!detail?.whois || inFlight(whoisStatus);
 				case 'bgp':
 					return showBgp && (detailLoading || bgpHasData || inFlight(bgpStatus));
+				case 'infostealer':
+					return showStealer && (detailLoading || stealerTotal > 0 || inFlight(stealerStatus));
 				default:
 					return true;
 			}
@@ -238,7 +259,8 @@
 		const times = [
 			target.dns_status === TaskStatus.SUCCESS ? target.dns?.queried_at : null,
 			target.whois_status === TaskStatus.SUCCESS ? target.whois?.queried_at : null,
-			target.bgp_status === TaskStatus.SUCCESS ? target.bgp?.queried_at : null
+			target.bgp_status === TaskStatus.SUCCESS ? target.bgp?.queried_at : null,
+			stealerStatus === TaskStatus.SUCCESS ? detail?.infostealer?.checked_at : null
 		]
 			.filter((x): x is string => !!x)
 			.map((x) => new Date(x).getTime());
@@ -279,6 +301,7 @@
 			showHygiene && 'hygiene',
 			showPostureZones && 'domain-posture',
 			showLookalikes && 'lookalikes',
+			showStealer && (stealer?.total ?? 0) > 0 && 'infostealer',
 			showSoftware && 'software',
 			showCerts && 'certs',
 			showExposures && 'exposures'
@@ -558,6 +581,25 @@
 		);
 	}
 
+	let stealerFor: string | null = null;
+	async function fetchStealer() {
+		if (!stealerTotal) {
+			stealer = null;
+			stealerFor = null;
+			return;
+		}
+		const key = `${detail?.infostealer?.checked_at}|${webScanId ?? ''}`;
+		if (stealerFor === key) return;
+		stealerFor = key;
+		stealerLoading = true;
+		await settle(
+			'Infostealer infections',
+			targetsApi.getInfostealer(targetId, webScanId),
+			(r) => (stealer = r)
+		);
+		if (stealerFor === key) stealerLoading = false;
+	}
+
 	function pickHosting(query: string) {
 		if (!webScanId) return;
 		goto(ROUTES.scanTab(webScanId, WEB.tab, { [WEB.queryParam]: query }));
@@ -567,6 +609,7 @@
 		if (inFlight(whoisStatus)) return true;
 		if (showDns && inFlight(dnsStatus)) return true;
 		if (showBgp && inFlight(bgpStatus)) return true;
+		if (showStealer && inFlight(stealerStatus)) return true;
 		return false;
 	}
 
@@ -611,7 +654,9 @@
 		programsLoaded = false;
 		estate = lookalikes = ipFacets = hosting = tech = hygiene = ai = null;
 		posture = postureHosts = certBuckets = reach = exposures = exposure = null;
-		vulns = software = summary = detail = null;
+		vulns = software = summary = detail = stealer = null;
+		stealerFor = null;
+		stealerLoading = false;
 		history = [];
 		historyLoaded = false;
 		notesTotal = null;
@@ -662,7 +707,8 @@
 	});
 
 	function refreshSections() {
-		webFor = geoFor = servicesFor = vulnsFor = softwareFor = estateFor = null;
+		webFor = geoFor = servicesFor = vulnsFor = softwareFor = estateFor = stealerFor = null;
+		void fetchStealer();
 		void fetchSummary();
 		void fetchHistory();
 		void fetchPrograms();
@@ -681,6 +727,10 @@
 	$effect(() => {
 		const scanId = webScanId;
 		if (!summaryLoading) untrack(() => fetchEstate(scanId));
+	});
+	$effect(() => {
+		void [webScanId, detail?.infostealer?.checked_at, stealerTotal];
+		if (!summaryLoading && !detailLoading) untrack(fetchStealer);
 	});
 	$effect(() => {
 		const scanId = ipsScanId;
@@ -772,6 +822,7 @@
 		const requests: Promise<unknown>[] = [targetsApi.refreshWhois(target.id)];
 		if (showDns) requests.push(targetsApi.refreshDns(target.id));
 		if (showBgp) requests.push(targetsApi.refreshBgp(target.id));
+		if (showStealer) requests.push(targetsApi.refreshInfostealer(target.id));
 		const results = await Promise.allSettled(requests);
 		const failed = results.filter((r) => r.status === 'rejected').length;
 		if (failed === results.length) toast.error('Enrichment refresh not started');
@@ -786,16 +837,18 @@
 		const call = {
 			dns: targetsApi.refreshDns,
 			whois: targetsApi.refreshWhois,
-			bgp: targetsApi.refreshBgp
+			bgp: targetsApi.refreshBgp,
+			infostealer: targetsApi.refreshInfostealer
 		}[kind];
+		const label = ENRICHMENT_LABELS[kind];
 		refreshing = { ...refreshing, [kind]: true };
 		try {
 			await call(target.id);
-			toast.success(`${kind.toUpperCase()} refresh started`);
+			toast.success(`${label} refresh started`);
 			await fetchTarget();
 			startPolling();
 		} catch {
-			toast.error(`${kind.toUpperCase()} refresh not started`);
+			toast.error(`${label} refresh not started`);
 		} finally {
 			refreshing = { ...refreshing, [kind]: false };
 		}
@@ -827,6 +880,7 @@
 			['whois_status', target.whois_status],
 			['dns_status', target.dns_status],
 			['bgp_status', target.bgp_status],
+			['infostealer_status', target.infostealer_status],
 			['organizations', target.organizations.map((o) => o.name).join('; ')],
 			['tags', target.tags.map((t) => t.name).join('; ')],
 			['scans', String(summary?.scans_total ?? 0)],
@@ -1079,6 +1133,8 @@
 										onChanged={fetchLookalikes}
 										class={cls}
 									/>
+								{:else if key === 'infostealer' && stealer}
+									<InfostealerCell targetId={target.id} report={stealer} class={cls} />
 								{:else if key === 'software'}
 									<SoftwareCell {software} scanId={softwareScanId} class={cls} />
 								{:else if key === 'certs' && certBuckets}
@@ -1184,6 +1240,20 @@
 						loading={detailLoading}
 						refreshing={!!refreshing.bgp}
 						onRefresh={() => refreshOne('bgp')}
+					/>
+				</Tabs.Content>
+			{/if}
+
+			{#if showStealer}
+				<Tabs.Content value="infostealer" class="mt-4">
+					<InfostealerTab
+						domain={detail?.infostealer?.domain ?? target.target_value}
+						report={stealer}
+						status={stealerStatus}
+						error={detail?.infostealer_error ?? target.infostealer_error}
+						loading={detailLoading || (stealerLoading && !stealer)}
+						refreshing={!!refreshing.infostealer}
+						onRefresh={() => refreshOne('infostealer')}
 					/>
 				</Tabs.Content>
 			{/if}

@@ -6,6 +6,7 @@ from shared.definitions.constants import (
     DEFAULT_QUEUE,
     SCAN_CONTROL_QUEUE,
 )
+from shared.definitions.infostealer import LOOKUP_BATCH
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,6 +41,19 @@ def dispatch_whois_lookups(target_ids: list[str]) -> None:
         kwargs={"target_ids": target_ids},
         queue=DEFAULT_QUEUE,
     )
+
+
+def dispatch_infostealer_lookups(target_ids: list[str]) -> None:
+    if not target_ids:
+        return
+    logger.info("Dispatching infostealer lookups for %d targets", len(target_ids))
+    client = get_celery_client()
+    for start in range(0, len(target_ids), LOOKUP_BATCH):
+        client.send_task(
+            "app.tasks.infostealer.perform_infostealer_lookups",
+            kwargs={"target_ids": target_ids[start : start + LOOKUP_BATCH]},
+            queue=DEFAULT_QUEUE,
+        )
 
 
 def dispatch_ripestat_enrichment(target_ids: list[str]) -> None:

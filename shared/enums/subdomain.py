@@ -22,3 +22,4 @@ class SubdomainSource(Enum):
     IMPORTED = "imported"
     VHOST = "vhost"
     NETBLOCK = "netblock"
+    HUDSON_ROCK = "hudson_rock"

@@ -7,6 +7,7 @@ from shared.enums.target import EnrichmentKind, TargetType
 from shared.enums.task_status import TaskStatus
 from shared.models.bgp_summary import BgpSummaryRead
 from shared.models.dns import DnsLookupRead
+from shared.models.infostealer import InfostealerSummary
 from shared.models.organization import OrganizationSummary
 from shared.models.tag import TagSummary
 from shared.models.whois import WhoisRecordRead
@@ -103,6 +104,10 @@ class TargetDetailRead(BaseModel):
 
     bgp_status: TaskStatus
     bgp: TargetBgpDetailResponse | None = None
+
+    infostealer_status: TaskStatus
+    infostealer_error: str | None = None
+    infostealer: InfostealerSummary | None = None
 
 
 class EnrichmentRefreshResponse(BaseModel):

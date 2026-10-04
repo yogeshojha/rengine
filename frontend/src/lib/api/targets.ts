@@ -21,6 +21,7 @@ import type {
 	TargetDnsDetailResponse
 } from '$lib/types/target-detail';
 import type { TargetSummaryRead } from '$lib/types/target-summary';
+import type { InfostealerReport } from '$lib/types/infostealer';
 import type { TargetAssetFilter, TargetAssetPage } from '$lib/types/target-asset';
 import type { TargetPrograms, TargetRelations } from '$lib/types/relations';
 import type { ProjectEstate, TargetEstate } from '$lib/types/estate';
@@ -232,6 +233,15 @@ export const targetsApi = {
 
 	async refreshBgp(targetId: string): Promise<EnrichmentRefreshResponse> {
 		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/bgp/refresh`);
+	},
+
+	async refreshInfostealer(targetId: string): Promise<EnrichmentRefreshResponse> {
+		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/infostealer/refresh`);
+	},
+
+	async getInfostealer(targetId: string, scanId: string | null): Promise<InfostealerReport> {
+		const query = scanId ? `?scan_id=${encodeURIComponent(scanId)}` : '';
+		return api.get<InfostealerReport>(`/targets/${targetId}/infostealer${query}`);
 	},
 
 	async getDetail(targetId: string): Promise<TargetDetailRead> {

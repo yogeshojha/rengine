@@ -17,3 +17,4 @@ class EnrichmentKind(StrEnum):
     WHOIS = "whois"
     DNS = "dns"
     BGP = "bgp"
+    INFOSTEALER = "infostealer"

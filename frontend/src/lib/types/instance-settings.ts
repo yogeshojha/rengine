@@ -12,6 +12,7 @@ export interface InstanceSettings {
 	scan_history_retention_days: number;
 	screenshot_retention_days: number;
 	cert_recheck_enabled: boolean;
+	infostealer_lookups: boolean;
 	concurrent_scans: number;
 	concurrent_scans_auto: number | null;
 	capabilities: string[];
@@ -26,5 +27,6 @@ export interface InstanceSettingsUpdate {
 	scan_history_retention_days?: number;
 	screenshot_retention_days?: number;
 	cert_recheck_enabled?: boolean;
+	infostealer_lookups?: boolean;
 	concurrent_scans?: number;
 }

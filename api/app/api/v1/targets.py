@@ -6,6 +6,7 @@ from fastapi import (
     Depends,
     File,
     Form,
+    HTTPException,
     Query,
     UploadFile,
     status,
@@ -17,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
+from app.services.infostealer import InfostealerService
 from app.services.instance_settings import InstanceSettingsService
 from app.services.program_coverage import ProgramCoverageService
 from app.services.target import TargetService
@@ -42,6 +44,7 @@ from shared.models import (
     TargetValidationResponse,
 )
 from shared.models.estate import EstateTriageUpdate, ProjectEstate, TargetEstate
+from shared.models.infostealer import TargetInfostealerRead
 from shared.models.relations import TargetPrograms, TargetRelations
 from shared.models.target import TargetValidationBatch
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
@@ -501,6 +504,33 @@ async def refresh_target_whois(
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     return await service.refresh_target_whois(target_id)
+
+
+@router.post(
+    "/{target_id}/infostealer/refresh", response_model=EnrichmentRefreshResponse
+)
+async def refresh_target_infostealer(
+    target_id: str,
+    _current_user: CurrentUser,
+    service: Annotated[TargetService, Depends(get_target_service)],
+):
+    return await service.refresh_target_infostealer(target_id)
+
+
+@router.get("/{target_id}/infostealer", response_model=TargetInfostealerRead)
+async def get_target_infostealer(
+    target_id: UUID,
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
+):
+    report = await InfostealerService(session).report(target_id, scan_id)
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Infostealer report not found.",
+        )
+    return report
 
 
 @router.post("/{target_id}/bgp/refresh", response_model=EnrichmentRefreshResponse)
