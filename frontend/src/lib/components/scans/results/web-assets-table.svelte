@@ -1228,6 +1228,7 @@
 			<ProxySend
 				connectors={proxies}
 				catalog={proxyCatalog}
+				count={Math.min(pickedCount, MAX_HANDOFF)}
 				variant="ghost"
 				onSend={sendSelection}
 			/>

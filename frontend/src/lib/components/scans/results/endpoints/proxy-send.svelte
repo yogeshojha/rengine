@@ -42,6 +42,7 @@
 		connectors: Connector[];
 		catalog: ConnectorSpec[];
 		onSend: (connectorId: string, kind: ActionKind) => Promise<Outcome> | Outcome;
+		count?: number | null;
 		variant?: 'outline' | 'ghost';
 		dense?: boolean;
 		shortcut?: string;
@@ -52,6 +53,7 @@
 		connectors,
 		catalog,
 		onSend,
+		count = 1,
 		variant = 'outline',
 		dense = false,
 		shortcut,
@@ -139,7 +141,7 @@
 	async function send(kind: ActionKind) {
 		if (!connector || phase === 'sending') return;
 		const { id, project_id: projectId } = connector;
-		if (!(await confirmSend(connector, catalog, kind))) return;
+		if (!(await confirmSend(connector, catalog, kind, count))) return;
 		if (connectors[0]?.id !== id) return;
 		const mine = ++run;
 		proxyTool.set(kind);

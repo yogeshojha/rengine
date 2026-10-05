@@ -27,7 +27,7 @@
 	async function send(kind: ActionKind) {
 		if (!connector) return;
 		const { id } = connector;
-		if (!(await confirmSend(connector, catalog, kind))) return;
+		if (!(await confirmSend(connector, catalog, kind, null))) return;
 		proxyTool.set(kind);
 		onSend(id, kind);
 	}

@@ -229,7 +229,7 @@
 				</Button>
 			{/if}
 			{#if onSend && connectors.length}
-				<ProxySend {connectors} {catalog} {onSend} variant="outline" class="h-8" />
+				<ProxySend {connectors} {catalog} {onSend} count={null} variant="outline" class="h-8" />
 			{/if}
 			<Button variant="ghost" size="sm" class="h-8 gap-1.5 text-xs" onclick={onAcross}>
 				<Layers class="size-3" /> Paths across web assets

@@ -586,6 +586,7 @@
 		<ProxySend
 			connectors={[connector]}
 			catalog={connectors.catalog}
+			count={Math.min(picked.size, MAX_HANDOFF)}
 			variant="ghost"
 			onSend={sendToProxy}
 		/>

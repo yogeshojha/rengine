@@ -26,7 +26,7 @@ function storedAsk(): boolean {
 
 interface Confirmation {
 	title: string;
-	note: string | null;
+	description: string;
 	resolve: (ok: boolean) => void;
 }
 
@@ -67,11 +67,11 @@ function createProxyTool() {
 			return pending;
 		},
 		/** Resolves true once the send is confirmed, at once when confirmation is off. */
-		confirm(title: string, note: string | null = null): Promise<boolean> {
+		confirm(title: string, description: string): Promise<boolean> {
 			if (!ask) return Promise.resolve(true);
 			pending?.resolve(false);
 			return new Promise((resolve) => {
-				pending = { title, note, resolve };
+				pending = { title, description, resolve };
 			});
 		},
 		settle(ok: boolean, skipNext = false) {

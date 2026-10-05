@@ -1611,7 +1611,13 @@
 >
 	{#snippet actions()}
 		{#if proxies.length}
-			<ProxySend connectors={proxies} {catalog} variant="ghost" onSend={sendSelection} />
+			<ProxySend
+				connectors={proxies}
+				{catalog}
+				count={Math.min(selection.size, MAX_HANDOFF)}
+				variant="ghost"
+				onSend={sendSelection}
+			/>
 		{/if}
 	{/snippet}
 </RowSelectionBar>

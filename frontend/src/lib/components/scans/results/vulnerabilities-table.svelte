@@ -1605,7 +1605,13 @@
 			File issues
 		</Button>
 		{#if !isIssues && proxies.length}
-			<ProxySend connectors={proxies} catalog={proxyCatalog} variant="ghost" onSend={sendChecked} />
+			<ProxySend
+				connectors={proxies}
+				catalog={proxyCatalog}
+				count={Math.min(checkedCount, MAX_HANDOFF)}
+				variant="ghost"
+				onSend={sendChecked}
+			/>
 		{/if}
 		<RescanAction
 			count={checkedCount}
