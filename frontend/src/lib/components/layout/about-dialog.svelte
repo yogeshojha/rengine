@@ -49,7 +49,6 @@
 	const rows = $derived(
 		about
 			? [
-					{ label: 'Version', value: about.version, mono: true },
 					{ label: 'Mode', value: modeLabel(about.mode), mono: false },
 					{ label: 'Architecture', value: about.architecture, mono: true },
 					{ label: 'PostgreSQL', value: about.postgres, mono: true },
@@ -128,7 +127,7 @@
 									</div>
 								{/each}
 							{:else}
-								{#each Array(6) as _, i (i)}
+								{#each Array(5) as _, i (i)}
 									<div class="flex flex-col gap-1">
 										<Skeleton class="h-3.5 w-20" />
 										<Skeleton class="h-5 w-28" />
