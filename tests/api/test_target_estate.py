@@ -6,9 +6,11 @@ import pytest
 
 from app.services.target_estate import TargetEstateService, provider_of
 from shared.definitions.estate import EstateReason
+from shared.definitions.relations import TargetRelation
 from shared.enums.dns import DnsRecordType
 from shared.models.dns import DnsLookup, DnsRecord
 from shared.models.http_asset import HttpAsset
+from shared.models.infostealer import TargetInfostealer
 
 pytestmark = pytest.mark.api
 
@@ -70,6 +72,17 @@ async def _estate(estate, value: str, scan: str):
     return await TargetEstateService(estate.session).for_target(
         estate.project_id, estate.targets[value], estate.scans[scan]
     )
+
+
+async def _services(estate, value: str, services: list[tuple[str, int]]) -> None:
+    estate.session.add(
+        TargetInfostealer(
+            target_id=estate.targets[value],
+            domain=value,
+            services=[{"name": name, "count": count} for name, count in services],
+        )
+    )
+    await estate.session.flush()
 
 
 def _signals(out, domain: str) -> list[str]:
@@ -239,3 +252,90 @@ async def test_names_under_a_registry_target_are_its_own(estate, now):
     out = await _estate(estate, "go.id", "a")
 
     assert [d.domain for d in out.domains] == ["pemdes.desa.id"]
+
+
+async def test_infostealer_services_are_candidates_without_providers_or_noise(
+    estate, now
+):
+    await estate.scan("tigo.com.co", "a", at=now)
+    await _services(
+        estate,
+        "tigo.com.co",
+        [
+            ("udemy.com", 63),
+            ("microsoftonline.com", 84),
+            ("force.com", 17),
+            ("200.13.250.190", 11),
+            ("10.158.122.58", 2),
+            ("com.google.android.gm", 7),
+            ("com.microsoft.office.lync15", 11),
+            ("tigo.com.co", 40),
+            ("intranet.corp", 3),
+        ],
+    )
+
+    out = await _estate(estate, "tigo.com.co", "a")
+
+    assert [d.domain for d in out.domains] == ["udemy.com"]
+    row = out.domains[0]
+    assert row.strength == 0
+    assert [(s.kind, s.detail) for s in row.signals] == [
+        (EstateReason.EMPLOYEE_LOGINS.value, "63 credentials")
+    ]
+    assert out.counts.untracked == 1
+
+
+async def test_a_brand_or_nameserver_tie_makes_an_infostealer_service_direct(
+    estate, now
+):
+    await estate.scan("tigo.com.co", "a", at=now)
+    await _dns(
+        estate,
+        "tigo.com.co",
+        [("NS", "nsbog01.une.net.co"), ("NS", "lauta.une.net.co")],
+        now,
+    )
+    await _services(
+        estate,
+        "tigo.com.co",
+        [("tigoune.com", 603), ("une.net.co", 200), ("gointegro.com", 41)],
+    )
+
+    out = await _estate(estate, "tigo.com.co", "a")
+
+    by = {d.domain: d for d in out.domains}
+    assert [d.domain for d in out.domains][:2] == ["tigoune.com", "une.net.co"]
+    assert by["tigoune.com"].strength == 1
+    assert _signals(out, "tigoune.com") == [
+        EstateReason.EMPLOYEE_LOGINS.value,
+        EstateReason.NAME.value,
+    ]
+    assert by["une.net.co"].strength == 1
+    assert _signals(out, "une.net.co") == [
+        TargetRelation.NAMESERVER.value,
+        EstateReason.EMPLOYEE_LOGINS.value,
+    ]
+    assert by["gointegro.com"].strength == 0
+
+
+async def test_a_short_brand_ties_nothing(estate, now):
+    await estate.scan("une.com.co", "a", at=now)
+    await _services(estate, "une.com.co", [("fortune.com", 5)])
+
+    out = await _estate(estate, "une.com.co", "a")
+
+    assert out.domains[0].strength == 0
+
+
+async def test_infostealer_candidates_rank_by_credentials(estate, now):
+    await estate.scan("tigo.com.co", "a", at=now)
+    await _services(
+        estate,
+        "tigo.com.co",
+        [("acsendo.com", 6), ("emtelco.co", 32), ("webex.com", 3)],
+    )
+
+    out = await _estate(estate, "tigo.com.co", "a")
+
+    assert [d.domain for d in out.domains] == ["emtelco.co", "acsendo.com", "webex.com"]
+    assert out.domains[0].signals[0].count == 32

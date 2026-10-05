@@ -22,6 +22,8 @@ class EstateReason(StrEnum):
     CERT_SUBJECT = "cert_subject"
     CERT_SAN = "cert_san"
     ADDRESS = "address"
+    EMPLOYEE_LOGINS = "employee_logins"
+    NAME = "name"
 
 
 class EstateStrength(StrEnum):
@@ -47,6 +49,8 @@ ESTATE_REASON_LABELS: dict[str, str] = {
     EstateReason.CERT_SUBJECT.value: "Serves a certificate for",
     EstateReason.CERT_SAN.value: "Named on a certificate",
     EstateReason.ADDRESS.value: "Same address",
+    EstateReason.EMPLOYEE_LOGINS.value: "Employee logins",
+    EstateReason.NAME.value: "Name contains",
     **RELATION_LABELS,
 }
 
@@ -58,6 +62,8 @@ ESTATE_REASON_ORDER: tuple[str, ...] = (
     EstateReason.CERT_SAN.value,
     *RELATION_LABELS.keys(),
     EstateReason.ADDRESS.value,
+    EstateReason.EMPLOYEE_LOGINS.value,
+    EstateReason.NAME.value,
 )
 
 # a certificate naming more registrable domains than this is a platform's

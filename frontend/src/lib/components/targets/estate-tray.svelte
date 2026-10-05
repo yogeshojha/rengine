@@ -64,7 +64,7 @@
 	});
 	let subline = $derived(detail || strengths);
 	let sheetDescription = $derived.by(() => {
-		const basis = `Tied to ${subject ?? 'the targets'} by scan evidence.`;
+		const basis = `Tied to ${subject ?? 'the targets'} by scans and infostealer logs.`;
 		const shown = domains.filter((d) => !d.target_id && d.state === EstateTriageState.OPEN).length;
 		if (shown >= count) return basis;
 		return `${basis} ${shown.toLocaleString()} of ${count.toLocaleString()} shown.`;

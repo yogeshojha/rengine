@@ -25,6 +25,10 @@ MAX_APPLICATIONS = 40
 MAX_THIRD_PARTIES = 60
 MAX_PATHS_PER_HOST = 50
 
+# Android package ids arrive as third-party domains
+APP_ID_HEADS = frozenset({"com", "org", "net"})
+MIN_BRAND_LENGTH = 4
+
 
 class Audience(StrEnum):
     EMPLOYEE = "employee"

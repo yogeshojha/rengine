@@ -17,6 +17,7 @@ from app.services.target_relations import TargetRelationService
 from shared.definitions.domains import (
     IGNORED_DOMAINS,
     PRIVATE_TLDS,
+    is_public_tld,
     owning_zone,
     registrable_domain,
     target_zone,
@@ -36,6 +37,7 @@ from shared.definitions.estate import (
     ProviderKind,
     provider_of,
 )
+from shared.definitions.infostealer import APP_ID_HEADS, MIN_BRAND_LENGTH
 from shared.definitions.name_ownership import CLAIM_TEMPLATES
 from shared.definitions.relations import TargetRelation
 from shared.definitions.surface import SurfaceDimension
@@ -56,6 +58,7 @@ from shared.models.estate import (
     TargetEstate,
 )
 from shared.models.http_asset import HttpAsset
+from shared.models.infostealer import TargetInfostealer
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
@@ -63,6 +66,7 @@ from shared.services.asset_query import lead_cache
 from shared.services.domain_posture import spf
 from shared.utils.datetime import utc_now
 from shared.utils.net import cert_covers, url_host
+from shared.utils.text import counted
 from shared.utils.validation import validate_ip
 
 _SHARED_KINDS = frozenset({EstateReason.ADDRESS.value, TargetRelation.FAVICON.value})
@@ -74,6 +78,7 @@ class _Signal:
     details: set[str] = field(default_factory=set)
     named: bool = False
     shared: bool = False
+    total: int = 0
 
     def add(self, host: str, detail: str) -> None:
         self.hosts.add(host)
@@ -116,8 +121,32 @@ def _private(apex: str) -> bool:
     return apex.rsplit(".", 1)[-1] in PRIVATE_TLDS
 
 
+def _credentials(domain: EstateDomain) -> int:
+    return sum(
+        s.count for s in domain.signals if s.kind == EstateReason.EMPLOYEE_LOGINS.value
+    )
+
+
 def _kind_for(provider: str) -> ProviderKind:
     return ProviderKind.EDGE if provider in EDGE_PROVIDERS else ProviderKind.HOSTING
+
+
+def _service_domain(name: object, root: str) -> str:
+    """The registrable domain of an infostealer third-party service, or empty."""
+    host = _clean(name if isinstance(name, str) else None)
+    if not host or validate_ip(host) or host.split(".", 1)[0] in APP_ID_HEADS:
+        return ""
+    apex = registrable_domain(host)
+    if (
+        not apex
+        or _inside(apex, root)
+        or _private(apex)
+        or not is_public_tld(apex)
+        or apex in IGNORED_DOMAINS
+        or provider_of(host)
+    ):
+        return ""
+    return apex
 
 
 class TargetEstateService:
@@ -159,7 +188,8 @@ class TargetEstateService:
             await self._cnames(scan_id, root, signals, providers)
             await self._drop_claimed(scan_id, signals)
         if TargetType(target.target_type) in HOSTNAME_TARGET_TYPES:
-            await self._dns(target_id, root, providers)
+            nameservers = await self._dns(target_id, root, providers)
+            await self._infostealer(target_id, root, nameservers, signals)
         if relations:
             await self._relations(project_id, target_id, targets, signals)
             if scan_id is not None:
@@ -258,6 +288,7 @@ class TargetEstateService:
                 d.state != EstateTriageState.OPEN.value,
                 -d.strength,
                 -len(d.sources),
+                -_credentials(d),
                 d.domain,
             ),
         )
@@ -581,7 +612,8 @@ class TargetEstateService:
         target_id: UUID,
         root: str,
         providers: dict[tuple[str, str], _Provider],
-    ) -> None:
+    ) -> dict[str, str]:
+        nameservers: dict[str, str] = {}
         rows = (
             await self.session.execute(
                 select(DnsRecord.record_type, DnsRecord.value).where(
@@ -600,11 +632,13 @@ class TargetEstateService:
                 apex = registrable_domain(host)
                 if _inside(apex, root):
                     continue
-                name = provider_of(host) or apex
+                provider = provider_of(host)
                 role = (
                     ProviderKind.DNS if kind is DnsRecordType.NS else ProviderKind.MAIL
                 )
-                self._provider(providers, name, role, host)
+                self._provider(providers, provider or apex, role, host)
+                if kind is DnsRecordType.NS and not provider and apex:
+                    nameservers.setdefault(apex, host)
             elif kind is DnsRecordType.TXT and value and spf.is_spf(value):
                 for zone in spf.include_zones(value):
                     include = _clean(zone)
@@ -614,6 +648,48 @@ class TargetEstateService:
                         continue
                     name = provider_of(include) or registrable_domain(include)
                     self._provider(providers, name, ProviderKind.MAIL, include)
+        return nameservers
+
+    async def _infostealer(
+        self,
+        target_id: UUID,
+        root: str,
+        nameservers: dict[str, str],
+        signals: dict[str, dict[str, _Signal]],
+    ) -> None:
+        services = (
+            await self.session.execute(
+                select(TargetInfostealer.services).where(
+                    TargetInfostealer.target_id == target_id
+                )
+            )
+        ).scalar_one_or_none()
+        credentials: dict[str, int] = defaultdict(int)
+        for row in services or []:
+            if not isinstance(row, dict):
+                continue
+            apex = _service_domain(row.get("name"), root)
+            if apex:
+                count = row.get("count")
+                credentials[apex] += count if isinstance(count, int) else 0
+        brand = root.split(".", 1)[0]
+        if len(brand) < MIN_BRAND_LENGTH:
+            brand = ""
+        for apex, count in credentials.items():
+            logins = signals[apex][EstateReason.EMPLOYEE_LOGINS.value]
+            if count > 0:
+                logins.details.add(counted(count, "credential"))
+            logins.named = True
+            logins.shared = True
+            logins.total += count
+            if brand and brand in apex.split(".", 1)[0]:
+                tie = signals[apex][EstateReason.NAME.value]
+                tie.details.add(brand)
+                tie.named = True
+            if apex in nameservers:
+                tie = signals[apex][TargetRelation.NAMESERVER.value]
+                tie.details.add(nameservers[apex])
+                tie.named = True
 
     async def _relations(
         self,
@@ -744,7 +820,7 @@ class TargetEstateService:
                     ),
                     detail=", ".join(sorted(sig.details)[:MAX_ESTATE_HOSTS]),
                     hosts=sorted(sig.hosts)[:MAX_ESTATE_HOSTS],
-                    count=max(len(sig.hosts), len(sig.details)),
+                    count=sig.total or max(len(sig.hosts), len(sig.details)),
                 )
                 for kind, sig in ordered
             ]
@@ -758,5 +834,12 @@ class TargetEstateService:
                     signals=rows,
                 )
             )
-        out.sort(key=lambda d: (-d.strength, d.target_id is not None, d.domain))
+        out.sort(
+            key=lambda d: (
+                -d.strength,
+                d.target_id is not None,
+                -_credentials(d),
+                d.domain,
+            )
+        )
         return out
