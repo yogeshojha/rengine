@@ -37,15 +37,15 @@ body:
   attributes:
     label: Environment
     description: |
+      Paste the output of **Copy details** from **About reNgine** in the user menu, then fill in the lines below.
+
       examples:
-        - **reNgine**: 3.0.0
         - **Install**: install.sh / install.sh --build / dev compose
         - **OS**: Ubuntu 24.04
         - **Docker Engine**: 27.3.1
         - **Docker Compose**: 2.29.7
         - **Browser**: Firefox 131
     value: |
-        - reNgine:
         - Install:
         - OS:
         - Docker Engine:

@@ -5,7 +5,7 @@ export const API_PREFIX = '/api/v1';
 export const REQUEST_TIMEOUT_MS = 120_000;
 export const LONG_REQUEST_TIMEOUT_MS = 300_000;
 
-const NO_RESPONSE = 'The API did not respond. Check that the api service is running.';
+export const NO_RESPONSE = 'The API did not respond. Check that the api service is running.';
 
 function isTimeout(e: unknown): boolean {
 	return e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError');

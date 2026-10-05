@@ -14,10 +14,8 @@
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 	import PanelLeftIcon from '@lucide/svelte/icons/panel-left';
 	import SidebarCustomizeDialog from './sidebar-customize-dialog.svelte';
+	import AboutDialog from './about-dialog.svelte';
 	import { setMode, resetMode, userPrefersMode } from 'mode-watcher';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import { VERSION } from '$lib/version.js';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { getInitials } from '$lib/utilities/strings';
 	import { goto } from '$app/navigation';
@@ -123,48 +121,6 @@
 	</Sidebar.MenuItem>
 </Sidebar.Menu>
 
-<Dialog.Root bind:open={aboutDialogOpen}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>About reNgine</Dialog.Title>
-			<Dialog.Description>Open-source attack surface management</Dialog.Description>
-		</Dialog.Header>
-		<div class="space-y-4 py-4">
-			<div class="space-y-2">
-				<h4 class="font-medium">Version</h4>
-				<p class="text-sm text-muted-foreground">reNgine {VERSION}</p>
-			</div>
-			<div class="space-y-2">
-				<h4 class="font-medium">GitHub</h4>
-				<a
-					href="https://github.com/yogeshojha/rengine"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="text-sm text-primary hover:text-primary/80"
-				>
-					github.com/yogeshojha/rengine
-				</a>
-			</div>
-			<div class="space-y-2">
-				<h4 class="font-medium">Wiki</h4>
-				<a
-					href="https://rengine.wiki"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="text-sm text-primary hover:text-primary/80"
-				>
-					rengine.wiki
-				</a>
-			</div>
-			<div class="space-y-2">
-				<h4 class="font-medium">License</h4>
-				<p class="text-sm text-muted-foreground">GNU General Public License v3.0</p>
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (aboutDialogOpen = false)}>Close</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<AboutDialog bind:open={aboutDialogOpen} />
 
 <SidebarCustomizeDialog bind:open={customizeOpen} />
