@@ -21,6 +21,7 @@ from app.orchestrator import (
     run_stage,
 )
 from shared.definitions.constants import SCAN_QUEUES
+from shared.definitions.source_ip import SourceIpPhase
 from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
     ACTIVITY_TERMINAL_STATUSES,
@@ -31,10 +32,13 @@ from shared.enums.scan import (
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
-from shared.services import scan_admission
+from shared.services import scan_admission, source_ip
 from shared.services import worker_presence as presence
 from shared.services.activity_log import ActivityLogService
-from shared.services.celery_dispatch import dispatch_scan_run
+from shared.services.celery_dispatch import (
+    dispatch_scan_run,
+    dispatch_source_ip_check,
+)
 from shared.services.orchestrator import superseded
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.utils.datetime import utc_now
@@ -84,10 +88,14 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
             apply_counts(session, scan)
             return {"error": "dispatch failed"}
         scan.celery_task_ids = [self.request.id, result.id]
+        if was_pending and scan.source_ip is None:
+            scan.source_ip = source_ip.initial(source_ip.lookups_enabled(session))
         session.commit()
         logger.info("scan %s canvas dispatched (root=%s)", scan_id, result.id)
 
         if was_pending:
+            if source_ip.wants_check(scan.source_ip, SourceIpPhase.START):
+                dispatch_source_ip_check(scan_id, SourceIpPhase.START.value)
             events = ScanEventPublisher(
                 scan_id=scan_id, project_id=str(scan.project_id)
             )

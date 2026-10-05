@@ -47,6 +47,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
+	import SourceIp from '$lib/components/scans/source-ip.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
@@ -828,6 +829,13 @@
 						<span>{scan.engine_name}</span>
 						<span aria-hidden="true">·</span>
 						<span>{scan.context_name ?? 'engine defaults'}</span>
+						{#if scan.status !== 'pending'}
+							<span aria-hidden="true">·</span>
+							<span class="inline-flex min-w-0 items-center gap-1.5">
+								<span>Source IP</span>
+								<SourceIp {scan} />
+							</span>
+						{/if}
 					</p>
 				</div>
 			</div>

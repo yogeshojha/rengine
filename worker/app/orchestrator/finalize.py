@@ -15,6 +15,7 @@ from shared.definitions.notifications import (
 )
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.definitions.secrets import FINALIZE_SOURCES, SecretState
+from shared.definitions.source_ip import SourceIpPhase
 from shared.definitions.vulnerabilities import SUPPRESSED_STATES, CoverageStatus
 from shared.definitions.watch import WATCH_HOST_KEY
 from shared.enums.activity import ActivityEvent, ActivityLevel
@@ -38,12 +39,14 @@ from shared.services import (
     scan_surface,
     secret_mining,
     software_match,
+    source_ip,
 )
 from shared.services.activity_log import ActivityLogService
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_issue_observe,
+    dispatch_source_ip_check,
     dispatch_threat_intel,
     dispatch_tripwire_settle,
     dispatch_watch_settle,
@@ -121,6 +124,8 @@ def _finalize_user_cancelled(
     session.commit()
     scan = locked
     _admit_next(session)
+    if first:
+        _check_source_ip(scan)
     _settle(session, scan)
     if first:
         _log_cancelled(ActivityLogService(session), scan)
@@ -485,6 +490,11 @@ def _settle(session: Session, scan: Scan) -> None:
     dispatch_tripwire_settle(str(scan.id))
 
 
+def _check_source_ip(scan: Scan) -> None:
+    if source_ip.wants_check(scan.source_ip, SourceIpPhase.END):
+        dispatch_source_ip_check(str(scan.id), SourceIpPhase.END.value)
+
+
 def _admit_next(session: Session) -> None:
     try:
         scan_admission.admit_waiting(session)
@@ -554,6 +564,7 @@ def finalize_scan_run(session: Session, scan: Scan) -> None:
     session.commit()
     scan = locked
     _admit_next(session)
+    _check_source_ip(scan)
     _settle(session, scan)
 
     activity_log = ActivityLogService(session)

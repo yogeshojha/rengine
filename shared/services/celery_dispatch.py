@@ -89,6 +89,18 @@ def dispatch_scan_run(scan_id: str, epoch: int) -> None:
     )
 
 
+def dispatch_source_ip_check(scan_id: str, phase: str) -> None:
+    """Queue a source IP check."""
+    try:
+        get_celery_client().send_task(
+            "app.tasks.source_ip.check",
+            kwargs={"scan_id": scan_id, "phase": phase},
+            queue=DEFAULT_QUEUE,
+        )
+    except Exception:
+        logger.warning("source ip check not queued for scan %s", scan_id, exc_info=True)
+
+
 def dispatch_scan_resume(scan_id: str, epoch: int) -> None:
     logger.info("Dispatching scan resume %s", scan_id)
     get_celery_client().send_task(

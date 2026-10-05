@@ -1609,4 +1609,5 @@ class ScanService:
             paused_at=scan.paused_at,
             paused_seconds=scan.paused_seconds or 0.0,
             duration_seconds=scan_duration(scan),
+            source_ip=scan.source_ip,
         )

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import SourceIp from '$lib/components/scans/source-ip.svelte';
 	import { HTTP_PROTOCOL_LABELS } from '$lib/components/contexts/context-summary';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { INTENSITY_LABELS, type Intensity } from '$lib/types/scan-engine';
@@ -79,6 +80,14 @@
 				<dd class="truncate text-right">{v}</dd>
 			</div>
 		{/each}
+		{#if scan.status !== 'pending'}
+			<div
+				class="flex min-w-0 items-baseline justify-between gap-3 border-b border-border/40 pb-1.5"
+			>
+				<dt class="shrink-0 text-xs text-muted-foreground">Source IP</dt>
+				<dd class="min-w-0 text-right"><SourceIp {scan} class="justify-end" /></dd>
+			</div>
+		{/if}
 	</dl>
 	{#if stages.length}
 		<div class="flex flex-wrap gap-1 px-1">

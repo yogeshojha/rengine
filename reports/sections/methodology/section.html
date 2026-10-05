@@ -5,6 +5,7 @@
     <tr><td><span class="label">Configuration</span></td><td>{{ scan.engine_name }}</td></tr>
     {% if context %}<tr><td><span class="label">Context</span></td><td>{{ context }}</td></tr>{% endif %}
     {% if intensity %}<tr><td><span class="label">Intensity</span></td><td>{{ intensity }}</td></tr>{% endif %}
+    {% if source_ips %}<tr><td><span class="label">Source IP</span></td><td class="mono-break">{{ source_ips|join(', ') }}</td></tr>{% endif %}
     {% if timing %}
     <tr><td><span class="label">Started</span></td><td>{{ scan.started_at|at }}</td></tr>
     <tr><td><span class="label">Finished</span></td><td>{{ scan.completed_at|at }}</td></tr>

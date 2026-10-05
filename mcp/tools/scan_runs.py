@@ -28,6 +28,7 @@ from shared.enums.scan import (
 from shared.enums.scan import ScanStatus as RunStatus
 from shared.models.scan import Scan
 from shared.models.target import Target
+from shared.services.source_ip import addresses
 from shared.utils.text import counted
 from toolbox.base import cell, fact, facts, hero, table
 
@@ -433,6 +434,7 @@ def _status_blocks(row: Scan, stages: dict[str, list[str]], target) -> list:
             fact("Stages", f"{done} of {total} done"),
             fact("Running", ", ".join(stages["running"][:4]) or None),
             fact("Failed", ", ".join(stages["failed"][:4]) or None),
+            fact("Source IP", ", ".join(addresses(row.source_ip)) or None, mono=True),
             fact("Error", row.error or None),
         ),
         facts(
@@ -452,6 +454,7 @@ def _describe(row: Scan, stages: dict[str, list[str]]) -> dict:
         "elapsed_seconds": _elapsed(row),
         "stages": {key: value for key, value in stages.items() if value},
         "found_so_far": _found(row),
+        "source_ip": addresses(row.source_ip),
         "error": row.error,
     }
 

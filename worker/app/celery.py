@@ -120,6 +120,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.ripestat",
         "app.tasks.dns",
         "app.tasks.scan",
+        "app.tasks.source_ip",
         "app.tasks.schedule",
         "app.tasks.ip_asn",
         "app.tasks.vuln_templates",

@@ -20,6 +20,7 @@
 	import { AUTOMATIC, CONCURRENT_SCAN_CHOICES } from '$lib/config/scan-admission';
 	import { SCAN_RETENTION, SCREENSHOT_RETENTION, retentionLabel } from '$lib/config/retention';
 	import { SOURCE_NAME } from '$lib/config/infostealer';
+	import { SOURCE_IP_SERVICE } from '$lib/config/source-ip';
 	import type { InstanceSettingsUpdate } from '$lib/types/instance-settings';
 
 	let loading = $state(true);
@@ -205,6 +206,18 @@
 				checked={settings.infostealer_lookups}
 				disabled={locked}
 				onCheckedChange={(v) => save({ infostealer_lookups: v }, 'Infostealer lookups')}
+			/>
+		</SettingRow>
+		<SettingRow
+			label="Record source IP"
+			help="Checked through {SOURCE_IP_SERVICE} at the start and end of each scan"
+			for="instance-source-ip"
+		>
+			<Switch
+				id="instance-source-ip"
+				checked={settings.source_ip_lookups}
+				disabled={locked}
+				onCheckedChange={(v) => save({ source_ip_lookups: v }, 'Source IP recording')}
 			/>
 		</SettingRow>
 

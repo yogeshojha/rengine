@@ -169,6 +169,7 @@ class Scan(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now)
     started_at: datetime | None = Field(default=None)
     completed_at: datetime | None = Field(default=None)
+    source_ip: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
 
 
 def fold_pause(scan: Scan, at: datetime) -> None:
@@ -328,6 +329,20 @@ class ScanFindings(BaseModel):
     scan_id: uuid.UUID | None = None
 
 
+class SourceIpCheck(BaseModel):
+    phase: str
+    checked_at: datetime
+    proxied: bool = False
+    ipv4: str | None = None
+    ipv6: str | None = None
+    failure: str | None = None
+
+
+class SourceIpRecord(BaseModel):
+    state: str
+    checks: list[SourceIpCheck] = Field(default_factory=list)
+
+
 class ScanRead(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
@@ -369,6 +384,7 @@ class ScanRead(BaseModel):
     findings: ScanFindings | None = None
     target_runs: int | None = None
     queue_position: int | None = None
+    source_ip: SourceIpRecord | None = None
 
 
 class ScanStatusCounts(BaseModel):

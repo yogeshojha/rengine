@@ -1,5 +1,6 @@
 import type { HttpProtocol } from './scan-context';
 import type { StageConfig } from './scan-engine';
+import type { SourceIpFailure, SourceIpPhase, SourceIpState } from '$lib/config/source-ip';
 
 export const SCAN_STATUSES = [
 	'pending',
@@ -181,6 +182,21 @@ export interface ScanRead {
 	findings?: ScanFindings | null;
 	target_runs?: number | null;
 	queue_position?: number | null;
+	source_ip?: SourceIpRecord | null;
+}
+
+export interface SourceIpCheck {
+	phase: SourceIpPhase;
+	checked_at: string;
+	proxied: boolean;
+	ipv4: string | null;
+	ipv6: string | null;
+	failure: SourceIpFailure | null;
+}
+
+export interface SourceIpRecord {
+	state: SourceIpState;
+	checks: SourceIpCheck[];
 }
 
 export interface ScanFindings {

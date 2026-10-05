@@ -3,6 +3,7 @@ from __future__ import annotations
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, paragraph
 from shared.definitions.reports import SectionGroup, SectionRole
+from shared.services.source_ip import addresses
 
 _STANDARDS = {
     "": "None",
@@ -61,4 +62,5 @@ class MethodologySection(Section):
             if scan
             else None,
             "context": scan.context_name if scan else None,
+            "source_ips": addresses(scan.source_ip) if scan else [],
         }
