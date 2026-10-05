@@ -30,6 +30,8 @@
 	}: Props = $props();
 
 	const uid = $props.id();
+	const SPIN_SECONDS = 20;
+	const MAX_FRAME_MS = 100;
 	const MIN_R = 2.25;
 	const MAX_R = 5.5;
 	const HIT_R = 9;
@@ -37,9 +39,9 @@
 	const DEFAULT_VIEW: [number, number] = [-20, 25];
 	const RING_STEP = 3;
 	const RINGS = [
-		{ inc: 24, node: 96 },
-		{ inc: 58, node: -132 },
-		{ inc: -38, node: 168 }
+		{ inc: 24, precess: 96 },
+		{ inc: 58, precess: -132 },
+		{ inc: -38, precess: 168 }
 	];
 
 	const ringLine = (inc: number, node: number): GeoPermissibleObjects => {
@@ -77,7 +79,29 @@
 			: DEFAULT_VIEW[1]
 	);
 
-	let rotate = $derived<[number, number]>([-anchor[0], -tilt]);
+	let clock = $state(0);
+	let seconds = 0;
+	let held = false;
+
+	$effect(() => {
+		if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+		let frame = 0;
+		let last = performance.now();
+		const step = (now: number) => {
+			if (!held) {
+				seconds += Math.min(now - last, MAX_FRAME_MS) / 1000;
+				clock = seconds;
+			}
+			last = now;
+			frame = requestAnimationFrame(step);
+		};
+		frame = requestAnimationFrame(step);
+		return () => cancelAnimationFrame(frame);
+	});
+
+	let spin = $derived(((clock / SPIN_SECONDS) * 360) % 360);
+
+	let rotate = $derived<[number, number]>([-anchor[0] + spin, -tilt]);
 	let projection = $derived(
 		geoOrthographic()
 			.rotate(rotate)
@@ -120,7 +144,7 @@
 	let rings = $derived(
 		RINGS.map((r, i) => ({
 			i,
-			d: draw(ringLine(r.inc, anchor[0] + r.node)) ?? ''
+			d: draw(ringLine(r.inc, -spin + (((clock / r.precess) * 360) % 360))) ?? ''
 		})).filter((r) => r.d)
 	);
 </script>
@@ -130,7 +154,11 @@
 	role="img"
 	aria-label="Addresses by country"
 	class={cn('overflow-visible', className)}
-	onpointerleave={() => onHover?.(null)}
+	onpointerenter={() => (held = true)}
+	onpointerleave={() => {
+		held = false;
+		onHover?.(null);
+	}}
 >
 	<defs>
 		<radialGradient id="{uid}-sea" cx="36%" cy="30%" r="74%">
