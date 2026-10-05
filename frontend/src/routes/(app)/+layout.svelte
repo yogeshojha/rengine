@@ -17,6 +17,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import CreateFirstProjectModal from '$lib/components/modals/create-first-project-modal.svelte';
+	import ProxySendConfirm from '$lib/components/scans/results/endpoints/proxy-send-confirm.svelte';
 	import { crumbHref, getRouteLabel, PROJECT_PARAM, ROUTES, UUID_REGEX } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
@@ -171,6 +172,7 @@
 
 <NotificationToasts />
 <CreateFirstProjectModal open={showRequiredProjectCreateModal} />
+<ProxySendConfirm />
 
 {#if auth.isLoading}
 	<div class="min-h-screen flex flex-col items-center justify-center gap-3">

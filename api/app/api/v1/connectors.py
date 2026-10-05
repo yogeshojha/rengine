@@ -11,7 +11,7 @@ from app.api.scope import EndpointScope
 from app.core.client_ip import client_id
 from app.core.database import get_session
 from app.core.ratelimit import record_failure, too_many_attempts
-from app.services.connector import ConnectorError, ConnectorService, HandoffError
+from app.services.connector import ConnectorError, ConnectorService
 from connectors import auth
 from shared.models.connector import (
     ActionRead,
@@ -27,7 +27,6 @@ from shared.models.connector import (
     DiscoveredDomain,
     FindingRecorded,
     FindingReport,
-    HandoffPreview,
     HandoffRequest,
     HandoffResult,
     HostFacts,
@@ -246,12 +245,6 @@ async def delete_connector(
     await service.delete(connector_id, project_id)
 
 
-def _refused(exc: HandoffError) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-    )
-
-
 @router.post("/{connector_id}/handoff", response_model=HandoffResult)
 async def handoff_to_proxy(
     connector_id: UUID,
@@ -264,26 +257,6 @@ async def handoff_to_proxy(
     """Queue findings, web assets, hosts, endpoints or browsed shapes for the proxy."""
     try:
         return await service.handoff(connector_id, project_id, body, scope)
-    except HandoffError as exc:
-        raise _refused(exc) from exc
-    except ConnectorError as exc:
-        raise bad_request(exc) from exc
-
-
-@router.post("/{connector_id}/handoff/preview", response_model=HandoffPreview)
-async def preview_handoff(
-    connector_id: UUID,
-    body: HandoffRequest,
-    _current_user: CurrentUser,
-    service: Service,
-    project_id: ProjectId,
-    scope: EndpointScope,
-):
-    """The raw request a hand-off of one row sends."""
-    try:
-        return await service.preview(connector_id, project_id, body, scope)
-    except HandoffError as exc:
-        raise _refused(exc) from exc
     except ConnectorError as exc:
         raise bad_request(exc) from exc
 

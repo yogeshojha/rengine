@@ -31,7 +31,6 @@
 	import StatusMark from './endpoints/status-mark.svelte';
 	import PathBreadcrumb from './endpoints/path-breadcrumb.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
-	import { previewHandoff } from './endpoints/proxy';
 	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep, type SheetAction } from './sheet';
 	import SheetTop from './sheet-top.svelte';
 	import SheetBar from './sheet-bar.svelte';
@@ -69,8 +68,7 @@
 		onSend?: (
 			e: EndpointRead,
 			connectorId: string,
-			kind: ActionKind,
-			request?: string
+			kind: ActionKind
 		) => Promise<HandoffResult | null> | void;
 	}
 
@@ -153,15 +151,6 @@
 	async function copyCurl(e: EndpointRead) {
 		if (await writeClipboard(curlFor(e))) toast.success('curl command copied');
 	}
-
-	function preview(e: EndpointRead, connectorId: string) {
-		return previewHandoff({
-			connectorId,
-			projectId,
-			scanId: e.scan_id,
-			body: { endpoint_ids: [e.id] }
-		});
-	}
 </script>
 
 <svelte:window onkeydown={(e) => sheetStep(e, open, onStep)} />
@@ -230,8 +219,7 @@
 						{catalog}
 						shortcut={SEND_SHORTCUT}
 						class="h-8"
-						onSend={(id, kind, request) => onSend(endpoint, id, kind, request)}
-						onPreview={(id) => preview(endpoint, id)}
+						onSend={(id, kind) => onSend(endpoint, id, kind)}
 					/>
 				{/if}
 				<SheetMore actions={more} />

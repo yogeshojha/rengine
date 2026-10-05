@@ -30,14 +30,12 @@
 		connector: Connector;
 		endpointsHref: string | null;
 		onClose: () => void;
-		onSend: (kind: ActionKind, request?: string) => Promise<HandoffResult | null> | null;
-		onPreview: () => Promise<string | null>;
+		onSend: (kind: ActionKind) => Promise<HandoffResult | null> | null;
 		onScan: (row: Candidate) => void;
 		onIgnore: (row: Candidate) => void;
 	}
 
-	let { row, connector, endpointsHref, onClose, onSend, onPreview, onScan, onIgnore }: Props =
-		$props();
+	let { row, connector, endpointsHref, onClose, onSend, onScan, onIgnore }: Props = $props();
 
 	const LABEL = 'text-2xs tracking-wide text-muted-foreground uppercase';
 </script>
@@ -176,8 +174,7 @@
 							connectors={[connector]}
 							catalog={connectors.catalog}
 							class="h-8"
-							onSend={(_id, kind, request) => onSend(kind, request)}
-							onPreview={() => onPreview()}
+							onSend={(_id, kind) => onSend(kind)}
 						/>
 					{/if}
 				</div>

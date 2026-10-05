@@ -1,10 +1,11 @@
 <script lang="ts">
 	import Check from '@lucide/svelte/icons/check';
+	import Send from '@lucide/svelte/icons/send';
 	import { untrack } from 'svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { proxyLabel, proxyName } from './proxy';
+	import { confirmSend, proxyLabel, proxyName } from './proxy';
 	import { freshenProxyPresence, proxyTool } from '$lib/stores/proxy-tool.svelte';
-	import { ACTION_KIND_LABELS, HANDOFF_KINDS, presenceDot } from '$lib/config/connectors';
+	import { ACTION_KIND_LABELS, HANDOFF_KINDS } from '$lib/config/connectors';
 	import type { ActionKind } from '$lib/config/connectors';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
 
@@ -23,18 +24,18 @@
 		if (id) untrack(() => freshenProxyPresence(id));
 	});
 
-	function send(kind: ActionKind) {
+	async function send(kind: ActionKind) {
 		if (!connector) return;
+		const { id } = connector;
+		if (!(await confirmSend(connector, catalog, kind))) return;
 		proxyTool.set(kind);
-		onSend(connector.id, kind);
+		onSend(id, kind);
 	}
 </script>
 
 {#if connector}
 	<DropdownMenu.Item onclick={() => send(proxyTool.kind)}>
-		<span class="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
-			<span class="size-1.5 rounded-full {presenceDot(connector.state)}"></span>
-		</span>
+		<Send class="size-4" />
 		Send to {proxyName(connector, catalog)}
 		{ACTION_KIND_LABELS[proxyTool.kind]}
 	</DropdownMenu.Item>

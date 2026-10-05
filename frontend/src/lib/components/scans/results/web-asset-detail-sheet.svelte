@@ -77,7 +77,7 @@
 	import TechIcon from './tech-icon.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
-	import { handoffToProxy, previewHandoff } from './endpoints/proxy';
+	import { handoffToProxy } from './endpoints/proxy';
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { SEND_SHORTCUT, type ActionKind } from '$lib/config/connectors';
 	import OverflowPopover from './table/overflow-popover.svelte';
@@ -264,24 +264,15 @@
 			void connectorStore.loadCatalog();
 		});
 	});
-	async function sendToProxy(connectorId: string, kind: ActionKind, request?: string) {
+	async function sendToProxy(connectorId: string, kind: ActionKind) {
 		if (!detail) return null;
 		return handoffToProxy({
 			connectorId,
 			projectId,
 			scanId: detail.scan_id,
-			body: { kind, asset_ids: [detail.id], request },
+			body: { kind, asset_ids: [detail.id] },
 			connectors: proxies,
 			catalog: proxyCatalog
-		});
-	}
-	async function previewProxy(connectorId: string) {
-		if (!detail) return null;
-		return previewHandoff({
-			connectorId,
-			projectId,
-			scanId: detail.scan_id,
-			body: { asset_ids: [detail.id] }
 		});
 	}
 	let askSubject = $derived<AskSubject | null>(
@@ -476,7 +467,6 @@
 						shortcut={SEND_SHORTCUT}
 						class="h-8"
 						onSend={sendToProxy}
-						onPreview={previewProxy}
 					/>
 				{/if}
 			</SheetBar>

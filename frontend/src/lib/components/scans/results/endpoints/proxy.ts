@@ -1,5 +1,7 @@
 import { toast } from 'svelte-sonner';
 import { connectorsApi } from '$lib/api/connectors';
+import { ACTION_KIND_LABELS, offlineNote, type ActionKind } from '$lib/config/connectors';
+import { proxyTool } from '$lib/stores/proxy-tool.svelte';
 import type { Connector, ConnectorSpec, HandoffRequest, HandoffResult } from '$lib/types/connector';
 
 export function proxyLabel(connector: Connector, catalog: ConnectorSpec[]): string {
@@ -11,6 +13,19 @@ export function proxyName(connector: Connector, catalog: ConnectorSpec[]): strin
 	return catalog.find((c) => c.kind === connector.kind)?.short_title ?? connector.name;
 }
 
+/** Asks before a send to the proxy unless the user turned the question off. */
+export function confirmSend(
+	connector: Connector,
+	catalog: ConnectorSpec[],
+	kind: ActionKind
+): Promise<boolean> {
+	const note = offlineNote(connector.state, proxyLabel(connector, catalog));
+	return proxyTool.confirm(
+		`Send to ${proxyName(connector, catalog)} ${ACTION_KIND_LABELS[kind]}`,
+		note && `${note}. Requests are queued.`
+	);
+}
+
 interface HandoffCall {
 	connectorId: string;
 	projectId: string;
@@ -19,8 +34,6 @@ interface HandoffCall {
 	connectors: Connector[];
 	catalog: ConnectorSpec[];
 }
-
-type PreviewCall = Pick<HandoffCall, 'connectorId' | 'projectId' | 'scanId' | 'body'>;
 
 /** Queues the rows for the proxy and reports what was queued. */
 export async function handoffToProxy(call: HandoffCall): Promise<HandoffResult | null> {
@@ -49,22 +62,6 @@ export async function handoffToProxy(call: HandoffCall): Promise<HandoffResult |
 		return res;
 	} catch (e) {
 		toast.error(e instanceof Error ? e.message : 'Requests not sent');
-		return null;
-	}
-}
-
-/** The raw request a hand-off of one row sends, or null when there is none. */
-export async function previewHandoff(call: PreviewCall): Promise<string | null> {
-	try {
-		const res = await connectorsApi.preview(
-			call.connectorId,
-			call.projectId,
-			call.body,
-			call.scanId
-		);
-		return res.request;
-	} catch (e) {
-		toast.error(e instanceof Error ? e.message : 'Request not loaded');
 		return null;
 	}
 }

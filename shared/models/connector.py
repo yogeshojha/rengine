@@ -167,9 +167,6 @@ class HandoffRequest(BaseModel):
     limit: int = PydanticField(
         default=MAX_PENDING_ACTIONS, ge=1, le=MAX_PENDING_ACTIONS
     )
-    request: str | None = PydanticField(
-        default=None, description="Raw request sent in place of the built one"
-    )
 
 
 class HandoffResult(BaseModel):
@@ -177,13 +174,6 @@ class HandoffResult(BaseModel):
     skipped: int = 0
     tool: str
     online: bool = False
-
-
-class HandoffPreview(BaseModel):
-    """The raw request a hand-off of one row sends."""
-
-    request: str
-    url: str
 
 
 class CandidateIds(BaseModel):

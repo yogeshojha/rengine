@@ -2,6 +2,7 @@
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import type { Snippet } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -14,6 +15,7 @@
 		loadingLabel?: string;
 		onOpenChange: (open: boolean) => void;
 		onConfirm: () => void;
+		children?: Snippet;
 	}
 
 	let {
@@ -26,7 +28,8 @@
 		loading = false,
 		loadingLabel = 'Working',
 		onOpenChange,
-		onConfirm
+		onConfirm,
+		children
 	}: Props = $props();
 </script>
 
@@ -51,6 +54,7 @@
 				</div>
 			</div>
 		</AlertDialog.Header>
+		{@render children?.()}
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel disabled={loading}>{cancelLabel}</AlertDialog.Cancel>
 			<LoadingButton

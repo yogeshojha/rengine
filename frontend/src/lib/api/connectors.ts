@@ -9,7 +9,6 @@ import type {
 	ConnectorCreated,
 	ConnectorSpec,
 	DiscoveredDomain,
-	HandoffPreview,
 	HandoffRequest,
 	HandoffResult,
 	TargetAdded,
@@ -70,18 +69,6 @@ export const connectorsApi = {
 	): Promise<HandoffResult> {
 		return api.post<HandoffResult>(
 			`/connectors/${id}/handoff?${scopeQuery({ projectId, scanId: scanId ?? undefined })}`,
-			body
-		);
-	},
-
-	preview(
-		id: string,
-		projectId: string,
-		body: HandoffRequest,
-		scanId?: string | null
-	): Promise<HandoffPreview> {
-		return api.post<HandoffPreview>(
-			`/connectors/${id}/handoff/preview?${scopeQuery({ projectId, scanId: scanId ?? undefined })}`,
 			body
 		);
 	},

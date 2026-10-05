@@ -34,8 +34,8 @@
 	import { connectors } from '$lib/stores/connectors.svelte';
 	import ProxySend from '$lib/components/scans/results/endpoints/proxy-send.svelte';
 	import {
+		confirmSend,
 		handoffToProxy,
-		previewHandoff,
 		proxyName
 	} from '$lib/components/scans/results/endpoints/proxy';
 	import RequestDialog from './request-dialog.svelte';
@@ -253,11 +253,11 @@
 		else toast.error('Clipboard not available');
 	}
 
-	async function sendOne(row: Candidate, kind: ActionKind, request?: string) {
+	async function sendOne(row: Candidate, kind: ActionKind) {
 		return handoffToProxy({
 			connectorId: connector.id,
 			projectId,
-			body: { kind, candidate_ids: [row.id], request },
+			body: { kind, candidate_ids: [row.id] },
 			connectors: [connector],
 			catalog: connectors.catalog
 		});
@@ -265,20 +265,14 @@
 
 	async function sendRow(row: Candidate) {
 		if (sending.has(row.id)) return;
+		if (!(await confirmSend(connector, connectors.catalog, proxyTool.kind))) return;
+		if (sending.has(row.id)) return;
 		sending.add(row.id);
 		try {
 			await sendOne(row, proxyTool.kind);
 		} finally {
 			sending.delete(row.id);
 		}
-	}
-
-	function previewOne(row: Candidate) {
-		return previewHandoff({
-			connectorId: connector.id,
-			projectId,
-			body: { candidate_ids: [row.id] }
-		});
 	}
 
 	function fresh(row: Candidate): boolean {
@@ -616,8 +610,7 @@
 	row={openedRow}
 	{connector}
 	onClose={() => (openedId = null)}
-	onSend={(kind, request) => (openedRow ? sendOne(openedRow, kind, request) : null)}
-	onPreview={() => (openedRow ? previewOne(openedRow) : Promise.resolve(null))}
+	onSend={(kind) => (openedRow ? sendOne(openedRow, kind) : null)}
 	onScan={(row) => (confirming = { action: 'scan', ids: [row.id] })}
 	onIgnore={(row) => (confirming = { action: 'ignore', ids: [row.id] })}
 	endpointsHref={openedRow?.target_id ? endpointsLink(openedRow) : null}

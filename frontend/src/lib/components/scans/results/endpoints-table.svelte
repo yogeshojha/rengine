@@ -843,8 +843,8 @@
 		};
 		await handoff(connectorId, { kind, filter, limit: MAX_HANDOFF });
 	}
-	function sendEndpoint(e: Endpoint, connectorId: string, kind: ActionKind, request?: string) {
-		return handoff(connectorId, { kind, endpoint_ids: [e.id], request });
+	function sendEndpoint(e: Endpoint, connectorId: string, kind: ActionKind) {
+		return handoff(connectorId, { kind, endpoint_ids: [e.id] });
 	}
 	async function sendSelection(connectorId: string, kind: ActionKind) {
 		const ids = selection.ids().slice(0, MAX_HANDOFF);

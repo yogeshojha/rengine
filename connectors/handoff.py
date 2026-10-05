@@ -19,11 +19,9 @@ from shared.definitions.connectors import (
 from shared.definitions.vulnerabilities import SEVERITY_LABELS, Protocol
 from shared.services.scan_resolve import MASK
 from shared.utils.net import authority
-from shared.utils.text import strip_nul
 
 _BODY_METHODS = frozenset({"POST", "PUT", "PATCH"})
 _HEADER_LINE = re.compile(r"^([!#$%&'*+\-.^_`|~0-9A-Za-z]+):[ \t]*(.*)$")
-_REQUEST_LINE = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+ \S+ HTTP/\d\.\d$")
 _BLANK_LINE = re.compile(r"\r?\n\r?\n")
 _CHARSET = re.compile(r"(charset=)\"?([^\";\s]+)\"?", re.IGNORECASE)
 _TRANSFER_HEADERS = ("transfer-encoding:", "content-encoding:")
@@ -59,13 +57,13 @@ def _split(message: str) -> tuple[str, str, str]:
     return message[: match.start()], match.group(), message[match.end() :]
 
 
-def normalise(message: str | None, limit: int | None) -> str | None:
+def normalise(message: str | None, limit: int) -> str | None:
     """CRLF in the head, the body byte for byte, cut at the limit."""
     if not message or not message.strip():
         return None
     head, sep, body = _split(message)
     text = "\r\n".join(_lines(head)) + "\r\n\r\n" + (body if sep else "")
-    return text if limit is None else text[:limit]
+    return text[:limit]
 
 
 def _label(value: str) -> str:
@@ -207,38 +205,6 @@ def request_message(message: str | None) -> str | None:
     return "\r\n".join(lines) + sep + body
 
 
-class RequestError(ValueError):
-    """An edited request a proxy cannot be handed."""
-
-
-def edited_request(text: str) -> str:
-    """An edited raw request: CRLF in the head and the length of the body it ships."""
-    if strip_nul(text) != text:
-        msg = "The request contains a NUL character."
-        raise RequestError(msg)
-    message = normalise(text.lstrip("\r\n"), None)
-    if message is None:
-        msg = "The request is empty."
-        raise RequestError(msg)
-    if len(message) > MAX_HANDOFF_REQUEST:
-        msg = f"The request is longer than {MAX_HANDOFF_REQUEST:,} characters."
-        raise RequestError(msg)
-    head, sep, body = message.partition("\r\n\r\n")
-    lines = head.split("\r\n")
-    lines[0] = lines[0].rstrip(" \t")
-    if not _REQUEST_LINE.match(lines[0]):
-        msg = "The request line must read METHOD target HTTP/1.1."
-        raise RequestError(msg)
-    if not _header(head, "Host"):
-        msg = "The request has no Host header."
-        raise RequestError(msg)
-    if body:
-        lines = _set_header(lines, "Content-Length", str(len(body.encode())))
-    elif _header(head, "Content-Length") is not None:
-        lines = _set_header(lines, "Content-Length", "0")
-    return "\r\n".join(lines) + sep + body
-
-
 def _decoded(message: str) -> str:
     """Drop the transfer headers, state the length shipped and the UTF-8 the body is in."""
     head, sep, body = message.partition("\r\n\r\n")
@@ -264,36 +230,6 @@ def response_text(head: str | None, body: str | None) -> str | None:
     if not head or not head.strip():
         return None
     return response_message(head.rstrip("\r\n") + "\r\n\r\n" + (body or ""))
-
-
-def masked_headers(request: str | None) -> dict[str, str]:
-    """The headers whose value carries the mask, by lowercase name."""
-    if not request or MASK not in request:
-        return {}
-    head = _split(request)[0]
-    out: dict[str, str] = {}
-    for line in _lines(head):
-        match = _HEADER_LINE.match(line)
-        if match and MASK in match.group(2):
-            out.setdefault(match.group(1).lower(), match.group(1))
-    return out
-
-
-def request_hosts(request: str | None) -> set[str]:
-    """Every authority the request names: its Host headers and an absolute request target."""
-    if not request:
-        return set()
-    head = _split(normalise(request, None) or "")[0]
-    lines = head.split("\r\n")
-    hosts = {
-        match.group(2).strip().lower()
-        for line in lines[1:]
-        if (match := _HEADER_LINE.match(line)) and match.group(1).lower() == "host"
-    }
-    parts = lines[0].split(" ")
-    if len(parts) == 3 and "://" in parts[1]:  # noqa: PLR2004
-        hosts.add(urlsplit(parts[1]).netloc.lower())
-    return hosts
 
 
 def restore_headers(request: str | None, headers: dict[str, str]) -> str | None:

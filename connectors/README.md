@@ -65,12 +65,6 @@ shape's sample, or a request built from an endpoint's method, URL and parameters
 response rides along for Organizer and the site map. A finding with no HTTP exchange is skipped
 and counted.
 
-`POST /api/v1/connectors/{id}/handoff/preview` takes the same body with exactly one row and returns
-`{"request", "url"}`, the request that hand-off sends. A hand-off of one row may carry `request`,
-a raw request sent in place of the built one. Its head gets CRLF line endings, `Content-Length` is
-recomputed when a body is present, and the request line and a `Host` header are required. The
-row's URL stays the target. A refusal answers 422.
-
 Masked header values stay masked in the queue row. With `connectors.restore_credentials` on,
 `take_actions` unseals the sending run's headers and fills them at collection.
 

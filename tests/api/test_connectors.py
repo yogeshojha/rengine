@@ -4,10 +4,12 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.services.connector import ConnectorError, ConnectorService
-from connectors import handoff
+from connectors import base, handoff
+from connectors.burp.connector import BurpConnector
 from connectors.ingest import prepare
 from connectors.notice import notices_for
 from connectors.registry import connector as connector_for
@@ -542,6 +544,13 @@ async def test_handoff_queues_requests_and_delivers_them_once(estate, now):
     assert await service.take_actions(row) == []
 
 
+def test_a_handoff_carries_no_request_of_its_own():
+    with pytest.raises(ValidationError):
+        HandoffRequest(
+            finding_ids=[uuid.uuid4()], request="GET / HTTP/1.1\r\nHost: a\r\n\r\n"
+        )
+
+
 async def test_handoff_refuses_an_unknown_tool_and_an_empty_pick(estate, now):
     service, row = await _connector(estate)
     with pytest.raises(ConnectorError):
@@ -764,3 +773,18 @@ def test_catalog_carries_setup_steps():
     steps = connector_for("burp").spec()["steps"]
     assert steps[0]["title"] == "Download the extension"
     assert all(s["detail"] for s in steps)
+
+
+def test_client_file_is_the_highest_release(tmp_path, monkeypatch):
+    monkeypatch.setattr(base, "CLIENT_DIR", tmp_path)
+    assert BurpConnector().client_file == ""
+    for version in ("0.9.0", "0.10.0", "0.2.1"):
+        (tmp_path / f"rengine-connector-{version}.jar").write_bytes(b"")
+    (tmp_path / "other-1.0.jar").write_bytes(b"")
+    assert BurpConnector().client_file == "rengine-connector-0.10.0.jar"
+    assert base.release_key(
+        "rengine-connector-1.2.3.jar", "rengine-connector-*.jar"
+    ) == (
+        (1, 2, 3),
+        "rengine-connector-1.2.3.jar",
+    )

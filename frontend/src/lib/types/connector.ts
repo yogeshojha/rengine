@@ -78,12 +78,6 @@ export interface HandoffRequest {
 	candidate_ids?: string[];
 	filter?: EndpointFilter;
 	limit?: number;
-	request?: string;
-}
-
-export interface HandoffPreview {
-	request: string;
-	url: string;
 }
 
 export interface HandoffResult {

@@ -13,8 +13,8 @@ from app.api import scope as scope_module
 from app.api.deps import get_current_superuser
 from app.api.v1 import connectors as router_module
 from app.core import ratelimit
-from app.services.connector import ConnectorError, ConnectorService, HandoffError
-from connectors import auth, handoff
+from app.services.connector import ConnectorError, ConnectorService
+from connectors import auth
 from shared.definitions.connectors import CandidateState
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import Protocol
@@ -152,7 +152,6 @@ def test_connector_management_needs_a_superuser(path, method):
     [
         ("/connectors", "GET"),
         ("/connectors/{connector_id}/handoff", "POST"),
-        ("/connectors/{connector_id}/handoff/preview", "POST"),
         ("/connectors/{connector_id}/candidates", "GET"),
     ],
 )
@@ -160,127 +159,10 @@ def test_reads_and_handoff_stay_open_to_every_user(path, method):
     assert not _needs_superuser(_route(path, method))
 
 
-# ---------- B2: an edit gains no restored value ----------
+# ---------- B2: restored credentials ----------
 
 
-async def test_an_edit_cannot_mask_a_header_the_stored_request_did_not(estate, now):
-    finding = await _finding(
-        estate,
-        now,
-        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n",
-        {
-            "headers": seal_headers(
-                {"Authorization": "Bearer real-token", "Cookie": "sid=secret"}
-            )
-        },
-    )
-    service, row, _ = await _connector(estate)
-    row.restore_credentials = True
-
-    with pytest.raises(HandoffError, match="does not mask Cookie"):
-        await service.handoff(
-            row.id,
-            estate.project_id,
-            HandoffRequest(
-                finding_ids=[finding.id],
-                request=f"GET / HTTP/1.1\nHost: {HOST}\nCookie: {MASK}\n\n",
-            ),
-        )
-    assert await service.take_actions(row) == []
-
-    await service.handoff(
-        row.id,
-        estate.project_id,
-        HandoffRequest(
-            finding_ids=[finding.id],
-            request=f"GET /x HTTP/1.1\nHost: {HOST}\nAuthorization: Bearer {MASK}\n\n",
-        ),
-    )
-    (kept,) = await service.take_actions(row)
-    assert "Authorization: Bearer real-token" in kept.request
-    assert "secret" not in kept.request
-
-
-@pytest.mark.parametrize(
-    "edited",
-    [
-        "GET / HTTP/1.1\nHost: attacker.invalid\nAuthorization: Bearer {mask}\n\n",
-        "GET http://attacker.invalid/ HTTP/1.1\nHost: {host}\n"
-        "Authorization: Bearer {mask}\n\n",
-        "GET / HTTP/1.1\nHost: {host}\nHost: attacker.invalid\n"
-        "Authorization: Bearer {mask}\n\n",
-    ],
-)
-async def test_an_edit_that_keeps_a_mask_keeps_the_stored_host(estate, now, edited):
-    finding = await _finding(
-        estate,
-        now,
-        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n",
-        {"headers": seal_headers({"Authorization": "Bearer real-token"})},
-    )
-    service, row, _ = await _connector(estate)
-    row.restore_credentials = True
-
-    with pytest.raises(HandoffError, match="keeps the stored host"):
-        await service.handoff(
-            row.id,
-            estate.project_id,
-            HandoffRequest(
-                finding_ids=[finding.id],
-                request=edited.format(host=HOST, mask=MASK),
-            ),
-        )
-    assert await service.take_actions(row) == []
-
-
-async def test_an_edit_without_masks_may_change_the_host(estate, now):
-    finding = await _finding(
-        estate,
-        now,
-        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n",
-        {"headers": seal_headers({"Authorization": "Bearer real-token"})},
-    )
-    service, row, _ = await _connector(estate)
-    row.restore_credentials = True
-    await service.handoff(
-        row.id,
-        estate.project_id,
-        HandoffRequest(
-            finding_ids=[finding.id],
-            request="GET / HTTP/1.1\nHost: other.invalid\nAuthorization: Bearer typed\n\n",
-        ),
-    )
-    (kept,) = await service.take_actions(row)
-    assert "real-token" not in kept.request
-
-
-async def test_an_edited_endpoint_request_gets_no_run_credentials(estate, now):
-    await estate.scan(
-        "example.com",
-        "census",
-        at=now - timedelta(hours=1),
-        config={"headers": seal_headers({"Authorization": "Bearer real-token"})},
-    )
-    await estate.endpoints("census", ["/api"], at=now, host=HOST)
-    endpoint = await estate.session.scalar(
-        select(Endpoint).where(Endpoint.scan_id == estate.scans["census"])
-    )
-    service, row, _ = await _connector(estate)
-    row.restore_credentials = True
-
-    with pytest.raises(HandoffError, match="does not mask Authorization"):
-        await service.handoff(
-            row.id,
-            estate.project_id,
-            HandoffRequest(
-                endpoint_ids=[endpoint.id],
-                request=f"GET /api HTTP/1.1\nHost: {HOST}\nAuthorization: {MASK}\n\n",
-            ),
-        )
-    assert await service.take_actions(row) == []
-
-
-async def test_an_unedited_handoff_still_restores(estate, now):
+async def test_a_handoff_restores_the_run_credentials(estate, now):
     finding = await _finding(
         estate,
         now,
@@ -296,15 +178,6 @@ async def test_an_unedited_handoff_still_restores(estate, now):
     assert "Authorization: Bearer real-token" in sent.request
     stored = await estate.session.scalar(select(ConnectorAction.request))
     assert "real-token" not in stored
-
-
-def test_masked_headers_reads_header_lines_alone():
-    request = (
-        f"GET /?q={MASK} HTTP/1.1\r\nHost: a\r\nX-Key: k{MASK}\r\n"
-        f"x-key: {MASK}\r\n\r\nbody {MASK}"
-    )
-    assert handoff.masked_headers(request) == {"x-key": "X-Key"}
-    assert handoff.masked_headers(None) == {}
 
 
 # ---------- B3: a scan of another project ----------

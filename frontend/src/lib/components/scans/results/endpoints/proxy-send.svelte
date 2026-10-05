@@ -2,7 +2,7 @@
 	import Check from '@lucide/svelte/icons/check';
 	import Clock from '@lucide/svelte/icons/clock';
 	import Plug from '@lucide/svelte/icons/plug';
-	import Pencil from '@lucide/svelte/icons/pencil';
+	import Send from '@lucide/svelte/icons/send';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -11,9 +11,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Spinner } from '$lib/components/ui/spinner';
-	import Hint from '$lib/components/hint.svelte';
-	import ProxyRequestDialog from './proxy-request-dialog.svelte';
-	import { proxyLabel, proxyName } from './proxy';
+	import { confirmSend, proxyLabel, proxyName } from './proxy';
 	import {
 		freshenProxyPresence,
 		proxyTool,
@@ -30,7 +28,6 @@
 		HANDOFF_KINDS,
 		HANDOFF_SHOWN_MS,
 		offlineNote,
-		presenceDot,
 		type ActionKind
 	} from '$lib/config/connectors';
 	import { ROUTES } from '$lib/config/routes';
@@ -44,8 +41,7 @@
 	interface Props {
 		connectors: Connector[];
 		catalog: ConnectorSpec[];
-		onSend: (connectorId: string, kind: ActionKind, request?: string) => Promise<Outcome> | Outcome;
-		onPreview?: (connectorId: string) => Promise<string | null>;
+		onSend: (connectorId: string, kind: ActionKind) => Promise<Outcome> | Outcome;
 		variant?: 'outline' | 'ghost';
 		dense?: boolean;
 		shortcut?: string;
@@ -56,7 +52,6 @@
 		connectors,
 		catalog,
 		onSend,
-		onPreview,
 		variant = 'outline',
 		dense = false,
 		shortcut,
@@ -64,9 +59,6 @@
 	}: Props = $props();
 
 	let phase = $state<Phase>('idle');
-	let editing = $state(false);
-	let loading = $state(false);
-	let loaded = $state('');
 	let root = $state<HTMLElement | null>(null);
 	let run = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -85,9 +77,6 @@
 	);
 	const narrow = $derived(
 		compact ? 'h-auto w-6 px-0 has-[>svg]:px-0' : 'h-auto w-7 px-0 has-[>svg]:px-0'
-	);
-	const square = $derived(
-		compact ? 'h-auto w-7 px-0 has-[>svg]:px-0' : 'h-auto w-8 px-0 has-[>svg]:px-0'
 	);
 	const icon = $derived(compact ? 'size-3' : 'size-3.5');
 	const tone = $derived(
@@ -147,40 +136,27 @@
 		}, HANDOFF_SHOWN_MS);
 	}
 
-	/** Resolves once the server took the request or refused it. */
-	async function send(kind: ActionKind, request?: string): Promise<boolean> {
-		if (!connector || phase === 'sending') return false;
-		const mine = ++run;
+	async function send(kind: ActionKind) {
+		if (!connector || phase === 'sending') return;
 		const { id, project_id: projectId } = connector;
+		if (!(await confirmSend(connector, catalog, kind))) return;
+		if (connectors[0]?.id !== id) return;
+		const mine = ++run;
 		proxyTool.set(kind);
 		clearTimeout(timer);
 		phase = 'sending';
 		let outcome: Outcome = null;
 		try {
-			outcome = await onSend(id, kind, request);
+			outcome = await onSend(id, kind);
 		} catch {
 			outcome = null;
 		}
-		if (mine !== run) return false;
+		if (mine !== run) return;
 		if (outcome === null || outcome === false) {
 			phase = 'idle';
-			return false;
+			return;
 		}
 		void settle(mine, outcome, id, projectId);
-		return true;
-	}
-
-	async function edit() {
-		if (!connector || !onPreview || loading || phase === 'sending') return;
-		loading = true;
-		try {
-			const text = await onPreview(connector.id);
-			if (text === null) return;
-			loaded = text;
-			editing = true;
-		} finally {
-			loading = false;
-		}
 	}
 
 	function onKey(e: KeyboardEvent) {
@@ -222,9 +198,7 @@
 							<Clock class={icon} />
 							Queued
 						{:else}
-							<span class="flex {icon} shrink-0 items-center justify-center" aria-hidden="true">
-								<span class="size-1.5 rounded-full {presenceDot(connector.state)}"></span>
-							</span>
+							<Send class={icon} />
 							{tool}
 						{/if}
 					</Button>
@@ -265,39 +239,16 @@
 						{/if}
 					</DropdownMenu.Item>
 				{/each}
+				<DropdownMenu.Separator />
+				<DropdownMenu.CheckboxItem
+					checked={proxyTool.ask}
+					onCheckedChange={(v) => proxyTool.setAsk(v)}
+				>
+					Confirm before sending
+				</DropdownMenu.CheckboxItem>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
-		{#if onPreview}
-			<Hint text="Edit and send">
-				{#snippet child(props)}
-					<Button
-						{...props}
-						{variant}
-						size="sm"
-						class={square}
-						disabled={phase === 'sending'}
-						aria-label="Edit and send"
-						onclick={() => edit()}
-					>
-						{#if loading}
-							<Spinner class={icon} />
-						{:else}
-							<Pencil class={icon} />
-						{/if}
-					</Button>
-				{/snippet}
-			</Hint>
-		{/if}
 	</ButtonGroup>
-	{#if onPreview}
-		<ProxyRequestDialog
-			bind:open={editing}
-			title="Send to {proxy}"
-			kind={proxyTool.kind}
-			request={loaded}
-			onSend={send}
-		/>
-	{/if}
 {:else if variant !== 'ghost' && known && auth.user?.is_superuser}
 	<Button
 		variant="outline"
