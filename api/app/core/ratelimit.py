@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 
 from app.config import settings
+from shared.definitions.auth import LOGIN_ACCOUNT_KEY
 from shared.redis import async_client
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,20 @@ async def clear_failures(key: str) -> None:
         logger.warning("rate limiter clear unavailable for %s: %s", key, exc)
 
 
+async def clear_login_failures(username: str) -> bool:
+    """Clear the account's login failures from every client address."""
+    pattern = LOGIN_ACCOUNT_KEY.format(username=username.lower(), address="*")
+    try:
+        client = async_client()
+        keys = [key async for key in client.scan_iter(match=pattern)]
+        if keys:
+            await client.delete(*keys)
+    except Exception as exc:
+        logger.warning("login failure clear unavailable for %s: %s", username, exc)
+        return False
+    return True
+
+
 async def revoke_token(jti: str, ttl_seconds: int) -> None:
     if ttl_seconds <= 0:
         return
@@ -97,7 +112,7 @@ async def clear_token_grace(jti: str) -> None:
         logger.warning("token grace clear unavailable for %s: %s", jti, exc)
 
 
-async def revoke_user_tokens(user_id: UUID) -> None:
+async def revoke_user_tokens(user_id: UUID) -> bool:
     """Refuse every token issued to the user before this millisecond."""
     try:
         await async_client().set(
@@ -107,6 +122,8 @@ async def revoke_user_tokens(user_id: UUID) -> None:
         )
     except Exception as exc:
         logger.warning("session revoke unavailable for %s: %s", user_id, exc)
+        return False
+    return True
 
 
 async def tokens_valid_after(user_id: UUID) -> int | None:

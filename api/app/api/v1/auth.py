@@ -47,6 +47,7 @@ from app.utils.validation import (
     validate_password_strength,
     validate_username,
 )
+from shared.definitions.auth import LOGIN_ACCOUNT_KEY, LOGIN_ADDRESS_KEY
 from shared.logging import get_logger
 from shared.models.user import User, UserRead
 from shared.utils.datetime import utc_now
@@ -183,8 +184,10 @@ async def login(
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     address = client_id(request)
-    account_key = f"auth:login:{login_data.username.lower()}:{address}"
-    address_key = f"auth:login-from:{address}"
+    account_key = LOGIN_ACCOUNT_KEY.format(
+        username=login_data.username.lower(), address=address
+    )
+    address_key = LOGIN_ADDRESS_KEY.format(address=address)
     await too_many_attempts(account_key, limit=LOGIN_FAILURE_LIMIT, fail_closed=True)
     await too_many_attempts(address_key, limit=LOGIN_ADDRESS_LIMIT, fail_closed=True)
 

@@ -182,6 +182,16 @@ def test_installer_writes_secrets_private_from_the_start():
     assert 'cat >"$RENGINE_HOME/.env.tmp"' not in text
 
 
+def test_password_reset_reads_the_password_inside_the_api_container():
+    reset = _text("deploy/rengine").split("\ncmd_reset_password() {", 1)[1]
+    reset = reset.split("\n}\n", 1)[0]
+    assert "read " not in reset
+    assert "--remove-2fa) args+=(--remove-2fa) ;;" in reset
+    assert '-*) die "unknown option: $arg" ;;' in reset
+    assert "[ -t 0 ] || exec+=(-T)" in reset
+    assert '-m app.reset_password \\\n    ${args[@]+"${args[@]}"} -- "$user"' in reset
+
+
 # ---------- backups ----------
 
 

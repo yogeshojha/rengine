@@ -161,6 +161,8 @@ sudo rengine update      # move to the latest release
 
 A backup holds the instance key. Run from a terminal, `rengine backup` asks for a passphrase and encrypts the archive with it.
 
+To regain access to an account, `sudo rengine reset-password <username>` asks for a new password and signs the account out everywhere. `--remove-2fa` also removes two-factor authentication. A password piped to stdin skips the prompt.
+
 ### From source
 
 A checkout installs the same way with images built locally instead of pulled:

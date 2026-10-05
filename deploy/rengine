@@ -35,6 +35,9 @@ Usage: rengine <command>
                  --no-backup skips the database snapshot taken first
   backup         write a backup archive to ./backups
   restore <f>    replace this instance's data with an archive
+  reset-password <user>
+                 set a new password and sign the user out everywhere
+                 --remove-2fa removes two-factor authentication
   uninstall      remove containers and data volumes
   version        installed release
 EOF
@@ -132,6 +135,25 @@ cmd_scale() {
   docker compose up -d worker-scans
 }
 
+cmd_reset_password() {
+  local user="" args=() arg
+  for arg in "$@"; do
+    case "$arg" in
+      --remove-2fa) args+=(--remove-2fa) ;;
+      -*) die "unknown option: $arg" ;;
+      *) [ -z "$user" ] || die "usage: rengine reset-password <user> [--remove-2fa]"
+         user="$arg" ;;
+    esac
+  done
+  [ -n "$user" ] || die "usage: rengine reset-password <user> [--remove-2fa]"
+  [ -n "$(docker compose ps --status running -q api 2>/dev/null)" ] \
+    || die "the api service is not running. Start it with: rengine start"
+  local exec=(docker compose exec)
+  [ -t 0 ] || exec+=(-T)
+  "${exec[@]}" api /app/.venv/bin/python -m app.reset_password \
+    ${args[@]+"${args[@]}"} -- "$user"
+}
+
 cmd_uninstall() {
   printf 'Containers and data volumes are removed. Backups and .env stay in %s.\n' "$RENGINE_HOME"
   local ans
@@ -159,6 +181,7 @@ case "$cmd" in
   backup)    exec scripts/backup.sh dump "$(abs "${1:-$RENGINE_HOME/backups}")" ;;
   restore)   [ -n "${1:-}" ] || die "usage: rengine restore <archive>"
              exec scripts/backup.sh restore "$(abs "$1")" ;;
+  reset-password) cmd_reset_password "$@" ;;
   uninstall) cmd_uninstall ;;
   version)   env_get RENGINE_TAG ;;
   ''|help|-h|--help) usage ;;
