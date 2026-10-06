@@ -48,6 +48,7 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import SourceIp from '$lib/components/scans/source-ip.svelte';
+	import MetaLine from '$lib/components/meta-line.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
@@ -814,29 +815,26 @@
 							{targetTypeLabel(scan.execution_config.target_type)}
 						</Badge>
 					</div>
-					<p
-						class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground"
-					>
-						<ScanStatusBadge status={scan.status} class="h-5" />
-						{#if scan.status === 'pending' && scan.queue_position != null}
-							<span class="text-xs">{queueLabel(scan.queue_position)}</span>
-						{/if}
-						{#if focused}
-							<Badge variant="info" class="h-5 font-normal">Focused</Badge>
-						{/if}
-						<span>{timing}</span>
-						<span aria-hidden="true">·</span>
+					<MetaLine class="mt-1.5 text-sm text-muted-foreground">
+						<span class="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+							<ScanStatusBadge status={scan.status} class="h-5" />
+							{#if scan.status === 'pending' && scan.queue_position != null}
+								<span class="text-xs">{queueLabel(scan.queue_position)}</span>
+							{/if}
+							{#if focused}
+								<Badge variant="info" class="h-5 font-normal">Focused</Badge>
+							{/if}
+							<span>{timing}</span>
+						</span>
 						<span>{scan.engine_name}</span>
-						<span aria-hidden="true">·</span>
 						<span>{scan.context_name ?? 'engine defaults'}</span>
 						{#if scan.status !== 'pending'}
-							<span aria-hidden="true">·</span>
 							<span class="inline-flex min-w-0 items-center gap-1.5">
 								<span>Source IP</span>
 								<SourceIp {scan} />
 							</span>
 						{/if}
-					</p>
+					</MetaLine>
 				</div>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">

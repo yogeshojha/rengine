@@ -39,12 +39,12 @@
 		if (open) untrack(() => void load());
 	});
 
-	const library = $derived.by(() => {
-		const found = about?.check_library;
-		if (!found) return null;
-		const synced = found.synced_at ? `Synced ${relativeTimeLong(found.synced_at)}` : null;
-		return [checkCount(found), synced].filter(Boolean).join(' · ') || null;
-	});
+	const library = $derived(about?.check_library ? checkCount(about.check_library) : null);
+	const synced = $derived(
+		about?.check_library?.synced_at
+			? `Synced ${relativeTimeLong(about.check_library.synced_at)}`
+			: null
+	);
 
 	const rows = $derived(
 		about
@@ -53,7 +53,7 @@
 					{ label: 'Architecture', value: about.architecture, mono: true },
 					{ label: 'PostgreSQL', value: about.postgres, mono: true },
 					{ label: 'Redis', value: about.redis, mono: true },
-					{ label: 'Check library', value: library, mono: false }
+					{ label: 'Check library', value: library, mono: false, sub: synced }
 				]
 			: []
 	);
@@ -124,6 +124,9 @@
 										>
 											{row.value ?? NOT_AVAILABLE}
 										</dd>
+										{#if row.sub}
+											<dd class="text-xs text-muted-foreground">{row.sub}</dd>
+										{/if}
 									</div>
 								{/each}
 							{:else}
