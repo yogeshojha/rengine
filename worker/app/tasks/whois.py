@@ -3,45 +3,29 @@ from sqlalchemy import select
 from app.celery import celery_app
 from app.database import get_sync_session
 from shared.definitions.notifications import ENRICHMENT_FAILED
-from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.task_status import TaskStatus
 from shared.http import egress_proxy
 from shared.logging import get_logger
 from shared.models.target import Target
-from shared.services.activity_log import ActivityLogService
 from shared.utils.datetime import utc_now
 from tools.whois.service import WhoisError, WhoisNotApplicableError, WhoisService
 
 logger = get_logger(__name__)
 
 
-def _fail_group(
-    session,
-    activity: ActivityLogService,
-    targets: list[Target],
-    error: str,
-) -> tuple[int, int]:
+def _fail_group(session, targets: list[Target], error: str) -> tuple[int, int]:
     """Stamp one failure on every target sharing the query."""
     session.rollback()
     for target in targets:
         target.whois_status = TaskStatus.FAILED
         target.whois_error = error
         target.updated_at = utc_now()
-        activity.log(
-            event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-            title=f"WHOIS lookup failed · {target.target_value}",
-            description=error,
-            level=ActivityLevel.ERROR,
-            target_id=target.id,
-            project_id=target.project_id,
-        )
     session.commit()
     return 0, len(targets)
 
 
 def _resolve_group(
     session,
-    activity: ActivityLogService,
     service: WhoisService,
     normalized_query: str,
     targets: list[Target],
@@ -63,23 +47,16 @@ def _resolve_group(
     except WhoisError as exc:
         error = str(exc)[:1000]
         logger.warning("WHOIS lookup failed for %s: %s", normalized_query, error)
-        return _fail_group(session, activity, targets, error)
+        return _fail_group(session, targets, error)
     except Exception:
         logger.exception("WHOIS lookup failed for %s", normalized_query)
-        return _fail_group(session, activity, targets, ENRICHMENT_FAILED)
+        return _fail_group(session, targets, ENRICHMENT_FAILED)
 
     for target in targets:
         target.whois_record_id = record.id
         target.whois_status = TaskStatus.SUCCESS
         target.whois_error = None
         target.updated_at = utc_now()
-        activity.log(
-            event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_COMPLETED,
-            title=f"WHOIS lookup completed · {target.target_value}",
-            level=ActivityLevel.SUCCESS,
-            target_id=target.id,
-            project_id=target.project_id,
-        )
     session.commit()
     return len(targets), 0
 
@@ -96,7 +73,6 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
         return {"success": 0, "failed": 0, "total": 0}
 
     session = get_sync_session()
-    activity = ActivityLogService(session)
 
     try:
         service = WhoisService(proxy_url=egress_proxy())
@@ -126,7 +102,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
 
         for normalized_query, group_targets in query_groups.items():
             ok, failed = _resolve_group(
-                session, activity, service, normalized_query, group_targets
+                session, service, normalized_query, group_targets
             )
             success_count += ok
             failed_count += failed
@@ -153,14 +129,6 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
                 target.whois_status = TaskStatus.FAILED
                 target.whois_error = ENRICHMENT_FAILED
                 target.updated_at = utc_now()
-                activity.log(
-                    event=ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED,
-                    title=f"WHOIS lookup failed · {target.target_value}",
-                    description=ENRICHMENT_FAILED,
-                    level=ActivityLevel.ERROR,
-                    target_id=target.id,
-                    project_id=target.project_id,
-                )
             session.commit()
         except Exception:
             logger.exception("Failed to update target statuses after task failure")

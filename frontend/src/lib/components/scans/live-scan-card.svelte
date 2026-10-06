@@ -5,6 +5,7 @@
 	import Clock from '@lucide/svelte/icons/clock';
 	import Ban from '@lucide/svelte/icons/ban';
 	import { ROUTES } from '$lib/config/routes';
+	import { queueLabel } from '$lib/config/scan-admission';
 	import { elapsedSeconds, elapsedText, scanCountPills } from '$lib/utilities/scan-status';
 	import { plural } from '$lib/utilities/strings';
 	import {
@@ -35,6 +36,11 @@
 	let eta = $derived(queued ? null : etaLabel(previousDuration, elapsedSec));
 	let planned = $derived(plannedStages(scan, catalog));
 	let progress = $derived(stageProgress(scan, run, planned));
+	let label = $derived(
+		queued && scan.queue_position != null
+			? `${progress.label} · ${queueLabel(scan.queue_position)}`
+			: progress.label
+	);
 	let pills = $derived(scanCountPills(scan).filter((p) => p.value > 0));
 	let failed = $derived(run?.failed.length ?? 0);
 	let subtitle = $derived(
@@ -43,7 +49,7 @@
 </script>
 
 <div
-	class="group/card relative rounded-md border border-border bg-card/60 transition-colors hover:border-info/40"
+	class="group/card relative rounded-lg border bg-card shadow-xs transition-colors hover:border-info/40"
 >
 	<a href={ROUTES.scan(scan.id)} onclick={onNavigate} class="block p-2.5">
 		<div class="flex items-center gap-2">
@@ -90,7 +96,7 @@
 		{/if}
 
 		<div class="mt-1.5 flex min-w-0 items-center gap-1.5">
-			<span class="truncate text-2xs font-medium text-foreground/90">{progress.label}</span>
+			<span class="truncate text-2xs font-medium text-foreground/90">{label}</span>
 			{#if run?.tool}
 				<span class="shrink-0 rounded bg-muted px-1 py-px font-mono text-2xs text-muted-foreground">
 					{run.tool}

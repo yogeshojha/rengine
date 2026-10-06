@@ -22,7 +22,6 @@ from app.orchestrator import (
 )
 from shared.definitions.constants import SCAN_QUEUES
 from shared.definitions.source_ip import SourceIpPhase
-from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import (
     ACTIVITY_TERMINAL_STATUSES,
     SCAN_TERMINAL_STATUSES,
@@ -34,7 +33,6 @@ from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.services import scan_admission, source_ip
 from shared.services import worker_presence as presence
-from shared.services.activity_log import ActivityLogService
 from shared.services.celery_dispatch import (
     dispatch_scan_run,
     dispatch_source_ip_check,
@@ -99,18 +97,6 @@ def run_scan(self, scan_id: str, epoch: int = 0) -> dict:
             events = ScanEventPublisher(
                 scan_id=scan_id, project_id=str(scan.project_id)
             )
-            target_value = (scan.execution_config or {}).get("target_value", "")
-            ActivityLogService(session).log(
-                event=ActivityEvent.SCAN_STARTED,
-                title=f"Scan started · {target_value}",
-                description=scan.engine_name,
-                level=ActivityLevel.INFO,
-                project_id=scan.project_id,
-                target_id=scan.target_id,
-                scan_id=scan.id,
-                target_value=target_value,
-            )
-            session.commit()
             events.scan_started(status=scan.status, engine=scan.engine_name)
         return {"dispatched": True, "task_id": result.id}
 

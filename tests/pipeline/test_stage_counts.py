@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from shared.definitions.notifications import stage_count_summary
 from shared.definitions.stage_counts import (
     STAGE_COUNT_LABELS,
     UNSHOWN_COUNTS,
@@ -78,14 +77,6 @@ def test_figures_follow_the_count_and_the_stage():
     assert stage_figures("subdomain_discovery", {"excluded": 3, "subdomains": 0}) == [
         ("subdomains", 0, "web assets")
     ]
-
-
-def test_notification_summary_skips_zeros_and_groups_thousands():
-    assert (
-        stage_count_summary({"endpoints": 1200, "endpoints_new": 0}, "url_discovery")
-        == "1,200 endpoints"
-    )
-    assert stage_count_summary({"waf": 0}) == "no results"
 
 
 def test_activity_read_carries_its_labelled_figures():

@@ -15,6 +15,7 @@ from sqlalchemy import exists, select, text
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
 
+from shared.definitions.activity import issues_filed, issues_not_filed
 from shared.definitions.issue_trackers import (
     MAX_COMMENT_ATTEMPTS,
     MAX_ERROR,
@@ -69,7 +70,6 @@ from shared.services.vuln_templates import (
     selection_predicate,
 )
 from shared.utils.datetime import utc_now
-from shared.utils.text import counted
 
 logger = get_logger(__name__)
 
@@ -365,8 +365,11 @@ def file_pending(
     return sum(filed.values())
 
 
-def _named(text: str, tracker: IssueTracker | None) -> str:
-    return f"{text} · {tracker.name}" if tracker else text
+def _tracker_name(
+    trackers: dict[uuid.UUID, IssueTracker | None], tracker_id: uuid.UUID
+) -> str | None:
+    tracker = trackers.get(tracker_id)
+    return tracker.name if tracker else None
 
 
 def _log_filing(
@@ -377,19 +380,22 @@ def _log_filing(
 ) -> None:
     log = ActivityLogService(session)
     for (project_id, tracker_id), count in filed.items():
+        title, description = issues_filed(count, _tracker_name(trackers, tracker_id))
         log.log(
             event=ActivityEvent.ISSUE_FILED,
-            title=_named(f"{counted(count, 'issue')} filed", trackers.get(tracker_id)),
+            title=title,
+            description=description,
             level=ActivityLevel.SUCCESS,
             project_id=project_id,
         )
     for (project_id, tracker_id), titles in failed.items():
+        title, description = issues_not_filed(
+            titles, _tracker_name(trackers, tracker_id)
+        )
         log.log(
             event=ActivityEvent.ISSUE_FAILED,
-            title=_named(
-                f"{counted(len(titles), 'issue')} not filed", trackers.get(tracker_id)
-            ),
-            description="\n".join(titles[:10]),
+            title=title,
+            description=description,
             level=ActivityLevel.ERROR,
             project_id=project_id,
         )

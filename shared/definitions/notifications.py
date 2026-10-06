@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from shared.definitions.bounty_programs import BountyEvent, event_spec
-from shared.definitions.stage_counts import HTTP_SERVICE_NOUN, stage_figures
+from shared.definitions.stage_counts import HTTP_SERVICE_NOUN
 from shared.definitions.stage_counts import noun as _noun
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 from shared.definitions.threat_intel import ExploitSignal
@@ -47,21 +47,6 @@ _SCAN_COUNT_LABELS: dict[str, tuple[str, str]] = {
 
 
 SCAN_COUNT_COLUMNS: tuple[str, ...] = tuple(_SCAN_COUNT_LABELS)
-
-
-def scan_count_summary(counts: dict) -> str:
-    parts = [
-        _count(n, singular, plural)
-        for col, (singular, plural) in _SCAN_COUNT_LABELS.items()
-        if (n := counts.get(col, 0))
-    ]
-    return ", ".join(parts) if parts else "no results"
-
-
-def stage_count_summary(counts: dict, stage: str | None = None) -> str:
-    """Label every figure a stage reports."""
-    parts = [f"{n:,} {label}" for _, n, label in stage_figures(stage, counts) if n]
-    return ", ".join(parts) if parts else "no results"
 
 
 @dataclass(frozen=True)

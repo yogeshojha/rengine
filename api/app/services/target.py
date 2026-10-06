@@ -26,6 +26,7 @@ from app.services.target_filters import (
     signal_count_columns,
     with_whois_join,
 )
+from shared.definitions.activity import targets_added
 from shared.definitions.constants import MAX_TARGETS_IMPORT
 from shared.enums.activity import ActivityLevel
 from shared.enums.scan import SCAN_OPEN_STATUSES
@@ -578,10 +579,11 @@ class TargetService:
 
         await self._activity.log_async(
             event=ActivityEvent.TARGET_CREATED,
-            title=f"Target created: {target.target_value}",
+            title="Target added",
             target_id=target.id,
             project_id=target.project_id,
             user_id=user_id,
+            target_value=target.target_value,
         )
         await self.session.commit()
 
@@ -648,17 +650,35 @@ class TargetService:
             found[value] = target
             created.append(target)
 
-        for target in created:
-            await self._activity.log_async(
-                event=ActivityEvent.TARGET_CREATED,
-                title=f"Target created: {target.target_value}",
-                target_id=target.id,
-                project_id=project_id,
-                user_id=user_id,
-            )
+        await self._log_added(created, project_id, user_id)
         await self.session.commit()
         self._dispatch_post_target_creation(created)
         return [found[value] for value in wanted]
+
+    async def _log_added(
+        self, created: list[Target], project_id: UUID, user_id
+    ) -> None:
+        if not created:
+            return
+        if len(created) == 1:
+            await self._activity.log_async(
+                event=ActivityEvent.TARGET_CREATED,
+                title="Target added",
+                target_id=created[0].id,
+                project_id=project_id,
+                user_id=user_id,
+                target_value=created[0].target_value,
+            )
+            return
+        title, description = targets_added([t.target_value for t in created], "added")
+        await self._activity.log_async(
+            event=ActivityEvent.TARGET_BULK_IMPORTED,
+            title=title,
+            description=description,
+            level=ActivityLevel.SUCCESS,
+            project_id=project_id,
+            user_id=user_id,
+        )
 
     async def _seed_created(self, created: list[Target], lines: list[str]) -> None:
         """Each target keeps only the lines that fall inside its own scope."""
@@ -742,13 +762,16 @@ class TargetService:
             if created is not None and item.seeds:
                 await self._seed_created([created], item.seeds)
 
-        total = imported_count + failed_count + skipped_duplicates
+        title, description = targets_added(
+            [t.target_value for t in created_targets],
+            "imported",
+            skipped=skipped_duplicates,
+            failed=failed_count,
+        )
         await self._activity.log_async(
             event=ActivityEvent.TARGET_BULK_IMPORTED,
-            title=f"Imported {counted(imported_count, 'target')}",
-            description=f"{imported_count}/{total} imported"
-            + (f", {failed_count} failed" if failed_count else "")
-            + (f", {skipped_duplicates} skipped" if skipped_duplicates else ""),
+            title=title,
+            description=description,
             level=ActivityLevel.SUCCESS
             if imported_count > 0
             else ActivityLevel.WARNING,
@@ -909,15 +932,6 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
         await self.session.refresh(target)
-
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_UPDATED,
-            title=f"Target updated: {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-            user_id=user_id,
-        )
-        await self.session.commit()
 
         return self._to_target_read(target, await self._seed_count(target.id))
 
@@ -1087,14 +1101,6 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"DNS lookup queued for {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-        )
-        await self.session.commit()
-
         dispatch_dns_lookups([str(target.id)])
 
         return EnrichmentRefreshResponse(
@@ -1110,14 +1116,6 @@ class TargetService:
         target.whois_status = TaskStatus.PENDING
         target.whois_error = None
         target.updated_at = utc_now()
-        await self.session.commit()
-
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"WHOIS lookup queued for {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-        )
         await self.session.commit()
 
         dispatch_whois_lookups([str(target.id)])
@@ -1145,14 +1143,6 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"Infostealer lookup queued for {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-        )
-        await self.session.commit()
-
         dispatch_infostealer_lookups([str(target.id)])
 
         return EnrichmentRefreshResponse(
@@ -1176,14 +1166,6 @@ class TargetService:
         await self.session.commit()
 
         dispatch_ripestat_enrichment([str(target.id)])
-
-        await self._activity.log_async(
-            event=ActivityEvent.TARGET_ENRICHMENT_STARTED,
-            title=f"BGP enrichment queued for {target.target_value}",
-            target_id=target.id,
-            project_id=target.project_id,
-        )
-        await self.session.commit()
 
         return EnrichmentRefreshResponse(
             target_id=target.id,

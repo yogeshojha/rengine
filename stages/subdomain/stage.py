@@ -18,14 +18,12 @@ from sqlalchemy.dialects.postgresql import JSONB, insert
 from shared.definitions.intensity import TransportTool
 from shared.definitions.rescan import SEED_SOURCES
 from shared.definitions.surface import SurfaceDimension
-from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.api_key import APIProvider
 from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
 from shared.services import infostealer, target_seeds
-from shared.services.activity_log import ActivityLogService
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.services.scope_filter import matches_any
 from shared.services.wordlists import WordlistError, read_words
@@ -193,7 +191,6 @@ class SubdomainStage(Stage):
         cfg = self.cfg
         resolved = self.ctx.resolved
         domain = self.ctx.target_value.strip().lower().rstrip(".")
-        activity = ActivityLogService(self.session)
 
         api_keys = self._prefetch_keys()
         pctx = ProviderContext(
@@ -214,9 +211,9 @@ class SubdomainStage(Stage):
                 )[0]
             )
 
-        provider_classes = self._select_providers(cfg, activity)
-        results = self._run_providers(provider_classes, pctx, activity, on_result=write)
-        stealer = self._infostealer_names(activity)
+        provider_classes = self._select_providers(cfg)
+        results = self._run_providers(provider_classes, pctx, on_result=write)
+        stealer = self._infostealer_names()
         if stealer is not None:
             results.append(stealer)
             write(stealer)
@@ -226,9 +223,7 @@ class SubdomainStage(Stage):
             merge_and_filter(results, domain, resolved.included_subdomains), domain
         )
         wildcard = self._wildcard_profile(domain)
-        extra = self._expand(
-            domain, cfg, sorted(merged, key=_seed_rank), wildcard, activity
-        )
+        extra = self._expand(domain, cfg, sorted(merged, key=_seed_rank), wildcard)
         if extra:
             merged, dropped = self._sift(
                 merge_and_filter(
@@ -281,7 +276,6 @@ class SubdomainStage(Stage):
         cfg: SubdomainConfig,
         seeds: list[str],
         wildcard: _Wildcard,
-        activity: ActivityLogService,
     ) -> list[ProviderResult]:
         """Zone transfer, bruteforce and permutation results."""
         passive = self.ctx.resolved.intensity == Intensity.PASSIVE.value
@@ -294,7 +288,7 @@ class SubdomainStage(Stage):
             out.append(self._permute(seeds, wildcard, passive=passive))
         for result in out:
             self._check_abort()
-            self._log_provider(activity, result)
+            self._report_provider(result)
         return out
 
     def _sift(
@@ -546,7 +540,7 @@ class SubdomainStage(Stage):
         svc = SyncAPIKeyService(self.session)
         return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
 
-    def _infostealer_names(self, activity: ActivityLogService) -> ProviderResult | None:
+    def _infostealer_names(self) -> ProviderResult | None:
         if not infostealer.lookups_enabled(self.session):
             return None
         names = infostealer.hosts(self.session, self.ctx.target_id)
@@ -555,12 +549,10 @@ class SubdomainStage(Stage):
         result = ProviderResult(
             source=SubdomainSource.HUDSON_ROCK, subdomains=names, raw_count=len(names)
         )
-        self._log_provider(activity, result)
+        self._report_provider(result)
         return result
 
-    def _select_providers(
-        self, cfg: SubdomainConfig, activity: ActivityLogService
-    ) -> list[type[SubdomainProvider]]:
+    def _select_providers(self, cfg: SubdomainConfig) -> list[type[SubdomainProvider]]:
         names = list(dict.fromkeys(cfg.enabled_sources))
         if cfg.tls_discovery and "tlsx" not in names:
             names.append("tlsx")
@@ -574,8 +566,7 @@ class SubdomainStage(Stage):
             if provider in selected:
                 continue
             if passive and provider.touches_target:
-                self._log_provider(
-                    activity,
+                self._report_provider(
                     self._skipped(
                         provider.source, "a passive scan does not connect to the target"
                     ),
@@ -588,7 +579,6 @@ class SubdomainStage(Stage):
         self,
         provider_classes: list[type[SubdomainProvider]],
         pctx: ProviderContext,
-        activity: ActivityLogService,
         on_result: Callable[[ProviderResult], None] | None = None,
     ) -> list[ProviderResult]:
         if not provider_classes:
@@ -600,37 +590,21 @@ class SubdomainStage(Stage):
             for future in as_completed(futures):
                 result = future.result()
                 results.append(result)
-                self._log_provider(activity, result)
+                self._report_provider(result)
                 if on_result is not None:
                     on_result(result)
         return results
 
-    def _log_provider(
-        self, activity: ActivityLogService, result: ProviderResult
-    ) -> None:
+    def _report_provider(self, result: ProviderResult) -> None:
         source = result.source.value
         if result.skipped:
             message = f"{source} skipped. {result.skip_reason}"
-            level = ActivityLevel.WARNING
         elif result.error:
             message = f"{source} failed. {result.error}"
-            level = ActivityLevel.WARNING
         else:
             message = f"{source} found {result.raw_count} hosts"
             if result.note:
                 message += f", {result.note}"
-            level = ActivityLevel.INFO
-        activity.log(
-            event=ActivityEvent.SCAN_PROGRESS,
-            title="Subdomain discovery",
-            description=message,
-            level=level,
-            project_id=self.ctx.project_id,
-            target_id=self.ctx.target_id,
-            scan_id=self.ctx.scan_id,
-            target_value=self.ctx.target_value,
-        )
-        self.session.commit()
         self.emit_progress(message, source=source)
 
     def _client(self) -> DnsxClient | None:

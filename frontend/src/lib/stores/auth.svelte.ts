@@ -19,7 +19,6 @@ import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 import { QUERY_SCHEMAS } from './query-schema.svelte';
 import { dashboardStore } from '$lib/stores/dashboard.svelte';
 import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
-import { activityScope } from '$lib/stores/activity-scope.svelte';
 import { activityFeed } from '$lib/stores/activity-feed.svelte';
 import { liveScans } from '$lib/stores/live-scans.svelte';
 import { connectors } from '$lib/stores/connectors.svelte';
@@ -134,7 +133,6 @@ function createAuthStore() {
 		dashboardStore.clear();
 		breadcrumbStore.clear();
 		recent.reset();
-		activityScope.clear();
 		activityFeed.reset();
 		liveScans.clear();
 		rechecks.reset();

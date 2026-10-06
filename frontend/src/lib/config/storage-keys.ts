@@ -13,7 +13,7 @@ export const STORAGE_KEYS = {
 	engineSideTab: 'rengine:engine:sideTab',
 	contextSplit: 'rengine:context:split',
 	activityPinned: 'rengine:activity:pinned',
-	activityGrouping: 'rengine:activity:grouping',
+	activitySeen: 'rengine:activity:seen',
 	webAssetsColumns: 'rengine:webassets:columns',
 	webAssetsDensity: 'rengine:webassets:density',
 	webAssetsPageSize: 'rengine:webassets:pageSize',

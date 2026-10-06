@@ -7,6 +7,8 @@
 	import Hint from '$lib/components/hint.svelte';
 	import ActivityGlance from '$lib/components/activity/activity-glance.svelte';
 	import { activityFeed } from '$lib/stores/activity-feed.svelte';
+	import { liveScans } from '$lib/stores/live-scans.svelte';
+	import { Spinner } from '$lib/components/ui/spinner';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import CommandSearch from '$lib/components/layout/command-search.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -89,13 +91,20 @@
 				{...props}
 				variant="ghost"
 				size="icon"
-				class="@5xl/topbar:hidden"
+				class="relative @5xl/topbar:hidden"
 				aria-label="Activity"
 				aria-expanded={activityFeed.open}
 				data-activity-glance
 				onclick={() => activityFeed.toggle()}
 			>
-				<Activity class="size-4" />
+				{#if liveScans.hasLive}
+					<Spinner class="size-4 text-info" />
+				{:else}
+					<Activity class="size-4" />
+				{/if}
+				{#if activityFeed.failure && !liveScans.hasLive}
+					<span class="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-destructive"></span>
+				{/if}
 			</Button>
 		{/snippet}
 	</Hint>

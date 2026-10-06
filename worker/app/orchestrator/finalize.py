@@ -4,12 +4,12 @@ from sqlalchemy import Integer, String, bindparam, select, text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Session
 
+from shared.definitions.activity import run_cancelled, run_completed, run_failed
 from shared.definitions.domain_posture import SPOOFABLE_KEYS
 from shared.definitions.notifications import (
     SCAN_COUNT_COLUMNS,
     ScanDeltas,
     new_checks_result,
-    scan_count_summary,
     scan_digest,
     scan_failed,
 )
@@ -28,6 +28,7 @@ from shared.enums.scan import (
     ScanStatus,
 )
 from shared.logging import get_logger
+from shared.models.activity_log import ActivityLog
 from shared.models.scan import Scan, run_seconds
 from shared.models.scan_activity import ScanActivity
 from shared.models.vulnerability import VulnerabilityCoverage
@@ -121,29 +122,69 @@ def _finalize_user_cancelled(
     if first:
         locked.completed_at = utc_now()
     session.add(locked)
+    _log_cancelled(session, locked)
     session.commit()
     scan = locked
     _admit_next(session)
     if first:
         _check_source_ip(scan)
     _settle(session, scan)
-    if first:
-        _log_cancelled(ActivityLogService(session), scan)
-        session.commit()
     events.scan_cancelled(status=scan.status)
 
 
-def _log_cancelled(activity_log: ActivityLogService, scan: Scan) -> None:
-    target_value = (scan.execution_config or {}).get("target_value", "")
-    activity_log.log(
-        event=ActivityEvent.SCAN_CANCELLED,
-        title=f"Scan cancelled · {target_value}",
-        description=scan.engine_name,
-        level=ActivityLevel.WARNING,
+def _log_run(
+    session: Session,
+    scan: Scan,
+    event: ActivityEvent,
+    line: tuple[str, str | None, ActivityLevel],
+) -> None:
+    title, description, level = line
+    ActivityLogService(session).log(
+        event=event,
+        title=title,
+        description=description,
+        level=level,
         project_id=scan.project_id,
         target_id=scan.target_id,
         scan_id=scan.id,
-        target_value=target_value,
+        target_value=(scan.execution_config or {}).get("target_value", ""),
+    )
+
+
+def _log_completed(
+    session: Session, scan: Scan, counts: dict, duration: float | None
+) -> None:
+    deltas = _guard(session, lambda: _measure(session, scan), ScanDeltas())
+    label = scan.engine_name if scan.scope == ScanScope.FOCUSED.value else None
+    _log_run(
+        session,
+        scan,
+        ActivityEvent.SCAN_COMPLETED,
+        run_completed(counts, deltas, duration, label),
+    )
+
+
+def _log_cancelled(session: Session, scan: Scan) -> None:
+    logged = session.scalar(
+        select(ActivityLog.id)
+        .where(
+            ActivityLog.scan_id == scan.id,
+            ActivityLog.event_type == ActivityEvent.SCAN_CANCELLED,
+        )
+        .limit(1)
+    )
+    if logged is not None:
+        return
+    counts = {col: getattr(scan, col, 0) or 0 for col in SCAN_COUNT_COLUMNS}
+    _log_run(
+        session,
+        scan,
+        ActivityEvent.SCAN_CANCELLED,
+        (
+            "Scan cancelled",
+            run_cancelled(scan.error, run_seconds(scan), counts),
+            ActivityLevel.WARNING,
+        ),
     )
 
 
@@ -503,6 +544,23 @@ def _admit_next(session: Session) -> None:
         logger.warning("queued scans not started", exc_info=True)
 
 
+def _failure(activities, truncated: str | None) -> tuple[str, str | None]:
+    """The run's error and the stage it came from."""
+    if truncated:
+        return truncated[:2000], None
+    failed = next(
+        (
+            a
+            for a in activities
+            if a.status == ScanActivityStatus.FAILED.value and a.error
+        ),
+        None,
+    )
+    if failed is None:
+        return "One or more stages failed", None
+    return failed.error[:2000], failed.title
+
+
 def finalize_scan_run(session: Session, scan: Scan) -> None:
     events = ScanEventPublisher(scan_id=str(scan.id), project_id=str(scan.project_id))
     notifier = SyncNotificationPublisher()
@@ -545,21 +603,9 @@ def finalize_scan_run(session: Session, scan: Scan) -> None:
     locked.completed_at = utc_now()
     duration = run_seconds(locked)
 
+    failed_stage: str | None = None
     if status == ScanStatus.FAILED.value:
-        failed = next(
-            (
-                a
-                for a in activities
-                if a.status == ScanActivityStatus.FAILED.value and a.error
-            ),
-            None,
-        )
-        locked.error = (
-            truncated
-            or (
-                failed.error if failed and failed.error else "One or more stages failed"
-            )
-        )[:2000]
+        locked.error, failed_stage = _failure(activities, truncated)
     session.add(locked)
     session.commit()
     scan = locked
@@ -567,25 +613,14 @@ def finalize_scan_run(session: Session, scan: Scan) -> None:
     _check_source_ip(scan)
     _settle(session, scan)
 
-    activity_log = ActivityLogService(session)
-
     if status == ScanStatus.CANCELLED.value:
-        _log_cancelled(activity_log, scan)
+        _log_cancelled(session, scan)
         session.commit()
         events.scan_cancelled(status=status)
         return
 
     if status == ScanStatus.COMPLETED.value:
-        activity_log.log(
-            event=ActivityEvent.SCAN_COMPLETED,
-            title=f"Scan completed · {target_value}",
-            description=scan_count_summary(counts),
-            level=ActivityLevel.SUCCESS,
-            project_id=scan.project_id,
-            target_id=scan.target_id,
-            scan_id=scan.id,
-            target_value=target_value,
-        )
+        _log_completed(session, scan, counts, duration)
         session.commit()
         events.scan_completed(status=status, counts=counts, duration_seconds=duration)
         _dispatch_intel(scan)
@@ -601,15 +636,11 @@ def finalize_scan_run(session: Session, scan: Scan) -> None:
             _dispatch_interest(session, scan)
         return
 
-    activity_log.log(
-        event=ActivityEvent.SCAN_FAILED,
-        title=f"Scan failed · {target_value}",
-        description=scan.error or "One or more stages failed",
-        level=ActivityLevel.ERROR,
-        project_id=scan.project_id,
-        target_id=scan.target_id,
-        scan_id=scan.id,
-        target_value=target_value,
+    _log_run(
+        session,
+        scan,
+        ActivityEvent.SCAN_FAILED,
+        ("Scan failed", run_failed(failed_stage, scan.error), ActivityLevel.ERROR),
     )
     session.commit()
     events.scan_failed(status=status, error=scan.error)

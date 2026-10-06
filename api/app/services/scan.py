@@ -34,6 +34,7 @@ from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
 from app.services.target import TargetService
+from shared.definitions.activity import cancelled_reason, run_paused
 from shared.definitions.compare import Tone
 from shared.definitions.rescan import change_dimension, rescan_label
 from shared.definitions.surface import SurfaceDimension
@@ -1297,14 +1298,16 @@ class ScanService:
             )
         return scan
 
-    async def cancel(self, id: UUID, project_id: UUID) -> ScanRead:
+    async def cancel(
+        self, id: UUID, project_id: UUID, actor: str | None = None
+    ) -> ScanRead:
         scan = await self._get_scan(id, project_id, lock=True)
         if scan.status in SCAN_OPEN_STATUSES:
             held = scan.status == ScanStatus.RUNNING.value
             scan.status = ScanStatus.CANCELLED.value
             scan.completed_at = utc_now()
             fold_pause(scan, scan.completed_at)
-            scan.error = "Cancelled by user."
+            scan.error = cancelled_reason(actor)
             await self.session.commit()
 
             now = utc_now()
@@ -1329,7 +1332,10 @@ class ScanService:
         return self._to_read(scan)
 
     async def cancel_all(
-        self, project_id: UUID, target_ids: list[UUID] | None = None
+        self,
+        project_id: UUID,
+        target_ids: list[UUID] | None = None,
+        actor: str | None = None,
     ) -> ScanCancelAll:
         conds = [Scan.project_id == project_id, Scan.status.in_(SCAN_OPEN_STATUSES)]
         if target_ids:
@@ -1339,7 +1345,7 @@ class ScanService:
         )
         cancelled = 0
         for scan_id in ids:
-            read = await self.cancel(id=scan_id, project_id=project_id)
+            read = await self.cancel(id=scan_id, project_id=project_id, actor=actor)
             if read.status == ScanStatus.CANCELLED.value:
                 cancelled += 1
         return ScanCancelAll(cancelled=cancelled)
@@ -1377,7 +1383,7 @@ class ScanService:
             )
             .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
         )
-        await self._log_paused(scan, stopped)
+        await self._log_paused(scan)
         await self.session.commit()
 
         await asyncio.to_thread(revoke_scan_tasks, scan.celery_task_ids or [])
@@ -1421,6 +1427,10 @@ class ScanService:
         return self._to_read(scan)
 
     async def _stages_left(self, scan: Scan) -> int:
+        return (await self._progress(scan))[1]
+
+    async def _progress(self, scan: Scan) -> tuple[int, int]:
+        """Stages done and stages left."""
         rows = (
             (
                 await self.session.execute(
@@ -1430,13 +1440,14 @@ class ScanService:
             .scalars()
             .all()
         )
-        return resume_point(list(rows))[2]
+        _, done, left = resume_point(list(rows))
+        return len(done), left
 
     async def _log_resumed(self, scan: Scan, left: int) -> None:
         target_value = (scan.execution_config or {}).get("target_value", "")
         await ActivityLogService(self.session).log_async(
             event=ActivityEvent.SCAN_RESUMED,
-            title=f"Scan resumed · {target_value}",
+            title="Scan resumed",
             description=f"{left} {'stage' if left == 1 else 'stages'} remaining",
             level=ActivityLevel.INFO,
             project_id=scan.project_id,
@@ -1464,14 +1475,13 @@ class ScanService:
             lambda p: p.scan_resumed(status=ScanStatus.RUNNING.value, stages_left=left),
         )
 
-    async def _log_paused(self, scan: Scan, stopped: int) -> None:
+    async def _log_paused(self, scan: Scan) -> None:
         target_value = (scan.execution_config or {}).get("target_value", "")
+        done, left = await self._progress(scan)
         await ActivityLogService(self.session).log_async(
             event=ActivityEvent.SCAN_PAUSED,
-            title=f"Scan paused · {target_value}",
-            description=f"{stopped} stage{'s' if stopped != 1 else ''} stopped"
-            if stopped
-            else None,
+            title="Scan paused",
+            description=run_paused(done, done + left),
             level=ActivityLevel.INFO,
             project_id=scan.project_id,
             target_id=scan.target_id,

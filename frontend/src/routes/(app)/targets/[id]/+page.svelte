@@ -34,7 +34,6 @@
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
-	import { activityScope } from '$lib/stores/activity-scope.svelte';
 	import { bgpApplies, dnsApplies, infostealerApplies } from '$lib/types/target';
 	import type { EnrichmentKind, Target } from '$lib/types/target';
 	import { DnsRecordType } from '$lib/types/dns';
@@ -678,8 +677,6 @@
 				fetchDetail();
 			});
 		}
-		activityScope.targetId = id;
-		return () => activityScope.clear();
 	});
 
 	$effect(() => {

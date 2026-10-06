@@ -5,12 +5,10 @@ from sqlmodel import col
 
 from app.celery import celery_app
 from app.database import get_sync_session
-from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
-from shared.services.activity_log import ActivityLogService
 from shared.services.bgp_summary import write_bgp_summary_for_target
 from shared.utils.net import is_registry_routable
 from tools.ripestat.service import RIPEStatLookupError, RIPEStatService
@@ -29,7 +27,6 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         return {"success": 0, "failed": 0, "skipped": 0}
 
     session = get_sync_session()
-    activity = ActivityLogService(session)
 
     try:
         targets = (
@@ -48,7 +45,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
 
         for target in targets:
             try:
-                _enrich_target(service, session, target, activity)
+                _enrich_target(service, session, target)
             except Exception:
                 logger.exception(
                     "RIPEstat enrichment failed for %s (%s)",
@@ -81,9 +78,7 @@ def enrich_targets_bgp(target_ids: list[str]) -> dict:
         session.close()
 
 
-def _enrich_target(
-    service: RIPEStatService, session, target: Target, activity: ActivityLogService
-) -> int:
+def _enrich_target(service: RIPEStatService, session, target: Target) -> int:
     """Run target-type-specific lookups."""
     target.bgp_status = TaskStatus.QUERYING
     session.commit()
@@ -112,23 +107,8 @@ def _enrich_target(
         if count > 0:
             write_bgp_summary_for_target(session, target)
             target.bgp_status = TaskStatus.SUCCESS
-            activity.log(
-                event=ActivityEvent.TARGET_ENRICHMENT_BGP_COMPLETED,
-                title=f"BGP enrichment completed · {target.target_value}",
-                description=f"{count} {'lookup' if count == 1 else 'lookups'} performed",
-                level=ActivityLevel.SUCCESS,
-                target_id=target.id,
-                project_id=target.project_id,
-            )
         else:
             target.bgp_status = TaskStatus.FAILED
-            activity.log(
-                event=ActivityEvent.TARGET_ENRICHMENT_BGP_FAILED,
-                title=f"BGP enrichment failed · {target.target_value}",
-                level=ActivityLevel.ERROR,
-                target_id=target.id,
-                project_id=target.project_id,
-            )
         session.commit()
         return count
 

@@ -11,6 +11,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 
+from shared.definitions.activity import WATCH_ADDED, targets_added
 from shared.definitions.mode_features import CAP_PROGRAM_WATCHES, has_capability
 from shared.definitions.notifications import WatchAlert, watch_alert
 from shared.definitions.rescan import ASSET_SEED_STAGE, SeedKind
@@ -33,7 +34,7 @@ from shared.definitions.watch import (
     excluded_by,
     plan_scope,
 )
-from shared.enums.activity import ActivityEvent
+from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import Intensity, ScanStatus
 from shared.enums.scan_schedule import ScheduleStatus
 from shared.enums.target import TargetType
@@ -763,15 +764,24 @@ def _log_targets(session: Session, created: list[Target]) -> None:
         from shared.services.activity_log import ActivityLogService  # noqa: PLC0415
 
         log = ActivityLogService(session)
-        for target in created:
+        if len(created) == 1:
             log.log(
                 event=ActivityEvent.TARGET_CREATED,
-                title=f"Target added · {target.target_value}",
-                description="Added by a program watch.",
-                project_id=target.project_id,
-                target_id=target.id,
-                target_value=target.target_value,
+                title="Target added",
+                description=WATCH_ADDED,
+                project_id=created[0].project_id,
+                target_id=created[0].id,
+                target_value=created[0].target_value,
             )
+            return
+        title, names = targets_added([t.target_value for t in created], "added")
+        log.log(
+            event=ActivityEvent.TARGET_BULK_IMPORTED,
+            title=title,
+            description=f"{WATCH_ADDED} · {names}",
+            level=ActivityLevel.SUCCESS,
+            project_id=created[0].project_id,
+        )
     except Exception:
         logger.warning("target activity not logged", exc_info=True)
 

@@ -4,6 +4,7 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy import func, select
 
+from app.api.v1.activity_logs import feed_query
 from app.services.target import TargetService
 from shared.enums.activity import ActivityEvent
 from shared.models.activity_log import ActivityLog
@@ -51,3 +52,31 @@ async def test_deleting_a_target_writes_no_activity(session, estate, service):
     await service.delete_target(str(target_id))
 
     assert await _count(session) == before
+
+
+async def test_the_feed_lists_run_results_and_drops_bookkeeping(session, estate):
+    target_id = await estate.target("kept.example")
+    for event, target, value in (
+        (ActivityEvent.SCAN_COMPLETED, target_id, "kept.example"),
+        (ActivityEvent.SCAN_STAGE_COMPLETED, target_id, "kept.example"),
+        (ActivityEvent.TARGET_ENRICHMENT_WHOIS_FAILED, target_id, "kept.example"),
+        (ActivityEvent.SCAN_FAILED, None, "deleted.example"),
+        (ActivityEvent.ISSUE_FILED, None, None),
+    ):
+        session.add(
+            ActivityLog(
+                event_type=event,
+                title=event.value,
+                project_id=estate.project_id,
+                target_id=target,
+                target_value=value,
+            )
+        )
+    await session.flush()
+
+    rows = (await session.scalars(feed_query(estate.project_id))).all()
+
+    assert {r.event_type for r in rows} == {
+        ActivityEvent.SCAN_COMPLETED,
+        ActivityEvent.ISSUE_FILED,
+    }

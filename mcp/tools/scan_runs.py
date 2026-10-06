@@ -136,7 +136,9 @@ class CancelScan(Tool):
             msg = f"The scan is {row.status}. Nothing to stop."
             raise ToolError(msg)
 
-        result = await ScanService(ctx.session).cancel(row.id, row.project_id)
+        result = await ScanService(ctx.session).cancel(
+            row.id, row.project_id, actor=ctx.token.name
+        )
         target = await ctx.session.get(Target, row.target_id)
         headline = (
             f"Stopped the scan of {target.target_value if target else row.target_id}"

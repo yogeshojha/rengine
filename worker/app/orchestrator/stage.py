@@ -5,19 +5,15 @@ import time
 import traceback as tb_mod
 import uuid
 from collections.abc import Callable
-from typing import NamedTuple
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.database import get_sync_session
-from shared.definitions.notifications import stage_count_summary
-from shared.enums.activity import ActivityEvent, ActivityLevel
 from shared.enums.scan import ScanActivityStatus, ScanStatus
 from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
-from shared.services.activity_log import ActivityLogService
 from shared.services.orchestrator.aggregate import derived_counts
 from shared.services.orchestrator.events import ScanEventPublisher
 from shared.services.orchestrator.tracking import (
@@ -140,7 +136,6 @@ def _open_activity(
     events: ScanEventPublisher,
     scan: Scan,
     spec: StageSpec,
-    ids: "_ScanIds",
     celery_task_id: str | None,
 ) -> ScanActivity | None:
     """The activity row of this run, or None when the stage does not start."""
@@ -174,7 +169,6 @@ def _open_activity(
             spec,
             activity.id,
             ScanActivityStatus.FAILED,
-            ids,
             error=_WORKER_LOST,
         )
         return None
@@ -196,15 +190,9 @@ def run_stage(
 ) -> None:
     events = ScanEventPublisher(scan_id=str(scan.id), project_id=str(scan.project_id))
     activity_svc = ScanActivityService(session)
-    ids = _ScanIds(
-        scan.id,
-        scan.project_id,
-        scan.target_id,
-        (scan.execution_config or {}).get("target_value", ""),
-    )
     _register_task_id(session, scan, celery_task_id)
 
-    activity = _open_activity(activity_svc, events, scan, spec, ids, celery_task_id)
+    activity = _open_activity(activity_svc, events, scan, spec, celery_task_id)
     if activity is None:
         return
 
@@ -268,7 +256,6 @@ def run_stage(
             spec,
             activity.id,
             _halt_status(scan.id),
-            ids,
         )
         return
     except Exception as exc:
@@ -280,7 +267,6 @@ def run_stage(
             spec,
             activity.id,
             ScanActivityStatus.FAILED,
-            ids,
             error=reason,
             traceback=scrub_error(tb_mod.format_exc(), secrets),
         )
@@ -292,14 +278,6 @@ def run_stage(
     notes = scrub_error(sentences(result.warnings), secrets) or None
     activity_svc.finish(activity, status=status, result=result.counts, error=notes)
     try:
-        _log_stage(
-            session,
-            spec,
-            ids,
-            ActivityEvent.SCAN_STAGE_COMPLETED,
-            summary=stage_count_summary(result.counts, spec.name),
-            warning=notes if result.partial else None,
-        )
         scan = session.get(Scan, scan.id)
         if scan is not None:
             apply_counts(session, scan)
@@ -317,7 +295,6 @@ def _fail_stage(
     spec: StageSpec,
     activity_id: uuid.UUID,
     status: ScanActivityStatus,
-    ids: "_ScanIds",
     *,
     error: str | None = None,
     traceback: str | None = None,
@@ -331,14 +308,6 @@ def _fail_stage(
         return
     try:
         activity_svc.finish(activity, status=status, error=error, traceback=traceback)
-        if status == ScanActivityStatus.FAILED:
-            _log_stage(
-                activity_svc.session,
-                spec,
-                ids,
-                ActivityEvent.SCAN_STAGE_FAILED,
-                error=error,
-            )
     except Exception:
         logger.warning("stage failure could not be recorded in full", exc_info=True)
         activity_svc.session.rollback()
@@ -350,43 +319,6 @@ def _fail_stage(
             )
             activity_svc.session.rollback()
     _emit_stage_done(events, spec, activity, status.value)
-
-
-class _ScanIds(NamedTuple):
-    scan_id: uuid.UUID
-    project_id: uuid.UUID
-    target_id: uuid.UUID
-    target_value: str
-
-
-def _log_stage(
-    session: Session,
-    spec: StageSpec,
-    ids: _ScanIds,
-    event: ActivityEvent,
-    *,
-    summary: str | None = None,
-    error: str | None = None,
-    warning: str | None = None,
-) -> None:
-    failed = event == ActivityEvent.SCAN_STAGE_FAILED
-    if failed:
-        description, level = error or "stage failed", ActivityLevel.ERROR
-    elif warning:
-        description, level = warning, ActivityLevel.WARNING
-    else:
-        description, level = summary, ActivityLevel.INFO
-    ActivityLogService(session).log(
-        event=event,
-        title=spec.title,
-        description=description,
-        level=level,
-        project_id=ids.project_id,
-        target_id=ids.target_id,
-        scan_id=ids.scan_id,
-        target_value=ids.target_value or None,
-    )
-    session.commit()
 
 
 def _emit_stage_done(

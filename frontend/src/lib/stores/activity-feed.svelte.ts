@@ -1,66 +1,9 @@
 import { activityApi } from '$lib/api/activity';
-import {
-	ACTIVITY_GROUPINGS,
-	clusterEvents,
-	DEFAULT_ACTIVITY_GROUPING,
-	groupByDay,
-	groupByTarget,
-	type ActivityGrouping,
-	type ActivityLog
-} from '$lib/types/activity';
-import Activity from '@lucide/svelte/icons/activity';
-import Crosshair from '@lucide/svelte/icons/crosshair';
-import FolderKanban from '@lucide/svelte/icons/folder-kanban';
-import Globe from '@lucide/svelte/icons/globe';
-import Radar from '@lucide/svelte/icons/radar';
-import RadioTower from '@lucide/svelte/icons/radio-tower';
-import Server from '@lucide/svelte/icons/server';
-import Waypoints from '@lucide/svelte/icons/waypoints';
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import type { IconComponent } from '$lib/config/icons';
+import { ACTIVITY_PAGE_SIZE } from '$lib/config/activity';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
-
-export function getActivityIcon(eventType: string): IconComponent {
-	const s = eventType.toLowerCase();
-	if (/whois/.test(s)) return Globe;
-	if (/dns/.test(s)) return Waypoints;
-	if (/bgp|ripe|asn|prefix/.test(s)) return RadioTower;
-	if (/scan|recon|nuclei|task/.test(s)) return Radar;
-	if (/target/.test(s)) return Crosshair;
-	if (/project/.test(s)) return FolderKanban;
-	if (/system|user|config|login|logout/.test(s)) return Server;
-	return Activity;
-}
-
-const STARTED_RE = /\.(started|queued|querying|pending|running)\b|querying/;
-const TERMINAL_RE = /\.(completed|complete|finished|done|succeeded|success|failed|error)\b/;
-
-function isStarted(eventType: string): boolean {
-	return STARTED_RE.test(eventType.toLowerCase());
-}
-function isTerminal(eventType: string): boolean {
-	return TERMINAL_RE.test(eventType.toLowerCase());
-}
-
-export type ActivityFilter = 'all' | 'scan' | 'enrichment' | 'alert' | 'system';
-type ActivityScopeMode = 'current' | 'project';
-
-export const FILTERS: ActivityFilter[] = ['all', 'scan', 'enrichment', 'alert', 'system'];
-export const FILTER_LABELS: Record<ActivityFilter, string> = {
-	all: 'All',
-	scan: 'Scans',
-	enrichment: 'Enrichment',
-	alert: 'Alerts',
-	system: 'System'
-};
-
-function categorize(t: string): ActivityFilter {
-	const s = t.toLowerCase();
-	if (/scan|recon|nuclei|task/.test(s)) return 'scan';
-	if (/enrich|whois|dns|bgp|geoip|ssl/.test(s)) return 'enrichment';
-	if (/alert|vuln|critical/.test(s)) return 'alert';
-	return 'system';
-}
+import { liveScans } from '$lib/stores/live-scans.svelte';
+import type { ActivityLog } from '$lib/types/activity';
+import { feedRows, groupByDay, unseenFailure } from '$lib/utilities/activity';
 
 function readPinned(): boolean {
 	try {
@@ -70,15 +13,20 @@ function readPinned(): boolean {
 	}
 }
 
-function readGrouping(): ActivityGrouping {
+function writeSeen(at: number): void {
 	try {
-		const v = localStorage.getItem(STORAGE_KEYS.activityGrouping);
-		return ACTIVITY_GROUPINGS.includes(v as ActivityGrouping)
-			? (v as ActivityGrouping)
-			: DEFAULT_ACTIVITY_GROUPING;
-	} catch {
-		return DEFAULT_ACTIVITY_GROUPING;
-	}
+		localStorage.setItem(STORAGE_KEYS.activitySeen, String(at));
+	} catch {}
+}
+
+function readSeen(): number {
+	try {
+		const stored = Number(localStorage.getItem(STORAGE_KEYS.activitySeen));
+		if (stored > 0) return stored;
+	} catch {}
+	const now = Date.now();
+	writeSeen(now);
+	return now;
 }
 
 function createActivityFeed() {
@@ -87,91 +35,36 @@ function createActivityFeed() {
 	let totalPages = $state(1);
 	let loading = $state(false);
 	let initialLoad = $state(true);
-	let freshIds = $state<Set<string>>(new Set());
-	let newCount = $state(0);
+	let loadError = $state<string | null>(null);
 	let tick = $state(0);
-
 	const initialPinned = readPinned();
 	let pinned = $state(initialPinned);
 	let open = $state(initialPinned);
-	let grouping = $state<ActivityGrouping>(readGrouping());
-	const collapsedGroups = new SvelteSet<string>();
-	let filter = $state<ActivityFilter>('all');
-	let errorsOnly = $state(false);
-	let search = $state('');
-	let scopeMode = $state<ActivityScopeMode>('project');
-	let targetId = $state<string | undefined>(undefined);
-	let loadError = $state<string | null>(null);
+	let seenAt = $state(readSeen());
 	let seq = 0;
 
-	const scoped = $derived(
-		scopeMode === 'project' || !targetId ? items : items.filter((a) => a.target_id === targetId)
-	);
-	const filtered = $derived.by(() => {
-		let r = scoped;
-		if (filter !== 'all') r = r.filter((a) => categorize(a.event_type) === filter);
-		if (errorsOnly) r = r.filter((a) => a.level === 'error');
-		const q = search.trim().toLowerCase();
-		if (q) {
-			r = r.filter(
-				(a) => a.title.toLowerCase().includes(q) || (a.description ?? '').toLowerCase().includes(q)
-			);
-		}
-		return r;
+	const rows = $derived(feedRows(items, (id) => liveScans.isLive(id)));
+	const days = $derived.by(() => {
+		void tick;
+		return groupByDay(rows);
 	});
-	const clusters = $derived(clusterEvents(filtered));
-	const days = $derived(groupByDay(clusters));
-	const targetGroups = $derived(groupByTarget(clusters));
+	const failure = $derived(unseenFailure(rows, seenAt));
 	const hasMore = $derived(page < totalPages);
-	const latest = $derived(items[0] ?? null);
-	const errorCount = $derived(scoped.filter((a) => a.level === 'error').length);
 
-	const runningIds = $derived.by(() => {
-		const latestTerminal = new SvelteMap<string, number>();
-		for (const a of items) {
-			if (isTerminal(a.event_type)) {
-				const key = a.target_id ?? a.id;
-				const t = new Date(a.timestamp).getTime();
-				if (t > (latestTerminal.get(key) ?? 0)) latestTerminal.set(key, t);
-			}
-		}
-		const running = new SvelteSet<string>();
-		for (const a of items) {
-			if (!isStarted(a.event_type)) continue;
-			const key = a.target_id ?? a.id;
-			const t = new Date(a.timestamp).getTime();
-			if ((latestTerminal.get(key) ?? 0) < t) running.add(a.id);
-		}
-		return running;
-	});
-
-	const counts = $derived.by(() => {
-		const c: Record<ActivityFilter, number> = {
-			all: scoped.length,
-			scan: 0,
-			enrichment: 0,
-			alert: 0,
-			system: 0
-		};
-		for (const a of scoped) c[categorize(a.event_type)]++;
-		return c;
-	});
+	function markSeen() {
+		seenAt = Date.now();
+		writeSeen(seenAt);
+	}
 
 	return {
 		get days() {
 			return days;
 		},
-		get targetGroups() {
-			return targetGroups;
+		get isEmpty() {
+			return rows.length === 0;
 		},
-		get grouping() {
-			return grouping;
-		},
-		get collapsedGroups() {
-			return collapsedGroups;
-		},
-		get filtered() {
-			return filtered;
+		get failure() {
+			return failure;
 		},
 		get hasMore() {
 			return hasMore;
@@ -182,14 +75,8 @@ function createActivityFeed() {
 		get initialLoad() {
 			return initialLoad;
 		},
-		get freshIds() {
-			return freshIds;
-		},
-		get newCount() {
-			return newCount;
-		},
-		get tick() {
-			return tick;
+		get loadError() {
+			return loadError;
 		},
 		get open() {
 			return open;
@@ -197,64 +84,23 @@ function createActivityFeed() {
 		get pinned() {
 			return pinned;
 		},
-		get errorCount() {
-			return errorCount;
+		get page() {
+			return page;
 		},
-		get filter() {
-			return filter;
-		},
-		get scopeMode() {
-			return scopeMode;
-		},
-		get targetId() {
-			return targetId;
-		},
-		get latest() {
-			return latest;
-		},
-		get counts() {
-			return counts;
-		},
-		get loadError() {
-			return loadError;
-		},
-		get errorsOnly() {
-			return errorsOnly;
-		},
-		get search() {
-			return search;
-		},
-		get runningIds() {
-			return runningIds;
-		},
-
-		toggleErrorsOnly() {
-			errorsOnly = !errorsOnly;
-		},
-		setSearch(q: string) {
-			search = q;
+		get tick() {
+			return tick;
 		},
 
 		setOpen(v: boolean) {
 			open = v;
-			if (v) newCount = 0;
+			if (v) markSeen();
 			else if (pinned) this.setPinned(false);
-		},
-		setGrouping(g: ActivityGrouping) {
-			grouping = g;
-			try {
-				localStorage.setItem(STORAGE_KEYS.activityGrouping, g);
-			} catch {}
-		},
-		toggleGroup(key: string) {
-			if (collapsedGroups.has(key)) collapsedGroups.delete(key);
-			else collapsedGroups.add(key);
 		},
 		setPinned(v: boolean) {
 			pinned = v;
 			if (v) {
 				open = true;
-				newCount = 0;
+				markSeen();
 			}
 			try {
 				localStorage.setItem(STORAGE_KEYS.activityPinned, v ? '1' : '0');
@@ -262,17 +108,6 @@ function createActivityFeed() {
 		},
 		toggle() {
 			this.setOpen(!open);
-		},
-		setFilter(f: ActivityFilter) {
-			filter = f;
-		},
-		setScopeMode(s: ActivityScopeMode) {
-			scopeMode = s;
-		},
-		setTargetId(id: string | undefined) {
-			targetId = id;
-			scopeMode = id ? 'current' : 'project';
-			filter = 'all';
 		},
 		bumpTick() {
 			tick++;
@@ -283,7 +118,7 @@ function createActivityFeed() {
 			loading = true;
 			const my = ++seq;
 			try {
-				const res = await activityApi.list({ project_id: projectId }, p, 50);
+				const res = await activityApi.list({ project_id: projectId }, p, ACTIVITY_PAGE_SIZE);
 				if (my !== seq) return;
 				if (p === 1) {
 					items = res.items;
@@ -304,30 +139,20 @@ function createActivityFeed() {
 				}
 			}
 		},
-		get page() {
-			return page;
-		},
 
 		ingest(d: ActivityLog) {
 			if (items.some((a) => a.id === d.id)) return;
-			freshIds = new Set([...freshIds, d.id]);
 			items = [d, ...items];
-			if (!open) newCount++;
-			setTimeout(() => {
-				freshIds = new Set([...freshIds].filter((id) => id !== d.id));
-			}, 5000);
+			if (open) markSeen();
 		},
 
 		reset() {
 			seq++;
 			loading = false;
-			collapsedGroups.clear();
 			items = [];
 			page = 1;
 			totalPages = 1;
 			initialLoad = true;
-			newCount = 0;
-			freshIds = new Set();
 			loadError = null;
 		}
 	};

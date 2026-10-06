@@ -90,7 +90,7 @@ class _Run:
             tool="dnsx", rate=None, threads=30, timeout=5, retries=0
         )
         stage._prefetch_keys = dict
-        stage._select_providers = lambda _cfg, _activity: []
+        stage._select_providers = lambda _cfg: []
         stage._run_providers = self._providers
         stage._wildcard_profile = lambda _domain: _Wildcard()
         stage._expand = lambda *_args: []
@@ -103,7 +103,7 @@ class _Run:
         self.stage = stage
 
     @staticmethod
-    def _providers(_classes, _pctx, _activity, on_result=None):
+    def _providers(_classes, _pctx, on_result=None):
         results = [
             ProviderResult(
                 source=SubdomainSource.SUBFINDER,
