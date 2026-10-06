@@ -7,6 +7,7 @@ import {
 	hashLookups,
 	isCve,
 	isHexHash,
+	isQuestion,
 	queryDimensions,
 	scopedQuery,
 	searchHref,
@@ -134,5 +135,19 @@ describe('pasted values', () => {
 			`content_hash:${hash}`,
 			`cert.fingerprint:${hash}`
 		]);
+	});
+});
+
+describe('isQuestion', () => {
+	it('takes a sentence', () => {
+		expect(isQuestion('which subdomains run confluence')).toBe(true);
+		expect(isQuestion('Do any of them have CVE-2023-22527?')).toBe(true);
+	});
+
+	it('leaves values and queries to search', () => {
+		expect(isQuestion('example.com')).toBe(false);
+		expect(isQuestion('tech:wordpress and is:kev')).toBe(false);
+		expect(isQuestion('status:200 title:login page')).toBe(false);
+		expect(isQuestion('CVE-2021-44228')).toBe(false);
 	});
 });

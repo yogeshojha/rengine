@@ -162,6 +162,8 @@
 			<b class="font-semibold">{span.text}</b>
 		{:else if span.kind === 'code'}
 			<code class="rounded bg-muted px-1 font-mono text-xs">{span.text}</code>
+		{:else if span.kind === 'block'}
+			<span class="font-mono text-xs text-muted-foreground">{span.id}</span>
 		{:else}
 			{span.text}
 		{/if}

@@ -110,6 +110,10 @@ def provider_proxy(cfg: AIConfig) -> str | None:
     return None if cfg.provider in BASE_URL_PROVIDERS else egress_proxy()
 
 
+def google_url(model: str) -> str:
+    return f"{_GOOGLE_URL}/{model}:generateContent"
+
+
 def chat_headers(cfg: AIConfig) -> dict[str, str]:
     return {"Authorization": f"Bearer {cfg.api_key}"} if cfg.api_key else {}
 
@@ -486,7 +490,7 @@ def _openai(
 def _google(
     cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
 ) -> tuple[str, Usage]:
-    url = f"{_GOOGLE_URL}/{model}:generateContent"
+    url = google_url(model)
     payload = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],

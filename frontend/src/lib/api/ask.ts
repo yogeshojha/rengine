@@ -1,9 +1,18 @@
 import { api } from './client';
-import { scopeQuery } from '$lib/utilities/surface-scope';
+import { appendTargetScope, scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import { SurfaceDimension } from '$lib/config/surface';
 import type {
+	EstateScanOption,
 	AskBrief,
 	AskQuestion,
+	BlockData,
+	EstateQuestion,
+	EstateScope,
+	EstateStarters,
+	EstateStatus,
+	EstateStreamFrame,
+	EstateThread,
+	EstateThreadDetail,
 	AskStreamFrame,
 	AskSubject,
 	AskThread,
@@ -140,6 +149,72 @@ export const askApi = {
 			`/ask/threads/${threadId}/messages`,
 			body,
 			(event, data) => onFrame({ event, data } as AskStreamFrame),
+			signal
+		);
+	}
+};
+
+export const estateApi = {
+	status(): Promise<EstateStatus> {
+		return api.get<EstateStatus>('/ask/estate/status');
+	},
+
+	starters(
+		projectId: string,
+		scope: TargetScope = {},
+		scanId: string | null = null
+	): Promise<EstateStarters> {
+		const query = appendTargetScope(new URLSearchParams({ project_id: projectId }), scope);
+		if (scanId) query.set('scan_id', scanId);
+		return api.get<EstateStarters>(`/ask/estate/starters?${query}`);
+	},
+
+	scans(projectId: string, scope: TargetScope = {}, search = ''): Promise<EstateScanOption[]> {
+		const query = appendTargetScope(new URLSearchParams({ project_id: projectId }), scope);
+		if (search.trim()) query.set('search', search.trim());
+		return api.get<EstateScanOption[]>(`/ask/estate/scans?${query}`);
+	},
+
+	threads(projectId: string): Promise<EstateThread[]> {
+		return api.get<EstateThread[]>(`/ask/estate/threads?project_id=${projectId}`);
+	},
+
+	create(projectId: string, scope: EstateScope): Promise<EstateThread> {
+		return api.post<EstateThread>(`/ask/estate/threads?project_id=${projectId}`, { scope });
+	},
+
+	thread(threadId: string): Promise<EstateThreadDetail> {
+		return api.get<EstateThreadDetail>(`/ask/estate/threads/${threadId}`);
+	},
+
+	blocks(threadId: string): Promise<BlockData[]> {
+		return api.get<BlockData[]>(`/ask/estate/threads/${threadId}/blocks`);
+	},
+
+	page(threadId: string, blockId: string, offset: number): Promise<BlockData> {
+		return api.get<BlockData>(`/ask/estate/threads/${threadId}/blocks/${blockId}?offset=${offset}`);
+	},
+
+	editQuery(threadId: string, blockId: string, query: string): Promise<BlockData> {
+		return api.put<BlockData>(`/ask/estate/threads/${threadId}/blocks/${blockId}/query`, {
+			query
+		});
+	},
+
+	remove(threadId: string): Promise<void> {
+		return api.delete<void>(`/ask/estate/threads/${threadId}`);
+	},
+
+	ask(
+		threadId: string,
+		body: EstateQuestion,
+		onFrame: (frame: EstateStreamFrame) => void,
+		signal?: AbortSignal
+	): Promise<void> {
+		return api.stream(
+			`/ask/estate/threads/${threadId}/messages`,
+			body,
+			(event, data) => onFrame({ event, data } as EstateStreamFrame),
 			signal
 		);
 	}

@@ -54,6 +54,7 @@ from shared.services.asset_query import (
     build_service_groups,
     compile_service_query,
     count_named,
+    count_queries,
     lead_cache,
     page_rows,
     parse_query,
@@ -312,6 +313,38 @@ class PortService:
             scans=scope.ids,
             facets=lead_cache.facets_of(f),
             build=_build,
+        )
+
+    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
+        """Rows each query selects in the scope, one statement."""
+        scope = QueryScope.of(scope)
+        f = ServiceFilter()
+
+        async def _build() -> QueryCounts:
+            d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
+            ctx = self._context(scope, d, utc_now())
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await count_queries(
+                    self.session,
+                    base,
+                    queries,
+                    lambda q: compile_service_query(parse_query(q, SERVICE_QUERY), ctx),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("service counts failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="counts:services",
+            scans=scope.ids,
+            facets="|".join(queries),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda computed: computed.computed,
         )
 
     async def groups(self, scope: ScopeLike, f: ServiceFilter, key: str) -> QueryGroups:

@@ -32,6 +32,9 @@ from shared.services.ai.client import (
     chat_headers,
     chat_url,
     complete,
+    google_headers,
+    google_url,
+    google_usage,
     openai_usage,
     post_json,
     provider_proxy,
@@ -51,6 +54,20 @@ OUT_OF_BUDGET = "The answer ran past the output budget. Ask a narrower question.
 NO_FINISH = "The model did not finish within the tool budget."
 TOO_MANY_CALLS = "Skipped. At most {n} tool calls run in one turn."
 STOPPED = "Stopped before the answer finished."
+NO_COMPLETION = "The provider returned no completion."
+# the shortest system prompt sent with a cache breakpoint
+CACHE_SYSTEM_CHARS = 6_000
+_GOOGLE_DROP = frozenset(
+    {"title", "default", "additionalProperties", "examples", "$schema"}
+)
+_GOOGLE_DECLINED = frozenset(
+    {"SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "RECITATION"}
+)
+_GOOGLE_DONE = "STOP"
+_GOOGLE_LENGTH = "MAX_TOKENS"
+# thinking allowance added to Gemini's maxOutputTokens
+GOOGLE_THINKING_TOKENS = 8_192
+STOPPED_WITHOUT_ANSWER = "The model stopped without an answer. Reason: {reason}."
 
 
 @dataclass(frozen=True)
@@ -204,9 +221,10 @@ async def converse(
     task: str,
     max_rounds: int,
     max_calls: int = 3,
+    stable_system: bool = False,
 ) -> AsyncIterator[AgentEvent]:
     model = cfg.model
-    if cfg.provider == AIProvider.GOOGLE.value:
+    if cfg.provider == AIProvider.GOOGLE.value and not tools:
         async for event in _plain(cfg, system, messages, task):
             yield event
         return
@@ -254,6 +272,11 @@ async def converse(
             effort,
             budget,
             tally,
+            stable_system=stable_system,
+        )
+    elif cfg.provider == AIProvider.GOOGLE.value:
+        stream = _google(
+            cfg, model, system, messages, tools, call_tool, max_tokens, budget, tally
         )
     else:
         stream = _openai(
@@ -286,17 +309,24 @@ def _request(
     history: list[dict[str, Any]],
     extras: dict[str, Any],
     specs: list[dict],
+    stable_system: bool = False,
 ) -> dict[str, Any]:
     kwargs: dict[str, Any] = {
         "model": model,
         "max_tokens": max_tokens,
-        "system": system,
+        "system": _system(system, stable=stable_system),
         "messages": history,
         **extras,
     }
     if specs:
         kwargs["tools"] = specs
     return kwargs
+
+
+def _system(system: str, *, stable: bool) -> str | list[dict[str, Any]]:
+    if not stable or len(system) < CACHE_SYSTEM_CHARS:
+        return system
+    return [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
 
 
 def _snapshot(stream: Any, model: str) -> Callable[[], Usage]:
@@ -317,6 +347,7 @@ async def _anthropic(
     effort: str,
     budget: _Budget,
     tally: Tally,
+    stable_system: bool = False,
 ) -> AsyncIterator[AgentEvent]:
     import anthropic  # noqa: PLC0415
 
@@ -336,7 +367,9 @@ async def _anthropic(
     voice = _Voice()
 
     for round_no in range(1, budget.rounds + 1):
-        kwargs = _request(model, max_tokens, system, history, extras, specs)
+        kwargs = _request(
+            model, max_tokens, system, history, extras, specs, stable_system
+        )
         voice.start_round()
         try:
             async with client.messages.stream(**kwargs) as stream:
@@ -389,6 +422,14 @@ async def _anthropic(
     raise AIError(NO_FINISH, usage=tally.total())
 
 
+def _openai_spent(body: dict) -> Usage:
+    return openai_usage(body.get("usage"))
+
+
+def _google_spent(body: dict) -> Usage:
+    return google_usage(body.get("usageMetadata"))
+
+
 def _post_round(
     tally: Tally,
     url: str,
@@ -396,12 +437,13 @@ def _post_round(
     headers: dict,
     timeout: float,
     proxy: str | None,
+    spent_in: Callable[[dict], Usage] = _openai_spent,
 ) -> dict:
     tally.lift()
     spent = UNREPORTED
     try:
         body = post_json(url, payload, headers, timeout, proxy=proxy)
-        spent = openai_usage(body.get("usage"))
+        spent = spent_in(body)
         return body
     except AIError as exc:
         spent = exc.usage
@@ -455,8 +497,7 @@ async def _openai(
             raise
         choices = body.get("choices") or []
         if not choices:
-            msg = "The provider returned no completion."
-            raise AIError(msg, usage=tally.total())
+            raise AIError(NO_COMPLETION, usage=tally.total())
         message = choices[0].get("message") or {}
 
         voice.start_round()
@@ -488,6 +529,146 @@ async def _openai(
             history.append(
                 {"role": "tool", "tool_call_id": call.get("id"), "content": text}
             )
+
+    raise AIError(NO_FINISH, usage=tally.total())
+
+
+def google_schema(schema: Any) -> Any:
+    """A tool's JSON schema in the subset Gemini function declarations accept."""
+    if not isinstance(schema, dict):
+        return schema
+    options = schema.get("anyOf")
+    if isinstance(options, list):
+        kept = [
+            o for o in options if not (isinstance(o, dict) and o.get("type") == "null")
+        ]
+        if len(kept) == 1 and isinstance(kept[0], dict):
+            merged = {k: v for k, v in schema.items() if k != "anyOf"} | kept[0]
+            return google_schema(merged) | {"nullable": True}
+    out: dict[str, Any] = {}
+    for key, value in schema.items():
+        if key in _GOOGLE_DROP:
+            continue
+        if key == "properties" and isinstance(value, dict):
+            out[key] = {name: google_schema(sub) for name, sub in value.items()}
+        elif key in ("items", "anyOf"):
+            out[key] = (
+                [google_schema(v) for v in value]
+                if isinstance(value, list)
+                else google_schema(value)
+            )
+        else:
+            out[key] = value
+    return out
+
+
+def _declaration(tool: AgentTool) -> dict[str, Any]:
+    out: dict[str, Any] = {"name": tool.name, "description": tool.description}
+    params = google_schema(tool.schema)
+    if isinstance(params, dict) and params.get("properties"):
+        out["parameters"] = params
+    return out
+
+
+async def _google(
+    cfg: AIConfig,
+    model: str,
+    system: str,
+    messages: list[dict[str, str]],
+    tools: list[AgentTool],
+    call_tool: ToolCaller,
+    max_tokens: int,
+    budget: _Budget,
+    tally: Tally,
+) -> AsyncIterator[AgentEvent]:
+    contents: list[dict[str, Any]] = [
+        {
+            "role": "model" if m["role"] == "assistant" else "user",
+            "parts": [{"text": m["content"]}],
+        }
+        for m in messages
+    ]
+    declarations = [_declaration(t) for t in tools]
+    url = google_url(model)
+    headers = google_headers(cfg)
+    proxy = provider_proxy(cfg)
+    voice = _Voice()
+
+    for round_no in range(1, budget.rounds + 1):
+        payload: dict[str, Any] = {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": contents,
+            "generationConfig": {
+                "maxOutputTokens": max_tokens + GOOGLE_THINKING_TOKENS
+            },
+        }
+        if declarations:
+            payload["tools"] = [{"functionDeclarations": declarations}]
+        try:
+            body = await asyncio.to_thread(
+                _post_round,
+                tally,
+                url,
+                payload,
+                headers,
+                cfg.timeout,
+                proxy,
+                _google_spent,
+            )
+        except AIError as exc:
+            exc.usage = tally.total()
+            raise
+        candidates = body.get("candidates") or []
+        if not candidates:
+            blocked = (body.get("promptFeedback") or {}).get("blockReason")
+            raise AIError(DECLINED if blocked else NO_COMPLETION, usage=tally.total())
+        candidate = candidates[0]
+        parts = (candidate.get("content") or {}).get("parts") or []
+        finish = candidate.get("finishReason")
+
+        voice.start_round()
+        said = "".join(
+            str(p.get("text") or "")
+            for p in parts
+            if isinstance(p, dict) and not p.get("thought")
+        )
+        for event in voice.say(said):
+            yield event
+        calls = [
+            p["functionCall"]
+            for p in parts
+            if isinstance(p, dict) and isinstance(p.get("functionCall"), dict)
+        ]
+        if not calls:
+            if finish in _GOOGLE_DECLINED:
+                raise AIError(DECLINED, usage=tally.total())
+            if not voice.round_spoke and finish == _GOOGLE_LENGTH:
+                raise AIError(OUT_OF_BUDGET, usage=tally.total())
+            if not voice.round_spoke and finish not in (None, _GOOGLE_DONE):
+                reason = STOPPED_WITHOUT_ANSWER.format(reason=finish)
+                raise AIError(reason, usage=tally.total())
+            yield AgentEvent(DONE, usage=tally.total(), model=model, rounds=round_no)
+            return
+
+        contents.append({"role": "model", "parts": parts})
+        replies: list[dict[str, Any]] = []
+        for index, call in enumerate(calls):
+            name = str(call.get("name") or "")
+            args = call.get("args") if isinstance(call.get("args"), dict) else {}
+            if index >= budget.calls:
+                text, ok = budget.skipped(), False
+            else:
+                yield AgentEvent(CALL, name=name, args=args)
+                text, ok = await call_tool(name, args)
+                yield AgentEvent(RESULT, name=name, text=text, ok=ok)
+            answer: dict[str, Any] = {
+                "name": name,
+                "response": {"content": text, "ok": ok},
+            }
+            if call.get("id"):
+                answer["id"] = call["id"]
+            replies.append({"functionResponse": answer})
+        contents.append({"role": "user", "parts": replies})
 
     raise AIError(NO_FINISH, usage=tally.total())
 

@@ -140,6 +140,7 @@ async def test_converse_records_rounds_and_partial_usage_on_failure(book, monkey
         effort,
         budget,
         tally,
+        **_kw,
     ):
         yield AgentEvent(TEXT, text="hi")
         yield AgentEvent(DONE, usage=Usage(900, 80), model=model, rounds=2)
@@ -182,6 +183,7 @@ async def test_converse_records_rounds_and_partial_usage_on_failure(book, monkey
         effort,
         budget,
         tally,
+        **_kw,
     ):
         yield AgentEvent(TEXT, text="partial")
         msg = "budget"

@@ -395,6 +395,7 @@ _VULN_COLUMNS: dict[str, tuple[Any, str, str]] = {
     "template": (Vulnerability.template_id, "template", "="),
     "severity": (Vulnerability.severity, "severity", "="),
     "host": (Vulnerability.host, "host", "="),
+    "ip": (Vulnerability.ip, "ip", "="),
     "location": (Vulnerability.matched_at, "location", "="),
     "type": (Vulnerability.protocol, "type", "="),
     "port": (Vulnerability.port, "port", ":"),

@@ -1,4 +1,5 @@
 import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+import SparklesIcon from '@lucide/svelte/icons/sparkles';
 import TargetIcon from '@lucide/svelte/icons/target';
 import RadarIcon from '@lucide/svelte/icons/radar';
 import StickyNoteIcon from '@lucide/svelte/icons/sticky-note';
@@ -63,6 +64,7 @@ export function useSidebarNav() {
 					url: ROUTES.dashboard,
 					icon: LayoutDashboardIcon
 				},
+				{ id: 'ask', title: routeLabels.ask, url: ROUTES.ask(), icon: SparklesIcon },
 				{
 					id: 'whats-new',
 					title: routeLabels['whats-new'],

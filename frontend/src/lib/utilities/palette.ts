@@ -6,6 +6,16 @@ import { TargetType } from '$lib/types/target';
 
 export const COMMAND_PREFIX = '>';
 
+const QUESTION_WORDS = 3;
+const GRAMMAR_TOKEN = /(^|\s)[a-z][a-z0-9_.]*(:|=|!=|>|<|~)\S/i;
+
+/** A sentence a person would ask, not a value or a query. */
+export function isQuestion(term: string): boolean {
+	const text = term.trim();
+	if (text.split(/\s+/).length < QUESTION_WORDS) return false;
+	return /[a-z]/i.test(text) && !GRAMMAR_TOKEN.test(text);
+}
+
 const HEX = /^[0-9a-f]{32,64}$/i;
 
 export const isCve = (value: string) => CVE_ID.test(value.trim());

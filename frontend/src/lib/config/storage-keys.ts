@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
 	activeProjectSlug: 'activeProjectSlug',
+	askIntelligent: 'rengine:ask:intelligent',
 	toolboxLastTool: 'rengine:toolbox:lastTool',
 	proxyLastTool: 'rengine:proxy:lastTool',
 	proxyConfirm: 'rengine:proxy:confirm',

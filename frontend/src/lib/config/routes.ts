@@ -11,6 +11,7 @@ const SCAN_SETUP = 'Scan setup';
 
 export const routeLabels: Record<string, string> = {
 	dashboard: 'Dashboard',
+	ask: 'Ask',
 
 	surface: 'Attack surface',
 	assets: 'Assets',
@@ -99,6 +100,13 @@ export const ROUTES = {
 	loginThen: (next: string) =>
 		next === '/dashboard' ? '/login' : `/login?next=${encodeURIComponent(next)}`,
 	dashboard: '/dashboard',
+	ask: (query?: { thread?: string; q?: string; scope?: URLSearchParams }) => {
+		const params = new URLSearchParams(query?.scope ?? '');
+		if (query?.thread) params.set('thread', query.thread);
+		if (query?.q) params.set('q', query.q);
+		const suffix = params.toString();
+		return `/ask${suffix ? `?${suffix}` : ''}`;
+	},
 	onboarding: '/onboarding',
 	profile: '/profile',
 	targets: '/targets',

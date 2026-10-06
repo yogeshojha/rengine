@@ -51,6 +51,7 @@
 	import DashboardSkeleton from '$lib/components/dashboard/dashboard-skeleton.svelte';
 	import HiddenTray from '$lib/components/dashboard/hidden-tray.svelte';
 	import ScopeBar from '$lib/components/dashboard/scope-bar.svelte';
+	import DashboardAsk from '$lib/components/ask/dashboard-ask.svelte';
 	import {
 		provideScopeLinks,
 		scopeClause,
@@ -329,12 +330,15 @@
 	</div>
 
 	{#if activeProject && overview && !firstRun}
-		<ScopeBar
-			projectSlug={activeProject.slug}
-			{scope}
-			known={overview.targets}
-			onChange={setScope}
-		/>
+		<div class="flex flex-wrap items-center justify-between gap-2">
+			<ScopeBar
+				projectSlug={activeProject.slug}
+				{scope}
+				known={overview.targets}
+				onChange={setScope}
+			/>
+			<DashboardAsk {scope} />
+		</div>
 	{/if}
 
 	{#if !activeProject && projectsStore.hasFetched}

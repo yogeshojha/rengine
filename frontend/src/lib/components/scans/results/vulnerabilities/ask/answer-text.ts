@@ -1,6 +1,7 @@
 export type AnswerSpan =
 	| { kind: 'text' | 'bold' | 'code'; text: string }
-	| { kind: 'cite'; n: number };
+	| { kind: 'cite'; n: number }
+	| { kind: 'block'; id: string };
 
 export interface AnswerBlock {
 	kind: 'p' | 'item';
@@ -9,7 +10,7 @@ export interface AnswerBlock {
 }
 
 const ITEM = /^\s*(?:(\d{1,2})[.)]|[-*•])\s+(.*)$/;
-const TOKEN = /(\[\[(\d{1,2})\]\])|(\*\*([^*]+)\*\*)|(`([^`]+)`)/g;
+const TOKEN = /(\[\[(\d{1,2})\]\])|(\*\*([^*]+)\*\*)|(`([^`]+)`)|(\[(B\d{1,2})\])/g;
 
 export function spans(text: string): AnswerSpan[] {
 	const out: AnswerSpan[] = [];
@@ -20,6 +21,7 @@ export function spans(text: string): AnswerSpan[] {
 		if (m[2]) out.push({ kind: 'cite', n: Number(m[2]) });
 		else if (m[4]) out.push({ kind: 'bold', text: m[4] });
 		else if (m[6]) out.push({ kind: 'code', text: m[6] });
+		else if (m[8]) out.push({ kind: 'block', id: m[8] });
 		last = at + m[0].length;
 	}
 	if (last < text.length) out.push({ kind: 'text', text: text.slice(last) });
@@ -53,5 +55,5 @@ export function parseAnswer(text: string): AnswerBlock[] {
 }
 
 export function plainAnswer(text: string): string {
-	return text.replace(/ ?\[\[\d{1,2}\]\]/g, '');
+	return text.replace(/ ?\[\[\d{1,2}\]\]/g, '').replace(/ ?\[B\d{1,2}\]/g, '');
 }

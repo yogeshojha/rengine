@@ -11,9 +11,19 @@ function isTimeout(e: unknown): boolean {
 	return e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError');
 }
 
+/** A network failure, as distinct from a rejection the caller raised. */
+async function unreached<T>(run: () => Promise<T>): Promise<T> {
+	try {
+		return await run();
+	} catch (e) {
+		if (e instanceof TypeError) throw new Error(NO_RESPONSE);
+		throw e;
+	}
+}
+
 async function timedFetch(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
 	try {
-		return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+		return await unreached(() => fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) }));
 	} catch (e) {
 		if (isTimeout(e)) throw new Error(NO_RESPONSE);
 		throw e;
@@ -225,13 +235,16 @@ class ApiClient {
 		signal?: AbortSignal,
 		isRetry = false
 	): Promise<void> {
-		const response = await fetch(`${this.baseUrl}${endpoint}`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
-			body: JSON.stringify(data),
-			signal
-		});
+		const body = JSON.stringify(data);
+		const response = await unreached(() =>
+			fetch(`${this.baseUrl}${endpoint}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
+				body,
+				signal
+			})
+		);
 		if (!response.ok) {
 			if (response.status === 401 && !isRetry && refreshes(endpoint)) {
 				const result = await this.tryRefresh();
@@ -245,7 +258,7 @@ class ApiClient {
 		const decoder = new TextDecoder();
 		let buffer = '';
 		for (;;) {
-			const { value, done } = await reader.read();
+			const { value, done } = await unreached(() => reader.read());
 			if (done) break;
 			buffer += decoder.decode(value, { stream: true });
 			let cut = buffer.indexOf('\n\n');

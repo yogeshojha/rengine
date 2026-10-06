@@ -19,6 +19,9 @@ export enum SurfaceDimension {
 	SECRETS = 'secrets'
 }
 
+// mirrors shared/definitions/asset_query.py:MAX_QUERY_LENGTH
+export const MAX_QUERY_LENGTH = 2000;
+
 export const RESULT_TABS = [
 	'web-assets',
 	'endpoints',

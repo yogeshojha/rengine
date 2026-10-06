@@ -38,6 +38,8 @@ class AITask(StrEnum):
     ASSET_JUDGEMENT = "asset_judgement"
     RULE_SUGGESTION = "rule_suggestion"
     ASK = "ask"
+    ASK_DEEP = "ask_deep"
+    ASK_FOLLOW_UPS = "ask_follow_ups"
     CONNECTION_TEST = "connection_test"
 
 
@@ -59,6 +61,8 @@ TASK_OUTPUT_TOKENS: dict[str, int] = {
     AITask.ASSET_JUDGEMENT.value: 2500,
     AITask.RULE_SUGGESTION.value: 900,
     AITask.ASK.value: 4000,
+    AITask.ASK_DEEP.value: 8000,
+    AITask.ASK_FOLLOW_UPS.value: 900,
     AITask.CONNECTION_TEST.value: 20,
 }
 
@@ -79,6 +83,8 @@ TASK_EFFORT: dict[str, str] = {
     AITask.ASSET_JUDGEMENT.value: Effort.LOW.value,
     AITask.RULE_SUGGESTION.value: Effort.LOW.value,
     AITask.ASK.value: Effort.MEDIUM.value,
+    AITask.ASK_DEEP.value: Effort.HIGH.value,
+    AITask.ASK_FOLLOW_UPS.value: Effort.LOW.value,
     AITask.CONNECTION_TEST.value: Effort.LOW.value,
 }
 
@@ -404,9 +410,9 @@ AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
         "ask",
         "Ask",
-        "Answers questions about a finding or a web asset in its sheet. Sends the "
-        "record, a finding's request and response, and what the read-only tools "
-        "return, with secrets masked.",
+        "Answers questions about the estate on the Ask page, and about a finding or "
+        "a web asset in its sheet. Sends the question, a finding's request and "
+        "response, and what the read-only tools return, with secrets masked.",
         True,
     ),
 )
@@ -425,6 +431,8 @@ TASK_FEATURE: dict[str, str] = {
     AITask.ASSET_JUDGEMENT.value: "asset_judgement",
     AITask.RULE_SUGGESTION.value: "rule_suggestions",
     AITask.ASK.value: "ask",
+    AITask.ASK_DEEP.value: "ask",
+    AITask.ASK_FOLLOW_UPS.value: "ask",
     AITask.CONNECTION_TEST.value: TEST_FEATURE,
 }
 

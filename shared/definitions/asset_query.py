@@ -2234,6 +2234,11 @@ VULN_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         description="Everything found on one hostname",
     ),
     GroupDimension(
+        key="ip",
+        label="Address",
+        description="Findings on the same address",
+    ),
+    GroupDimension(
         key="location",
         label="Location",
         description="Every check that fired at the same place",

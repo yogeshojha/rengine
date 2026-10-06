@@ -99,6 +99,7 @@ from shared.services.asset_query import (
     build_leads,
     compile_endpoint_query,
     count_named,
+    count_queries,
     element_counts,
     endpoint_baseline,
     endpoint_is_new,
@@ -555,6 +556,41 @@ class EndpointService:
             scans=scope.ids,
             facets=lead_cache.facets_of(f),
             build=_build,
+        )
+
+    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
+        """Rows each query selects in the scope, one statement."""
+        scope = QueryScope.of(scope)
+        f = EndpointFilter()
+
+        async def _build() -> QueryCounts:
+            base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
+            base = self._apply_filter(base, f, scope)
+            context = self._context(scope, utc_now())
+            await self.session.execute(text(STATEMENT_TIMEOUT))
+            await self.session.execute(text(NO_JIT))
+            try:
+                return await count_queries(
+                    self.session,
+                    base,
+                    queries,
+                    lambda q: compile_endpoint_query(
+                        parse_query(q, ENDPOINT_QUERY), context
+                    ),
+                )
+            except DBAPIError as exc:
+                await self.session.rollback()
+                logger.info("endpoint counts failed", error=str(exc.orig))
+                return QueryCounts()
+
+        return await lead_cache.cached(
+            self.session,
+            name="counts:endpoints",
+            scans=scope.ids,
+            facets="|".join(queries),
+            model=QueryCounts,
+            build=_build,
+            keep=lambda computed: computed.computed,
         )
 
     async def groups(

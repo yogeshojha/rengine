@@ -10,6 +10,7 @@
 	import Radar from '@lucide/svelte/icons/radar';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
@@ -33,6 +34,7 @@
 		hashLookups,
 		isCve,
 		isHexHash,
+		isQuestion,
 		queryDimensions,
 		searchHref,
 		type AssetLookup,
@@ -41,6 +43,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { plural } from '$lib/utilities/strings';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
+	import { estateApi } from '$lib/api/ask';
 	import { targetsApi } from '$lib/api/targets';
 	import { scansApi } from '$lib/api/scans';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -70,6 +73,7 @@
 	const MAX_RECENTS = 5;
 
 	let commandOpen = $state(false);
+	let askReady = $state(false);
 	let raw = $state('');
 	let searchResults = $state<TargetEntity[]>([]);
 	let searching = $state(false);
@@ -135,7 +139,13 @@
 
 	$effect(() => {
 		if (!commandOpen) return;
-		untrack(() => void loadAllSchemas());
+		untrack(() => {
+			void loadAllSchemas();
+			void estateApi
+				.status()
+				.then((s) => (askReady = s.available))
+				.catch(() => (askReady = false));
+		});
 	});
 
 	$effect(() => {
@@ -482,6 +492,19 @@
 										>
 									</Command.Item>
 								{/each}
+							</Command.Group>
+						{/if}
+
+						{#if askReady && isQuestion(term)}
+							<Command.Group heading="Ask">
+								<Command.Item
+									value="ask:{term}"
+									onSelect={() => run(() => goto(ROUTES.ask({ q: term })))}
+								>
+									<Sparkles class="h-4 w-4 shrink-0 text-primary" />
+									<span class="truncate">{term}</span>
+									<Command.Shortcut>Ask</Command.Shortcut>
+								</Command.Item>
 							</Command.Group>
 						{/if}
 

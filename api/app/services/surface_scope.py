@@ -126,6 +126,14 @@ class SurfaceScopeService:
             if row.at is not None and row.at > at_by_target[row.target_id]
         ]
 
+    async def scan_covers(self, scan_id: UUID, dimension: str) -> bool:
+        model = TABLES[dimension]
+        return bool(
+            await self.session.scalar(
+                select(exists().where(Scan.id == scan_id, covers(model, dimension)))
+            )
+        )
+
     async def scans_by_target(
         self, project_id: UUID, dimension: str
     ) -> dict[UUID, UUID]:

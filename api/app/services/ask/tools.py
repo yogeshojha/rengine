@@ -42,15 +42,21 @@ NO_THREAD = "The tool call is not tied to an Ask thread."
 
 
 def identity_for(
-    user: User, project_id: Any, target_id: uuid.UUID | None = None
+    user: User,
+    project_id: Any,
+    target_id: uuid.UUID | None = None,
+    *,
+    targets: frozenset[uuid.UUID] | None = None,
 ) -> TokenIdentity:
+    if targets is None and target_id:
+        targets = frozenset({target_id})
     return TokenIdentity(
         id=user.id,
         name=ASK_CLIENT,
         project_id=project_id,
         capabilities=frozenset({Capability.READ.value}),
         issued_by=user.id,
-        targets=frozenset({target_id}) if target_id else None,
+        targets=targets,
     )
 
 

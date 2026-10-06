@@ -32,6 +32,7 @@ from mcp.result import UNTRUSTED_NOTE
 from shared.definitions.ai import KEY_OPTIONAL_PROVIDERS, AITask
 from shared.definitions.ask import (
     ASK_CLIENT,
+    ASK_OFF_REASONS,
     MAX_ANSWER_CHARS,
     MAX_CALLS_PER_ROUND,
     MAX_THREADS_PER_FINDING,
@@ -40,6 +41,8 @@ from shared.definitions.ask import (
     QUESTIONS_PER_DAY,
     RATE_PER_MINUTE,
     VERDICT_LABELS,
+    AskOffCode,
+    AskSubject,
     MessageRole,
     StreamEvent,
     TraceStatus,
@@ -78,18 +81,23 @@ ASK_FAILED = "Ask did not complete. Check the api log."
 NO_ANSWER = "The model returned no answer."
 
 
-def availability(cfg: AIConfig | None) -> str | None:
+def off_code(cfg: AIConfig | None) -> str | None:
     if cfg is None or not cfg.enabled:
-        return "AI is switched off."
+        return AskOffCode.SWITCHED_OFF.value
     if not cfg.provider:
-        return "No AI provider is in use."
+        return AskOffCode.NO_PROVIDER.value
     if not cfg.api_key and cfg.provider not in KEY_OPTIONAL_PROVIDERS:
-        return "No AI provider key is set."
+        return AskOffCode.NO_KEY.value
     if not cfg.available:
-        return "The AI provider is not supported."
+        return AskOffCode.UNSUPPORTED.value
     if not cfg.allows(FEATURE):
-        return "Ask is switched off in AI settings."
+        return AskOffCode.FEATURE_OFF.value
     return None
+
+
+def availability(cfg: AIConfig | None) -> str | None:
+    code = off_code(cfg)
+    return ASK_OFF_REASONS[code] if code else None
 
 
 def _thread_read(row: AskThread) -> AskThreadRead:
@@ -197,7 +205,9 @@ class AskService:
 
     async def get(self, user_id: uuid.UUID, thread_id: uuid.UUID) -> AskThread | None:
         row = await self.session.get(AskThread, thread_id)
-        return row if row is not None and row.user_id == user_id else None
+        if row is None or row.user_id != user_id:
+            return None
+        return row if row.subject == AskSubject.ASSET.value else None
 
     async def messages(self, thread_id: uuid.UUID) -> list[AskMessage]:
         stmt = (
