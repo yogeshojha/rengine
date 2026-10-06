@@ -193,6 +193,25 @@ def test_installer_quiesces_an_upgrade_alone():
     assert "--no-backup) NO_BACKUP=1 ;;" in text
 
 
+def test_installer_builds_every_image_one_at_a_time():
+    text = _text("install.sh")
+    listed = text.split("BUILT_SERVICES=(", 1)[1].split(")", 1)[0].split()
+    built = {
+        name
+        for name, spec in _services("docker-compose.prod.yml").items()
+        if "build" in spec
+    }
+    assert sorted(listed) == sorted(built)
+    assert 'docker compose build "$svc"' in text
+    assert "docker compose build ||" not in text
+
+
+def test_installer_refuses_a_build_the_machine_cannot_finish():
+    check = _text("install.sh").split("\ncheck_resources() {", 1)[1].split("\n}", 1)[0]
+    assert "/SwapTotal/" in check
+    assert '[ "$BUILD" -eq 1 ] && [ $((MEM_GB + swap_gb)) -lt 8 ]' in check
+
+
 # ---------- worker health ----------
 
 

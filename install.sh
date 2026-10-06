@@ -6,6 +6,8 @@ REPO="yogeshojha/rengine"
 IMAGE_PREFIX="yogeshojha/rengine"
 DOCKER_SUBNET="172.29.0.0/24"
 CADDY_ADDR="172.29.0.253"
+# the services docker-compose.prod.yml builds, one at a time
+BUILT_SERVICES=(api worker-default frontend)
 # api/app/utils/validation.py:MIN_PASSWORD_LENGTH
 MIN_PASSWORD_LENGTH=10
 
@@ -277,6 +279,11 @@ check_resources() {
   CPUS="$(nproc 2>/dev/null || echo 1)"
   if [ "$MEM_GB" -lt 4 ] && [ "$FORCE" -eq 0 ]; then
     die "$MEM_GB GB memory found. 4 GB is the minimum, 8 GB is recommended. --force overrides."
+  fi
+  local swap_gb
+  swap_gb=$((($(awk '/SwapTotal/ {print $2}' /proc/meminfo) + 524288) / 1048576))
+  if [ "$BUILD" -eq 1 ] && [ $((MEM_GB + swap_gb)) -lt 8 ] && [ "$FORCE" -eq 0 ]; then
+    die "$MEM_GB GB memory and $swap_gb GB swap found. --build needs 8 GB of the two together. Add swap, or --force overrides."
   fi
   local parent free_mb
   parent="$(dirname "$RENGINE_HOME")"
@@ -869,8 +876,11 @@ quiesce() {
 deploy() {
   cd "$RENGINE_HOME"
   if [ "$BUILD" -eq 1 ]; then
-    step "Building images"
-    docker compose build || die "the image build failed. The output above names the step."
+    local svc
+    for svc in "${BUILT_SERVICES[@]}"; do
+      step "Building the $svc image"
+      docker compose build "$svc" || die "the $svc image build failed. The output above names the step."
+    done
   else
     step "Pulling images"
     docker compose pull || pull_failed
