@@ -597,8 +597,8 @@ async def test_starters_and_scans_follow_the_scope(estate, now):
     one = await service.starters(
         estate.project_id, {"scan_id": str(estate.scans["run"])}
     )
-    assert whole.targets == 2
-    assert one.targets == 1
+    assert not whole.filtered
+    assert one.filtered
     listed = await service.scans(estate.project_id, TargetFilter((), None, None))
     assert [s.id for s in listed] == [estate.scans["run"]]
     elsewhere = await service.scans(

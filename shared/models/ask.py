@@ -437,18 +437,10 @@ class EstateStarterRead(BaseModel):
     cause: StarterCause | None = None
 
 
-class EstateVital(BaseModel):
-    dimension: str
-    count: int
-    capped: bool = False
-
-
 class EstateStarters(BaseModel):
     filtered: bool
     scope_values: list[str] = []
     starters: list[EstateStarterRead] = []
-    targets: int = 0
-    vitals: list[EstateVital] = []
     example: str | None = None
 
 

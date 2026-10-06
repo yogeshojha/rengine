@@ -6,7 +6,6 @@
 	import ScanPicker from './scan-picker.svelte';
 	import AskOff from './ask-off.svelte';
 	import { blockHref } from './block-columns';
-	import { surfaceSpec } from '$lib/config/surface';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { TargetScope } from '$lib/utilities/surface-scope';
 	import type { EstateStarter, EstateStarters, EstateStatus, EstateThread } from '$lib/types/ask';
@@ -69,11 +68,6 @@
 		if (prefill) composer.fill(prefill);
 		else composer.focus();
 	});
-
-	function noun(dimension: string, count: number): string {
-		const spec = surfaceSpec(dimension);
-		return (count === 1 ? spec?.noun : spec?.nounPlural) ?? '';
-	}
 </script>
 
 {#snippet filters()}
@@ -82,29 +76,6 @@
 {/snippet}
 
 <div class="mx-auto flex w-full max-w-3xl flex-col gap-6 pt-[9vh] pb-10">
-	<div class="flex justify-center">
-		{#if starters}
-			<p
-				class="ask-rise m-0 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-muted-foreground"
-			>
-				<span
-					><b class="font-semibold text-foreground tabular-nums">{starters.targets}</b>
-					{starters.targets === 1 ? 'target' : 'targets'}</span
-				>
-				{#each starters.vitals as v (v.dimension)}
-					<span
-						><b class="font-semibold text-foreground tabular-nums"
-							>{v.count.toLocaleString()}{v.capped ? '+' : ''}</b
-						>
-						{noun(v.dimension, v.count)}</span
-					>
-				{/each}
-			</p>
-		{:else if startersLoading}
-			<Skeleton class="h-5 w-80" />
-		{/if}
-	</div>
-
 	<div class="ask-composer">
 		<EstateComposer
 			bind:this={composer}

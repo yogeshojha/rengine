@@ -1,4 +1,4 @@
-"""What an empty Ask page offers: counted starters, the estate's size, an example."""
+"""What an empty Ask page offers: counted starters and an example."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.ask.estate import blocks, causes, facts
+from app.services.ask.estate import blocks, causes
 from app.services.ask.estate.blocks import SINGLE_TARGET_SKIP
 from app.services.ask.estate.dimensions import DIMENSIONS
 from app.services.ask.estate.scope import Resolved
@@ -21,13 +21,12 @@ from shared.definitions.ask import (
     BlockKind,
     EstateStarter,
 )
-from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
+from shared.definitions.surface import SURFACE_NOUN
 from shared.logging import get_logger
 from shared.models.ask import (
     AnswerBlock,
     EstateStarterRead,
     EstateStarters,
-    EstateVital,
     StarterCause,
 )
 
@@ -36,11 +35,6 @@ logger = get_logger(__name__)
 _held: dict[tuple, tuple[float, EstateStarters]] = {}
 _FAILED = StarterCause(key="", value="", label="", count=0, one="")
 MAX_HELD = 200
-VITALS = (
-    SurfaceDimension.WEB_ASSETS.value,
-    SurfaceDimension.SERVICES.value,
-    SurfaceDimension.VULNERABILITIES.value,
-)
 
 
 def _key(project_id: uuid.UUID, resolved: Resolved) -> tuple:
@@ -77,23 +71,6 @@ async def _cause(
     return StarterCause(
         key=found.key, value=top.value, label=top.label, count=top.count, one=found.one
     )
-
-
-async def _vitals(
-    session: AsyncSession, project_id: uuid.UUID, resolved: Resolved
-) -> list[EstateVital]:
-    out: list[EstateVital] = []
-    for key in VITALS:
-        dim = DIMENSIONS[key]
-        scope = await blocks._scope(session, project_id, dim, resolved)
-        if not scope:
-            continue
-        found = await facts.count(
-            session, project_id, dim, scope, blocks.scoped(resolved, None)
-        )
-        if found and found[0]:
-            out.append(EstateVital(dimension=key, count=found[0], capped=found[1]))
-    return out
 
 
 def _example(starters: list[EstateStarterRead]) -> str | None:
@@ -158,8 +135,6 @@ async def counted(
         filtered=resolved.filtered,
         scope_values=resolved.links,
         starters=out,
-        targets=resolved.count,
-        vitals=await _vitals(session, project_id, resolved),
         example=_example(out),
     )
     if failed:

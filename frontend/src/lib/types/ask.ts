@@ -334,18 +334,10 @@ export interface EstateStarter {
 	cause: StarterCause | null;
 }
 
-export interface EstateVital {
-	dimension: string;
-	count: number;
-	capped: boolean;
-}
-
 export interface EstateStarters {
 	filtered: boolean;
 	scope_values: string[];
 	starters: EstateStarter[];
-	targets: number;
-	vitals: EstateVital[];
 	example: string | null;
 }
 
