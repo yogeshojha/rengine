@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import cast, exists, func, literal, or_, select
-from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy import cast, func, literal, or_
+from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
@@ -46,16 +46,6 @@ class ServiceQueryContext:
 
 def _within(ctx: ServiceQueryContext, cidr: str):
     return ctx.source.c.inet.op("<<=")(cast(literal(cidr), INET))
-
-
-def _host_exists(ctx: ServiceQueryContext, condition):
-    return exists(
-        select(1).where(
-            ctx.scope.match(Subdomain.scan_id),
-            condition,
-            func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), ctx.source.c.ip),
-        )
-    )
 
 
 def _ai(cmp: Compare, ctx: ServiceQueryContext):
@@ -132,7 +122,9 @@ _SERVICE_BUILDERS = {
     "org": lambda c, ctx: string_match(ctx.source.c.asn_org, c),
     "country": lambda c, ctx: string_match(ctx.source.c.country, c),
     "cdn": lambda c, ctx: cdn_match(ctx.source.c.cdn_name, ctx.source.c.is_cdn, c),
-    "host": lambda c, ctx: _host_exists(ctx, folded_match(Subdomain.name, c)),
+    "host": lambda c, ctx: preds.resolved_by(
+        ctx.scope, ctx.source.c.ip, folded_match(Subdomain.name, c)
+    ),
     "status": lambda c, ctx: number_match(ctx.source.c.status_code, c, int_coerce(c)),
     "vuln": lambda c, ctx: preds.service_vuln(
         ctx.scope,

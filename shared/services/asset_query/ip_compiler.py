@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import cast, exists, func, literal, or_, select
-from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import INET
 
 from shared.definitions.asset_query import IP_FLAGS, IP_QUERY
 from shared.models.port import Port
@@ -45,16 +45,6 @@ def _inet(ctx: IpQueryContext):
 
 def _within(ctx: IpQueryContext, cidr: str):
     return _inet(ctx).op("<<=")(cast(literal(cidr), INET))
-
-
-def _host_exists(ctx: IpQueryContext, condition):
-    return exists(
-        select(1).where(
-            ctx.scope.match(Subdomain.scan_id),
-            condition,
-            func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), ctx.source.c.ip),
-        )
-    )
 
 
 def _port_exists(ctx: IpQueryContext, condition):
@@ -102,7 +92,9 @@ _IP_BUILDERS = {
     ),
     "service": lambda c, ctx: _port_exists(ctx, string_match(Port.service_name, c)),
     "ports": lambda c, ctx: number_match(ctx.source.c.port_count, c, int_coerce(c)),
-    "host": lambda c, ctx: _host_exists(ctx, folded_match(Subdomain.name, c)),
+    "host": lambda c, ctx: preds.resolved_by(
+        ctx.scope, ctx.source.c.ip, folded_match(Subdomain.name, c)
+    ),
     "hosts": lambda c, ctx: number_match(ctx.source.c.host_count, c, int_coerce(c)),
     "assets": lambda c, ctx: number_match(ctx.source.c.asset_count, c, int_coerce(c)),
     "vuln": lambda c, ctx: preds.address_vuln(

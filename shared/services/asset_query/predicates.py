@@ -829,3 +829,14 @@ def posture_check(key: str):
 
 def posture_applies(key: str):
     return func.jsonb_exists(cast(Subdomain.posture_checked, JSONB), key)
+
+
+def resolved_by(scope: QueryScope, ip, condition):
+    """The address is one that a host matching `condition` resolves to."""
+    ips = array_elements(Subdomain.resolved_ips, "resolved")
+    return ip.in_(
+        select(ips.c.value)
+        .select_from(Subdomain)
+        .join(ips, true())
+        .where(scope.match(Subdomain.scan_id), condition)
+    )
