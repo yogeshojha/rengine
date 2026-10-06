@@ -46,6 +46,7 @@ KINDS: dict[str, str] = {
 }
 TOO_MANY = f"At most {MAX_BLOCKS_PER_ANSWER} blocks in one answer."
 THREAD_FULL = f"This thread holds {MAX_BLOCKS_PER_THREAD} blocks. Ask in a new thread."
+SHOWN = "{id} already shows this query. Add a clause to narrow it, or answer from {id}."
 
 _ROW_DIMS = sorted(ROW_DIMENSIONS, key=list(DIMENSIONS).index)
 
@@ -223,6 +224,18 @@ def _block(name: str, args: dict, board: Board) -> AnswerBlock:
     )
 
 
+def _same(block: AnswerBlock, board: Board) -> str | None:
+    key = (block.kind, block.dimension, block.query, block.group_by, block.cve)
+    return next(
+        (
+            b.id
+            for b in board.added
+            if (b.kind, b.dimension, b.query, b.group_by, b.cve) == key
+        ),
+        None,
+    )
+
+
 async def _show(
     session: AsyncSession, name: str, args: dict, board: Board
 ) -> tuple[str, int | None]:
@@ -231,6 +244,8 @@ async def _show(
     if len(board.every) >= MAX_BLOCKS_PER_THREAD:
         raise blocks.BlockError(THREAD_FULL)
     block = _block(name, args, board)
+    if same := _same(block, board):
+        raise blocks.BlockError(SHOWN.format(id=same))
     if name == SHOW_ROWS:
         data = await blocks.rows(
             session, board.project_id, board.resolved, block, pick=True

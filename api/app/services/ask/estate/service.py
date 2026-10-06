@@ -94,7 +94,7 @@ from shared.utils.text import strip_control
 logger = get_logger(__name__)
 
 THREAD_NOT_FOUND = "Thread not found."
-FIRST_SENTENCE = re.compile(r"^[^.!?\n]*[.!?](?=\s|$)")
+FIRST_SENTENCE = re.compile(r"^[^.!?\n]*(?:[.!?](?=\s|$)|(?=\n))")
 WORD = re.compile(r"[\w-]+")
 BLOCK_WORD = re.compile(r"^b\d{1,2}$")
 PARAGRAPH = re.compile(r"\n\s*\n")

@@ -695,6 +695,20 @@ def test_a_restated_count_is_dropped():
     assert drop("32 known exploited findings [B1].", board) == (
         "32 known exploited findings [B1]."
     )
+    assert drop("**32 known exploited findings** [B1]\n\n28 sit on one.", board) == (
+        "28 sit on one."
+    )
+
+
+def test_a_repeated_query_in_one_answer_is_refused():
+    shown = AnswerBlock(id="B1", kind="rows", dimension=WEB, query="is:kev")
+    board = show.Board(project_id=uuid.uuid4(), resolved=None, held=[], added=[shown])
+    again = show._block(show.SHOW_ROWS, {"dimension": WEB, "query": "is:kev"}, board)
+    narrower = show._block(
+        show.SHOW_ROWS, {"dimension": WEB, "query": "is:kev and is:new"}, board
+    )
+    assert show._same(again, board) == "B1"
+    assert show._same(narrower, board) is None
 
 
 def test_about_line_names_a_block_or_a_row():

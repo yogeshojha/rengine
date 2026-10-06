@@ -57,6 +57,8 @@ through a value in the rows: an address, a host, a technology, a CVE, a port,
 - never repeats the question or a query already shown,
 - names the rows its query counts: web assets, findings, services, addresses, endpoints \
 or software CVEs, never targets,
+- asks exactly what its query tests, with no word the query does not check, such as \
+outdated, unauthenticated or exposed,
 - when it asks about the rows on screen ("these", "them"), its query keeps the shown \
 query's clauses and adds to them.
 
