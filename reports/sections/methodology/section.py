@@ -3,6 +3,7 @@ from __future__ import annotations
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, paragraph
 from shared.definitions.reports import SectionGroup, SectionRole
+from shared.enums.scan import ACTIVITY_STATUS_LABELS
 from shared.services.source_ip import addresses
 
 _STANDARDS = {
@@ -42,12 +43,13 @@ class MethodologySection(Section):
             from stages.registry import stage_by_name  # noqa: PLC0415
 
             table = stage_by_name()
-            for name in source.planned_stages:
-                spec = table.get(name)
+            for name, status in source.stage_results.items():
+                spec = table[name]
                 stages.append(
                     {
-                        "title": spec.title if spec else name.replace("_", " ").title(),
-                        "description": spec.description if spec else "",
+                        "title": spec.title,
+                        "description": spec.description,
+                        "result": ACTIVITY_STATUS_LABELS.get(status, status),
                     }
                 )
         return {

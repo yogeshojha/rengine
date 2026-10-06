@@ -26,6 +26,23 @@ class ScanActivityStatus(Enum):
     ABORTED = "aborted"
 
 
+ACTIVITY_STATUS_LABELS = {
+    ScanActivityStatus.PENDING.value: "Queued",
+    ScanActivityStatus.RUNNING.value: "Running",
+    ScanActivityStatus.PAUSED.value: "Paused",
+    ScanActivityStatus.SUCCESS.value: "Success",
+    ScanActivityStatus.PARTIAL.value: "Partial",
+    ScanActivityStatus.FAILED.value: "Failed",
+    ScanActivityStatus.SKIPPED.value: "Skipped",
+    ScanActivityStatus.ABORTED.value: "Aborted",
+}
+ACTIVITY_STARTED_STATUSES = (
+    ScanActivityStatus.SUCCESS.value,
+    ScanActivityStatus.PARTIAL.value,
+    ScanActivityStatus.FAILED.value,
+    ScanActivityStatus.ABORTED.value,
+)
+
 SCAN_LIVE_STATUSES = (ScanStatus.PENDING.value, ScanStatus.RUNNING.value)
 SCAN_OPEN_STATUSES = (*SCAN_LIVE_STATUSES, ScanStatus.PAUSED.value)
 SCAN_TERMINAL_STATUSES = (

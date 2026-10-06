@@ -37,13 +37,14 @@ from shared.definitions.vulnerabilities import (
     Severity,
     severity_rank,
 )
-from shared.enums.scan import ScanStatus
+from shared.enums.scan import ACTIVITY_STARTED_STATUSES, ScanStatus
 from shared.models.domain_posture import DomainPosture
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.scan import Scan
+from shared.models.scan_activity import ScanActivity
 from shared.models.secret import Secret
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
@@ -204,15 +205,29 @@ class ReportSource:
     # ---------- coverage ----------
 
     @cached_property
-    def planned_stages(self) -> dict[str, dict]:
+    def stage_results(self) -> dict[str, str]:
+        """Stages the run started, in the order they ran, with their latest status."""
         if self.scan is None:
             return {}
-        config = self.scan.execution_config or {}
-        return {
-            name: values
-            for name, values in (config.get("stages") or {}).items()
-            if (values or {}).get("enabled", True)
-        }
+        from stages.registry import stage_by_name  # noqa: PLC0415
+
+        known = stage_by_name()
+        rows = self.session.execute(
+            select(ScanActivity.name, ScanActivity.status)
+            .where(
+                ScanActivity.scan_id == self.scan.id,
+                ScanActivity.status.in_(ACTIVITY_STARTED_STATUSES),
+            )
+            .order_by(
+                ScanActivity.started_at.asc().nulls_last(), ScanActivity.created_at
+            )
+        ).all()
+        results: dict[str, str] = {}
+        for name, status in rows:
+            if name in known:
+                results.pop(name, None)
+                results[name] = status
+        return results
 
     def _count(self, dimension: str, scan_id: UUID | None) -> int:
         if scan_id is None:
@@ -980,7 +995,7 @@ class ReportSource:
 
         specs = stage_by_name()
         names: set[str] = set()
-        for stage in self.planned_stages:
+        for stage in self.stage_results:
             spec = specs.get(stage)
             if spec:
                 names.update(spec.tools)

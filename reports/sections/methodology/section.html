@@ -33,10 +33,10 @@
 <div class="sub">
   <div class="label block">Stages</div>
   <table class="table">
-    <thead><tr><th style="width:52mm">Stage</th><th>Description</th></tr></thead>
+    <thead><tr><th style="width:52mm">Stage</th><th>Description</th><th style="width:20mm">Result</th></tr></thead>
     <tbody>
       {% for stage in stages %}
-      <tr><td>{{ stage.title }}</td><td class="small muted wrap">{{ stage.description|clip(160) }}</td></tr>
+      <tr><td>{{ stage.title }}</td><td class="small muted wrap">{{ stage.description|clip(160) }}</td><td class="small">{{ stage.result }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
