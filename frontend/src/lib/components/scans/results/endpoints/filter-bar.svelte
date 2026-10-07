@@ -158,19 +158,17 @@
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="max-h-none w-56 overflow-visible">
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						{#each facets.source as f (f.value)}
-							<DropdownMenu.CheckboxItem
-								checked={query.source === f.value}
-								onCheckedChange={() => pick('source', f.value)}
-								closeOnSelect={false}
-							>
-								<span class="flex-1">{f.label}</span>
-								<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</ScrollArea>
+				<DropdownMenu.Content align="start" class="w-56">
+					{#each facets.source as f (f.value)}
+						<DropdownMenu.CheckboxItem
+							checked={query.source === f.value}
+							onCheckedChange={() => pick('source', f.value)}
+							closeOnSelect={false}
+						>
+							<span class="flex-1">{f.label}</span>
+							<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
+						</DropdownMenu.CheckboxItem>
+					{/each}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		{/if}
@@ -188,19 +186,17 @@
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="max-h-none w-64 overflow-visible">
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						{#each facets.interest as f (f.value)}
-							<DropdownMenu.CheckboxItem
-								checked={query.interest === f.value}
-								onCheckedChange={() => pick('interest', f.value)}
-								closeOnSelect={false}
-							>
-								<span class="flex-1">{f.label}</span>
-								<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</ScrollArea>
+				<DropdownMenu.Content align="start" class="w-64">
+					{#each facets.interest as f (f.value)}
+						<DropdownMenu.CheckboxItem
+							checked={query.interest === f.value}
+							onCheckedChange={() => pick('interest', f.value)}
+							closeOnSelect={false}
+						>
+							<span class="flex-1">{f.label}</span>
+							<span class="tabular-nums text-muted-foreground">{f.count.toLocaleString()}</span>
+						</DropdownMenu.CheckboxItem>
+					{/each}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		{/if}
@@ -218,7 +214,7 @@
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="max-h-none w-52 overflow-visible">
+				<DropdownMenu.Content align="start" class="w-52">
 					{#each facets.status_class as f (f.value)}
 						<DropdownMenu.CheckboxItem
 							checked={query.statusClass === f.value}
@@ -277,7 +273,7 @@
 		{/if}
 	</div>
 
-	<div class="flex flex-wrap items-center gap-2">
+	<div class="ml-auto flex min-w-0 flex-wrap items-center gap-2">
 		<ToggleGroup.Root
 			type="single"
 			bind:value={() => view, (v) => v && onView(v as EndpointView)}

@@ -8,7 +8,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -196,25 +196,22 @@
 				<Skeleton class="h-4 w-96" />
 			{/if}
 		</div>
-		<div class="relative w-56">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input
+		<InputGroup.Root class="w-56">
+			<InputGroup.Addon><Search /></InputGroup.Addon>
+			<InputGroup.Input
 				bind:value={search}
 				placeholder="Find web asset"
-				class="h-8 pl-8 font-mono text-xs"
+				class="font-mono text-xs"
 				aria-label="Find web asset"
 				onkeydown={(e) => e.key === 'Enter' && findHost()}
 			/>
-		</div>
+		</InputGroup.Root>
 	</div>
 
 	{#if kinds.length}
-		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 			<ToggleGroup.Root
 				type="multiple"
-				size="sm"
 				variant="outline"
 				class="flex-wrap"
 				value={[...enabled]}
@@ -229,7 +226,7 @@
 					>
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
-								<ToggleGroup.Item value={k.key} class="h-7 gap-1.5 px-2 text-xs font-normal">
+								<ToggleGroup.Item value={k.key} class="h-9 gap-1.5 px-3 font-normal">
 									<span
 										class="size-2 rounded-full"
 										style="background:{kindColor(k.key, mode.current === 'dark')}"
@@ -245,7 +242,6 @@
 			</ToggleGroup.Root>
 			<ToggleGroup.Root
 				type="multiple"
-				size="sm"
 				variant="outline"
 				class="ml-auto"
 				value={[...(hideCommon ? ['common'] : []), ...(hidePlatform ? ['platform'] : [])]}
@@ -258,7 +254,7 @@
 				<Hint text="Identities on half or more of the web assets that carry one">
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value="common" class="h-7 px-2 text-xs font-normal"
+							<ToggleGroup.Item value="common" class="h-9 px-3 font-normal"
 								>Hide common</ToggleGroup.Item
 							>
 						</span>
@@ -269,7 +265,7 @@
 				>
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value="platform" class="h-7 px-2 text-xs font-normal"
+							<ToggleGroup.Item value="platform" class="h-9 px-3 font-normal"
 								>Hide provider</ToggleGroup.Item
 							>
 						</span>

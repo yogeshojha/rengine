@@ -74,7 +74,7 @@
 </script>
 
 {#snippet label(text: string)}
-	<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">{text}</h3>
+	<h3 class="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">{text}</h3>
 {/snippet}
 
 {#snippet key(text: string)}
@@ -206,7 +206,7 @@
 									{#each group.fields as field (field.name)}
 										<button
 											type="button"
-											class="group -mx-2 grid w-[calc(100%+1rem)] grid-cols-[8.5rem_minmax(0,1fr)_auto] items-start gap-x-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-accent/50"
+											class="group -mx-2 grid w-[calc(100%+1rem)] grid-cols-[8.5rem_minmax(0,1fr)_auto] items-start gap-x-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-accent/50 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 											onclick={() => insert(field.name === 'is' ? 'is:' : `${field.name}:`)}
 										>
 											<span class="flex min-w-0 flex-col items-start gap-1">
@@ -257,7 +257,7 @@
 							{#each flags as flag (flag.value)}
 								<button
 									type="button"
-									class="flex min-w-0 items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-accent/50"
+									class="flex min-w-0 items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-accent/50 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 									onclick={() => insert(`is:${flag.value} `)}
 								>
 									{@render key(`is:${flag.value}`)}

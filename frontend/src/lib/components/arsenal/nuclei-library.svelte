@@ -11,6 +11,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import SearchX from '@lucide/svelte/icons/search-x';
+	import Search from '@lucide/svelte/icons/search';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Upload from '@lucide/svelte/icons/upload';
@@ -19,7 +20,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
@@ -526,7 +527,7 @@
 				{#if stats.callback > 0}
 					<button
 						type="button"
-						class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/60 aria-pressed:bg-muted"
+						class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted"
 						aria-pressed={onlyCallback}
 						onclick={() => (onlyCallback = !onlyCallback)}
 					>
@@ -553,13 +554,16 @@
 	</div>
 
 	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-		<Input
-			bind:value={search}
-			placeholder="Search checks by name or identifier"
-			class="h-9 w-full sm:max-w-xs"
-		/>
+		<InputGroup.Root class="w-full sm:max-w-xs">
+			<InputGroup.Addon><Search /></InputGroup.Addon>
+			<InputGroup.Input
+				bind:value={search}
+				placeholder="Search checks by name or identifier"
+				aria-label="Search checks"
+			/>
+		</InputGroup.Root>
 		<Select.Root type="single" bind:value={severity}>
-			<Select.Trigger class="h-9 w-36" aria-label="Severity">
+			<Select.Trigger class="w-36" aria-label="Severity">
 				{severity === ALL ? 'Any severity' : SEVERITY_LABELS[severity]}
 			</Select.Trigger>
 			<Select.Content>
@@ -572,7 +576,7 @@
 			</Select.Content>
 		</Select.Root>
 		<Select.Root type="single" bind:value={set}>
-			<Select.Trigger class="h-9 w-44" aria-label="Check set">
+			<Select.Trigger class="w-44" aria-label="Check set">
 				{set === ALL ? 'Any check set' : (sets.find((s) => s.key === set)?.label ?? set)}
 			</Select.Trigger>
 			<Select.Content>
@@ -588,7 +592,7 @@
 			</Select.Content>
 		</Select.Root>
 		<Select.Root type="single" bind:value={origin}>
-			<Select.Trigger class="h-9 w-40" aria-label="Origin">
+			<Select.Trigger class="w-40" aria-label="Origin">
 				{origin === ALL ? 'Any origin' : TEMPLATE_ORIGIN_LABELS[origin]}
 			</Select.Trigger>
 			<Select.Content>

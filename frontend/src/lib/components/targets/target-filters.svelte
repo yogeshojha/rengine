@@ -3,12 +3,11 @@
 	import X from '@lucide/svelte/icons/x';
 	import Building2 from '@lucide/svelte/icons/building-2';
 	import Tag from '@lucide/svelte/icons/tag';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
 	import TargetLabelsDialog from './target-labels-dialog.svelte';
@@ -50,29 +49,28 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-3 gap-y-2">
-	<div class="relative min-w-0 flex-1 basis-full sm:max-w-sm sm:basis-0">
-		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-		<Input
+	<InputGroup.Root class="w-auto min-w-0 flex-1 basis-full sm:max-w-sm sm:basis-0">
+		<InputGroup.Addon><Search /></InputGroup.Addon>
+		<InputGroup.Input
 			id="target-search"
 			type="text"
 			placeholder="Search targets"
 			aria-label="Search targets"
-			class="h-9 pr-9 pl-9"
 			value={searchQuery}
 			oninput={(e) => onSearchChange(e.currentTarget.value)}
 		/>
 		{#if searchQuery}
-			<Button
-				variant="ghost"
-				size="icon"
-				class="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground"
-				aria-label="Clear search"
-				onclick={() => onSearchChange('')}
-			>
-				<X class="size-4" />
-			</Button>
+			<InputGroup.Addon align="inline-end">
+				<InputGroup.Button
+					size="icon-xs"
+					aria-label="Clear search"
+					onclick={() => onSearchChange('')}
+				>
+					<X />
+				</InputGroup.Button>
+			</InputGroup.Addon>
 		{/if}
-	</div>
+	</InputGroup.Root>
 
 	<Popover.Root bind:open={orgPopoverOpen}>
 		<Popover.Trigger>
@@ -95,21 +93,19 @@
 		<Popover.Content class="w-56 p-0" align="start">
 			<Command.Root>
 				<Command.Input placeholder="Search organizations" />
-				<Command.List class="max-h-none overflow-visible">
+				<Command.List class="max-h-72">
 					<Command.Empty>No organizations</Command.Empty>
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						<Command.Group>
-							{#each organizations as org (org.id)}
-								<Command.Item
-									onSelect={() => onOrganizationToggle(org.id)}
-									class="flex items-center gap-2"
-								>
-									<Checkbox checked={selectedOrganizations.includes(org.id)} />
-									<span class="truncate">{org.name}</span>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</ScrollArea>
+					<Command.Group>
+						{#each organizations as org (org.id)}
+							<Command.Item
+								onSelect={() => onOrganizationToggle(org.id)}
+								class="flex items-center gap-2"
+							>
+								<Checkbox checked={selectedOrganizations.includes(org.id)} />
+								<span class="truncate">{org.name}</span>
+							</Command.Item>
+						{/each}
+					</Command.Group>
 				</Command.List>
 			</Command.Root>
 			<div class="border-t p-1">
@@ -147,22 +143,20 @@
 		<Popover.Content class="w-56 p-0" align="start">
 			<Command.Root>
 				<Command.Input placeholder="Search tags" />
-				<Command.List class="max-h-none overflow-visible">
+				<Command.List class="max-h-72">
 					<Command.Empty>No tags</Command.Empty>
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						<Command.Group>
-							{#each tags as tag (tag.id)}
-								<Command.Item onSelect={() => onTagToggle(tag.id)} class="flex items-center gap-2">
-									<Checkbox checked={selectedTags.includes(tag.id)} />
-									<span
-										class="h-2.5 w-2.5 rounded-full shrink-0"
-										style="background-color: {tag.color}"
-									></span>
-									<span class="truncate">{tag.name}</span>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</ScrollArea>
+					<Command.Group>
+						{#each tags as tag (tag.id)}
+							<Command.Item onSelect={() => onTagToggle(tag.id)} class="flex items-center gap-2">
+								<Checkbox checked={selectedTags.includes(tag.id)} />
+								<span
+									class="h-2.5 w-2.5 rounded-full shrink-0"
+									style="background-color: {tag.color}"
+								></span>
+								<span class="truncate">{tag.name}</span>
+							</Command.Item>
+						{/each}
+					</Command.Group>
 				</Command.List>
 			</Command.Root>
 			<div class="border-t p-1">

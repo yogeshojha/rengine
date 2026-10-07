@@ -5,7 +5,6 @@
 	import * as Command from '$lib/components/ui/command';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { cn } from '$lib/utils';
 	import type { Facet } from '$lib/utilities/scan-insights';
 
@@ -43,31 +42,29 @@
 	<Popover.Content class="w-56 p-0" align="start">
 		<Command.Root>
 			<Command.Input placeholder={title} />
-			<Command.List class="max-h-none overflow-visible">
+			<Command.List class="max-h-72">
 				<Command.Empty>No matches</Command.Empty>
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-					<Command.Group>
-						{#each options as option (option.value)}
-							{@const isSel = selected.includes(option.value)}
-							<Command.Item value={option.value} onSelect={() => toggle(option.value)}>
-								<div
-									class={cn(
-										'flex size-4 items-center justify-center rounded-sm border',
-										isSel
-											? 'border-primary bg-primary text-primary-foreground'
-											: 'border-muted-foreground/40 [&_svg]:invisible'
-									)}
-								>
-									<Check class="size-3" />
-								</div>
-								<span class="truncate">{option.label}</span>
-								<span class="ml-auto text-xs text-muted-foreground tabular-nums"
-									>{option.count.toLocaleString()}</span
-								>
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				</ScrollArea>
+				<Command.Group>
+					{#each options as option (option.value)}
+						{@const isSel = selected.includes(option.value)}
+						<Command.Item value={option.value} onSelect={() => toggle(option.value)}>
+							<div
+								class={cn(
+									'flex size-4 items-center justify-center rounded-sm border',
+									isSel
+										? 'border-primary bg-primary text-primary-foreground'
+										: 'border-muted-foreground/40 [&_svg]:invisible'
+								)}
+							>
+								<Check class="size-3" />
+							</div>
+							<span class="truncate">{option.label}</span>
+							<span class="ml-auto text-xs text-muted-foreground tabular-nums"
+								>{option.count.toLocaleString()}</span
+							>
+						</Command.Item>
+					{/each}
+				</Command.Group>
 				{#if selected.length}
 					<Command.Separator />
 					<Command.Group>

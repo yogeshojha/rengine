@@ -257,19 +257,19 @@
 				</div>
 			</div>
 
-			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 				{#each CVE_FILTERS as filter (filter.key)}
 					<Toggle
-						size="sm"
+						size="lg"
 						variant="outline"
 						pressed={active.includes(filter.key)}
 						onPressedChange={() => toggle(filter.key)}
-						class="h-7 px-2.5 text-xs font-normal"
+						class="px-3 font-normal"
 					>
 						{filter.label}
 					</Toggle>
 				{/each}
-				<div class="ml-auto flex items-center gap-1.5">
+				<div class="ml-auto flex items-center gap-2">
 					<SortMenu sorts={CVE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
 					<Button
 						variant="outline"

@@ -6,7 +6,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 
 	interface Item {
 		id: string;
@@ -81,16 +80,20 @@
 	{#if selected.length > 0}
 		<div class="flex flex-wrap gap-1.5">
 			{#each selected as item (item.id)}
-				<Badge variant="secondary" class="gap-1 pr-1 font-normal">
-					{item.label}
-					<button
-						type="button"
-						class="ml-1 rounded-full hover:bg-foreground/10 p-0.5"
+				<Badge
+					variant="secondary"
+					class="max-w-full min-w-0 gap-1 overflow-visible pr-0.5 font-normal"
+				>
+					<span class="min-w-0 truncate" title={item.label}>{item.label}</span>
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						class="size-4 shrink-0 rounded-full hover:bg-foreground/10"
 						aria-label="Remove {item.label}"
 						onclick={() => onRemove(item)}
 					>
-						<X class="h-3 w-3" />
-					</button>
+						<X class="size-3" />
+					</Button>
 				</Badge>
 			{/each}
 		</div>
@@ -119,25 +122,23 @@
 					oninput={() => onSearch?.(searchValue.trim())}
 					onkeydown={handleKeydown}
 				/>
-				<Command.List class="max-h-none overflow-visible">
+				<Command.List class="max-h-72">
 					<Command.Empty>
 						{#if !showCreateOption}
 							{emptyText}
 						{/if}
 					</Command.Empty>
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						<Command.Group>
-							{#each filteredItems as item (item.id)}
-								<Command.Item
-									value={item.id}
-									onSelect={() => handleSelect(item)}
-									class="flex items-center gap-2"
-								>
-									<span class="flex-1 truncate">{item.label}</span>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</ScrollArea>
+					<Command.Group>
+						{#each filteredItems as item (item.id)}
+							<Command.Item
+								value={item.id}
+								onSelect={() => handleSelect(item)}
+								class="flex items-center gap-2"
+							>
+								<span class="flex-1 truncate">{item.label}</span>
+							</Command.Item>
+						{/each}
+					</Command.Group>
 
 					{#if showCreateOption}
 						<Command.Group>

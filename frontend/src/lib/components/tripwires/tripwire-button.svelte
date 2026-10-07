@@ -158,7 +158,7 @@
 			</Button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="w-96 p-0" align="end">
+	<Popover.Content class="w-[min(24rem,calc(100vw-2rem))] p-0" align="end">
 		<div class="flex flex-col gap-4 p-4">
 			<div class="flex flex-col gap-1.5">
 				<span class="text-sm font-medium">Tripwire on this query</span>

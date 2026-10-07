@@ -24,7 +24,7 @@
 <button
 	type="button"
 	aria-label={hint}
-	class="group flex min-w-0 flex-col gap-1 rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/60"
+	class="group flex min-w-0 flex-col gap-1 rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/60 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 	onclick={() => onPick(example.query)}
 >
 	<span class="flex w-full items-baseline gap-2">

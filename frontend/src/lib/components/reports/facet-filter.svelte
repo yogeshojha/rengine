@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 
 	let {
 		label,
@@ -28,7 +29,7 @@
 				>
 					{label}
 					{#if selected.length}
-						<span class="text-xs text-muted-foreground tabular-nums">{selected.length}</span>
+						<Badge variant="secondary" class="h-5 px-1.5 text-xs">{selected.length}</Badge>
 					{/if}
 				</Button>
 			{/snippet}
@@ -38,6 +39,7 @@
 				<DropdownMenu.CheckboxItem
 					checked={selected.includes(o.key)}
 					onCheckedChange={() => toggle(o.key)}
+					closeOnSelect={false}
 				>
 					<span class="flex-1 truncate">{o.label}</span>
 					<span class="font-mono text-2xs text-muted-foreground">{o.count}</span>

@@ -4,7 +4,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as Select from '$lib/components/ui/select';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import FacetedFilter from '$lib/components/scans/results/faceted-filter.svelte';
@@ -99,6 +99,11 @@
 		{ value: 'none', label: 'No scope recorded' }
 	];
 
+	const ACTIVE = 'border-primary/50 bg-primary/5';
+	const sortLabel = $derived(
+		PROGRAM_SORTS.find((s) => s.value === (filters.sort ?? DEFAULT_PROGRAM_SORT))?.label ?? ''
+	);
+
 	const rewardValue = $derived(
 		filters.bounty === true ? 'bounty' : filters.bounty === false ? 'vdp' : SELECT_NONE
 	);
@@ -127,18 +132,15 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-	<div class="relative min-w-56 flex-1">
-		<SearchIcon
-			class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-		/>
-		<Input
+	<InputGroup.Root class="w-auto min-w-56 flex-1">
+		<InputGroup.Addon><SearchIcon /></InputGroup.Addon>
+		<InputGroup.Input
 			value={draft}
 			oninput={(e) => onSearch(e.currentTarget.value)}
 			placeholder="Search programs"
 			aria-label="Search programs"
-			class="pl-8"
 		/>
-	</div>
+	</InputGroup.Root>
 
 	<FacetedFilter
 		title="Platform"
@@ -159,7 +161,7 @@
 		value={filters.state ?? SELECT_NONE}
 		onValueChange={(v) => patch({ state: v === SELECT_NONE ? null : (v as ProgramState) })}
 	>
-		<Select.Trigger class="w-40" aria-label="Program state"
+		<Select.Trigger class={filters.state ? ACTIVE : ''} aria-label="Program state"
 			>{label(STATE, filters.state ?? SELECT_NONE)}</Select.Trigger
 		>
 		<Select.Content>
@@ -174,7 +176,9 @@
 		value={rewardValue}
 		onValueChange={(v) => patch({ bounty: v === SELECT_NONE ? null : v === 'bounty' })}
 	>
-		<Select.Trigger class="w-36" aria-label="Reward">{label(REWARD, rewardValue)}</Select.Trigger>
+		<Select.Trigger class={filters.bounty != null ? ACTIVE : ''} aria-label="Reward"
+			>{label(REWARD, rewardValue)}</Select.Trigger
+		>
 		<Select.Content>
 			{#each REWARD as option (option.value)}
 				<Select.Item value={option.value}>{option.label}</Select.Item>
@@ -187,7 +191,7 @@
 		value={filters.submission ?? SELECT_NONE}
 		onValueChange={(v) => patch({ submission: v === SELECT_NONE ? null : (v as SubmissionState) })}
 	>
-		<Select.Trigger class="w-40" aria-label="Submission">
+		<Select.Trigger class={filters.submission ? ACTIVE : ''} aria-label="Submission">
 			{label(SUBMISSION, filters.submission ?? SELECT_NONE)}
 		</Select.Trigger>
 		<Select.Content>
@@ -202,7 +206,7 @@
 		value={filters.scope ?? SELECT_NONE}
 		onValueChange={(v) => patch({ scope: v === SELECT_NONE ? null : (v as 'importable' | 'none') })}
 	>
-		<Select.Trigger class="w-48" aria-label="Scope"
+		<Select.Trigger class={filters.scope ? ACTIVE : ''} aria-label="Scope"
 			>{label(SCOPE, filters.scope ?? SELECT_NONE)}</Select.Trigger
 		>
 		<Select.Content>
@@ -216,8 +220,8 @@
 		pressed={filters.joined === true}
 		onPressedChange={(v) => patch({ joined: v ? true : null })}
 		variant="outline"
-		size="sm"
-		class="h-9"
+		size="lg"
+		class="font-normal"
 	>
 		Joined
 	</Toggle>
@@ -226,26 +230,11 @@
 		pressed={filters.bookmarked === true}
 		onPressedChange={(v) => patch({ bookmarked: v ? true : null })}
 		variant="outline"
-		size="sm"
-		class="h-9"
+		size="lg"
+		class="font-normal"
 	>
 		Following
 	</Toggle>
-
-	<Select.Root
-		type="single"
-		value={filters.sort ?? DEFAULT_PROGRAM_SORT}
-		onValueChange={(v) => patch({ sort: v })}
-	>
-		<Select.Trigger class="w-36" aria-label="Sort programs">
-			{PROGRAM_SORTS.find((s) => s.value === (filters.sort ?? DEFAULT_PROGRAM_SORT))?.label}
-		</Select.Trigger>
-		<Select.Content>
-			{#each PROGRAM_SORTS as option (option.value)}
-				<Select.Item value={option.value}>{option.label}</Select.Item>
-			{/each}
-		</Select.Content>
-	</Select.Root>
 
 	{#if activeCount > 0}
 		<Button variant="ghost" onclick={clearAll}>
@@ -254,4 +243,21 @@
 			<Badge variant="secondary" class="h-5 px-1.5 text-xs tabular-nums">{activeCount}</Badge>
 		</Button>
 	{/if}
+
+	<div class="ml-auto">
+		<Select.Root
+			type="single"
+			value={filters.sort ?? DEFAULT_PROGRAM_SORT}
+			onValueChange={(v) => patch({ sort: v })}
+		>
+			<Select.Trigger aria-label="Sort programs by {sortLabel}">
+				{sortLabel}
+			</Select.Trigger>
+			<Select.Content>
+				{#each PROGRAM_SORTS as option (option.value)}
+					<Select.Item value={option.value}>{option.label}</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+	</div>
 </div>

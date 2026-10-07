@@ -44,14 +44,16 @@
 				</Hint>
 			</Badge>
 		{/each}
-		<Button
-			variant="ghost"
-			size="xs"
-			class="text-muted-foreground"
-			onclick={() => onClear()}
-			aria-label="Clear all filters"
-		>
-			Clear all
-		</Button>
+		{#if chips.length > 1}
+			<Button
+				variant="ghost"
+				size="xs"
+				class="text-muted-foreground"
+				onclick={() => onClear()}
+				aria-label="Clear all filters"
+			>
+				Clear all
+			</Button>
+		{/if}
 	</div>
 {/if}

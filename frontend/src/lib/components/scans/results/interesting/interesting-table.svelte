@@ -15,9 +15,9 @@
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
+	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import type { TableColumn } from '../table/columns';
 	import CountTabs from '$lib/components/count-tabs.svelte';
@@ -91,6 +91,7 @@
 	let sources = $state<string[]>([]);
 	let kinds = $state<string[]>(untrack(() => [...initialKinds]));
 	let sort = $state<string>(INTEREST_SORTS[0].value);
+	let sortLabel = $derived(INTEREST_SORTS.find((s) => s.value === sort)?.label ?? 'Sort');
 	let page = $state(1);
 	let judging = $state(false);
 	let retry: ReturnType<typeof setTimeout> | null = null;
@@ -340,56 +341,62 @@
 		</div>
 
 		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-			<div class="relative min-w-56 flex-1">
-				<Search
-					class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
+			<InputGroup.Root class="w-auto min-w-56 flex-1">
+				<InputGroup.Addon><Search /></InputGroup.Addon>
+				<InputGroup.Input
 					bind:value={q}
 					placeholder="Filter by hostname"
-					class="h-8 pl-8 text-sm"
+					aria-label="Filter by hostname"
 					oninput={() => (page = 1)}
 				/>
-			</div>
+			</InputGroup.Root>
 
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="sm" class="h-8">
-							<SlidersHorizontal class="size-3.5" />
+						<Button
+							{...props}
+							variant="outline"
+							class={kinds.length ? 'border-primary/50 bg-primary/5' : ''}
+						>
+							<SlidersHorizontal />
 							Reason
-							{#if kinds.length}<span class="tabular-nums">{kinds.length}</span>{/if}
+							{#if kinds.length}
+								<Badge variant="secondary" class="h-5 px-1.5 text-xs">{kinds.length}</Badge>
+							{/if}
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="max-h-none w-64 overflow-visible">
-					<ScrollArea.Root
-						class="[&_[data-slot=scroll-area-viewport]]:max-h-72"
-						orientation="vertical"
-					>
-						{#each activeKinds as k (k.key)}
-							{@const Icon = kindIcon(k.key)}
-							<DropdownMenu.CheckboxItem
-								checked={kinds.includes(k.key)}
-								onCheckedChange={() => pickKind(k.key)}
+				<DropdownMenu.Content align="start" class="w-64">
+					{#each activeKinds as k (k.key)}
+						{@const Icon = kindIcon(k.key)}
+						<DropdownMenu.CheckboxItem
+							checked={kinds.includes(k.key)}
+							onCheckedChange={() => pickKind(k.key)}
+							closeOnSelect={false}
+						>
+							<Icon class="size-3.5 text-muted-foreground" />
+							<span class="flex-1 truncate">{k.label}</span>
+							<span class="text-xs tabular-nums text-muted-foreground"
+								>{(summary?.kinds?.[k.key] ?? 0).toLocaleString()}</span
 							>
-								<Icon class="size-3.5 text-muted-foreground" />
-								<span class="flex-1 truncate">{k.label}</span>
-								<span class="text-xs tabular-nums text-muted-foreground"
-									>{(summary?.kinds?.[k.key] ?? 0).toLocaleString()}</span
-								>
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</ScrollArea.Root>
+						</DropdownMenu.CheckboxItem>
+					{/each}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="sm" class="h-8">
+						<Button
+							{...props}
+							variant="outline"
+							class={sources.length ? 'border-primary/50 bg-primary/5' : ''}
+						>
 							Flagged by
-							{#if sources.length}<span class="tabular-nums">{sources.length}</span>{/if}
+							{#if sources.length}
+								<Badge variant="secondary" class="h-5 px-1.5 text-xs">{sources.length}</Badge>
+							{/if}
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
@@ -402,6 +409,7 @@
 								sources = toggle(sources, s.key);
 								page = 1;
 							}}
+							closeOnSelect={false}
 						>
 							<Icon class="size-3.5 text-muted-foreground" />
 							<span class="flex-1 truncate">{s.label}</span>
@@ -416,29 +424,29 @@
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="sm" class="h-8">
-							{INTEREST_SORTS.find((s) => s.value === sort)?.label ?? 'Sort'}
+						<Button {...props} variant="outline" aria-label="Sort by {sortLabel}">
+							{sortLabel}
 						</Button>
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end">
-					{#each INTEREST_SORTS as option (option.value)}
-						<DropdownMenu.CheckboxItem
-							checked={sort === option.value}
-							onCheckedChange={() => {
-								sort = option.value;
-								page = 1;
-							}}>{option.label}</DropdownMenu.CheckboxItem
-						>
-					{/each}
+					<DropdownMenu.RadioGroup
+						value={sort}
+						onValueChange={(v) => {
+							sort = v;
+							page = 1;
+						}}
+					>
+						{#each INTEREST_SORTS as option (option.value)}
+							<DropdownMenu.RadioItem value={option.value}>{option.label}</DropdownMenu.RadioItem>
+						{/each}
+					</DropdownMenu.RadioGroup>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 
 			{#if filtered}
 				<Button
 					variant="ghost"
-					size="sm"
-					class="h-8"
 					onclick={() => {
 						q = '';
 						applied = '';

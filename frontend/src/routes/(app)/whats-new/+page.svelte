@@ -10,12 +10,11 @@
 	import Search from '@lucide/svelte/icons/search';
 	import Newspaper from '@lucide/svelte/icons/newspaper';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
-	import X from '@lucide/svelte/icons/x';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
+	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
@@ -206,9 +205,6 @@
 		return feed.window ? `Last ${windowWords}` : '';
 	});
 	let emptyTitle = $derived(feed ? `Nothing new ${periodLabel}` : '');
-	let filtered = $derived(
-		!!(targetId || program || qApplied || signal || sourceOn !== NewSource.ALL || dayFrom)
-	);
 
 	// ---------- timeline ----------
 
@@ -943,20 +939,17 @@
 		</div>
 
 		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-			<div class="relative min-w-[200px] flex-1 sm:max-w-xs">
-				<Search
-					class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
+			<InputGroup.Root class="w-auto min-w-[200px] flex-1 sm:max-w-xs">
+				<InputGroup.Addon><Search /></InputGroup.Addon>
+				<InputGroup.Input
 					bind:ref={searchRef}
 					bind:value={q}
 					placeholder="Filter"
-					class="h-9 pl-8"
 					aria-label="Filter"
 					autocomplete="off"
 					spellcheck={false}
 				/>
-			</div>
+			</InputGroup.Root>
 			{#if bounty && tab !== NewTab.VISUAL}
 				<ToggleGroup.Root
 					type="single"
@@ -999,7 +992,7 @@
 				/>
 				<Button
 					variant={silentOnly ? 'secondary' : 'outline'}
-					class="h-9 text-xs font-normal"
+					class="text-xs font-normal"
 					aria-pressed={silentOnly}
 					onclick={() => (silentOnly = !silentOnly)}
 				>
@@ -1051,32 +1044,11 @@
 			</div>
 		</div>
 
-		{#if chips.length > 0}
-			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-				{#each chips as chip (chip.key)}
-					<Badge variant="outline" class="gap-1 bg-background font-normal">
-						{chip.label}
-						<button
-							type="button"
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-							onclick={chip.remove}
-							aria-label="Remove filter {chip.label}"
-						>
-							<X class="size-3" />
-						</button>
-					</Badge>
-				{/each}
-				{#if filtered}
-					<button
-						type="button"
-						class="ml-auto text-xs text-muted-foreground hover:text-foreground"
-						onclick={clearFilters}
-					>
-						Clear all
-					</button>
-				{/if}
-			</div>
-		{/if}
+		<FilterChips
+			chips={chips.map((c) => ({ id: c.key, label: c.label, remove: c.remove }))}
+			onRemove={(c) => c.remove()}
+			onClear={clearFilters}
+		/>
 
 		{#if tab === NewTab.VISUAL}
 			<div class="p-4">
@@ -1158,7 +1130,7 @@
 				{#each days as day (day.key)}
 					<section>
 						<h2
-							class="sticky top-0 z-10 border-b bg-card/95 px-4 py-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase backdrop-blur"
+							class="sticky top-0 z-10 border-b bg-card/95 px-4 py-2 text-2xs font-semibold tracking-wide text-muted-foreground uppercase backdrop-blur"
 						>
 							{day.label}
 						</h2>

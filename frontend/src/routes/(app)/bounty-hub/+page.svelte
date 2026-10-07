@@ -460,7 +460,7 @@
 					·
 					<button
 						type="button"
-						class="transition-colors hover:text-foreground"
+						class="rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
 						onclick={() => (settingsOpen = true)}
 					>
 						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}

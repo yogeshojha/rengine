@@ -48,7 +48,7 @@
 				{...props}
 				variant="outline"
 				class="max-w-64 justify-between text-xs font-normal {value ? '' : 'text-muted-foreground'}"
-				aria-label={label}
+				aria-label="{placeholder}: {current?.label ?? label}"
 			>
 				<span class="truncate {current?.mono ? 'font-mono' : ''}">{current?.label ?? label}</span>
 				<ChevronDown class="size-3.5 shrink-0 opacity-60" />

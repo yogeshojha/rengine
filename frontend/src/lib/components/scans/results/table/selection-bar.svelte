@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
+	import { Button } from '$lib/components/ui/button';
 
 	interface Props {
 		noun: string;
@@ -53,23 +54,25 @@
 {#if offerAll}
 	<div class="border-b bg-primary/[0.06] text-sm dark:bg-primary/10">
 		<div class="flex flex-wrap items-center gap-2 px-4 py-2 text-xs text-muted-foreground">
-			<button
-				type="button"
-				class="font-medium text-foreground underline underline-offset-2 hover:text-primary disabled:opacity-50"
+			<Button
+				variant="link"
+				size="xs"
+				class="h-auto px-0 font-medium text-foreground underline underline-offset-2 hover:text-primary has-[>svg]:px-0"
 				onclick={() => (confirming = true)}
 				disabled={busy}
 			>
 				{allLabel} matching
-			</button>
+			</Button>
 			{#if onRescanAllOptions}
-				<button
-					type="button"
-					class="text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+				<Button
+					variant="link"
+					size="xs"
+					class="h-auto px-0 font-normal text-muted-foreground underline underline-offset-2 hover:text-foreground"
 					onclick={onRescanAllOptions}
 					disabled={busy}
 				>
 					Options
-				</button>
+				</Button>
 			{/if}
 		</div>
 	</div>

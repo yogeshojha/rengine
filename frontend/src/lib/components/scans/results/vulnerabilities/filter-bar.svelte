@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -88,10 +90,6 @@
 		});
 	}
 
-	function flip(value: string) {
-		setQuick(quick.includes(value) ? quick.filter((v) => v !== value) : [...quick, value]);
-	}
-
 	function options(list: VulnFacetSet[keyof VulnFacetSet]): Facet[] {
 		return list.map((f) => ({ value: f.name, label: f.label ?? f.name, count: f.count }));
 	}
@@ -146,24 +144,28 @@
 				onChange={(v) => setList('scanners', v)}
 			/>
 		{/if}
-		<div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filters">
-			{#each QUICK as q (q.value)}
-				{@const on = quick.includes(q.value)}
-				<button
-					type="button"
-					class="rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {on
-						? 'border-foreground/40 bg-foreground text-background'
-						: 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'}"
-					aria-pressed={on}
-					onclick={() => flip(q.value)}
-				>
-					{q.label}
-				</button>
-			{/each}
-		</div>
+		<ScrollArea
+			orientation="horizontal"
+			class="max-lg:max-w-full max-lg:min-w-0"
+			scrollbarXClasses="h-1"
+		>
+			<ToggleGroup.Root
+				type="multiple"
+				value={quick}
+				onValueChange={setQuick}
+				variant="outline"
+				aria-label="Filters"
+			>
+				{#each QUICK as q (q.value)}
+					<ToggleGroup.Item value={q.value} class="h-9 px-3 text-sm font-normal">
+						{q.label}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+		</ScrollArea>
 	</div>
 
-	<div class="flex min-w-0 flex-wrap items-center gap-2">
+	<div class="ml-auto flex min-w-0 flex-wrap items-center gap-2">
 		<ViewControls
 			dimension={SurfaceDimension.VULNERABILITIES}
 			{dimensions}

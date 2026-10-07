@@ -904,7 +904,7 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="h-8 gap-1.5 px-2 {insightsOpen
+					class="gap-1.5 px-2 {insightsOpen
 						? 'bg-muted text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-label="Web hygiene"
@@ -928,7 +928,7 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="h-8 gap-1.5 px-2 {postureOpen
+					class="gap-1.5 px-2 {postureOpen
 						? 'bg-muted text-foreground'
 						: 'text-muted-foreground hover:text-foreground'}"
 					aria-label="Domain posture"

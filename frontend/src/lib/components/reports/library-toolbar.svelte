@@ -26,7 +26,7 @@
 </div>
 
 <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-	<InputGroup.Root class="h-9 w-auto min-w-[240px] flex-1">
+	<InputGroup.Root class="w-auto min-w-[240px] flex-1">
 		<InputGroup.Addon>
 			<Search />
 		</InputGroup.Addon>
@@ -40,6 +40,6 @@
 		{/if}
 	</InputGroup.Root>
 	{#if children}
-		<div class="flex flex-wrap items-center gap-2">{@render children()}</div>
+		<div class="ml-auto flex flex-wrap items-center gap-2">{@render children()}</div>
 	{/if}
 </div>

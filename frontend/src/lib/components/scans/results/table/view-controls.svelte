@@ -4,7 +4,6 @@
 	import X from '@lucide/svelte/icons/x';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
 	import ExportMenu from '../export-menu.svelte';
@@ -73,28 +72,24 @@
 						{...props}
 						variant="outline"
 						class={groupBy ? 'border-primary/50 bg-primary/5' : ''}
-						aria-label="Group by"
+						aria-label={groupBy ? `Group by ${groupLabel}` : 'Group by'}
 					>
 						<Layers class="h-4 w-4" />
 						<span class="hidden sm:inline">{groupLabel}</span>
 					</Button>
 				{/snippet}
 			</DropdownMenu.Trigger>
-			<DropdownMenu.Content align="end" class="max-h-none w-52 overflow-visible">
+			<DropdownMenu.Content align="end" class="w-52">
 				<DropdownMenu.Label>Group by</DropdownMenu.Label>
 				<DropdownMenu.Separator />
-				<ScrollArea
-					class="[&_[data-slot=scroll-area-viewport]]:max-h-[min(36rem,calc(var(--bits-dropdown-menu-content-available-height)-4rem))]"
-				>
-					<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
-						<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
-						{#each dimensions as groupDimension (groupDimension.key)}
-							<DropdownMenu.RadioItem value={groupDimension.key}>
-								{groupDimension.label}
-							</DropdownMenu.RadioItem>
-						{/each}
-					</DropdownMenu.RadioGroup>
-				</ScrollArea>
+				<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
+					<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
+					{#each dimensions as groupDimension (groupDimension.key)}
+						<DropdownMenu.RadioItem value={groupDimension.key}>
+							{groupDimension.label}
+						</DropdownMenu.RadioItem>
+					{/each}
+				</DropdownMenu.RadioGroup>
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
 		{#if groupBy}
@@ -125,23 +120,19 @@
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="end" class="max-h-none w-44 overflow-visible">
+		<DropdownMenu.Content align="end" class="w-44">
 			{#if !columnsLocked}
 				<DropdownMenu.Group>
 					<DropdownMenu.Label>Columns</DropdownMenu.Label>
-					<ScrollArea
-						class="[&_[data-slot=scroll-area-viewport]]:max-h-[min(36rem,calc(var(--bits-dropdown-menu-content-available-height)-10rem))]"
-					>
-						{#each columns as col (col.key)}
-							<DropdownMenu.CheckboxItem
-								checked={visible.includes(col.key)}
-								onCheckedChange={() => onToggleColumn(col.key)}
-								closeOnSelect={false}
-							>
-								{col.label}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-					</ScrollArea>
+					{#each columns as col (col.key)}
+						<DropdownMenu.CheckboxItem
+							checked={visible.includes(col.key)}
+							onCheckedChange={() => onToggleColumn(col.key)}
+							closeOnSelect={false}
+						>
+							{col.label}
+						</DropdownMenu.CheckboxItem>
+					{/each}
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
 			{/if}

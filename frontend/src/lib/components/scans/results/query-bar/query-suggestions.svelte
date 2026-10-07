@@ -4,7 +4,6 @@
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
 	import X from '@lucide/svelte/icons/x';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
@@ -70,14 +69,12 @@
 </script>
 
 {#snippet heading(label: string)}
-	<p
-		class="px-2 pt-2 pb-1.5 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
-	>
+	<p class="px-2 pt-2 pb-1.5 text-2xs font-semibold tracking-wide text-muted-foreground uppercase">
 		{label}
 	</p>
 {/snippet}
 
-<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[min(60vh,24rem)]">
+<div class="max-h-[min(60vh,24rem)] overflow-y-auto">
 	{#if showStarters}
 		<div class="grid gap-x-2 p-2 {split ? 'md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]' : ''}">
 			{#if recents.length}
@@ -93,7 +90,7 @@
 									<button
 										{...props}
 										type="button"
-										class="min-w-0 flex-1 truncate py-1.5 text-left font-mono text-xs"
+										class="min-w-0 flex-1 truncate py-1.5 text-left font-mono text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 										onclick={() => onQuery(recent)}
 									>
 										{recent}
@@ -102,7 +99,7 @@
 							</Hint>
 							<button
 								type="button"
-								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 								aria-label="Remove {recent} from recent searches"
 								onclick={() => onForget(recent)}
 							>
@@ -123,7 +120,7 @@
 					{#if counted}
 						<button
 							type="button"
-							class="mx-1 mt-1.5 mb-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 hover:text-foreground"
+							class="mx-1 mt-1.5 mb-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							onclick={onShowAll}
 						>
 							{moreCount > 0
@@ -187,7 +184,7 @@
 			{/each}
 		</div>
 	{/if}
-</ScrollArea>
+</div>
 
 <div
 	class="flex items-center gap-3 border-t bg-muted/30 px-3 py-1.5 text-2xs text-muted-foreground"

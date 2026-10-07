@@ -8,10 +8,13 @@
 	import StickyNote from '@lucide/svelte/icons/sticky-note';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import X from '@lucide/svelte/icons/x';
+	import ListFilter from '@lucide/svelte/icons/list-filter';
 	import * as Card from '$lib/components/ui/card';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import { Badge } from '$lib/components/ui/badge';
+	import * as Popover from '$lib/components/ui/popover';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
@@ -267,6 +270,19 @@
 		setParam(NOTE_PARAM, note.id, true);
 	}
 
+	// facets with nothing to pick are hidden; past the first few, small screens fold them away
+	const INLINE_FACETS = 3;
+	let shownFacets = $derived(
+		NOTE_FACETS.filter(
+			(f) =>
+				options[f.param].length > 0 ||
+				picks[f.param].length > 0 ||
+				(f.param === 'asset' && !!assetQuery)
+		)
+	);
+	let moreFacets = $derived(shownFacets.slice(INLINE_FACETS));
+	let moreSelected = $derived(moreFacets.reduce((n, f) => n + picks[f.param].length, 0));
+
 	// ---------- keyboard ----------
 	function onKey(e: KeyboardEvent) {
 		if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -278,6 +294,16 @@
 	}
 </script>
 
+{#snippet facet(f: (typeof NOTE_FACETS)[number])}
+	<NoteFacet
+		title={f.title}
+		options={options[f.param]}
+		selected={picks[f.param]}
+		onChange={(next) => setList(f.param, next)}
+		onSearch={f.param === 'asset' ? (q) => (assetQuery = q) : undefined}
+	/>
+{/snippet}
+
 <svelte:head><title>{pageTitle(routeLabels.notes)}</title></svelte:head>
 <svelte:window onkeydown={onKey} />
 
@@ -287,7 +313,7 @@
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		{#if filtered || total > 0 || !loaded}
 			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-				<InputGroup.Root class="h-9 w-auto min-w-[240px] flex-1">
+				<InputGroup.Root class="w-auto min-w-[240px] flex-1">
 					<InputGroup.Addon>
 						<Search />
 					</InputGroup.Addon>
@@ -319,15 +345,38 @@
 						{/if}
 					</InputGroup.Addon>
 				</InputGroup.Root>
-				{#each NOTE_FACETS as f (f.param)}
-					<NoteFacet
-						title={f.title}
-						options={options[f.param]}
-						selected={picks[f.param]}
-						onChange={(next) => setList(f.param, next)}
-						onSearch={f.param === 'asset' ? (q) => (assetQuery = q) : undefined}
-					/>
+				{#each shownFacets as f, i (f.param)}
+					<span class={i >= INLINE_FACETS ? 'contents max-sm:hidden' : 'contents'}>
+						{@render facet(f)}
+					</span>
 				{/each}
+				{#if moreFacets.length}
+					<Popover.Root>
+						<Popover.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="outline"
+									class="sm:hidden {moreSelected ? 'border-primary/50 bg-primary/5' : ''}"
+								>
+									<ListFilter />
+									More filters
+									{#if moreSelected}
+										<Badge variant="secondary" class="h-5 px-1.5 text-xs">{moreSelected}</Badge>
+									{/if}
+								</Button>
+							{/snippet}
+						</Popover.Trigger>
+						<Popover.Content
+							align="end"
+							class="flex w-auto max-w-[calc(100vw-2rem)] flex-wrap gap-2 p-2"
+						>
+							{#each moreFacets as f (f.param)}
+								{@render facet(f)}
+							{/each}
+						</Popover.Content>
+					</Popover.Root>
+				{/if}
 			</div>
 
 			<FilterChips {chips} onRemove={(chip) => chip.remove()} onClear={clearFilters} />

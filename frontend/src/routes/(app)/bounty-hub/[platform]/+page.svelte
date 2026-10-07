@@ -23,6 +23,7 @@
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -670,7 +671,7 @@
 
 			<!-- filters -->
 			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-				<InputGroup.Root class="h-9 w-auto min-w-[240px] flex-1">
+				<InputGroup.Root class="w-auto min-w-[240px] flex-1">
 					<InputGroup.Addon>
 						<Search />
 					</InputGroup.Addon>
@@ -688,7 +689,7 @@
 							if (e.key === 'Enter' && view === ReportView.Reports) search(queryText);
 							if (e.key === 'Escape') e.currentTarget.blur();
 						}}
-						aria-label="Search reports"
+						aria-label={view === ReportView.Reports ? 'Search reports' : 'Search programs'}
 					/>
 					<InputGroup.Addon align="inline-end">
 						{#if view === ReportView.Reports ? queryText : programQuery}
@@ -708,41 +709,45 @@
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button {...props} variant="outline">
+								<Button
+									{...props}
+									variant="outline"
+									class={filters.programs.length ? 'border-primary/50 bg-primary/5' : ''}
+								>
 									Program
 									{#if filters.programs.length}
-										<span class="font-mono text-2xs text-muted-foreground"
-											>{filters.programs.length}</span
+										<Badge variant="secondary" class="h-5 px-1.5 text-xs"
+											>{filters.programs.length}</Badge
 										>
 									{/if}
 								</Button>
 							{/snippet}
 						</DropdownMenu.Trigger>
-						<DropdownMenu.Content align="end" class="max-h-none w-64 overflow-visible p-0">
-							<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
-								<div class="p-1">
-									{#each programs as p (p.handle)}
-										<DropdownMenu.CheckboxItem
-											checked={filters.programs.includes(p.handle)}
-											onCheckedChange={() => toggleIn('program', p.handle, filters.programs)}
-											closeOnSelect={false}
-										>
-											<span class="flex-1 truncate">{p.name}</span>
-											<span class="font-mono text-2xs text-muted-foreground">{p.reports}</span>
-										</DropdownMenu.CheckboxItem>
-									{/each}
-								</div>
-							</ScrollArea>
+						<DropdownMenu.Content align="end" class="max-h-80 w-64">
+							{#each programs as p (p.handle)}
+								<DropdownMenu.CheckboxItem
+									checked={filters.programs.includes(p.handle)}
+									onCheckedChange={() => toggleIn('program', p.handle, filters.programs)}
+									closeOnSelect={false}
+								>
+									<span class="flex-1 truncate">{p.name}</span>
+									<span class="font-mono text-2xs text-muted-foreground">{p.reports}</span>
+								</DropdownMenu.CheckboxItem>
+							{/each}
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
 							{#snippet child({ props })}
-								<Button {...props} variant="outline">
+								<Button
+									{...props}
+									variant="outline"
+									class={filters.states.length ? 'border-primary/50 bg-primary/5' : ''}
+								>
 									State
 									{#if filters.states.length}
-										<span class="font-mono text-2xs text-muted-foreground"
-											>{filters.states.length}</span
+										<Badge variant="secondary" class="h-5 px-1.5 text-xs"
+											>{filters.states.length}</Badge
 										>
 									{/if}
 								</Button>
@@ -799,33 +804,41 @@
 			<!-- saved views and active filters -->
 			{#if view === ReportView.Reports}
 				<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-					{#each REPORT_SAVED_VIEWS as v (v.label)}
-						{@const on = savedOn(v)}
-						<button
-							type="button"
-							class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {on
-								? 'border-foreground/40 bg-foreground text-background'
-								: 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'}"
-							aria-pressed={on}
-							onclick={() => applyView(v)}
-						>
-							{v.label}
-						</button>
-					{/each}
+					<ToggleGroup.Root
+						type="single"
+						variant="outline"
+						size="sm"
+						spacing={1}
+						value={REPORT_SAVED_VIEWS.find((v) => savedOn(v))?.label ?? ''}
+						onValueChange={(next) => {
+							const v = REPORT_SAVED_VIEWS.find((x) => (x.label === next) !== savedOn(x));
+							if (v) applyView(v);
+						}}
+						aria-label="Saved views"
+						class="flex-wrap"
+					>
+						{#each REPORT_SAVED_VIEWS as v (v.label)}
+							<ToggleGroup.Item value={v.label} class="rounded-full font-normal">
+								{v.label}
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup.Root>
 					{#snippet chip(text: string, onRemove: () => void)}
-						<span
-							class="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
+						<Badge
+							variant="outline"
+							class="max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal"
 						>
-							{text}
-							<button
-								type="button"
+							<span class="min-w-0 truncate" title={text}>{text}</span>
+							<Button
+								variant="ghost"
+								size="icon-xs"
+								class="size-4 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
 								aria-label="Remove {text}"
-								class="text-muted-foreground hover:text-foreground"
 								onclick={onRemove}
 							>
 								<X class="size-3" />
-							</button>
-						</span>
+							</Button>
+						</Badge>
 					{/snippet}
 					{#if hasFilters}<span class="mx-1 h-4 w-px bg-border"></span>{/if}
 					{#each filters.programs as h (h)}
@@ -868,13 +881,14 @@
 						)}
 					{/if}
 					{#if hasFilters}
-						<button
-							type="button"
-							class="ml-auto text-xs text-muted-foreground hover:text-foreground"
+						<Button
+							variant="ghost"
+							size="xs"
+							class="ml-auto text-muted-foreground"
 							onclick={clearFilters}
 						>
 							Clear all
-						</button>
+						</Button>
 					{/if}
 				</div>
 			{/if}

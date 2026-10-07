@@ -256,18 +256,25 @@
 		</section>
 	{:else}
 		<div class="flex flex-wrap items-center gap-2">
-			<InputGroup.Root class="h-9 w-full sm:max-w-xs">
+			<InputGroup.Root class="w-full sm:max-w-xs">
 				<InputGroup.Addon>
 					<Search />
 				</InputGroup.Addon>
-				<InputGroup.Input bind:value={query} placeholder="Search contexts, auth, scope…" />
+				<InputGroup.Input
+					bind:value={query}
+					placeholder="Search contexts, auth, scope…"
+					aria-label="Search contexts"
+				/>
 			</InputGroup.Root>
 			<Select.Root
 				type="single"
 				value={sortKey}
 				onValueChange={(v) => v && (sortKey = v as SortKey)}
 			>
-				<Select.Trigger class="h-9 w-[170px] gap-2 text-sm" aria-label="Sort contexts">
+				<Select.Trigger
+					class="w-[170px] gap-2 text-sm"
+					aria-label="Sort contexts by {SORT_LABELS[sortKey]}"
+				>
 					<ArrowUpDown size={14} class="text-muted-foreground" />
 					{SORT_LABELS[sortKey]}
 				</Select.Trigger>

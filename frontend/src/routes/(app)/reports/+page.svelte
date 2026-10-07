@@ -345,7 +345,7 @@
 		<Tabs.Content value="reports" class="mt-6">
 			<Card.Root class="gap-0 overflow-hidden py-0">
 				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-					<InputGroup.Root class="h-9 w-auto min-w-[240px] flex-1">
+					<InputGroup.Root class="w-auto min-w-[240px] flex-1">
 						<InputGroup.Addon>
 							<SearchIcon />
 						</InputGroup.Addon>

@@ -253,7 +253,7 @@
 
 <div bind:this={anchor} class="@container/query overflow-hidden rounded-t-xl border bg-card">
 	<div
-		class="flex h-14 items-center gap-3 px-3 transition-colors sm:px-4 {focused
+		class="flex min-h-14 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 transition-colors sm:px-4 {focused
 			? 'bg-card'
 			: 'bg-muted/30'}"
 	>
@@ -271,7 +271,7 @@
 			{/if}
 		</span>
 
-		<div class="relative min-w-0 flex-1">
+		<div class="relative min-w-40 flex-1">
 			<div
 				bind:this={overlay}
 				aria-hidden="true"
@@ -324,7 +324,7 @@
 			/>
 		</div>
 
-		<div class="flex shrink-0 items-center gap-1">
+		<div class="ml-auto flex shrink-0 items-center gap-1">
 			{#if countLabel}
 				<span class="px-1.5 text-xs text-muted-foreground tabular-nums @max-2xl/query:hidden"
 					>{countLabel}</span
@@ -358,7 +358,7 @@
 				<Button
 					variant="ghost"
 					size="sm"
-					class="h-8 gap-1.5 px-2 text-primary hover:bg-primary/10 hover:text-primary"
+					class="gap-1.5 px-2 text-primary hover:bg-primary/10 hover:text-primary"
 					aria-label="{findings.length} matched {queryWord}"
 					onclick={openFindings}
 				>
@@ -370,7 +370,7 @@
 			<Button
 				variant="ghost"
 				size="sm"
-				class="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+				class="gap-1.5 px-2 text-muted-foreground hover:text-foreground"
 				aria-label="Search syntax reference"
 				onclick={openHelp}
 			>

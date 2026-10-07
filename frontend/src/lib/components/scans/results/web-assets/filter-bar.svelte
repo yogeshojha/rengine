@@ -171,7 +171,7 @@
 		</ScrollArea>
 	</div>
 
-	<div class="flex flex-wrap items-center gap-2">
+	<div class="ml-auto flex min-w-0 flex-wrap items-center gap-2">
 		<ToggleGroup.Root
 			type="single"
 			variant="outline"

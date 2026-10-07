@@ -23,6 +23,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import { Badge } from '$lib/components/ui/badge';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
@@ -208,6 +210,30 @@
 			hasToken(queryText, token) ? withoutToken(queryText, token) : withToken(queryText, token),
 			true
 		);
+	}
+
+	let activeViews = $derived(
+		SAVED_VIEWS.filter((v) => hasToken(queryText, v.token)).map((v) => v.token)
+	);
+	let engineCount = $derived(
+		(scansStore.stats?.engines ?? []).filter((e) => hasToken(queryText, `engine:${quote(e.name)}`))
+			.length
+	);
+	let dateLabel = $derived(
+		scansStore.filters.startedFrom
+			? `Started ${formatShortDate(scansStore.filters.startedFrom, true)}${
+					scansStore.filters.startedTo
+						? ` to ${formatShortDate(new Date(new Date(scansStore.filters.startedTo).getTime() - 1), true)}`
+						: ' onward'
+				}`
+			: ''
+	);
+
+	function setViews(next: string[]) {
+		const changed = SAVED_VIEWS.find(
+			(v) => next.includes(v.token) !== activeViews.includes(v.token)
+		);
+		if (changed) toggleToken(changed.token);
 	}
 
 	function toggleSeverity(sev: string) {
@@ -469,6 +495,24 @@
 	</div>
 {/snippet}
 
+{#snippet chip(label: string, removeLabel: string, onRemove: () => void, labelClass = '')}
+	<Badge
+		variant="outline"
+		class="ml-1 max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal"
+	>
+		<span class="min-w-0 truncate {labelClass}" title={label}>{label}</span>
+		<Button
+			variant="ghost"
+			size="icon-xs"
+			class="size-4 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+			aria-label={removeLabel}
+			onclick={onRemove}
+		>
+			<X class="size-3" />
+		</Button>
+	</Badge>
+{/snippet}
+
 <Card.Root class="gap-0 overflow-hidden py-0">
 	<!-- strip -->
 	<div class="grid gap-x-8 gap-y-4 border-b px-4 py-4 lg:grid-cols-[auto_minmax(0,1fr)]">
@@ -551,16 +595,12 @@
 	<!-- filters -->
 	<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
 		<div class="flex min-w-[240px] flex-1 flex-col gap-1">
-			<div
-				class="flex h-9 items-center gap-2 rounded-md border bg-background px-2.5 focus-within:ring-2 focus-within:ring-ring/50 {parseError
-					? 'border-destructive'
-					: ''}"
-			>
-				<Search class="size-4 shrink-0 text-muted-foreground" />
-				<input
-					bind:this={searchEl}
+			<InputGroup.Root>
+				<InputGroup.Addon><Search /></InputGroup.Addon>
+				<InputGroup.Input
+					bind:ref={searchEl}
 					id="scan-history-search"
-					class="h-full min-w-0 flex-1 bg-transparent font-mono text-sm outline-none placeholder:font-sans placeholder:text-muted-foreground"
+					class="font-mono placeholder:font-sans"
 					placeholder={targetId
 						? 'engine:default severity:critical status:failed is:added'
 						: 'target:acme severity:critical status:failed is:added'}
@@ -574,17 +614,18 @@
 					aria-invalid={!!parseError}
 					aria-describedby={parseError ? 'scan-history-search-error' : undefined}
 				/>
-				{#if queryText}
-					<button
-						type="button"
-						class="rounded text-muted-foreground hover:text-foreground"
-						aria-label="Clear search"
-						onclick={() => setQuery('', true)}><X class="size-3.5" /></button
-					>
-				{:else}
-					<Kbd class="hidden sm:inline-flex">/</Kbd>
-				{/if}
-			</div>
+				<InputGroup.Addon align="inline-end">
+					{#if queryText}
+						<InputGroup.Button
+							size="icon-xs"
+							aria-label="Clear search"
+							onclick={() => setQuery('', true)}><X /></InputGroup.Button
+						>
+					{:else}
+						<Kbd class="hidden sm:inline-flex">/</Kbd>
+					{/if}
+				</InputGroup.Addon>
+			</InputGroup.Root>
 			{#if parseError}
 				<p id="scan-history-search-error" class="text-2xs text-destructive">{parseError}</p>
 			{/if}
@@ -594,7 +635,17 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button {...props} variant="outline" class="h-9">Engine</Button>
+							<Button
+								{...props}
+								variant="outline"
+								class={engineCount ? 'border-primary/50 bg-primary/5' : ''}
+								aria-label={engineCount ? `Engine, ${engineCount} selected` : 'Engine'}
+							>
+								Engine
+								{#if engineCount}
+									<Badge variant="secondary" class="h-5 px-1.5 text-xs">{engineCount}</Badge>
+								{/if}
+							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content align="end" class="w-56">
@@ -603,6 +654,7 @@
 							<DropdownMenu.CheckboxItem
 								checked={hasToken(queryText, token)}
 								onCheckedChange={() => toggleToken(token)}
+								closeOnSelect={false}
 							>
 								<span class="flex-1 truncate">{e.name}</span>
 								<span class="font-mono text-2xs text-muted-foreground">{e.count}</span>
@@ -614,13 +666,7 @@
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button
-							{...props}
-							variant="outline"
-							size="icon"
-							class="size-9"
-							aria-label="Columns and density"
-						>
+						<Button {...props} variant="outline" size="icon" aria-label="Columns and density">
 							<Columns3 class="size-4" />
 						</Button>
 					{/snippet}
@@ -653,7 +699,6 @@
 						{...props}
 						variant="outline"
 						size="icon"
-						class="size-9"
 						aria-label="Refresh"
 						onclick={() => scansStore.refresh()}
 					>
@@ -667,7 +712,7 @@
 						{...props}
 						variant="outline"
 						size="icon"
-						class="hidden size-9 sm:inline-flex"
+						class="hidden sm:inline-flex"
 						aria-label="Keyboard shortcuts"
 						onclick={() => (shortcutsOpen = true)}
 					>
@@ -680,7 +725,6 @@
 					<span {...props} class="inline-flex">
 						<LoadingButton
 							variant="outline"
-							class="h-9"
 							disabled={!canCancelAll}
 							loading={cancellingAll}
 							loadingLabel="Cancelling"
@@ -692,68 +736,44 @@
 				{/snippet}
 			</Hint>
 			{#if onLaunch}
-				<Button class="h-9" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
+				<Button onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
 			{/if}
 		</div>
 	</div>
 
 	<!-- saved views and active filters -->
 	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-		{#each SAVED_VIEWS as v (v.token)}
-			{@const on = hasToken(queryText, v.token)}
-			<button
-				type="button"
-				class="rounded-full border px-2.5 py-0.5 text-xs transition-colors {on
-					? 'border-foreground/40 bg-foreground text-background'
-					: 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'}"
-				aria-pressed={on}
-				onclick={() => toggleToken(v.token)}
-			>
-				{v.label}
-			</button>
-		{/each}
+		<ToggleGroup.Root
+			type="multiple"
+			variant="outline"
+			size="sm"
+			spacing={1}
+			value={activeViews}
+			onValueChange={setViews}
+			aria-label="Saved views"
+			class="flex-wrap"
+		>
+			{#each SAVED_VIEWS as v (v.token)}
+				<ToggleGroup.Item value={v.token} class="rounded-full font-normal">
+					{v.label}
+				</ToggleGroup.Item>
+			{/each}
+		</ToggleGroup.Root>
 		{#if scoped}
-			<span
-				class="ml-1 inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
-			>
-				<span class="min-w-0 truncate {targetIds?.length === 1 ? 'font-mono' : 'tabular-nums'}"
-					>{scopeLabel}</span
-				>
-				<button
-					type="button"
-					aria-label="Remove target filter"
-					class="text-muted-foreground hover:text-foreground"
-					onclick={() => onClearScope?.()}
-				>
-					<X class="size-3" />
-				</button>
-			</span>
+			{@render chip(
+				scopeLabel ?? '',
+				'Remove target filter',
+				() => onClearScope?.(),
+				targetIds?.length === 1 ? 'font-mono' : 'tabular-nums'
+			)}
 		{/if}
 		{#if scansStore.filters.startedFrom}
-			<span
-				class="ml-1 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs"
-			>
-				Started {formatShortDate(scansStore.filters.startedFrom, true)}{scansStore.filters.startedTo
-					? ` to ${formatShortDate(new Date(new Date(scansStore.filters.startedTo).getTime() - 1), true)}`
-					: ' onward'}
-				<button
-					type="button"
-					aria-label="Remove date filter"
-					class="text-muted-foreground hover:text-foreground"
-					onclick={() => scansStore.setRange(null, null)}
-				>
-					<X class="size-3" />
-				</button>
-			</span>
+			{@render chip(dateLabel, 'Remove date filter', () => scansStore.setRange(null, null))}
 		{/if}
 		{#if filtered}
-			<button
-				type="button"
-				class="ml-auto text-xs text-muted-foreground hover:text-foreground"
-				onclick={clearAll}
-			>
+			<Button variant="ghost" size="xs" class="ml-auto text-muted-foreground" onclick={clearAll}>
 				Clear all
-			</button>
+			</Button>
 		{/if}
 	</div>
 

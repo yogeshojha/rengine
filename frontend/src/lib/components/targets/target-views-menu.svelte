@@ -93,32 +93,34 @@
 			<DropdownMenu.Label>Saved</DropdownMenu.Label>
 			{#each views as view (view.name)}
 				{@const active = view.query === currentQuery}
-				<div class="flex items-center gap-1 px-1 py-0.5">
-					<button
-						type="button"
-						onclick={() => {
-							menuOpen = false;
-							onApply(view.query);
-						}}
-						aria-current={active ? 'true' : undefined}
-						class="flex h-9 flex-1 items-center gap-2 truncate rounded-sm px-2 text-left text-sm hover:bg-accent"
+				<DropdownMenu.Item
+					onSelect={() => onApply(view.query)}
+					aria-current={active ? 'true' : undefined}
+				>
+					<Check class={active ? 'opacity-100' : 'opacity-0'} />
+					<span class="min-w-0 truncate {active ? 'font-medium' : ''}" title={view.name}
+						>{view.name}</span
 					>
-						<Check class="h-4 w-4 shrink-0 {active ? 'opacity-100' : 'opacity-0'}" />
-						<span class="truncate {active ? 'font-medium' : ''}">{view.name}</span>
-					</button>
-					<button
-						type="button"
-						aria-label="Delete view {view.name}"
-						class="flex size-9 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-destructive"
-						onclick={() => {
-							menuOpen = false;
-							pendingDelete = view;
-						}}
-					>
-						<Trash2 class="h-3.5 w-3.5" />
-					</button>
-				</div>
+				</DropdownMenu.Item>
 			{/each}
+			<DropdownMenu.Separator />
+			<DropdownMenu.Sub>
+				<DropdownMenu.SubTrigger class="gap-2">
+					<Trash2 class="size-4 text-muted-foreground" />
+					Delete a view
+				</DropdownMenu.SubTrigger>
+				<DropdownMenu.SubContent class="w-56">
+					{#each views as view (view.name)}
+						<DropdownMenu.Item
+							variant="destructive"
+							onSelect={() => (pendingDelete = view)}
+							aria-label="Delete view {view.name}"
+						>
+							<span class="min-w-0 truncate" title={view.name}>{view.name}</span>
+						</DropdownMenu.Item>
+					{/each}
+				</DropdownMenu.SubContent>
+			</DropdownMenu.Sub>
 		{/if}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
