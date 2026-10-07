@@ -220,8 +220,8 @@
 					Checked after each scan. Sent to the channels subscribed to Tripwires.
 				</p>
 			{:else}
-				<p class="text-xs text-destructive">
-					A query is required. Type one in the search bar first.
+				<p class="text-xs text-muted-foreground">
+					Type a query in the search bar to set a tripwire on it.
 				</p>
 			{/if}
 		</div>

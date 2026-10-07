@@ -64,10 +64,14 @@
 		columnsLocked = false
 	}: Props = $props();
 
-	let groupLabel = $derived(dimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
+	// a single scan covers one target, so grouping by target says nothing
+	let groupDimensions = $derived(
+		scanId ? dimensions.filter((d) => d.key !== 'target') : dimensions
+	);
+	let groupLabel = $derived(groupDimensions.find((d) => d.key === groupBy)?.label ?? 'Group');
 </script>
 
-{#if showGroupBy && dimensions.length}
+{#if showGroupBy && groupDimensions.length}
 	<ButtonGroup>
 		<DropdownMenu.Root>
 			<Tooltip.Root>
@@ -97,7 +101,7 @@
 				<DropdownMenu.Separator />
 				<DropdownMenu.RadioGroup value={groupBy} onValueChange={onGroupBy}>
 					<DropdownMenu.RadioItem value="">No grouping</DropdownMenu.RadioItem>
-					{#each dimensions as groupDimension (groupDimension.key)}
+					{#each groupDimensions as groupDimension (groupDimension.key)}
 						<DropdownMenu.RadioItem value={groupDimension.key}>
 							{groupDimension.label}
 						</DropdownMenu.RadioItem>
