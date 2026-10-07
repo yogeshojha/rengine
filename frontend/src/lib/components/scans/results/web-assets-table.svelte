@@ -28,7 +28,9 @@
 		rowPadding,
 		selectAllState,
 		withTarget,
-		writePref
+		writePref,
+		fitColumns,
+		trackWidth
 	} from './table/columns';
 	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import AssetRow from './web-assets/asset-row.svelte';
@@ -211,8 +213,13 @@
 				: DEFAULT_VISIBLE_COLUMNS.filter((k) => k !== 'ports'))
 	);
 	let allColumns = $derived(withTarget(WEB_ASSET_COLUMNS, projectWide));
-	let shownColumns = $derived(
+	let chosenColumns = $derived(
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
+	let tableWidth = $state(0);
+	let shownColumns = $derived(fitColumns(chosenColumns, tableWidth, WEB_ASSET_LEAD_COLUMNS, true));
+	let foldedColumns = $derived(
+		chosenColumns.filter((c) => !shownColumns.includes(c)).map((c) => c.key)
 	);
 	let checkedCount = $derived(selection.countOn(items));
 	let pickedCount = $derived(selection.size);
@@ -952,7 +959,10 @@
 	</QueryBar>
 </div>
 
-<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
+<Card.Root
+	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
+	{@attach trackWidth((w) => (tableWidth = w))}
+>
 	<div class="border-b px-2">
 		<CountTabs
 			tabs={STATUS_CLASS_TABS}
@@ -976,6 +986,7 @@
 		}}
 		columns={WEB_ASSET_COLUMNS}
 		{visible}
+		folded={foldedColumns}
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}

@@ -5,7 +5,7 @@ export const WEB_ASSET_LEAD_COLUMNS: TableColumn[] = [
 		key: 'name',
 		label: 'Host',
 		sort: 'name',
-		width: 'min-w-0 flex-[3] contain-inline-size sm:min-w-56'
+		width: 'min-w-0 flex-[3] contain-inline-size sm:min-w-52'
 	},
 	{ key: 'status', label: 'Status', sort: 'status', width: 'w-16 shrink-0' },
 	{ key: 'title', label: 'Title', sort: 'title', width: 'hidden min-w-40 flex-[2] sm:flex' }

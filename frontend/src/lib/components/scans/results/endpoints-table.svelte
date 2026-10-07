@@ -24,7 +24,9 @@
 		readPref,
 		rowPadding,
 		selectAllState,
-		writePref
+		writePref,
+		fitColumns,
+		trackWidth
 	} from './table/columns';
 	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import ListHeader from './table/list-header.svelte';
@@ -53,7 +55,9 @@
 		DEFAULT_VISIBLE_ENDPOINT_COLUMNS,
 		DEFAULT_VISIBLE_OUTLINE_COLUMNS,
 		HOST_COLUMNS,
-		OUTLINE_HIDDEN_COLUMNS
+		HOST_LEAD_COLUMNS,
+		OUTLINE_HIDDEN_COLUMNS,
+		OUTLINE_LEAD_COLUMNS
 	} from './endpoints/columns';
 
 	import { endpointsApi } from '$lib/api/scan-results';
@@ -260,7 +264,19 @@
 				? (outlineColumnsPref ?? DEFAULT_VISIBLE_OUTLINE_COLUMNS)
 				: (listColumnsPref ?? DEFAULT_VISIBLE_ENDPOINT_COLUMNS)
 	);
-	let shownColumns = $derived(columnOptions.filter((c) => visible.includes(c.key)));
+	let chosenColumns = $derived(columnOptions.filter((c) => visible.includes(c.key)));
+	let tableWidth = $state(0);
+	let shownColumns = $derived(
+		fitColumns(
+			chosenColumns,
+			tableWidth,
+			atEstate ? HOST_LEAD_COLUMNS : isTree ? OUTLINE_LEAD_COLUMNS : ENDPOINT_LEAD_COLUMNS,
+			!atEstate && !isTree
+		)
+	);
+	let foldedColumns = $derived(
+		chosenColumns.filter((c) => !shownColumns.includes(c)).map((c) => c.key)
+	);
 	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
 	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
 	let rowPad = $derived(rowPadding(density));
@@ -1203,7 +1219,10 @@
 	</EmptyState>
 {/snippet}
 
-<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
+<Card.Root
+	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
+	{@attach trackWidth((w) => (tableWidth = w))}
+>
 	<div class="border-b px-2">
 		<CountTabs
 			tabs={classTabs}
@@ -1275,6 +1294,7 @@
 		dimensions={endpointQuerySchema.schema.group_dimensions}
 		columns={columnOptions}
 		{visible}
+		folded={foldedColumns}
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}

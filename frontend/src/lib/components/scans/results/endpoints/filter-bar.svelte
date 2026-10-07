@@ -23,6 +23,7 @@
 		dimensions: QueryGroupSpec[];
 		columns: TableColumn[];
 		visible: string[];
+		folded?: string[];
 		onToggleColumn: (key: string) => void;
 		density: string;
 		onDensity: (d: string) => void;
@@ -58,6 +59,7 @@
 		dimensions,
 		columns,
 		visible,
+		folded = [],
 		onToggleColumn,
 		density,
 		onDensity,
@@ -287,7 +289,7 @@
 						<span {...props} class="inline-flex">
 							<ToggleGroup.Item value={lens.value} class="h-9 gap-1.5 px-3" aria-label={lens.label}>
 								<lens.icon class="size-4" />
-								<span class="hidden text-sm font-normal lg:inline">{lens.label}</span>
+								<span class="hidden text-sm font-normal 2xl:inline">{lens.label}</span>
 							</ToggleGroup.Item>
 						</span>
 					{/snippet}
@@ -322,6 +324,7 @@
 			{onSort}
 			{columns}
 			{visible}
+			{folded}
 			{onToggleColumn}
 			{density}
 			{onDensity}

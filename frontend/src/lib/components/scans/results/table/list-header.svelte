@@ -100,7 +100,11 @@
 		{/if}
 		{#each lead as col (col.key)}
 			<div
-				class="{col.grow === undefined ? '' : col.grow ? 'min-w-0 flex-1' : 'shrink-0'} {col.width}"
+				class="{col.grow === undefined
+					? ''
+					: col.grow
+						? 'min-w-0 flex-1'
+						: 'shrink-0'} {col.width} {col.align === 'right' ? 'flex justify-end' : ''}"
 			>
 				{@render cell(col)}
 			</div>

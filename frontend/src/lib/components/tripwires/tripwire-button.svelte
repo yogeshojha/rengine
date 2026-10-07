@@ -4,6 +4,7 @@
 	import Zap from '@lucide/svelte/icons/zap';
 	import { toast } from 'svelte-sonner';
 	import * as Popover from '$lib/components/ui/popover';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -150,14 +151,21 @@
 </script>
 
 <Popover.Root bind:open>
-	<Popover.Trigger>
-		{#snippet child({ props })}
-			<Button {...props} variant="outline" class={klass} aria-label="Tripwire on this query">
-				<Zap class="h-4 w-4" />
-				<span class="hidden sm:inline">Tripwire</span>
-			</Button>
-		{/snippet}
-	</Popover.Trigger>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props: tip })}
+				<Popover.Trigger {...tip}>
+					{#snippet child({ props })}
+						<Button {...props} variant="outline" class={klass} aria-label="Tripwire on this query">
+							<Zap class="h-4 w-4" />
+							<span class="hidden 2xl:inline">Tripwire</span>
+						</Button>
+					{/snippet}
+				</Popover.Trigger>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content class="2xl:hidden">Tripwire on this query</Tooltip.Content>
+	</Tooltip.Root>
 	<Popover.Content class="w-[min(24rem,calc(100vw-2rem))] p-0" align="end">
 		<div class="flex flex-col gap-4 p-4">
 			<div class="flex flex-col gap-1.5">

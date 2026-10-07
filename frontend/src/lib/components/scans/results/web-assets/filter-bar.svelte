@@ -23,6 +23,7 @@
 		onView: (v: string) => void;
 		columns: TableColumn[];
 		visible: string[];
+		folded?: string[];
 		onToggleColumn: (key: string) => void;
 		density: string;
 		onDensity: (d: string) => void;
@@ -51,6 +52,7 @@
 		onView,
 		columns,
 		visible,
+		folded = [],
 		onToggleColumn,
 		density,
 		onDensity,
@@ -234,6 +236,7 @@
 			{onSort}
 			{columns}
 			{visible}
+			{folded}
 			{onToggleColumn}
 			{density}
 			{onDensity}

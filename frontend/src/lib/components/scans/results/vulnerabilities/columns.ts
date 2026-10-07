@@ -20,12 +20,12 @@ export const ISSUE_LEAD_COLUMNS: TableColumn[] = [
 		key: 'issue',
 		label: 'Weakness',
 		sort: 'risk',
-		width: 'min-w-0 flex-1 contain-inline-size sm:w-[23rem] sm:flex-none'
+		width: 'min-w-0 flex-1 contain-inline-size sm:w-80 sm:flex-none'
 	}
 ];
 
 export const ISSUE_COLUMNS: TableColumn[] = [
-	{ key: 'affected', label: 'Affected', sort: 'host', width: 'min-w-52 max-w-[22rem]', grow: true },
+	{ key: 'affected', label: 'Affected', sort: 'host', width: 'min-w-52', grow: true },
 	{ key: 'risk', label: 'Risk', sort: 'cvss', width: 'w-36' },
 	{ key: 'review', label: 'Review', width: 'w-28' },
 	{ key: 'seen', label: 'First seen', sort: 'seen', width: 'w-24' }

@@ -24,7 +24,9 @@
 		rowPadding,
 		selectAllState,
 		withTarget,
-		writePref
+		writePref,
+		fitColumns,
+		trackWidth
 	} from './table/columns';
 	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import ResultsPagination from './table/results-pagination.svelte';
@@ -163,8 +165,13 @@
 	let selectedIndex = $derived(selected ? items.findIndex((s) => s.id === selected?.id) : -1);
 	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_SERVICE_COLUMNS);
 	let allColumns = $derived(withTarget(SERVICE_COLUMNS, projectWide));
-	let shownColumns = $derived(
+	let chosenColumns = $derived(
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
+	let tableWidth = $state(0);
+	let shownColumns = $derived(fitColumns(chosenColumns, tableWidth, SERVICE_LEAD_COLUMNS, true));
+	let foldedColumns = $derived(
+		chosenColumns.filter((c) => !shownColumns.includes(c)).map((c) => c.key)
 	);
 	let checkedCount = $derived(selection.countOn(items));
 	let pickedCount = $derived(selection.size);
@@ -607,7 +614,10 @@
 	/>
 </div>
 
-<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
+<Card.Root
+	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
+	{@attach trackWidth((w) => (tableWidth = w))}
+>
 	<div class="border-b px-2">
 		<CountTabs
 			tabs={SERVICE_CLASS_TABS}
@@ -625,6 +635,7 @@
 		dimensions={serviceQuerySchema.schema.group_dimensions}
 		columns={SERVICE_COLUMNS}
 		{visible}
+		folded={foldedColumns}
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}

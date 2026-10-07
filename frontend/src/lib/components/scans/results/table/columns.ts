@@ -39,8 +39,75 @@ export function rowTone(active: boolean, focused: boolean): string {
 }
 
 export function columnCell(col: TableColumn): string {
-	const grow = col.grow ? 'min-w-0 flex-1' : 'shrink-0';
+	// contain-inline-size: a growing column fills the row but never widens it past the card
+	const grow = col.grow
+		? `flex-1 contain-inline-size ${/(^|\s)min-w-/.test(col.width) ? '' : 'min-w-0'}`
+		: 'shrink-0';
 	return `hidden sm:flex ${grow} ${col.width} ${col.align === 'right' ? 'justify-end' : ''}`;
+}
+
+// row chrome around the columns, in px: px-4 padding, checkbox + gap, pinned actions (sm:w-[5.75rem])
+const ROW_PAD_PX = 32;
+const SELECT_PX = 16 + 12;
+const ACTIONS_PX = 92;
+const GAP_PX = 12;
+
+function sizePx(token: string): number {
+	const m = token.match(/^(?:min-)?w-(?:\[(\d+(?:\.\d+)?)(px|rem)\]|(\d+(?:\.\d+)?))$/);
+	if (!m) return 0;
+	if (m[3]) return Number(m[3]) * 4;
+	return m[2] === 'rem' ? Number(m[1]) * 16 : Number(m[1]);
+}
+
+/** The narrowest a column gets at desktop widths: its `w-*` / `min-w-*`, `sm:` winning. */
+export function columnPx(col: TableColumn): number {
+	const size: Record<'w' | 'min', number> = { w: 0, min: 0 };
+	const desktop = new Set<string>();
+	for (const raw of col.width.split(/\s+/)) {
+		const sm = raw.startsWith('sm:');
+		const token = sm ? raw.slice(3) : raw;
+		const prop = token.startsWith('min-w-') ? 'min' : token.startsWith('w-') ? 'w' : null;
+		if (!prop || (!sm && desktop.has(prop))) continue;
+		if (sm) desktop.add(prop);
+		size[prop] = sizePx(token);
+	}
+	return Math.max(size.w, size.min);
+}
+
+/**
+ * The chosen columns that fit beside the lead columns in `width` px, in order; the rest fold
+ * away until there is room, like the targets list. 0 means not measured yet, so keep them all.
+ */
+export function fitColumns(
+	columns: TableColumn[],
+	width: number,
+	lead: TableColumn[],
+	selectable = true
+): TableColumn[] {
+	if (!width) return columns;
+	let room =
+		width -
+		ROW_PAD_PX -
+		ACTIONS_PX -
+		(selectable ? SELECT_PX : 0) -
+		lead.reduce((n, col) => n + columnPx(col) + GAP_PX, 0);
+	const fitted: TableColumn[] = [];
+	for (const col of columns) {
+		const need = columnPx(col) + GAP_PX;
+		if (need > room) break;
+		room -= need;
+		fitted.push(col);
+	}
+	return fitted;
+}
+
+/** Calls back with an element's content width as it resizes. */
+export function trackWidth(set: (width: number) => void) {
+	return (node: HTMLElement) => {
+		const observer = new ResizeObserver(([entry]) => set(Math.floor(entry.contentRect.width)));
+		observer.observe(node);
+		return () => observer.disconnect();
+	};
 }
 
 export function selectAllState(checked: number, total: number): boolean | 'indeterminate' {

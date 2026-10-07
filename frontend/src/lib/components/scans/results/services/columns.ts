@@ -16,7 +16,7 @@ export const SERVICE_LEAD_COLUMNS: TableColumn[] = [
 ];
 
 export const SERVICE_COLUMNS: TableColumn[] = [
-	{ key: 'hosts', label: 'Web assets', sort: 'hosts', width: 'min-w-56 max-w-[18rem]', grow: true },
+	{ key: 'hosts', label: 'Web assets', sort: 'hosts', width: 'min-w-56', grow: true },
 	{ key: 'web', label: 'Web', sort: 'status', width: 'w-40' },
 	{ key: 'network', label: 'Network', sort: 'asn', width: 'w-44' },
 	{ key: 'country', label: 'Country', sort: 'country', width: 'w-20' },

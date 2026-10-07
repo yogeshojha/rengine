@@ -27,7 +27,9 @@
 		selectAllState,
 		TARGET_COLUMN,
 		withTarget,
-		writePref
+		writePref,
+		fitColumns,
+		trackWidth
 	} from './table/columns';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
@@ -148,8 +150,23 @@
 
 	let visible = $derived(visiblePref ?? DEFAULT_VISIBLE_SOFTWARE_COLUMNS);
 	let allColumns = $derived(withTarget(SOFTWARE_COLUMNS, projectWide));
-	let shownColumns = $derived(
+	let chosenColumns = $derived(
 		allColumns.filter((c) => visible.includes(c.key) || c.key === 'target')
+	);
+	let tableWidth = $state(0);
+	let fittedColumns = $derived(
+		fitColumns(
+			chosenColumns.filter((c) => c.key !== 'target'),
+			tableWidth,
+			projectWide ? [TARGET_COLUMN, ...SOFTWARE_LEAD_COLUMNS] : SOFTWARE_LEAD_COLUMNS,
+			true
+		)
+	);
+	let shownColumns = $derived(
+		chosenColumns.filter((c) => c.key === 'target' || fittedColumns.includes(c))
+	);
+	let foldedColumns = $derived(
+		chosenColumns.filter((c) => !shownColumns.includes(c)).map((c) => c.key)
 	);
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 	let checkedCount = $derived(selection.countOn(items));
@@ -429,7 +446,10 @@
 	/>
 </div>
 
-<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
+<Card.Root
+	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
+	{@attach trackWidth((w) => (tableWidth = w))}
+>
 	<div class="flex items-center gap-3 border-b pr-3 pl-2">
 		<div class="min-w-0 flex-1">
 			<CountTabs
@@ -505,6 +525,7 @@
 				{onSort}
 				columns={SOFTWARE_COLUMNS}
 				{visible}
+				folded={foldedColumns}
 				onToggleColumn={toggleColumn}
 				{density}
 				onDensity={(d) => (density = d)}

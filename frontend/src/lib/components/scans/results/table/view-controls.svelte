@@ -4,6 +4,7 @@
 	import X from '@lucide/svelte/icons/x';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
 	import ExportMenu from '../export-menu.svelte';
@@ -23,6 +24,8 @@
 		onSort: (key: string) => void;
 		columns: TableColumn[];
 		visible: string[];
+		/** chosen columns with no room at this width */
+		folded?: string[];
 		onToggleColumn: (key: string) => void;
 		density: string;
 		onDensity: (d: string) => void;
@@ -47,6 +50,7 @@
 		onSort,
 		columns,
 		visible,
+		folded = [],
 		onToggleColumn,
 		density,
 		onDensity,
@@ -66,19 +70,28 @@
 {#if showGroupBy && dimensions.length}
 	<ButtonGroup>
 		<DropdownMenu.Root>
-			<DropdownMenu.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="outline"
-						class={groupBy ? 'border-primary/50 bg-primary/5' : ''}
-						aria-label={groupBy ? `Group by ${groupLabel}` : 'Group by'}
-					>
-						<Layers class="h-4 w-4" />
-						<span class="hidden sm:inline">{groupLabel}</span>
-					</Button>
-				{/snippet}
-			</DropdownMenu.Trigger>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					{#snippet child({ props: tip })}
+						<DropdownMenu.Trigger {...tip}>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="outline"
+									class={groupBy ? 'border-primary/50 bg-primary/5' : ''}
+									aria-label={groupBy ? `Group by ${groupLabel}` : 'Group by'}
+								>
+									<Layers class="h-4 w-4" />
+									<span class="hidden 2xl:inline">{groupLabel}</span>
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+					{/snippet}
+				</Tooltip.Trigger>
+				<Tooltip.Content class="2xl:hidden">
+					{groupBy ? `Grouped by ${groupLabel}` : 'Group by'}
+				</Tooltip.Content>
+			</Tooltip.Root>
 			<DropdownMenu.Content align="end" class="w-52">
 				<DropdownMenu.Label>Group by</DropdownMenu.Label>
 				<DropdownMenu.Separator />
@@ -112,15 +125,22 @@
 
 {#if !groupBy && showColumns}
 	<DropdownMenu.Root>
-		<DropdownMenu.Trigger>
-			{#snippet child({ props })}
-				<Button {...props} variant="outline" aria-label="Columns">
-					<Columns3 class="h-4 w-4" />
-					<span class="hidden sm:inline">Columns</span>
-				</Button>
-			{/snippet}
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="end" class="w-44">
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props: tip })}
+					<DropdownMenu.Trigger {...tip}>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" aria-label="Columns">
+								<Columns3 class="h-4 w-4" />
+								<span class="hidden 2xl:inline">Columns</span>
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Content class="2xl:hidden">Columns</Tooltip.Content>
+		</Tooltip.Root>
+		<DropdownMenu.Content align="end" class="w-60">
 			{#if !columnsLocked}
 				<DropdownMenu.Group>
 					<DropdownMenu.Label>Columns</DropdownMenu.Label>
@@ -131,6 +151,9 @@
 							closeOnSelect={false}
 						>
 							{col.label}
+							{#if folded.includes(col.key)}
+								<span class="ms-auto text-2xs text-muted-foreground">Hidden at this width</span>
+							{/if}
 						</DropdownMenu.CheckboxItem>
 					{/each}
 				</DropdownMenu.Group>

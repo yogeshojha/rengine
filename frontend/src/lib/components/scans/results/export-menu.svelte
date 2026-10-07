@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { EXPORT_FORMATS, ExportStatus, FORMAT_LABELS, isLive } from '$lib/config/exports';
 	import { exportsStore } from '$lib/stores/exports.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -85,24 +86,31 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger>
-		{#snippet child({ props })}
-			<Button
-				{...props}
-				variant={compact ? 'ghost' : 'outline'}
-				size={compact ? 'sm' : 'default'}
-				disabled={!projectId}
-				aria-label="Export"
-			>
-				{#if pending || live}
-					<Spinner class={compact ? 'size-3.5' : 'size-4'} />
-				{:else}
-					<Download class={compact ? 'size-3.5 text-muted-foreground' : 'size-4'} />
-				{/if}
-				<span class={compact ? '' : 'hidden sm:inline'}>Export</span>
-			</Button>
-		{/snippet}
-	</DropdownMenu.Trigger>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props: tip })}
+				<DropdownMenu.Trigger {...tip}>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant={compact ? 'ghost' : 'outline'}
+							size={compact ? 'sm' : 'default'}
+							disabled={!projectId}
+							aria-label="Export"
+						>
+							{#if pending || live}
+								<Spinner class={compact ? 'size-3.5' : 'size-4'} />
+							{:else}
+								<Download class={compact ? 'size-3.5 text-muted-foreground' : 'size-4'} />
+							{/if}
+							<span class={compact ? '' : 'hidden 2xl:inline'}>Export</span>
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content class={compact ? 'hidden' : '2xl:hidden'}>Export</Tooltip.Content>
+	</Tooltip.Root>
 	<DropdownMenu.Content align={compact ? 'center' : 'end'} class="w-48">
 		<DropdownMenu.Label>{compact ? 'Export selection' : 'Export this view'}</DropdownMenu.Label>
 		<DropdownMenu.Separator />

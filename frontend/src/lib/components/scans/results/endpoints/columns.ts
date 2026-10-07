@@ -2,11 +2,11 @@ import type { TableColumn } from '../table/columns';
 
 export const ENDPOINT_LEAD_COLUMNS: TableColumn[] = [
 	{ key: 'status', label: 'Status', width: 'w-[5.5rem]', sort: 'status' },
-	{ key: 'path', label: 'Path', width: 'min-w-64 max-w-[30rem]', grow: true, sort: 'path' }
+	{ key: 'path', label: 'Path', width: 'min-w-64 contain-inline-size', grow: true, sort: 'path' }
 ];
 
 export const OUTLINE_LEAD_COLUMNS: TableColumn[] = [
-	{ key: 'path', label: 'Path', width: 'min-w-80 max-w-[44rem]', grow: true, sort: 'path' },
+	{ key: 'path', label: 'Path', width: 'min-w-80 contain-inline-size', grow: true, sort: 'path' },
 	{ key: 'status', label: 'Status', width: 'w-[5.5rem]', sort: 'status' }
 ];
 
@@ -27,7 +27,7 @@ export const DEFAULT_VISIBLE_ENDPOINT_COLUMNS = ['host', 'kind', 'params', 'size
 export const DEFAULT_VISIBLE_OUTLINE_COLUMNS = ['params', 'size', 'sources'];
 
 export const HOST_LEAD_COLUMNS: TableColumn[] = [
-	{ key: 'host', label: 'Host', width: 'min-w-80 max-w-[40rem]', grow: true, sort: 'host' },
+	{ key: 'host', label: 'Host', width: 'min-w-80 contain-inline-size', grow: true, sort: 'host' },
 	{ key: 'endpoints', label: 'Endpoints', width: 'w-[8.5rem]', align: 'right', sort: 'endpoints' }
 ];
 

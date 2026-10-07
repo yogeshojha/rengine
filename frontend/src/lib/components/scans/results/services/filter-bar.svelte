@@ -15,6 +15,7 @@
 		dimensions: QueryGroupSpec[];
 		columns: TableColumn[];
 		visible: string[];
+		folded?: string[];
 		onToggleColumn: (key: string) => void;
 		density: string;
 		onDensity: (d: string) => void;
@@ -38,6 +39,7 @@
 		dimensions,
 		columns,
 		visible,
+		folded = [],
 		onToggleColumn,
 		density,
 		onDensity,
@@ -165,6 +167,7 @@
 			{onSort}
 			{columns}
 			{visible}
+			{folded}
 			{onToggleColumn}
 			{density}
 			{onDensity}

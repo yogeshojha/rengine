@@ -16,7 +16,7 @@ export const SOFTWARE_LEAD_COLUMNS: TableColumn[] = [
 ];
 
 export const SOFTWARE_COLUMNS: TableColumn[] = [
-	{ key: 'asset', label: 'Asset', sort: 'host', width: 'min-w-56 max-w-[22rem]', grow: true },
+	{ key: 'asset', label: 'Asset', sort: 'host', width: 'min-w-56', grow: true },
 	{ key: 'severity', label: 'Severity', sort: 'cvss', width: 'w-28' },
 	{ key: 'exploitation', label: 'Exploitation', sort: 'epss', width: 'w-36' },
 	{ key: 'evidence', label: 'Evidence', width: 'w-32' },
