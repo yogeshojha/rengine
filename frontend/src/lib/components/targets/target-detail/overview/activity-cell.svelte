@@ -173,11 +173,11 @@
 						aria-hidden="true"
 					></span>
 				</span>
-				<span class="flex min-w-0 flex-col gap-1.5 pb-[18px]">
+				<span class="flex min-w-0 flex-col gap-1.5 pb-4.5">
 					<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 						<a href={ROUTES.scan(s.id)} class="font-semibold hover:text-primary">{s.engine_name}</a>
 						<span
-							class="rounded-full px-[7px] text-2xs font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
+							class="rounded-full px-1.5 text-2xs font-semibold tracking-wide {SCAN_STATUS_PILL[
 								s.status
 							]}"
 						>
@@ -198,7 +198,7 @@
 						<span class="flex flex-wrap gap-1.5">
 							{#each counts as c (c.text)}
 								<span
-									class="rounded-md border px-[7px] py-px text-xs tabular-nums {c.up
+									class="rounded-md border px-1.5 py-px text-xs tabular-nums {c.up
 										? 'border-foreground/25 text-foreground'
 										: 'text-muted-foreground'}"
 								>
@@ -233,7 +233,7 @@
 						<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 							<a href={ROUTES.scan(r.id)} class="font-medium hover:text-primary">{r.engine_name}</a>
 							<span
-								class="rounded-full px-[7px] text-2xs font-semibold tracking-[0.02em] {SCAN_STATUS_PILL[
+								class="rounded-full px-1.5 text-2xs font-semibold tracking-wide {SCAN_STATUS_PILL[
 									r.status
 								]}"
 							>

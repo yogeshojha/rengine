@@ -80,7 +80,7 @@
 									</span>
 								{/snippet}
 							</Hint>
-							<span class="font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
+							<span class="font-mono text-2xs tracking-wide text-muted-foreground uppercase">
 								{e.label}
 							</span>
 						</svelte:element>

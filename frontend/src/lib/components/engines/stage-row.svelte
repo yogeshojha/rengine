@@ -299,14 +299,14 @@
 		background: color-mix(in oklch, var(--muted) 30%, transparent);
 	}
 	:global(.stage-row[data-support='true']) > .head .title {
-		font-weight: 450;
+		font-weight: 400;
 	}
 
 	.head {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		padding: 0 14px 0 12px;
+		gap: calc(var(--spacing) * 2.5);
+		padding: 0 calc(var(--spacing) * 3.5) 0 calc(var(--spacing) * 3);
 		min-height: 46px;
 	}
 	:global(.stage-row[data-support='true']) .head {
@@ -336,10 +336,10 @@
 	:global(.stage-row .disclose) {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 		flex: 1;
 		min-width: 0;
-		padding: 13px 4px 13px 0;
+		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 1) calc(var(--spacing) * 3) 0;
 		background: none;
 		border: none;
 		cursor: pointer;
@@ -359,7 +359,7 @@
 		transform: rotate(90deg);
 	}
 	.title {
-		font-size: 14px;
+		font-size: var(--text-sm);
 		font-weight: 500;
 		white-space: nowrap;
 		overflow: hidden;
@@ -377,11 +377,11 @@
 	.meta {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: calc(var(--spacing) * 2);
 		flex-shrink: 0;
 	}
 	.summary {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		white-space: nowrap;
 		overflow: hidden;
@@ -390,14 +390,14 @@
 		font-variant-numeric: tabular-nums;
 	}
 	.meta :global(.tag) {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		font-weight: 400;
-		padding: 1px 6px;
+		padding: 1px calc(var(--spacing) * 1.5);
 	}
 	.severities {
 		display: inline-flex;
-		gap: 6px;
-		font-size: 11px;
+		gap: calc(var(--spacing) * 1.5);
+		font-size: var(--text-2xs);
 		color: var(--foreground);
 	}
 	.severities > [data-kept='false'] {
@@ -405,12 +405,12 @@
 		opacity: 0.6;
 	}
 	.checks {
-		margin-top: 6px;
+		margin-top: calc(var(--spacing) * 1.5);
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 	}
 	.checks-head {
-		padding: 10px 0 6px;
-		font-size: 12px;
+		padding: calc(var(--spacing) * 2.5) 0 calc(var(--spacing) * 1.5);
+		font-size: var(--text-xs);
 		font-weight: 500;
 		color: var(--muted-foreground);
 	}
@@ -433,28 +433,28 @@
 	}
 
 	:global(.stage-row .body) {
-		padding: 0 16px 14px 32px;
+		padding: 0 calc(var(--spacing) * 4) calc(var(--spacing) * 3.5) calc(var(--spacing) * 8);
 	}
 	.desc {
-		font-size: 12px;
+		font-size: var(--text-xs);
 		color: var(--muted-foreground);
-		margin-bottom: 10px;
+		margin-bottom: calc(var(--spacing) * 2.5);
 		line-height: 1.5;
 	}
 	.tools {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px;
-		margin-bottom: 8px;
+		gap: calc(var(--spacing) * 1);
+		margin-bottom: calc(var(--spacing) * 2);
 	}
 	.tool {
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		line-height: 18px;
 		color: var(--muted-foreground);
 		background: var(--muted);
 		border-radius: 4px;
-		padding: 0 6px;
+		padding: 0 calc(var(--spacing) * 1.5);
 	}
 	.fields {
 		display: flex;
@@ -464,20 +464,20 @@
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 	}
 	:global(.stage-row .advanced) {
-		margin-top: 6px;
+		margin-top: calc(var(--spacing) * 1.5);
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 	}
 	:global(.stage-row .advanced-head) {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 		width: 100%;
-		padding: 10px 0 6px;
+		padding: calc(var(--spacing) * 2.5) 0 calc(var(--spacing) * 1.5);
 		background: none;
 		border: none;
 		cursor: pointer;
 		color: var(--muted-foreground);
-		font-size: 12px;
+		font-size: var(--text-xs);
 		font-weight: 500;
 	}
 	:global(.stage-row .advanced[data-state='open'] .advanced-head .chev) {
@@ -488,8 +488,8 @@
 		font-variant-numeric: tabular-nums;
 	}
 	.foot {
-		margin-top: 8px;
-		padding-top: 8px;
+		margin-top: calc(var(--spacing) * 2);
+		padding-top: calc(var(--spacing) * 2);
 		border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 	}
 
@@ -498,7 +498,7 @@
 			display: none;
 		}
 		:global(.stage-row .body) {
-			padding-left: 16px;
+			padding-left: calc(var(--spacing) * 4);
 		}
 	}
 </style>

@@ -109,10 +109,10 @@
 		min-height: 0;
 	}
 	.body {
-		padding: 14px 14px 20px;
+		padding: calc(var(--spacing) * 3.5) calc(var(--spacing) * 3.5) calc(var(--spacing) * 5);
 	}
 	.error {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--destructive);
 	}
 
@@ -120,31 +120,31 @@
 		border: 1px solid var(--border);
 		border-radius: 0.6rem;
 		background: color-mix(in oklch, var(--muted) 30%, transparent);
-		padding: 10px 12px 12px;
+		padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 3) calc(var(--spacing) * 3);
 	}
 	.phase-head {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: 8px;
-		margin-bottom: 8px;
+		gap: calc(var(--spacing) * 2);
+		margin-bottom: calc(var(--spacing) * 2);
 	}
 	.phase-head h3 {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.025em;
 		color: var(--muted-foreground);
 	}
 	.count {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		font-variant-numeric: tabular-nums;
 	}
 	.link {
 		width: 3px;
 		height: 14px;
-		margin-left: 12px;
+		margin-left: calc(var(--spacing) * 3);
 		background: radial-gradient(
 				circle,
 				color-mix(in oklch, var(--muted-foreground) 65%, transparent) 1px,
@@ -154,7 +154,7 @@
 	}
 	.link.phase-link {
 		height: 20px;
-		margin-left: 24px;
+		margin-left: calc(var(--spacing) * 6);
 	}
 
 	.level {
@@ -164,15 +164,16 @@
 	.items {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 		min-width: 0;
 		flex: 1;
 	}
 	.item {
 		display: flex;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 		align-items: flex-start;
-		padding: 5px 9px 5px 7px;
+		padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2) calc(var(--spacing) * 1)
+			calc(var(--spacing) * 1.5);
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		background: var(--card);
@@ -206,14 +207,14 @@
 		gap: 1px;
 	}
 	.name {
-		font-size: 12px;
+		font-size: var(--text-xs);
 		line-height: 16px;
 	}
 	.item:not([data-status='will_run']) .name {
 		color: var(--muted-foreground);
 	}
 	.sub {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		line-height: 1.35;
 		color: var(--muted-foreground);
 		font-variant-numeric: tabular-nums;

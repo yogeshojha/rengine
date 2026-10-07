@@ -11,7 +11,7 @@
 </script>
 
 <h3
-	class="flex gap-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase {Icon
+	class="flex gap-2 text-2xs font-semibold tracking-wide text-muted-foreground uppercase {Icon
 		? 'items-center'
 		: 'items-baseline'}"
 >

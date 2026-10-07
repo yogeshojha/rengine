@@ -141,18 +141,18 @@
 		display: flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 6px 14px;
+		gap: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3.5);
 		flex-shrink: 0;
 		min-height: 36px;
-		padding: 5px 16px;
+		padding: calc(var(--spacing) * 1) calc(var(--spacing) * 4);
 		border-bottom: 1px solid var(--border);
 		background: color-mix(in oklch, var(--muted) 45%, var(--background));
-		font-size: 12px;
+		font-size: var(--text-xs);
 	}
 	.lens {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 	}
 	.dim {
 		color: var(--muted-foreground);
@@ -160,7 +160,7 @@
 	.stat {
 		display: inline-flex;
 		align-items: baseline;
-		gap: 4px;
+		gap: calc(var(--spacing) * 1);
 		font-variant-numeric: tabular-nums;
 	}
 	.stat strong {
@@ -170,14 +170,14 @@
 		display: inline-flex;
 		align-items: center;
 		flex-wrap: wrap;
-		gap: 4px;
+		gap: calc(var(--spacing) * 1);
 		min-width: 0;
 	}
 	.tool {
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		line-height: 18px;
-		padding: 0 6px;
+		padding: 0 calc(var(--spacing) * 1.5);
 		border-radius: 4px;
 		background: var(--muted);
 		color: var(--muted-foreground);
@@ -194,7 +194,7 @@
 	.warn {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		gap: calc(var(--spacing) * 1);
 		color: var(--warning);
 		cursor: default;
 	}

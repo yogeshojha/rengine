@@ -67,7 +67,7 @@
 <svelte:head><title>{pageTitle(routeLabels.ai)}</title></svelte:head>
 
 {#if !status && (!settled || ai.isLoading)}
-	<Card.Root class="gap-3 p-5">
+	<Card.Root class="gap-3 p-4">
 		<Skeleton class="h-4 w-24" />
 		<Skeleton class="h-9 w-full" />
 		<Skeleton class="h-9 w-full" />

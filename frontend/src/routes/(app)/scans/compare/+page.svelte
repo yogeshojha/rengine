@@ -388,7 +388,7 @@
 
 <div class="flex min-h-0 flex-col">
 	{#if loading}
-		<div class="flex flex-col gap-4 p-5">
+		<div class="flex flex-col gap-4">
 			<Skeleton class="h-8 w-64" />
 			<Skeleton class="h-28" />
 			<Skeleton class="h-24" />
@@ -402,118 +402,120 @@
 			loading={runsLoading}
 		/>
 	{:else}
-		<div class="flex flex-wrap items-center gap-2 px-4 py-3 sm:px-5">
-			<Button
-				variant="ghost"
-				size="sm"
-				href={ROUTES.scan(comparison.current.scan_id)}
-				class="-ml-2"
-			>
-				<ArrowLeft class="size-4" />
-				Back to run
-			</Button>
-			<span class="flex items-center gap-2 text-sm">
-				<GitCompareArrows class="size-4 text-muted-foreground" />
-				<span class="font-medium">{comparison.target_value}</span>
-			</span>
-			<div class="ml-auto flex flex-wrap items-center gap-2">
-				<ToggleGroup.Root
-					type="single"
-					variant="outline"
-					value={mode}
-					onValueChange={(v) => v && setMode(v as CompareMode)}
-					aria-label="View"
+		<div class="-mx-6 flex flex-col">
+			<div class="flex flex-wrap items-center gap-2 px-6 pb-3">
+				<Button
+					variant="ghost"
+					size="sm"
+					href={ROUTES.scan(comparison.current.scan_id)}
+					class="-ml-2"
 				>
-					{#each COMPARE_MODES as key (key)}
-						<ToggleGroup.Item value={key} class="px-2.5 capitalize">
-							{key}
-						</ToggleGroup.Item>
-					{/each}
-				</ToggleGroup.Root>
-				{#if rescanSeed}
-					<Button variant="outline" size="sm" onclick={() => (rescanOpen = true)}>
-						<Play class="size-3.5" />
-						Rescan {plural(rescanAssets.length, 'asset')}
-					</Button>
-				{/if}
-				<Button variant="outline" size="sm" onclick={copyLink}>
-					<Link2 class="size-3.5" />
-					Copy link
+					<ArrowLeft class="size-4" />
+					Back to run
 				</Button>
+				<span class="flex items-center gap-2 text-sm">
+					<GitCompareArrows class="size-4 text-muted-foreground" />
+					<span class="font-medium">{comparison.target_value}</span>
+				</span>
+				<div class="ml-auto flex flex-wrap items-center gap-2">
+					<ToggleGroup.Root
+						type="single"
+						variant="outline"
+						value={mode}
+						onValueChange={(v) => v && setMode(v as CompareMode)}
+						aria-label="View"
+					>
+						{#each COMPARE_MODES as key (key)}
+							<ToggleGroup.Item value={key} class="px-2.5 capitalize">
+								{key}
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup.Root>
+					{#if rescanSeed}
+						<Button variant="outline" size="sm" onclick={() => (rescanOpen = true)}>
+							<Play class="size-3.5" />
+							Rescan {plural(rescanAssets.length, 'asset')}
+						</Button>
+					{/if}
+					<Button variant="outline" size="sm" onclick={copyLink}>
+						<Link2 class="size-3.5" />
+						Copy link
+					</Button>
+				</div>
 			</div>
-		</div>
 
-		<div class="border-y">
-			<RunHeader
+			<div class="border-y">
+				<RunHeader
+					baseline={comparison.baseline}
+					current={comparison.current}
+					{runs}
+					loading={runsLoading}
+					onPick={pick}
+					onSwap={swap}
+				/>
+			</div>
+
+			<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-6 pt-4 pb-3">
+				<h1 class="text-2xl font-semibold tracking-tight">{comparison.headline}</h1>
+				<span class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+					{#if apart}<span class="tabular-nums">{apart}</span>{/if}
+				</span>
+			</div>
+
+			<VerdictBanner {comparison} />
+
+			<DimensionStrip
+				dimensions={comparison.dimensions}
+				total={totalChanges}
+				active={activeTab}
+				onSelect={selectTab}
+			/>
+
+			<VerbFilter {counts} active={activeVerbs} {confirmed} onToggle={toggleVerb} />
+
+			{#if mode === 'diff'}
+				<ChangeDiff
+					{projectId}
+					current={comparison.current.scan_id}
+					baseline={comparison.baseline.scan_id}
+					dimension={activeTab}
+					verbs={activeVerbs}
+					filename="{comparison.target_value}-compare.diff"
+				/>
+			{:else}
+				<ChangeLedger
+					{rows}
+					total={rowTotal}
+					page={pageNumber}
+					size={COMPARE_PAGE_SIZE}
+					loading={rowsLoading}
+					error={rowsError}
+					onRetry={() => void loadRows()}
+					{digest}
+					showDimension={activeTab === COMPARE_TAB_ALL}
+					{covered}
+					notCoveredNote={delta?.verdict.note ?? ''}
+					anyVerbOn={activeVerbs.length > 0}
+					selectedKey={sheetOpen && selectedRow ? selectedRow.dimension + selectedRow.key : null}
+					noun={delta?.noun ?? 'change'}
+					nounPlural={delta?.noun_plural ?? 'changes'}
+					onOpen={openRow}
+					onPage={goPage}
+				/>
+			{/if}
+
+			<ChangeSheet
+				row={selectedRow}
 				baseline={comparison.baseline}
 				current={comparison.current}
-				{runs}
-				loading={runsLoading}
-				onPick={pick}
-				onSwap={swap}
+				open={sheetOpen}
+				index={sheetIndex}
+				total={rows.length}
+				onOpenChange={(v) => (sheetOpen = v)}
+				onStep={step}
 			/>
+
+			<LaunchDialog open={rescanOpen} rescan={rescanSeed} onClose={() => (rescanOpen = false)} />
 		</div>
-
-		<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-4 pb-3 sm:px-5">
-			<h1 class="text-2xl font-semibold tracking-tight">{comparison.headline}</h1>
-			<span class="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
-				{#if apart}<span class="tabular-nums">{apart}</span>{/if}
-			</span>
-		</div>
-
-		<VerdictBanner {comparison} />
-
-		<DimensionStrip
-			dimensions={comparison.dimensions}
-			total={totalChanges}
-			active={activeTab}
-			onSelect={selectTab}
-		/>
-
-		<VerbFilter {counts} active={activeVerbs} {confirmed} onToggle={toggleVerb} />
-
-		{#if mode === 'diff'}
-			<ChangeDiff
-				{projectId}
-				current={comparison.current.scan_id}
-				baseline={comparison.baseline.scan_id}
-				dimension={activeTab}
-				verbs={activeVerbs}
-				filename="{comparison.target_value}-compare.diff"
-			/>
-		{:else}
-			<ChangeLedger
-				{rows}
-				total={rowTotal}
-				page={pageNumber}
-				size={COMPARE_PAGE_SIZE}
-				loading={rowsLoading}
-				error={rowsError}
-				onRetry={() => void loadRows()}
-				{digest}
-				showDimension={activeTab === COMPARE_TAB_ALL}
-				{covered}
-				notCoveredNote={delta?.verdict.note ?? ''}
-				anyVerbOn={activeVerbs.length > 0}
-				selectedKey={sheetOpen && selectedRow ? selectedRow.dimension + selectedRow.key : null}
-				noun={delta?.noun ?? 'change'}
-				nounPlural={delta?.noun_plural ?? 'changes'}
-				onOpen={openRow}
-				onPage={goPage}
-			/>
-		{/if}
-
-		<ChangeSheet
-			row={selectedRow}
-			baseline={comparison.baseline}
-			current={comparison.current}
-			open={sheetOpen}
-			index={sheetIndex}
-			total={rows.length}
-			onOpenChange={(v) => (sheetOpen = v)}
-			onStep={step}
-		/>
-
-		<LaunchDialog open={rescanOpen} rescan={rescanSeed} onClose={() => (rescanOpen = false)} />
 	{/if}
 </div>

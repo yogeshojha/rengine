@@ -24,7 +24,7 @@
 
 {#if rows.length}
 	<section class="flex flex-col gap-2">
-		<h4 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+		<h4 class="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">
 			Shared with
 		</h4>
 		{#each rows as row (row.target_id)}

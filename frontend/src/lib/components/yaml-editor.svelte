@@ -325,7 +325,7 @@
 						'&': {
 							height: 'auto',
 							flex: '1 0 auto',
-							fontSize: '13px',
+							fontSize: 'var(--text-xs)',
 							backgroundColor: 'transparent',
 							color: 'var(--code-fg)'
 						},
@@ -369,7 +369,7 @@
 						'.cm-lineNumbers .cm-gutterElement': {
 							minWidth: '28px',
 							opacity: '0.55',
-							fontSize: '11.5px'
+							fontSize: 'var(--text-2xs)'
 						},
 						'.cm-activeLineGutter': { backgroundColor: 'transparent' },
 						'.cm-lineNumbers .cm-activeLineGutter': { opacity: '1', color: 'var(--foreground)' },
@@ -392,7 +392,7 @@
 							border: '1px solid var(--border)',
 							borderRadius: '8px',
 							boxShadow: 'var(--shadow-md)',
-							fontSize: '12px'
+							fontSize: 'var(--text-xs)'
 						},
 						'.cm-tooltip .cm-diagnostic': { padding: '5px 9px', borderLeft: 'none' },
 						'.cm-tooltip.cm-tooltip-autocomplete > ul': {
@@ -408,7 +408,7 @@
 							fontStyle: 'normal',
 							opacity: '0.6',
 							marginLeft: '10px',
-							fontSize: '11px'
+							fontSize: 'var(--text-2xs)'
 						},
 						'.cm-completionInfo': {
 							backgroundColor: 'var(--popover)',
@@ -418,7 +418,7 @@
 							padding: '7px 10px',
 							maxWidth: '300px',
 							fontFamily: 'var(--font-sans)',
-							fontSize: '12px',
+							fontSize: 'var(--text-xs)',
 							lineHeight: '1.5'
 						},
 						'.cm-panels': {
@@ -431,10 +431,10 @@
 						'.cm-panel.cm-search': {
 							padding: '7px 26px 7px 10px',
 							fontFamily: 'var(--font-sans)',
-							fontSize: '12px'
+							fontSize: 'var(--text-xs)'
 						},
 						'.cm-panel.cm-search input, .cm-panel.cm-search button': {
-							fontSize: '12px',
+							fontSize: 'var(--text-xs)',
 							borderRadius: '6px',
 							border: '1px solid var(--input)',
 							backgroundColor: 'var(--background)',
@@ -457,7 +457,7 @@
 							display: 'inline-flex',
 							alignItems: 'center',
 							gap: '4px',
-							fontSize: '12px',
+							fontSize: 'var(--text-xs)',
 							marginRight: '8px',
 							color: 'var(--muted-foreground)'
 						},
@@ -469,7 +469,7 @@
 							background: 'transparent',
 							color: 'var(--muted-foreground)',
 							padding: '0 6px',
-							fontSize: '16px',
+							fontSize: 'var(--text-base)',
 							lineHeight: '1'
 						}
 					})
@@ -640,7 +640,7 @@
 		align-items: center;
 		flex-shrink: 0;
 		height: 28px;
-		padding: 0 12px;
+		padding: 0 calc(var(--spacing) * 3);
 		border-bottom: 1px solid var(--border);
 		overflow: hidden;
 		white-space: nowrap;
@@ -649,12 +649,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px;
+		gap: calc(var(--spacing) * 3);
 		flex-shrink: 0;
 		height: 28px;
-		padding: 0 8px 0 10px;
+		padding: 0 calc(var(--spacing) * 2) 0 calc(var(--spacing) * 2.5);
 		border-top: 1px solid var(--border);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		overflow: hidden;
 	}
@@ -662,14 +662,14 @@
 	.status-right {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: calc(var(--spacing) * 3);
 		min-width: 0;
 		white-space: nowrap;
 	}
 	.ok {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		gap: calc(var(--spacing) * 1);
 		color: var(--success);
 	}
 	.dim {
@@ -678,7 +678,7 @@
 	.hint {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
+		gap: calc(var(--spacing) * 1);
 	}
 	@media (max-width: 640px) {
 		.hint {
@@ -700,7 +700,7 @@
 		display: block;
 		width: 7px;
 		height: 7px;
-		margin: 9px 0 0 3px;
+		margin: calc(var(--spacing) * 2) 0 0 calc(var(--spacing) * 0.5);
 		border-radius: 999px;
 		border: 1px solid var(--muted-foreground);
 		cursor: pointer;
@@ -718,7 +718,7 @@
 		display: inline-block;
 		width: 14px;
 		text-align: center;
-		font-size: 13px;
+		font-size: var(--text-xs);
 		line-height: 1.7;
 		opacity: 0;
 		transition: opacity 0.12s ease;
@@ -731,7 +731,7 @@
 		border: none;
 		color: var(--muted-foreground);
 		border-radius: 4px;
-		padding: 0 6px;
-		margin: 0 4px;
+		padding: 0 calc(var(--spacing) * 1.5);
+		margin: 0 calc(var(--spacing) * 1);
 	}
 </style>

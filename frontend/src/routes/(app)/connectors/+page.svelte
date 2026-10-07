@@ -207,7 +207,7 @@
 			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
 		</EmptyState>
 	{:else if !ready}
-		<Card.Root class="gap-3 p-5">
+		<Card.Root class="gap-3 p-4">
 			<Skeleton class="h-10 w-full" />
 		</Card.Root>
 	{:else}

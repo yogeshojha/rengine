@@ -239,7 +239,7 @@
 <div class="flex flex-col gap-6">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div class="flex min-w-0 flex-col gap-1.5">
-			<span class="font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
+			<span class="font-mono text-2xs tracking-wide text-muted-foreground uppercase">
 				{activeProject?.name ??
 					'Dashboard'}{#if overview}{` · ${plural(overview.targets_total, 'target', 'targets')} · ${days} days`}{/if}
 			</span>

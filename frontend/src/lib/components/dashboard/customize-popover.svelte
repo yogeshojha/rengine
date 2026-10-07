@@ -36,7 +36,7 @@
 		<ScrollArea class="max-h-[70vh] [&>[data-slot=scroll-area-viewport]]:max-h-[70vh]">
 			<div class="flex flex-col gap-1 px-3 py-2">
 				{#each rows as r (r.row)}
-					<span class="mt-2 font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase">
+					<span class="mt-2 font-mono text-2xs tracking-wide text-muted-foreground uppercase">
 						{r.label}
 					</span>
 					{#each r.widgets as w (w.id)}

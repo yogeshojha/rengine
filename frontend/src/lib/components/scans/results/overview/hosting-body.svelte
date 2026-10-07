@@ -67,9 +67,7 @@
 	/>
 	{#if networks.length}
 		<div class="flex flex-col gap-1.5 border-t pt-3">
-			<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-				Network
-			</h3>
+			<h3 class="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Network</h3>
 			<div class="grid grid-cols-1 gap-x-8 {columns ? 'lg:grid-cols-2' : ''}">
 				<RankedList
 					rows={columns ? networks.slice(0, columns) : networks}

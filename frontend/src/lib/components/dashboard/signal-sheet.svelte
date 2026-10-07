@@ -147,7 +147,7 @@
 				{#each groups as g, gi (`${gi}:${g.label ?? ''}`)}
 					{#if g.label}
 						<span
-							class="flex items-center justify-between px-3 pt-4 pb-1 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+							class="flex items-center justify-between px-3 pt-4 pb-1 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
 						>
 							{g.label}
 							<span class="tabular-nums">{g.rows.length}</span>

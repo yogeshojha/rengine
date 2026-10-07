@@ -607,7 +607,15 @@
 			attributes: true,
 			attributeFilter: ['class', 'data-theme', 'style']
 		});
+		// Canvas text falls back until the web font is in; redraw once it is.
+		let alive = true;
+		void document.fonts?.ready.then(() => {
+			if (!alive) return;
+			readTheme();
+			schedule();
+		});
 		return () => {
+			alive = false;
 			observer.disconnect();
 			simulation?.stop();
 			if (frame) cancelAnimationFrame(frame);

@@ -155,7 +155,7 @@
 								<div class="flex items-center gap-2">
 									<RecordIcon class="h-3 w-3 text-muted-foreground shrink-0" />
 									<span class="text-xs text-muted-foreground flex-1">{record.meta.label}</span>
-									<span class="text-xs font-medium font-mono">{record.count}</span>
+									<span class="text-xs font-medium tabular-nums">{record.count}</span>
 								</div>
 							{/each}
 						</div>

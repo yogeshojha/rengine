@@ -126,7 +126,7 @@
 	<section class="flex min-w-0 flex-col gap-3 p-5 {cls}">
 		<div class="flex items-center gap-2">
 			<span class="size-1.5 rounded-full {TONE_DOT[tone]}" aria-hidden="true"></span>
-			<h3 class="text-sm font-medium">{TONE_LABEL[tone]}</h3>
+			<h3 class="text-sm font-semibold">{TONE_LABEL[tone]}</h3>
 			<span class="text-xs text-muted-foreground tabular-nums">
 				{plural(rows.length, 'check failing', 'checks failing')}
 			</span>

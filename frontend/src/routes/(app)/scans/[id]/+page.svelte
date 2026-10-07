@@ -752,7 +752,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="flex w-full flex-col gap-5 px-4 py-4 md:px-6">
+<div class="flex w-full flex-col gap-6">
 	{#if canStepBack}
 		<button
 			type="button"
@@ -775,7 +775,7 @@
 	{/if}
 
 	{#if loading && !scan}
-		<div class="flex flex-col gap-5" aria-busy="true">
+		<div class="flex flex-col gap-6" aria-busy="true">
 			<div class="flex items-start justify-between gap-4">
 				<div class="flex min-w-0 flex-1 items-start gap-3">
 					<Skeleton class="size-10 shrink-0 rounded-lg" />
@@ -817,7 +817,7 @@
 				</div>
 				<div class="min-w-0">
 					<div class="flex flex-wrap items-center gap-2">
-						<h1 class="truncate font-mono text-xl font-medium">
+						<h1 class="truncate font-mono text-2xl font-semibold tracking-tight">
 							{scan.execution_config.target_value}
 						</h1>
 						<Badge variant="outline" class="font-normal text-muted-foreground">
@@ -1003,7 +1003,7 @@
 			<div
 				bind:this={tabStripEl}
 				bind:clientHeight={tabsHeight}
-				class="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
+				class="sticky top-0 z-30 -mx-6 border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/80"
 			>
 				<div class="flex items-center gap-2">
 					{#if condensed}

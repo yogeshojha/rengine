@@ -129,7 +129,7 @@
 					class="inline-flex items-center gap-1 text-2xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
 					onclick={handleClick}
 				>
-					<span class="font-medium">{total.toLocaleString()}</span>
+					<span class="font-medium tabular-nums">{total.toLocaleString()}</span>
 					<span class="hidden sm:inline">
 						{total === 1 ? 'discovery' : 'discoveries'}
 					</span>
@@ -138,9 +138,9 @@
 		</Tooltip.Trigger>
 		<Tooltip.Content side="bottom" align="start">
 			<div class="space-y-1">
-				<p class="font-medium">{total.toLocaleString()} discovered domains</p>
+				<p class="font-medium tabular-nums">{total.toLocaleString()} discovered domains</p>
 				{#each breakdown as b (b.source)}
-					<p class="text-xs text-muted-foreground">
+					<p class="text-xs text-muted-foreground tabular-nums">
 						{DISCOVERY_SOURCE_LABELS[b.source]}: {b.count.toLocaleString()} via {b.query}
 					</p>
 				{/each}

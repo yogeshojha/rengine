@@ -148,7 +148,7 @@
 								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Announced prefixes
 								</p>
-								<p class="text-sm font-medium font-mono">{formatNumber(bgp.prefix_count)}</p>
+								<p class="text-sm font-medium tabular-nums">{formatNumber(bgp.prefix_count)}</p>
 							</div>
 						</div>
 
@@ -158,7 +158,7 @@
 								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
 									Peers
 								</p>
-								<p class="text-sm font-medium font-mono">{formatNumber(bgp.peer_count)}</p>
+								<p class="text-sm font-medium tabular-nums">{formatNumber(bgp.peer_count)}</p>
 							</div>
 						</div>
 					{/if}

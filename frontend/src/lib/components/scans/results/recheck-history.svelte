@@ -48,7 +48,7 @@
 						<span class="text-xs text-muted-foreground">recheck paused</span>
 					{:else if entry.changed}
 						<span
-							class="rounded-full border border-primary/40 bg-primary/10 px-[7px] text-2xs font-semibold text-primary"
+							class="rounded-full border border-primary/40 bg-primary/10 px-1.5 text-2xs font-semibold text-primary"
 						>
 							{entry.changes.length}
 							{entry.changes.length === 1 ? 'change' : 'changes'}

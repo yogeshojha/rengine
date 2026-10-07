@@ -220,8 +220,8 @@
 	.head {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		padding: 0 10px 0 14px;
+		gap: calc(var(--spacing) * 2.5);
+		padding: 0 calc(var(--spacing) * 2.5) 0 calc(var(--spacing) * 3.5);
 		min-height: 52px;
 	}
 	.mark {
@@ -232,10 +232,10 @@
 	:global(.section .disclose) {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: calc(var(--spacing) * 3);
 		flex: 1;
 		min-width: 0;
-		padding: 10px 0;
+		padding: calc(var(--spacing) * 2.5) 0;
 		background: none;
 		border: none;
 		cursor: pointer;
@@ -251,11 +251,11 @@
 		max-width: 46%;
 	}
 	.title {
-		font-size: 14px;
+		font-size: var(--text-sm);
 		font-weight: 500;
 	}
 	.subtitle {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		white-space: nowrap;
 		overflow: hidden;
@@ -265,7 +265,7 @@
 		flex: 1;
 		min-width: 0;
 		text-align: right;
-		font-size: 12px;
+		font-size: var(--text-xs);
 		color: var(--foreground);
 		white-space: nowrap;
 		overflow: hidden;
@@ -287,7 +287,8 @@
 		transform: rotate(90deg);
 	}
 	:global(.section .body) {
-		padding: 4px 16px 18px 38px;
+		padding: calc(var(--spacing) * 1) calc(var(--spacing) * 4) calc(var(--spacing) * 4.5)
+			calc(var(--spacing) * 9.5);
 	}
 
 	@media (max-width: 640px) {
@@ -298,7 +299,7 @@
 			max-width: none;
 		}
 		:global(.section .body) {
-			padding-left: 16px;
+			padding-left: calc(var(--spacing) * 4);
 		}
 	}
 </style>

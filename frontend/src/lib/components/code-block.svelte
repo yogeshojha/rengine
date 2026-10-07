@@ -397,7 +397,7 @@
 		flex-shrink: 0;
 		padding: 0 0.375rem 0 0.75rem;
 		border-bottom: 1px solid var(--border);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		line-height: 1;
 	}
 	.cb-find {
@@ -424,7 +424,7 @@
 		background: transparent;
 		border: 0;
 		outline: none;
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--foreground);
 	}
 	.cb-find-input::placeholder {
@@ -444,7 +444,7 @@
 	}
 	.cb-code {
 		font-family: var(--font-mono);
-		font-size: 12px;
+		font-size: var(--text-xs);
 		line-height: 1.65;
 		padding: 0.5rem 0;
 		min-width: max-content;
@@ -509,7 +509,7 @@
 		flex-shrink: 0;
 		height: 2rem;
 		border-top: 1px solid var(--border);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		transition:
 			color 0.12s ease,

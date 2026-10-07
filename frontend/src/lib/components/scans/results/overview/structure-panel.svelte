@@ -127,7 +127,7 @@
 		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
 			{#if findings.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
-					<h3 class="text-sm font-medium">Interest</h3>
+					<h3 class="text-sm font-semibold">Interest</h3>
 					<ul class="-mx-2 flex flex-col gap-0.5">
 						{#each findings as f (f.kind + f.label)}
 							{@const Icon = FINDING_ICON[f.kind as keyof typeof FINDING_ICON] ?? ShieldAlert}
@@ -162,13 +162,13 @@
 
 			{#if shared.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
-					<h3 class="text-sm font-medium">Shared across web assets</h3>
+					<h3 class="text-sm font-semibold">Shared across web assets</h3>
 					<RankedList rows={shared} base={sharedBase} onSelect={pick} />
 				</section>
 			{/if}
 
 			<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
-				<h3 class="text-sm font-medium">Endpoint kinds</h3>
+				<h3 class="text-sm font-semibold">Endpoint kinds</h3>
 				<CompositionBar
 					segments={classes}
 					total={structure.endpoints}
@@ -179,7 +179,7 @@
 
 			{#if interest.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
-					<h3 class="text-sm font-medium">Path interests</h3>
+					<h3 class="text-sm font-semibold">Path interests</h3>
 					<RankedList rows={interest} base={interestBase} onSelect={pick} />
 				</section>
 			{/if}

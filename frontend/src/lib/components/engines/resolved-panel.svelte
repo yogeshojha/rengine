@@ -62,9 +62,9 @@
 	}
 	.head {
 		flex-shrink: 0;
-		padding: 9px 14px;
+		padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5);
 		border-bottom: 1px solid var(--border);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		line-height: 1.5;
 		color: var(--muted-foreground);
 	}
@@ -72,13 +72,13 @@
 		flex-shrink: 0;
 		border-bottom: 1px solid var(--border);
 		background: color-mix(in oklch, var(--warning) 7%, transparent);
-		padding: 6px 14px;
+		padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3.5);
 	}
 	.warnings p {
 		display: flex;
 		align-items: center;
-		gap: 5px;
-		font-size: 11px;
+		gap: calc(var(--spacing) * 1);
+		font-size: var(--text-2xs);
 		color: var(--warning);
 		line-height: 1.5;
 	}
@@ -87,8 +87,8 @@
 		min-height: 0;
 	}
 	.err {
-		padding: 12px 14px;
-		font-size: 11px;
+		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 3.5);
+		font-size: var(--text-2xs);
 		color: var(--destructive);
 	}
 </style>

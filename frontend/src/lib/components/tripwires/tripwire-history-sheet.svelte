@@ -284,7 +284,7 @@
 									/>
 								</button>
 								{#if open}
-									<div class="flex flex-col gap-3 pr-5 pb-3 pl-[116px]">
+									<div class="flex flex-col gap-3 pr-5 pb-3 pl-29">
 										{#if run.rows.length > 0}
 											<div class="flex flex-col divide-y divide-border/60 rounded-md border">
 												{#each run.rows.slice(0, 50) as row (row.key)}

@@ -207,6 +207,10 @@
 	--sidebar-ring: oklch(0.65 0.14 264);
 }
 
+@theme {
+	--text-2xs: 0.6875rem;
+}
+
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
@@ -267,7 +271,6 @@
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
 
-	--text-2xs: 0.6875rem;
 	--font-sans: var(--font-sans);
 	--font-mono: var(--font-mono);
 

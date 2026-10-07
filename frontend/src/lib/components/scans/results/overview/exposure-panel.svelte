@@ -179,7 +179,7 @@
 		>
 			<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 				<div class="flex flex-col gap-0.5">
-					<h3 class="text-sm font-medium">Service classes</h3>
+					<h3 class="text-sm font-semibold">Service classes</h3>
 					<p class="text-xs text-muted-foreground">
 						{exposure.answering_http.toLocaleString()} of {exposure.services.toLocaleString()} answered
 						an HTTP request
@@ -208,7 +208,7 @@
 			{#if services.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 					<div class="flex items-baseline justify-between gap-3">
-						<h3 class="text-sm font-medium">Top services</h3>
+						<h3 class="text-sm font-semibold">Top services</h3>
 						{#if exposure.named > 0}
 							<span class="shrink-0 text-xs text-muted-foreground tabular-nums">
 								{exposure.named.toLocaleString()} identified
@@ -235,7 +235,7 @@
 			{#if coverage.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 					<div class="flex flex-col gap-0.5">
-						<h3 class="text-sm font-medium">Scan coverage</h3>
+						<h3 class="text-sm font-semibold">Scan coverage</h3>
 						<p class="text-xs text-muted-foreground">Port scan reach per address</p>
 					</div>
 					<RankedList rows={coverage} base={coverageBase} onSelect={pick} />

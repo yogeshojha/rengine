@@ -313,49 +313,49 @@
 	.head {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 		flex-wrap: wrap;
 		flex-shrink: 0;
-		padding: 7px 14px;
+		padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 3.5);
 		border-bottom: 1px solid var(--border);
-		font-size: 12px;
+		font-size: var(--text-xs);
 	}
 	.dim {
 		color: var(--muted-foreground);
 	}
 	.body {
-		padding: 12px 14px 20px;
+		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 3.5) calc(var(--spacing) * 5);
 	}
 	.err {
-		font-size: 12px;
+		font-size: var(--text-xs);
 		line-height: 1.55;
 		color: var(--destructive);
 	}
 	.count {
-		font-size: 12px;
+		font-size: var(--text-xs);
 		color: var(--muted-foreground);
-		margin-bottom: 6px;
+		margin-bottom: calc(var(--spacing) * 1.5);
 	}
 	.count strong {
 		color: var(--foreground);
 		font-weight: 600;
 	}
 	.group {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.025em;
 		color: var(--muted-foreground);
-		margin: 14px 0 4px;
+		margin: calc(var(--spacing) * 3.5) 0 calc(var(--spacing) * 1);
 	}
 	.row {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: 12px;
-		padding: 5px 0;
+		gap: calc(var(--spacing) * 3);
+		padding: calc(var(--spacing) * 1) 0;
 		border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
-		font-size: 12px;
+		font-size: var(--text-xs);
 	}
 	.row:last-child {
 		border-bottom: none;
@@ -367,11 +367,11 @@
 	.delta {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
+		gap: calc(var(--spacing) * 1);
 		flex-shrink: 0;
 		max-width: 60%;
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 12px;
+		font-size: var(--text-xs);
 		font-variant-numeric: tabular-nums;
 	}
 	.from {

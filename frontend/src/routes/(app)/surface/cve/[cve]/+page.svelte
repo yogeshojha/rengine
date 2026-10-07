@@ -88,7 +88,7 @@
 <div class="flex flex-col gap-6">
 	<a
 		href={ROUTES.cves}
-		class="inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground hover:text-foreground"
+		class="inline-flex items-center gap-1.5 self-start text-sm text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeft class="size-3.5" />
 		{routeLabels.cves}

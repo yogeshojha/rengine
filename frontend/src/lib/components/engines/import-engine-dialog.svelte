@@ -182,8 +182,8 @@ stages:
 		bottom: 36px;
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		font-size: 11px;
+		gap: calc(var(--spacing) * 1);
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		pointer-events: none;
 	}
@@ -191,8 +191,8 @@ stages:
 	.preview {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
-		padding: 11px 13px;
+		gap: calc(var(--spacing) * 1);
+		padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 3);
 		border: 1px solid var(--border);
 		border-radius: 0.6rem;
 		background: var(--muted);
@@ -200,30 +200,30 @@ stages:
 	.preview-head {
 		display: flex;
 		align-items: center;
-		gap: 7px;
+		gap: calc(var(--spacing) * 1.5);
 		flex-wrap: wrap;
 	}
 	.preview-name {
-		font-size: 14px;
+		font-size: var(--text-sm);
 		font-weight: 600;
 	}
 	.preview-head :global(.cap) {
-		gap: 3px;
-		font-size: 11px;
+		gap: calc(var(--spacing) * 0.5);
+		font-size: var(--text-2xs);
 		font-weight: 400;
 	}
 	.preview-line {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 8px;
+		gap: calc(var(--spacing) * 2);
 		flex-wrap: wrap;
-		font-size: 12px;
+		font-size: var(--text-xs);
 		color: var(--muted-foreground);
 	}
 	.preview-tools {
 		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		opacity: 0.8;
 	}

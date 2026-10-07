@@ -96,16 +96,18 @@
 					onclick={handleClick}
 				>
 					<Share2 class="h-3 w-3" />
-					<span class="font-medium">{total}</span>
+					<span class="font-medium tabular-nums">{total}</span>
 					<span class="hidden sm:inline">shared</span>
 				</button>
 			{/snippet}
 		</Tooltip.Trigger>
 		<Tooltip.Content side="bottom" align="start">
 			<div class="space-y-1">
-				<p class="font-medium">Shares infrastructure with {total} target{total === 1 ? '' : 's'}</p>
+				<p class="font-medium tabular-nums">
+					Shares infrastructure with {total} target{total === 1 ? '' : 's'}
+				</p>
 				{#each breakdown as b (b.label)}
-					<p class="text-xs text-muted-foreground">{b.label}: {b.count}</p>
+					<p class="text-xs text-muted-foreground tabular-nums">{b.label}: {b.count}</p>
 				{/each}
 			</div>
 		</Tooltip.Content>

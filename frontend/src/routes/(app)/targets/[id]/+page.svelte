@@ -950,7 +950,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="flex w-full flex-col gap-4 px-4 py-4 md:px-6">
+<div class="flex w-full flex-col gap-6">
 	<a
 		href={ROUTES.targets}
 		class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -1008,7 +1008,7 @@
 		<Tabs.Root value={activeTab} onValueChange={setTab} style="--target-tabs-h: {tabsHeight}px">
 			<div
 				bind:clientHeight={tabsHeight}
-				class="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:-mx-6 md:px-6"
+				class="sticky top-0 z-30 -mx-6 border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/80"
 			>
 				<div class="flex items-center gap-4">
 					{#if condensed}

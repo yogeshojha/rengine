@@ -154,7 +154,7 @@
 				{#each cells as c (c.key)}
 					<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 						<div class="flex items-baseline justify-between gap-3">
-							<h3 class="text-sm font-medium">{c.title}</h3>
+							<h3 class="text-sm font-semibold">{c.title}</h3>
 							<span class="shrink-0 text-xs text-muted-foreground tabular-nums">{c.total}</span>
 						</div>
 						{#if c.icon === 'tech'}

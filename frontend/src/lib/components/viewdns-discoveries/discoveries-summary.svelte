@@ -285,12 +285,16 @@
 		{#if totalDiscovered > 0}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<span>
-					<span class="font-semibold text-foreground">{totalDiscovered.toLocaleString()}</span>
+					<span class="font-semibold text-foreground tabular-nums"
+						>{totalDiscovered.toLocaleString()}</span
+					>
 					discovered {totalDiscovered === 1 ? 'domain' : 'domains'}
 					across {sourceResults.filter((s) => s.cache).length}
 					{sourceResults.filter((s) => s.cache).length === 1 ? 'source' : 'sources'}
 					{#if settled && !matchFailed}
-						· <span class="font-medium text-foreground">{newDomains.length.toLocaleString()}</span>
+						· <span class="font-medium text-foreground tabular-nums"
+							>{newDomains.length.toLocaleString()}</span
+						>
 						new
 					{/if}
 				</span>
@@ -312,13 +316,16 @@
 										{DISCOVERY_SOURCE_LABELS[sr.source]}
 									</span>
 									{#if sr.cache}
-										<Badge variant="outline" class="text-2xs h-5 px-1.5 font-normal">
+										<Badge variant="outline" class="text-2xs h-5 px-1.5 font-normal tabular-nums">
 											{sr.domains.length.toLocaleString()} domains
 										</Badge>
 										{#if settled && !matchFailed}
 											{@const fresh = sr.domains.filter(isNew).length}
 											{#if fresh > 0}
-												<Badge variant="outline" class="text-2xs h-5 px-1.5 font-normal">
+												<Badge
+													variant="outline"
+													class="text-2xs h-5 px-1.5 font-normal tabular-nums"
+												>
 													{fresh.toLocaleString()} new
 												</Badge>
 											{/if}

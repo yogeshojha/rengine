@@ -58,7 +58,7 @@
 						<a
 							{...props}
 							href={col.href}
-							class="flex items-center justify-between rounded-md bg-muted/50 px-2.5 py-1.5 font-mono text-2xs tracking-[0.1em] text-muted-foreground uppercase hover:text-foreground"
+							class="flex items-center justify-between rounded-md bg-muted/50 px-2.5 py-1.5 font-mono text-2xs tracking-wide text-muted-foreground uppercase hover:text-foreground"
 						>
 							<span>{col.label}</span>
 							<span

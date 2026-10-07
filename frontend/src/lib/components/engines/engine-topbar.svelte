@@ -249,11 +249,11 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 12px 16px;
+		gap: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
 		flex-wrap: wrap;
 		flex-shrink: 0;
 		min-height: 52px;
-		padding: 8px 16px;
+		padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
 		border-bottom: 1px solid var(--border);
 		background: var(--card);
 	}
@@ -263,7 +263,7 @@
 	.right {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: calc(var(--spacing) * 2);
 		min-width: 0;
 	}
 	.left {
@@ -273,10 +273,10 @@
 	.name-btn {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: calc(var(--spacing) * 1.5);
 		min-width: 0;
-		padding: 2px 6px;
-		margin-left: -6px;
+		padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 1.5);
+		margin-left: calc(var(--spacing) * -1.5);
 		border-radius: 6px;
 		background: none;
 		border: none;
@@ -297,7 +297,7 @@
 		opacity: 1;
 	}
 	.name {
-		font-size: 14px;
+		font-size: var(--text-sm);
 		font-weight: 600;
 		white-space: nowrap;
 		overflow: hidden;

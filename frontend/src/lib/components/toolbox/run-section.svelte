@@ -50,7 +50,7 @@
 <section class="space-y-4">
 	<div class="flex items-center gap-2 border-b pb-1.5">
 		<Icon class="size-3.5 shrink-0 text-muted-foreground" />
-		<h3 class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+		<h3 class="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">
 			{run.title}
 		</h3>
 		<span class="flex-1"></span>

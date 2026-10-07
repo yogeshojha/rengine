@@ -87,21 +87,21 @@
 	}
 	.head {
 		flex-shrink: 0;
-		padding: 9px 14px;
+		padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5);
 		border-bottom: 1px solid var(--border);
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 	}
 	.body {
-		padding: 10px 14px 16px;
+		padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 3.5) calc(var(--spacing) * 4);
 	}
 	.stage {
-		font-size: 11px;
+		font-size: var(--text-2xs);
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.025em;
 		color: var(--muted-foreground);
-		margin: 12px 0 5px;
+		margin: calc(var(--spacing) * 3) 0 calc(var(--spacing) * 1);
 	}
 	.stage:first-child {
 		margin-top: 0;
@@ -109,9 +109,9 @@
 	.row {
 		display: flex;
 		align-items: baseline;
-		gap: 6px;
-		padding: 3px 0;
-		font-size: 12px;
+		gap: calc(var(--spacing) * 1.5);
+		padding: calc(var(--spacing) * 0.5) 0;
+		font-size: var(--text-xs);
 		flex-wrap: wrap;
 	}
 	.label {

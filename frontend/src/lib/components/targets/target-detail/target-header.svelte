@@ -120,7 +120,9 @@
 		</div>
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<div class="flex flex-wrap items-center gap-2">
-				<h1 class="truncate font-mono text-xl font-medium">{target.target_value}</h1>
+				<h1 class="truncate font-mono text-2xl font-semibold tracking-tight">
+					{target.target_value}
+				</h1>
 				<Badge variant="outline" class="font-normal text-muted-foreground">
 					{targetTypeLabel(target.target_type)}
 				</Badge>
