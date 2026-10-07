@@ -213,6 +213,7 @@
 			<ToggleGroup.Root
 				type="multiple"
 				variant="outline"
+				spacing={1}
 				class="flex-wrap"
 				value={[...enabled]}
 				onValueChange={setKinds}
@@ -243,6 +244,7 @@
 			<ToggleGroup.Root
 				type="multiple"
 				variant="outline"
+				spacing={1}
 				class="ml-auto"
 				value={[...(hideCommon ? ['common'] : []), ...(hidePlatform ? ['platform'] : [])]}
 				onValueChange={(v) => {

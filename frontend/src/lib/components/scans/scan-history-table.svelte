@@ -754,7 +754,10 @@
 			class="flex-wrap"
 		>
 			{#each SAVED_VIEWS as v (v.token)}
-				<ToggleGroup.Item value={v.token} class="rounded-full font-normal">
+				<ToggleGroup.Item
+					value={v.token}
+					class="rounded-full font-normal data-[state=on]:border-primary/50 data-[state=on]:bg-primary/5"
+				>
 					{v.label}
 				</ToggleGroup.Item>
 			{/each}

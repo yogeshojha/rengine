@@ -278,6 +278,7 @@
 			type="single"
 			bind:value={() => view, (v) => v && onView(v as EndpointView)}
 			variant="outline"
+			spacing={1}
 			aria-label="View"
 		>
 			{#each LENSES as lens (lens.value)}
