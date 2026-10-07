@@ -30,7 +30,7 @@
 
 	let { open = $bindable(), projectId, spec, connector, secret, onRotate }: Props = $props();
 
-	const CODE = 'min-w-0 flex-1 truncate rounded-md bg-code-surface px-3 py-2 font-mono text-xs';
+	const CODE = 'min-w-0 flex-1 rounded-md bg-code-surface px-3 py-2 font-mono text-xs';
 
 	const endpoint = $derived(open ? ingestEndpoint() : '');
 	const online = $derived(ONLINE_STATES.has(connector.state));
@@ -60,11 +60,13 @@
 </script>
 
 <Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : guard.close())}>
-	<Dialog.Content class="gap-0 p-0 sm:max-w-xl">
+	<Dialog.Content class="grid-cols-[minmax(0,1fr)] gap-0 p-0 sm:max-w-xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Connect {spec.title}</Dialog.Title>
 			{#if secret}
 				<Dialog.Description>Token shown once.</Dialog.Description>
+			{:else}
+				<Dialog.Description class="sr-only">Steps to connect {spec.title}.</Dialog.Description>
 			{/if}
 		</Dialog.Header>
 
@@ -103,16 +105,18 @@
 							<div class="flex flex-col gap-2">
 								<div class="flex items-center gap-2">
 									<span class="w-16 shrink-0 text-xs text-muted-foreground">Endpoint</span>
-									<code class={CODE}>{endpoint}</code>
+									<code class="{CODE} truncate" title={endpoint}>{endpoint}</code>
 									<CopyButton value={endpoint} />
 								</div>
 								<div class="flex items-center gap-2">
 									<span class="w-16 shrink-0 text-xs text-muted-foreground">Token</span>
 									{#if secret}
-										<code class={CODE}>{secret}</code>
+										<code class="{CODE} break-all">{secret}</code>
 										<CopyButton value={secret} onCopied={() => (copied = true)} />
 									{:else}
-										<code class="{CODE} text-muted-foreground">{connector.token_prefix}…</code>
+										<code class="{CODE} truncate text-muted-foreground"
+											>{connector.token_prefix}…</code
+										>
 										<Button variant="outline" size="sm" class="h-8" onclick={onRotate}>
 											Rotate
 										</Button>

@@ -195,7 +195,7 @@
 				</section>
 
 				<section class="mt-4 flex flex-col">
-					<SettingRow label="Cached narratives" class="border-y">
+					<SettingRow label="Cached narratives" class="border-y px-5">
 						<span class="text-sm tabular-nums">{cached.toLocaleString()}</span>
 						<Button
 							variant="outline"

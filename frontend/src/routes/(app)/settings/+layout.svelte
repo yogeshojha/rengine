@@ -9,6 +9,7 @@
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import {
 		ADMIN_SETTINGS,
 		ROUTES,
@@ -40,11 +41,8 @@
 	);
 </script>
 
-<div class="flex flex-col gap-6">
-	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.settings}</h1>
-		<p class="mt-1 text-sm text-muted-foreground">Instance-wide configuration</p>
-	</div>
+<div class="flex w-full max-w-5xl flex-col gap-6">
+	<PageHeader title={routeLabels.settings} description="Instance-wide configuration" />
 
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<Tabs.Root

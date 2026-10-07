@@ -8,6 +8,7 @@
 	import WholeWordIcon from '@lucide/svelte/icons/whole-word';
 	import FlameIcon from '@lucide/svelte/icons/flame';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import NucleiLibrary from '$lib/components/arsenal/nuclei-library.svelte';
 	import WordlistLibrary from '$lib/components/arsenal/wordlist-library.svelte';
 	import ThreatIntelLibrary from '$lib/components/arsenal/threat-intel-library.svelte';
@@ -47,12 +48,10 @@
 <svelte:head><title>{pageTitle(routeLabels.arsenal)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div>
-		<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.arsenal}</h1>
-		<p class="mt-1 text-sm text-muted-foreground">Checks, wordlists and feeds</p>
-	</div>
+	<PageHeader title={routeLabels.arsenal} description="Checks, wordlists and feeds" />
 
 	<Tabs.Root
+		class="gap-6"
 		value={activeTab}
 		onValueChange={(v) => {
 			if (v) activeTab = v as ArsenalTab;
@@ -70,7 +69,7 @@
 
 		{#each ARSENAL_TABS as tab (tab)}
 			{@const Panel = TAB_META[tab].panel}
-			<Tabs.Content value={tab} class="mt-6">
+			<Tabs.Content value={tab}>
 				{#if tab === 'nuclei'}
 					<NucleiLibrary active={activeTab === tab} />
 				{:else}

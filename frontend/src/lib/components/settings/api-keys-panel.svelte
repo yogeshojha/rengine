@@ -427,8 +427,8 @@
 <Dialog.Root
 	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
 >
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header>
+	<Dialog.Content class="grid-cols-[minmax(0,1fr)] gap-0 p-0 sm:max-w-md">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>
 				{editing ? `${replacing ? 'Replace' : 'Add'} ${editing.name} key` : 'API key'}
 			</Dialog.Title>
@@ -443,56 +443,60 @@
 						{editing.name} documentation <ExternalLinkIcon class="size-3" />
 					</a>
 				</Dialog.Description>
+			{:else}
+				<Dialog.Description class="sr-only">Key for an external data provider.</Dialog.Description>
 			{/if}
 		</Dialog.Header>
 		<form
-			class="flex flex-col gap-4"
+			class="flex min-w-0 flex-col"
 			onsubmit={(e) => {
 				e.preventDefault();
 				void saveKey();
 			}}
 		>
-			{#if editing?.requires_username}
-				<FormField label="Username">
+			<div class="flex flex-col gap-4 px-6 py-5">
+				{#if editing?.requires_username}
+					<FormField label="Username" required>
+						{#snippet children({ id })}
+							<Input
+								{id}
+								bind:ref={usernameInput}
+								bind:value={username}
+								autocomplete="off"
+								disabled={saving}
+							/>
+						{/snippet}
+					</FormField>
+				{/if}
+				<FormField label="API key" required>
 					{#snippet children({ id })}
-						<Input
-							{id}
-							bind:ref={usernameInput}
-							bind:value={username}
-							autocomplete="off"
-							disabled={saving}
-						/>
+						<div class="relative">
+							<Input
+								{id}
+								type={showKey ? 'text' : 'password'}
+								bind:ref={keyInput}
+								bind:value={keyValue}
+								autocomplete="off"
+								spellcheck={false}
+								class="pr-10 font-mono text-xs"
+								disabled={saving}
+							/>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								class="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 text-muted-foreground"
+								aria-label={showKey ? 'Hide key' : 'Show key'}
+								aria-pressed={showKey}
+								onclick={() => (showKey = !showKey)}
+							>
+								{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
+							</Button>
+						</div>
 					{/snippet}
 				</FormField>
-			{/if}
-			<FormField label="API key">
-				{#snippet children({ id })}
-					<div class="relative">
-						<Input
-							{id}
-							type={showKey ? 'text' : 'password'}
-							bind:ref={keyInput}
-							bind:value={keyValue}
-							autocomplete="off"
-							spellcheck={false}
-							class="pr-10 font-mono text-xs"
-							disabled={saving}
-						/>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							class="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 text-muted-foreground"
-							aria-label={showKey ? 'Hide key' : 'Show key'}
-							aria-pressed={showKey}
-							onclick={() => (showKey = !showKey)}
-						>
-							{#if showKey}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
-						</Button>
-					</div>
-				{/snippet}
-			</FormField>
-			<Dialog.Footer>
+			</div>
+			<Dialog.Footer class="border-t px-6 py-4">
 				<Button type="button" variant="outline" disabled={saving} onclick={() => guard.close()}>
 					Cancel
 				</Button>

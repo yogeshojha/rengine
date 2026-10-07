@@ -117,6 +117,8 @@
 						{@render info()}
 					</Popover.Content>
 				</Popover.Root>
+			{:else}
+				<span class="size-7 shrink-0" aria-hidden="true"></span>
 			{/if}
 		</div>
 		<Collapsible.Content class="body">

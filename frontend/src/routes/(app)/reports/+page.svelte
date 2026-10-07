@@ -24,6 +24,7 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
@@ -253,11 +254,11 @@
 <svelte:head><title>{pageTitle(routeLabels.reports)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.reports}</h1>
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
+	<PageHeader
+		title={routeLabels.reports}
+		description="Reports for a scan or target, with templates, themes and branding"
+	>
+		{#snippet actions()}
 			<Button
 				size="sm"
 				onclick={() => {
@@ -269,10 +270,11 @@
 				<PlusIcon class="size-4" />
 				Generate report
 			</Button>
-		</div>
-	</div>
+		{/snippet}
+	</PageHeader>
 
 	<Tabs.Root
+		class="gap-6"
 		activationMode="manual"
 		bind:value={
 			() => activeTab,
@@ -288,14 +290,17 @@
 						<FileTextIcon class="size-4" />
 						Reports
 						{#if reportsStore.reports.length && !stale}
-							<span class="text-muted-foreground tabular-nums">{reportsStore.reports.length}</span>
+							<span class="text-xs text-muted-foreground tabular-nums"
+								>{reportsStore.reports.length}</span
+							>
 						{/if}
 					</Tabs.Trigger>
 					<Tabs.Trigger value="templates" class="gap-1.5">
 						<LayoutTemplateIcon class="size-4" />
 						Templates
 						{#if reportsStore.templates.length}
-							<span class="text-muted-foreground tabular-nums">{reportsStore.templates.length}</span
+							<span class="text-xs text-muted-foreground tabular-nums"
+								>{reportsStore.templates.length}</span
 							>
 						{/if}
 					</Tabs.Trigger>
@@ -303,14 +308,16 @@
 						<PaletteIcon class="size-4" />
 						Themes
 						{#if reportCatalog.themes.length}
-							<span class="text-muted-foreground tabular-nums">{reportCatalog.themes.length}</span>
+							<span class="text-xs text-muted-foreground tabular-nums"
+								>{reportCatalog.themes.length}</span
+							>
 						{/if}
 					</Tabs.Trigger>
 					<Tabs.Trigger value="typefaces" class="gap-1.5">
 						<TypeIcon class="size-4" />
 						Typefaces
 						{#if reportCatalog.catalog?.fonts.length}
-							<span class="text-muted-foreground tabular-nums"
+							<span class="text-xs text-muted-foreground tabular-nums"
 								>{reportCatalog.catalog.fonts.length}</span
 							>
 						{/if}
@@ -342,7 +349,7 @@
 			{/if}
 		</div>
 
-		<Tabs.Content value="reports" class="mt-6">
+		<Tabs.Content value="reports">
 			<Card.Root class="gap-0 overflow-hidden py-0">
 				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
 					<InputGroup.Root class="w-auto min-w-[240px] flex-1">
@@ -377,41 +384,33 @@
 				{#if (reportsStore.isLoading && !reportsStore.reports.length) || (stale && !reportsStore.error)}
 					<RowSkeleton rows={4} avatar="size-8 rounded-md" trailing="h-5 w-20 rounded-full" />
 				{:else if reportsStore.error && !reportsStore.reports.length}
-					<div class="p-6">
-						<EmptyState
-							icon={TriangleAlertIcon}
-							title="Reports not loaded"
-							description={reportsStore.error}
-							compact
-						>
-							<Button
-								variant="outline"
-								size="sm"
-								onclick={() => reportsStore.fetch(projectId, true)}
-							>
-								Retry
-							</Button>
-						</EmptyState>
-					</div>
+					<EmptyState
+						icon={TriangleAlertIcon}
+						title="Reports not loaded"
+						description={reportsStore.error}
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button variant="outline" size="sm" onclick={() => reportsStore.fetch(projectId, true)}>
+							Retry
+						</Button>
+					</EmptyState>
 				{:else if !visibleReports.length}
-					<div class="p-6">
-						<EmptyState
-							icon={FileTextIcon}
-							title={filtered ? 'No matching reports' : 'No reports'}
-							compact
-						>
-							{#if search.trim()}
-								<Button variant="outline" size="sm" onclick={() => (search = '')}>
-									Clear search
-								</Button>
-							{/if}
-							{#if subjectChips.length}
-								<Button variant="outline" size="sm" onclick={() => clearSubject()}>
-									Show all reports
-								</Button>
-							{/if}
-						</EmptyState>
-					</div>
+					<EmptyState
+						icon={FileTextIcon}
+						title={filtered ? 'No matching reports' : 'No reports'}
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						{#if search.trim()}
+							<Button variant="outline" size="sm" onclick={() => (search = '')}>
+								Clear search
+							</Button>
+						{/if}
+						{#if subjectChips.length}
+							<Button variant="outline" size="sm" onclick={() => clearSubject()}>
+								Show all reports
+							</Button>
+						{/if}
+					</EmptyState>
 				{:else}
 					<div
 						class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -442,7 +441,7 @@
 			</Card.Root>
 		</Tabs.Content>
 
-		<Tabs.Content value="templates" class="mt-6">
+		<Tabs.Content value="templates">
 			<TemplatesPanel
 				templates={reportsStore.templates}
 				loading={reportsStore.templatesLoading}
@@ -457,21 +456,21 @@
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="themes" class="mt-6">
+		<Tabs.Content value="themes">
 			<ThemesPanel
 				themes={reportCatalog.themes}
 				onDelete={(t) => (pendingDelete = { kind: 'theme', id: t.slug, name: t.name })}
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="typefaces" class="mt-6">
+		<Tabs.Content value="typefaces">
 			<TypefacesPanel
 				fonts={reportCatalog.catalog?.fonts ?? []}
 				onDelete={(f) => (pendingDelete = { kind: 'typeface', id: f.slug, name: f.name })}
 			/>
 		</Tabs.Content>
 
-		<Tabs.Content value="branding" class="mt-6">
+		<Tabs.Content value="branding">
 			{#key brandingResets}
 				<DefaultsPanel onDirtyChange={(v) => (defaultsDirty = v)} />
 			{/key}

@@ -170,6 +170,7 @@
 	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editing ? 'Edit provider' : 'Add provider'}</Dialog.Title>
+			<Dialog.Description>The model AI features call.</Dialog.Description>
 		</Dialog.Header>
 		<ScrollArea
 			class="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
@@ -179,6 +180,7 @@
 					label="Provider"
 					description={spec?.help || undefined}
 					error={errorFor('provider')}
+					required
 				>
 					{#snippet children({ id })}
 						<Select.Root type="single" value={provider} onValueChange={pickProvider}>
@@ -209,6 +211,7 @@
 						label="Server URL"
 						description={spec.base_url_hint || undefined}
 						error={errorFor('url')}
+						required
 					>
 						{#snippet children({ id })}
 							<Input
@@ -222,7 +225,11 @@
 						{/snippet}
 					</FormField>
 				{/if}
-				<FormField label="API key" error={errorFor('key')}>
+				<FormField
+					label="API key"
+					error={errorFor('key')}
+					required={!!spec && !spec.key_optional && !keyStored}
+				>
 					{#snippet children({ id })}
 						<div class="relative">
 							<Input
@@ -261,7 +268,7 @@
 						{/snippet}
 					</FormField>
 				{/if}
-				<FormField label="Model" error={errorFor('model')}>
+				<FormField label="Model" error={errorFor('model')} required>
 					{#snippet children({ id })}
 						<ModelPicker {id} {provider} {request} bind:value={model} />
 					{/snippet}
@@ -283,10 +290,10 @@
 				variant="ghost"
 				loading={testing}
 				loadingLabel="Testing"
-				disabled={testing || ai.isSaving}
+				disabled={testing || ai.isSaving || !!missing()}
 				onclick={() => test()}
 			>
-				Test
+				Test connection
 			</LoadingButton>
 			<div class="flex gap-2">
 				<Button variant="outline" disabled={ai.isSaving} onclick={() => guard.close()}>

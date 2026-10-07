@@ -17,6 +17,7 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import TrackersTable from '$lib/components/issue-trackers/trackers-table.svelte';
 	import RoutesTable from '$lib/components/issue-trackers/routes-table.svelte';
 	import IssuesTable from '$lib/components/issue-trackers/issues-table.svelte';
@@ -241,14 +242,14 @@
 
 <svelte:head><title>{pageTitle(routeLabels['issue-trackers'])}</title></svelte:head>
 
-<div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels['issue-trackers']}</h1>
-		</div>
-		{#if canAdmin}
-			<div class="flex flex-wrap items-center gap-2">
-				{#if tab === 'routes' && trackers.length}
+<div class="flex w-full max-w-5xl flex-col gap-6">
+	<PageHeader
+		title={routeLabels['issue-trackers']}
+		description="File findings as issues in Jira, GitHub or GitLab"
+	>
+		{#snippet actions()}
+			{#if canAdmin && trackers.length}
+				{#if tab === 'routes'}
 					<Button size="sm" variant="outline" onclick={() => openRoute(null)}>
 						<PlusIcon class="size-4" />
 						Add route
@@ -264,9 +265,9 @@
 						</span>
 					{/snippet}
 				</Hint>
-			</div>
-		{/if}
-	</div>
+			{/if}
+		{/snippet}
+	</PageHeader>
 
 	{#if !issueTrackers.loaded && issueTrackers.error}
 		<EmptyState

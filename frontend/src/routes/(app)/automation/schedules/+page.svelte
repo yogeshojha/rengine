@@ -15,6 +15,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import ScheduleListCard from '$lib/components/schedules/schedule-list-card.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
@@ -41,6 +42,7 @@
 			? scanSchedulesStore.fetchedProjectId === projectsStore.activeProject.id
 			: projectsStore.hasFetched
 	);
+	const empty = $derived(loaded && scanSchedulesStore.schedules.length === 0);
 
 	$effect(() => {
 		const project = projectsStore.activeProject;
@@ -135,11 +137,8 @@
 <svelte:head><title>{pageTitle(routeLabels.schedules)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">Schedules</h1>
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
+	<PageHeader title="Schedules" description="Scans that run on a recurring schedule">
+		{#snippet actions()}
 			<Hint text="Refresh">
 				{#snippet child(props)}
 					<Button
@@ -154,12 +153,14 @@
 					</Button>
 				{/snippet}
 			</Hint>
-			<Button size="sm" onclick={handleNew}>
-				<Plus class="size-4" />
-				New schedule
-			</Button>
-		</div>
-	</div>
+			{#if !empty}
+				<Button size="sm" onclick={handleNew}>
+					<Plus class="size-4" />
+					New schedule
+				</Button>
+			{/if}
+		{/snippet}
+	</PageHeader>
 
 	{#if !loaded && scanSchedulesStore.error && !scanSchedulesStore.isLoading}
 		<EmptyState
@@ -185,7 +186,7 @@
 				</div>
 			{/each}
 		</div>
-	{:else if scanSchedulesStore.schedules.length === 0}
+	{:else if empty}
 		<EmptyState
 			icon={CalendarClock}
 			title="No schedules"
@@ -193,7 +194,7 @@
 		>
 			<Button size="sm" onclick={handleNew}>
 				<Plus class="size-4" />
-				Schedule a scan
+				New schedule
 			</Button>
 		</EmptyState>
 	{:else}

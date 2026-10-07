@@ -239,68 +239,75 @@
 <Dialog.Root
 	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
 >
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header>
+	<Dialog.Content class="grid-cols-[minmax(0,1fr)] gap-0 p-0 sm:max-w-lg">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Add user</Dialog.Title>
+			<Dialog.Description>The user signs in with this username and password.</Dialog.Description>
 		</Dialog.Header>
 		<form
-			class="flex flex-col gap-4"
+			class="flex min-w-0 flex-col"
 			onsubmit={(e) => {
 				e.preventDefault();
 				void create();
 			}}
 		>
-			<FormField label="Username">
-				{#snippet children({ id })}
-					<Input {id} bind:value={username} autocomplete="off" maxlength={50} disabled={saving} />
-				{/snippet}
-			</FormField>
-			<FormField label="Email">
-				{#snippet children({ id })}
-					<Input {id} type="email" bind:value={email} autocomplete="off" disabled={saving} />
-				{/snippet}
-			</FormField>
-			<FormField label="Password">
-				{#snippet children({ id })}
-					<div class="relative">
-						<Input
-							{id}
-							type={showPassword ? 'text' : 'password'}
-							bind:value={password}
-							autocomplete="new-password"
-							class="pr-10"
-							disabled={saving}
-						/>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon"
-							class="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 text-muted-foreground"
-							aria-label={showPassword ? 'Hide password' : 'Show password'}
-							aria-pressed={showPassword}
-							onclick={() => (showPassword = !showPassword)}
-						>
-							{#if showPassword}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}
-						</Button>
-					</div>
-				{/snippet}
-			</FormField>
-			<FormField label="Role">
-				{#snippet children({ id })}
-					<Select.Root type="single" bind:value={role} disabled={saving}>
-						<Select.Trigger {id} class="w-full">
-							{roleLabel(role === ADMIN)}
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Item value={MEMBER} label={ROLE_LABELS.member}
-								>{ROLE_LABELS.member}</Select.Item
+			<div class="flex flex-col gap-4 px-6 py-5">
+				<FormField label="Username" required>
+					{#snippet children({ id })}
+						<Input {id} bind:value={username} autocomplete="off" maxlength={50} disabled={saving} />
+					{/snippet}
+				</FormField>
+				<FormField label="Email" required>
+					{#snippet children({ id })}
+						<Input {id} type="email" bind:value={email} autocomplete="off" disabled={saving} />
+					{/snippet}
+				</FormField>
+				<FormField label="Password" required>
+					{#snippet children({ id })}
+						<div class="relative">
+							<Input
+								{id}
+								type={showPassword ? 'text' : 'password'}
+								bind:value={password}
+								autocomplete="new-password"
+								class="pr-10"
+								disabled={saving}
+							/>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								class="absolute top-1/2 right-1.5 size-7 -translate-y-1/2 text-muted-foreground"
+								aria-label={showPassword ? 'Hide password' : 'Show password'}
+								aria-pressed={showPassword}
+								onclick={() => (showPassword = !showPassword)}
 							>
-							<Select.Item value={ADMIN} label={ROLE_LABELS.admin}>{ROLE_LABELS.admin}</Select.Item>
-						</Select.Content>
-					</Select.Root>
-				{/snippet}
-			</FormField>
-			<Dialog.Footer>
+								{#if showPassword}<EyeOffIcon class="size-4" />{:else}<EyeIcon
+										class="size-4"
+									/>{/if}
+							</Button>
+						</div>
+					{/snippet}
+				</FormField>
+				<FormField label="Role">
+					{#snippet children({ id })}
+						<Select.Root type="single" bind:value={role} disabled={saving}>
+							<Select.Trigger {id} class="w-full">
+								{roleLabel(role === ADMIN)}
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value={MEMBER} label={ROLE_LABELS.member}
+									>{ROLE_LABELS.member}</Select.Item
+								>
+								<Select.Item value={ADMIN} label={ROLE_LABELS.admin}
+									>{ROLE_LABELS.admin}</Select.Item
+								>
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</FormField>
+			</div>
+			<Dialog.Footer class="border-t px-6 py-4">
 				<Button type="button" variant="outline" disabled={saving} onclick={() => guard.close()}>
 					Cancel
 				</Button>

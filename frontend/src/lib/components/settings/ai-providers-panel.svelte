@@ -94,8 +94,10 @@
 		}
 	}
 
+	const hasRows = $derived(rows.length > 0);
+
 	$effect(() => {
-		if (!isAdmin) return;
+		if (!isAdmin || !hasRows) return;
 		settingsActions.set(addAction);
 		return () => settingsActions.clear(addAction);
 	});

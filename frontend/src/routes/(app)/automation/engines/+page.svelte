@@ -25,6 +25,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import EngineListCard from '$lib/components/engines/engine-list-card.svelte';
 	import NewEngineDialog from '$lib/components/engines/new-engine-dialog.svelte';
 	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
@@ -250,16 +251,13 @@
 <svelte:head><title>{pageTitle(routeLabels.engines)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">Scan engines</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				Stage selection and settings for a scan{stageCount
-					? ` · ${stageCount} stages available`
-					: ''}
-			</p>
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
+	<PageHeader
+		title="Scan engines"
+		description="Stage selection and settings for a scan{stageCount
+			? ` · ${stageCount} stages available`
+			: ''}"
+	>
+		{#snippet actions()}
 			<Hint text="Refresh">
 				{#snippet child(props)}
 					<Button
@@ -282,8 +280,8 @@
 				<Plus class="size-4" />
 				New engine
 			</Button>
-		</div>
-	</div>
+		{/snippet}
+	</PageHeader>
 
 	{#if loadFailed}
 		<EmptyState

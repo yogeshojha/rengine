@@ -6,10 +6,8 @@
 	let { title, onClear }: { title: string; onClear?: () => void } = $props();
 </script>
 
-<div class="p-6">
-	<EmptyState icon={FileTextIcon} {title} compact>
-		{#if onClear}
-			<Button variant="outline" size="sm" onclick={onClear}>Clear filters</Button>
-		{/if}
-	</EmptyState>
-</div>
+<EmptyState icon={FileTextIcon} {title} class="rounded-none border-0 bg-transparent py-16">
+	{#if onClear}
+		<Button variant="outline" size="sm" onclick={onClear}>Clear filters</Button>
+	{/if}
+</EmptyState>

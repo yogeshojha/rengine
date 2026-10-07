@@ -1,10 +1,8 @@
 import Ban from '@lucide/svelte/icons/ban';
 import Cog from '@lucide/svelte/icons/cog';
-import Crosshair from '@lucide/svelte/icons/crosshair';
 import FolderOpen from '@lucide/svelte/icons/folder-open';
 import Newspaper from '@lucide/svelte/icons/newspaper';
 import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
-import Layers from '@lucide/svelte/icons/layers';
 import Link2 from '@lucide/svelte/icons/link-2';
 import Monitor from '@lucide/svelte/icons/monitor';
 import Moon from '@lucide/svelte/icons/moon';
@@ -27,6 +25,7 @@ import MessageSquare from '@lucide/svelte/icons/message-square';
 import SquareKanban from '@lucide/svelte/icons/square-kanban';
 import Radar from '@lucide/svelte/icons/radar';
 import Target from '@lucide/svelte/icons/target';
+import Workflow from '@lucide/svelte/icons/workflow';
 import Zap from '@lucide/svelte/icons/zap';
 
 import type { IconComponent } from './icons';
@@ -180,7 +179,7 @@ function createCommands(ctx: PaletteContext): PaletteCommand[] {
 		{
 			id: 'create:target',
 			label: 'Add target',
-			icon: Crosshair,
+			icon: Target,
 			group: 'create',
 			keywords: 'new domain ip asn',
 			run: () => ctx.actions.addTarget()
@@ -196,7 +195,7 @@ function createCommands(ctx: PaletteContext): PaletteCommand[] {
 		{
 			id: 'create:context',
 			label: 'New context',
-			icon: Layers,
+			icon: Workflow,
 			group: 'create',
 			keywords: 'auth scope rate proxy',
 			run: () => ctx.actions.go(ROUTES.newContext())
@@ -287,7 +286,7 @@ function destinations(isAdmin: boolean): Destination[] {
 			id: 'page:contexts',
 			label: routeLabels.contexts,
 			href: ROUTES.contexts,
-			icon: Layers,
+			icon: Workflow,
 			keywords: 'auth scope rate proxy'
 		},
 		{

@@ -12,6 +12,7 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import LinkCard from '$lib/components/connectors/link-card.svelte';
 	import ConnectDialog from '$lib/components/connectors/connect-dialog.svelte';
 	import SettingsDialog from '$lib/components/connectors/settings-dialog.svelte';
@@ -199,8 +200,11 @@
 
 <svelte:head><title>{pageTitle(routeLabels.connectors)}</title></svelte:head>
 
-<div class="flex flex-col gap-6">
-	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.connectors}</h1>
+<div class="flex w-full max-w-5xl flex-col gap-6">
+	<PageHeader
+		title={routeLabels.connectors}
+		description="Proxy traffic from Burp Suite, compared with what scans found"
+	/>
 
 	{#if !ready && connectors.error}
 		<EmptyState icon={TriangleAlertIcon} title={connectors.error}>

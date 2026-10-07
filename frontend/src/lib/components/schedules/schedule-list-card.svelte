@@ -4,12 +4,14 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+	import Cog from '@lucide/svelte/icons/cog';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import Pause from '@lucide/svelte/icons/pause';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Play from '@lucide/svelte/icons/play';
 	import Radar from '@lucide/svelte/icons/radar';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Workflow from '@lucide/svelte/icons/workflow';
 	import Hint from '$lib/components/hint.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
@@ -142,6 +144,8 @@
 			variant="secondary"
 			class="rounded-sm border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground"
 		>
+			<Cog class="size-3" aria-hidden="true" />
+			<span class="sr-only">Engine</span>
 			{schedule.engine_name}
 		</Badge>
 		{#if schedule.context_name}
@@ -149,6 +153,8 @@
 				variant="secondary"
 				class="rounded-sm border border-border bg-muted px-2 py-0.5 text-2xs font-medium text-muted-foreground"
 			>
+				<Workflow class="size-3" aria-hidden="true" />
+				<span class="sr-only">Context</span>
 				{schedule.context_name}
 			</Badge>
 		{/if}

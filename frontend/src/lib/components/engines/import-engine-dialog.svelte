@@ -64,84 +64,86 @@ stages:
 </script>
 
 <Dialog.Root bind:open={() => open, requestOpen}>
-	<Dialog.Content class="sm:max-w-2xl">
-		<Dialog.Header>
+	<Dialog.Content class="grid-cols-[minmax(0,1fr)] gap-0 p-0 sm:max-w-2xl">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Import engine</Dialog.Title>
 			<Dialog.Description>Paste or drop an engine YAML document.</Dialog.Description>
 		</Dialog.Header>
 
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="drop"
-			class:dragging
-			ondragover={(e) => {
-				e.preventDefault();
-				dragging = true;
-			}}
-			ondragleave={() => (dragging = false)}
-			ondrop={handleDrop}
-		>
-			<YamlEditor
-				value={source}
-				{issues}
-				filename="engine.yaml"
-				placeholder={PLACEHOLDER}
-				onChange={(next) => (source = next)}
-			/>
-			{#if !source.trim()}
-				<div class="hint">
-					<Upload size={13} />
-					drop a .yaml file
-				</div>
+		<div class="flex min-w-0 flex-col gap-4 px-6 py-5">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="drop"
+				class:dragging
+				ondragover={(e) => {
+					e.preventDefault();
+					dragging = true;
+				}}
+				ondragleave={() => (dragging = false)}
+				ondrop={handleDrop}
+			>
+				<YamlEditor
+					value={source}
+					{issues}
+					filename="engine.yaml"
+					placeholder={PLACEHOLDER}
+					onChange={(next) => (source = next)}
+				/>
+				{#if !source.trim()}
+					<div class="hint">
+						<Upload size={13} />
+						drop a .yaml file
+					</div>
+				{/if}
+			</div>
+
+			{#if source.trim() && errors.length}
+				<Alert.Root variant="destructive">
+					<AlertTriangle />
+					<Alert.Title>
+						{errors.length} problem{errors.length === 1 ? '' : 's'}
+					</Alert.Title>
+					<Alert.Description>
+						<ul class="list-inside list-disc space-y-0.5 text-xs">
+							{#each errors.slice(0, 5) as issue (issue.message + issue.line)}
+								<li>line {issue.line}: {issue.message}</li>
+							{/each}
+						</ul>
+					</Alert.Description>
+				</Alert.Root>
+			{:else if parsed && summary}
+				<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-32rem)]">
+					<div class="preview">
+						<div class="preview-head">
+							<span class="preview-name">{parsed.name || 'Untitled engine'}</span>
+							<Badge variant="outline" class="cap"
+								>{INTENSITY_LABELS[parsed.intensity] ?? parsed.intensity}</Badge
+							>
+						</div>
+						{#if catalog}
+							<StageList
+								stages={catalog.stages}
+								config={parsed.stages}
+								intensity={parsed.intensity}
+								class="py-1"
+							/>
+						{/if}
+						<div class="preview-line">
+							<span>{summary.activeStages} of {summary.totalStages} stages run</span>
+							<FootprintMeter
+								footprint={summary.footprint}
+								requestsPerSecond={summary.requestsPerSecond}
+							/>
+						</div>
+						{#if summary.tools.length}
+							<p class="preview-tools">{summary.tools.join(' · ')}</p>
+						{/if}
+					</div>
+				</ScrollArea>
 			{/if}
 		</div>
 
-		{#if source.trim() && errors.length}
-			<Alert.Root variant="destructive">
-				<AlertTriangle />
-				<Alert.Title>
-					{errors.length} problem{errors.length === 1 ? '' : 's'}
-				</Alert.Title>
-				<Alert.Description>
-					<ul class="list-inside list-disc space-y-0.5 text-xs">
-						{#each errors.slice(0, 5) as issue (issue.message + issue.line)}
-							<li>line {issue.line}: {issue.message}</li>
-						{/each}
-					</ul>
-				</Alert.Description>
-			</Alert.Root>
-		{:else if parsed && summary}
-			<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(92vh-32rem)]">
-				<div class="preview">
-					<div class="preview-head">
-						<span class="preview-name">{parsed.name || 'Untitled engine'}</span>
-						<Badge variant="outline" class="cap"
-							>{INTENSITY_LABELS[parsed.intensity] ?? parsed.intensity}</Badge
-						>
-					</div>
-					{#if catalog}
-						<StageList
-							stages={catalog.stages}
-							config={parsed.stages}
-							intensity={parsed.intensity}
-							class="py-1"
-						/>
-					{/if}
-					<div class="preview-line">
-						<span>{summary.activeStages} of {summary.totalStages} stages run</span>
-						<FootprintMeter
-							footprint={summary.footprint}
-							requestsPerSecond={summary.requestsPerSecond}
-						/>
-					</div>
-					{#if summary.tools.length}
-						<p class="preview-tools">{summary.tools.join(' · ')}</p>
-					{/if}
-				</div>
-			</ScrollArea>
-		{/if}
-
-		<Dialog.Footer>
+		<Dialog.Footer class="border-t px-6 py-4">
 			<Button variant="outline" disabled={isImporting} onclick={() => guard.close()}>Cancel</Button>
 			<LoadingButton
 				loading={isImporting}

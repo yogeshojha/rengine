@@ -13,6 +13,7 @@
 	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
@@ -443,35 +444,31 @@
 <svelte:head><title>{pageTitle(routeLabels['bounty-hub'])}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels['bounty-hub']}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				{#if status}
-					{status.programs.toLocaleString()} programs across {status.platforms.filter(
-						(p) => p.programs > 0
-					).length} platforms
-					{#if status.private_programs > 0}
-						· {status.private_programs} private
-					{/if}
-					{#if status.last_synced_at}
-						· synced {relativeTime(status.last_synced_at)}
-					{/if}
-					·
-					<button
-						type="button"
-						class="rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
-						onclick={() => (settingsOpen = true)}
-					>
-						{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
-					</button>
-				{:else}
-					Bug bounty programs and their scope
+	<PageHeader title={routeLabels['bounty-hub']}>
+		{#snippet description()}
+			{#if status}
+				{status.programs.toLocaleString()} programs across {status.platforms.filter(
+					(p) => p.programs > 0
+				).length} platforms
+				{#if status.private_programs > 0}
+					· {status.private_programs} private
 				{/if}
-			</p>
-		</div>
-
-		<div class="flex flex-wrap items-center gap-2">
+				{#if status.last_synced_at}
+					· synced {relativeTime(status.last_synced_at)}
+				{/if}
+				·
+				<button
+					type="button"
+					class="rounded-sm transition-colors outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+					onclick={() => (settingsOpen = true)}
+				>
+					{SYNC_INTERVAL_LABELS[status.sync_interval] ?? status.sync_interval}
+				</button>
+			{:else}
+				Bug bounty programs and their scope
+			{/if}
+		{/snippet}
+		{#snippet actions()}
 			<Button variant="outline" size="sm" href={ROUTES.whatsNew()}>
 				<NewspaperIcon class="size-4" />
 				What's new
@@ -490,30 +487,32 @@
 				<SettingsIcon class="size-4" />
 				Settings
 			</Button>
-		</div>
-	</div>
+		{/snippet}
+	</PageHeader>
 
 	<ConnectAlert platforms={status?.platforms ?? []} />
 
 	{#if status || watchesStore.watches.length > 0}
 		<div class="flex flex-col gap-4">
-			<CountTabs
-				tabs={[
-					{ key: 'watching', label: 'Watching' },
-					{ key: 'programs', label: 'Programs' },
-					{ key: 'updates', label: 'Updates' }
-				]}
-				counts={{
-					watching: watchesStore.watches.length,
-					programs: total,
-					updates: status?.unseen_events ?? 0
-				}}
-				value={tab}
-				onChange={(k) => {
-					tab = k as BountyHubTab;
-					tabChosen = true;
-				}}
-			/>
+			<div class="border-b">
+				<CountTabs
+					tabs={[
+						{ key: 'watching', label: 'Watching' },
+						{ key: 'programs', label: 'Programs' },
+						{ key: 'updates', label: 'Updates' }
+					]}
+					counts={{
+						watching: watchesStore.watches.length,
+						programs: total,
+						updates: status?.unseen_events ?? 0
+					}}
+					value={tab}
+					onChange={(k) => {
+						tab = k as BountyHubTab;
+						tabChosen = true;
+					}}
+				/>
+			</div>
 
 			{#if tab === 'watching'}
 				<WatchingTab

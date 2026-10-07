@@ -10,6 +10,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { sidebarLayout } from '$lib/stores/sidebar-layout.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -22,8 +23,11 @@
 
 <svelte:head><title>{pageTitle(routeLabels.profile)}</title></svelte:head>
 
-<div class="flex flex-col gap-6">
-	<h1 class="text-2xl font-semibold tracking-tight">Account and security</h1>
+<div class="flex w-full max-w-5xl flex-col gap-6">
+	<PageHeader
+		title={routeLabels.profile}
+		description="Account details, password, two-factor authentication and sidebar"
+	/>
 
 	<Card.Root class="overflow-hidden">
 		<Card.Content class="pt-0">

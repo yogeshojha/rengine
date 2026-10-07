@@ -569,7 +569,7 @@
 							{warningCount} warning{warningCount === 1 ? '' : 's'}
 						{/if}
 					</Button>
-				{:else}
+				{:else if current.trim()}
 					<span class="ok"><CircleCheck size={11} /> Valid</span>
 				{/if}
 				<span class="dim">Ln {cursorLine}, Col {cursorCol}</span>

@@ -66,13 +66,16 @@
 </script>
 
 <Dialog.Root bind:open={() => open, requestOpen}>
-	<Dialog.Content class="sm:max-w-xl">
-		<Dialog.Header>
+	<Dialog.Content class="grid-cols-[minmax(0,1fr)] gap-0 p-0 sm:max-w-xl">
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>New engine</Dialog.Title>
+			<Dialog.Description
+				>Start from a preset. Stages and settings can be changed later.</Dialog.Description
+			>
 		</Dialog.Header>
 
-		<div class="flex flex-col gap-4 py-1">
-			<FormField label="Name">
+		<div class="flex flex-col gap-4 px-6 py-5">
+			<FormField label="Name" required>
 				{#snippet children({ id })}
 					<Input
 						{id}
@@ -122,7 +125,7 @@
 			</RadioGroup.Root>
 		</div>
 
-		<Dialog.Footer>
+		<Dialog.Footer class="border-t px-6 py-4">
 			<Button variant="outline" disabled={isCreating} onclick={() => guard.close()}>Cancel</Button>
 			<LoadingButton
 				loading={isCreating}

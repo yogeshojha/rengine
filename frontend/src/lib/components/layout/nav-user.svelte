@@ -12,6 +12,7 @@
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
+	import SunMoonIcon from '@lucide/svelte/icons/sun-moon';
 	import PanelLeftIcon from '@lucide/svelte/icons/panel-left';
 	import SidebarCustomizeDialog from './sidebar-customize-dialog.svelte';
 	import AboutDialog from './about-dialog.svelte';
@@ -97,20 +98,28 @@
 					</DropdownMenu.Item>
 				</DropdownMenu.Group>
 				<DropdownMenu.Separator />
-				<DropdownMenu.RadioGroup value={userPrefersMode.current}>
-					<DropdownMenu.RadioItem value="light" onclick={() => setMode('light')}>
-						<SunIcon class="size-4" />
-						Light
-					</DropdownMenu.RadioItem>
-					<DropdownMenu.RadioItem value="dark" onclick={() => setMode('dark')}>
-						<MoonIcon class="size-4" />
-						Dark
-					</DropdownMenu.RadioItem>
-					<DropdownMenu.RadioItem value="system" onclick={() => resetMode()}>
-						<MonitorIcon class="size-4" />
-						System
-					</DropdownMenu.RadioItem>
-				</DropdownMenu.RadioGroup>
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger>
+						<SunMoonIcon class="size-4" />
+						Theme
+					</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubContent class="w-40">
+						<DropdownMenu.RadioGroup value={userPrefersMode.current}>
+							<DropdownMenu.RadioItem value="light" onclick={() => setMode('light')}>
+								<SunIcon class="size-4" />
+								Light
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="dark" onclick={() => setMode('dark')}>
+								<MoonIcon class="size-4" />
+								Dark
+							</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="system" onclick={() => resetMode()}>
+								<MonitorIcon class="size-4" />
+								System
+							</DropdownMenu.RadioItem>
+						</DropdownMenu.RadioGroup>
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item onclick={handleLogout}>
 					<LogOutIcon class="size-4" />

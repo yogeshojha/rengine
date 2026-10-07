@@ -85,17 +85,20 @@
 
 		<div id="ai-features" class="scroll-mt-20"></div>
 		<PanelHead title="Features" class="border-t px-4" />
+		{#if !status.enabled}
+			<p class="px-4 py-2.5 text-xs text-muted-foreground">Turn on AI to use these</p>
+		{/if}
 		{#each catalog?.features ?? [] as feature, i (feature.key)}
 			<SettingRow
 				label={feature.label}
 				help={feature.help}
 				for="ai-feature-{feature.key}"
-				class={i === 0 ? 'border-t-0 px-4' : 'px-4'}
+				class={i === 0 && status.enabled ? 'border-t-0' : ''}
 			>
 				<Switch
 					id="ai-feature-{feature.key}"
 					checked={status.features[feature.key] ?? feature.default}
-					disabled={!isAdmin || ai.isSaving}
+					disabled={!isAdmin || ai.isSaving || !status.enabled}
 					onCheckedChange={(v) => setFeature(feature.key, feature.label, v)}
 				/>
 			</SettingRow>

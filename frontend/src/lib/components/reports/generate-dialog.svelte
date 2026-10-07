@@ -19,7 +19,6 @@
 	import SectionConfigPopover from './generate/section-config-popover.svelte';
 	import SectionField from './builder/section-field.svelte';
 	import { ReportPlan } from './generate/report-plan.svelte';
-	import FileTextIcon from '@lucide/svelte/icons/file-text';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { goto } from '$app/navigation';
@@ -322,12 +321,12 @@
 <Dialog.Root bind:open={() => open, requestOpen}>
 	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
 		<Dialog.Header class="border-b px-6 py-4">
-			<Dialog.Title class="flex items-center gap-2">
-				<FileTextIcon class="size-4" />
-				Generate report
-			</Dialog.Title>
+			<Dialog.Title>Generate report</Dialog.Title>
 			{#if subject}
 				<Dialog.Description>Report on {subject}.</Dialog.Description>
+			{:else}
+				<Dialog.Description class="sr-only">Pick a subject, template and format.</Dialog.Description
+				>
 			{/if}
 		</Dialog.Header>
 

@@ -123,6 +123,9 @@
 	let stats = $state<TemplateLibraryStats | null>(null);
 	let statsLoading = $state(true);
 	let statsError = $state<string | null>(null);
+	const unsynced = $derived(
+		!statsLoading && !statsError && !!stats && !stats.ready && stats.total === 0
+	);
 	let items = $state<VulnTemplateRead[]>([]);
 	let total = $state(0);
 	let listLoading = $state(true);
@@ -470,293 +473,310 @@
 					</span>
 				{/snippet}
 			</Hint>
-			<Hint text={isAdmin ? null : 'Editable by administrators'}>
-				{#snippet child(props)}
-					<span {...props} class="inline-flex">
-						<LoadingButton
-							size="sm"
-							loading={syncing}
-							loadingLabel="Syncing"
-							disabled={!isAdmin}
-							onclick={sync}
-						>
-							<Download class="size-4" /> Sync library
-						</LoadingButton>
-					</span>
-				{/snippet}
-			</Hint>
+			{#if !unsynced}
+				{@render syncButton()}
+			{/if}
 		</Card.Action>
 	</Card.Header>
 
-	<div class="border-b px-4 py-4">
-		{#if statsLoading}
-			<Skeleton class="h-12 w-full" />
-		{:else if statsError}
-			<div class="flex items-start gap-3">
-				<TriangleAlert class="mt-0.5 size-4 shrink-0 text-destructive" />
-				<div class="flex flex-col gap-0.5">
-					<p class="text-sm font-medium">Library not loaded</p>
-					<p class="text-xs text-muted-foreground">{statsError}</p>
-				</div>
-			</div>
-		{:else if !stats?.ready}
-			<div class="flex items-start gap-3">
-				<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
-				<p class="text-sm font-medium">No checks</p>
-			</div>
-		{:else}
-			<div class="flex flex-wrap items-end gap-x-10 gap-y-4">
-				<div class="flex flex-col">
-					<span class="font-mono text-2xl leading-8 font-semibold tabular-nums">
-						{stats.total.toLocaleString()}
-					</span>
-					<span class="text-xs text-muted-foreground">checks</span>
-				</div>
-				<div class="flex flex-col">
-					<span class="font-mono text-sm leading-6 tabular-nums">
-						{stats.official.toLocaleString()}
-					</span>
-					<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.official}</span>
-				</div>
-				<div class="flex flex-col">
-					<span class="font-mono text-sm leading-6 tabular-nums">
-						{stats.custom.toLocaleString()}
-					</span>
-					<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.custom}</span>
-				</div>
-				{#if stats.callback > 0}
-					<button
-						type="button"
-						class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted"
-						aria-pressed={onlyCallback}
-						onclick={() => (onlyCallback = !onlyCallback)}
-					>
-						<span class="font-mono text-sm leading-6 tabular-nums">
-							{stats.callback.toLocaleString()}
-						</span>
-						<span class="text-xs text-muted-foreground">Need a callback</span>
-					</button>
-				{/if}
-				<div class="flex min-w-64 flex-1 flex-col gap-2">
-					<SeverityBar counts={severityCounts} height="h-1.5" />
-					<div class="flex flex-wrap gap-x-4 gap-y-1">
-						{#each stats.by_severity as part (part.key)}
-							<span class="flex items-center gap-1.5 text-xs">
-								<SeverityMark severity={part.key} showLabel={false} />
-								<span class="text-muted-foreground">{part.label}</span>
-								<span class="font-mono tabular-nums">{part.count.toLocaleString()}</span>
-							</span>
-						{/each}
-					</div>
-				</div>
-			</div>
-		{/if}
-	</div>
-
-	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-		<InputGroup.Root class="w-full sm:max-w-xs">
-			<InputGroup.Addon><Search /></InputGroup.Addon>
-			<InputGroup.Input
-				bind:value={search}
-				placeholder="Search checks by name or identifier"
-				aria-label="Search checks"
-			/>
-		</InputGroup.Root>
-		<Select.Root type="single" bind:value={severity}>
-			<Select.Trigger class="w-36" aria-label="Severity">
-				{severity === ALL ? 'Any severity' : SEVERITY_LABELS[severity]}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value={ALL} label="Any severity">Any severity</Select.Item>
-				{#each SEVERITY_ORDER as value (value)}
-					<Select.Item {value} label={SEVERITY_LABELS[value]}>
-						{SEVERITY_LABELS[value]}
-					</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		<Select.Root type="single" bind:value={set}>
-			<Select.Trigger class="w-44" aria-label="Check set">
-				{set === ALL ? 'Any check set' : (sets.find((s) => s.key === set)?.label ?? set)}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value={ALL} label="Any check set">Any check set</Select.Item>
-				{#each sets as spec (spec.key)}
-					<Select.Item value={spec.key} label={spec.label}>
-						{spec.label}
-						<span class="ml-auto text-xs text-muted-foreground tabular-nums">
-							{spec.count.toLocaleString()}
-						</span>
-					</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		<Select.Root type="single" bind:value={origin}>
-			<Select.Trigger class="w-40" aria-label="Origin">
-				{origin === ALL ? 'Any origin' : TEMPLATE_ORIGIN_LABELS[origin]}
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value={ALL} label="Any origin">Any origin</Select.Item>
-				{#each Object.entries(TEMPLATE_ORIGIN_LABELS) as [value, label] (value)}
-					<Select.Item {value} {label}>{label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-		{#if newCount > 0 || onlyNew}
-			<ToggleGroup.Root
-				type="single"
-				value={onlyNew ? 'new' : ''}
-				onValueChange={(v) => (onlyNew = v === 'new')}
-				variant="outline"
-				aria-label="New checks"
-			>
-				<ToggleGroup.Item value="new" class="h-9 gap-1.5 px-3 text-sm font-normal">
-					New
-					<span class="text-info tabular-nums">{newCount.toLocaleString()}</span>
-				</ToggleGroup.Item>
-			</ToggleGroup.Root>
-		{/if}
-		{#if onlyCallback}
-			<Button
-				variant="secondary"
-				aria-label="Clear the need a callback filter"
-				onclick={() => (onlyCallback = false)}
-			>
-				Need a callback
-				<X class="size-3.5" />
-			</Button>
-		{/if}
-		<Button
-			variant="outline"
-			size="icon"
-			class="ml-auto"
-			aria-label="Refresh"
-			onclick={() => {
-				void loadStats();
-				void loadList();
-			}}
-		>
-			<RefreshCw class="size-4 {listLoading ? 'animate-spin' : ''}" />
-		</Button>
-	</div>
-
-	{#if listLoading && items.length === 0}
-		<RowSkeleton rows={6} avatar="size-7 rounded-md" trailing="h-5 w-20 rounded-full" />
-	{:else if listError}
+	{#if unsynced}
 		<EmptyState
-			icon={TriangleAlert}
-			title="Checks not loaded"
-			description={listError}
+			icon={Download}
+			title="No checks synced"
+			description="Sync the library to download the official Nuclei checks."
 			class="rounded-none border-0 bg-transparent py-16"
 		>
-			<Button variant="outline" size="sm" onclick={() => void loadList()}>Retry</Button>
+			{@render syncButton()}
 		</EmptyState>
-	{:else if items.length === 0}
-		<EmptyState
-			icon={SearchX}
-			title="No checks match"
-			class="rounded-none border-0 bg-transparent py-16"
-		/>
 	{:else}
-		<div class="divide-y">
-			{#each items as template (template.id)}
-				{@const custom = template.origin === TemplateOrigin.CUSTOM}
-				{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
-				<div class="flex items-start gap-3 px-4 py-3 hover:bg-muted/40">
-					{#if custom && isAdmin}
-						<span class="flex h-7 shrink-0 items-center">
-							<Checkbox
-								checked={picked.has(template.id)}
-								onCheckedChange={() => toggleCheck(template.id)}
-								aria-label="Select {template.name}"
-							/>
+		<div class="border-b px-4 py-4">
+			{#if statsLoading}
+				<Skeleton class="h-12 w-full" />
+			{:else if statsError}
+				<div class="flex items-start gap-3">
+					<TriangleAlert class="mt-0.5 size-4 shrink-0 text-destructive" />
+					<div class="flex flex-col gap-0.5">
+						<p class="text-sm font-medium">Library not loaded</p>
+						<p class="text-xs text-muted-foreground">{statsError}</p>
+					</div>
+				</div>
+			{:else if !stats?.ready}
+				<div class="flex items-start gap-3">
+					<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
+					<p class="text-sm font-medium">Library not synced</p>
+				</div>
+			{:else}
+				<div class="flex flex-wrap items-end gap-x-10 gap-y-4">
+					<div class="flex flex-col">
+						<span class="font-mono text-2xl leading-8 font-semibold tabular-nums">
+							{stats.total.toLocaleString()}
 						</span>
-					{:else}
-						<span class="w-4 shrink-0"></span>
-					{/if}
-					<span
-						class="flex size-7 shrink-0 items-center justify-center rounded-md"
-						style={tileStyle(template.severity)}
-					>
-						<SetIcon class="size-4" />
-					</span>
-					<div class="flex min-w-0 flex-1 flex-col gap-1">
-						<div class="flex flex-wrap items-center gap-2">
-							<span class="text-sm leading-5 font-medium wrap-anywhere">
-								{template.name}
-							</span>
-							{#if custom}
-								<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
-							{/if}
-							{#if isNew(template)}
-								<Hint text={`Added ${relativeTime(template.created_at)}`}>
-									{#snippet child(props)}
-										<span {...props} class="flex h-5 items-center">
-											<Badge variant="info" class="px-1.5 text-2xs font-normal">New</Badge>
-										</span>
-									{/snippet}
-								</Hint>
-							{/if}
-						</div>
-						<div
-							class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
+						<span class="text-xs text-muted-foreground">checks</span>
+					</div>
+					<div class="flex flex-col">
+						<span class="font-mono text-sm leading-6 tabular-nums">
+							{stats.official.toLocaleString()}
+						</span>
+						<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.official}</span>
+					</div>
+					<div class="flex flex-col">
+						<span class="font-mono text-sm leading-6 tabular-nums">
+							{stats.custom.toLocaleString()}
+						</span>
+						<span class="text-xs text-muted-foreground">{TEMPLATE_ORIGIN_LABELS.custom}</span>
+					</div>
+					{#if stats.callback > 0}
+						<button
+							type="button"
+							class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted"
+							aria-pressed={onlyCallback}
+							onclick={() => (onlyCallback = !onlyCallback)}
 						>
-							<SeverityMark severity={template.severity} />
-							<span class="font-mono">{template.template_id}</span>
-							{#each template.sets.slice(0, 2) as key (key)}
-								<span>{TEMPLATE_SET_LABELS[key] ?? key}</span>
-							{/each}
-							<span>{PROTOCOL_LABELS[template.protocol] ?? template.protocol}</span>
-							{#each template.cve_ids
-								.filter((cve) => cve !== template.template_id)
-								.slice(0, 1) as cve (cve)}
-								<span class="font-mono">{cve}</span>
-							{/each}
-							{#if template.requests}
-								<span>
-									{template.requests}
-									{template.requests === 1 ? 'request' : 'requests'}
+							<span class="font-mono text-sm leading-6 tabular-nums">
+								{stats.callback.toLocaleString()}
+							</span>
+							<span class="text-xs text-muted-foreground">Need a callback</span>
+						</button>
+					{/if}
+					<div class="flex min-w-64 flex-1 flex-col gap-2">
+						<SeverityBar counts={severityCounts} height="h-1.5" />
+						<div class="flex flex-wrap gap-x-4 gap-y-1">
+							{#each stats.by_severity as part (part.key)}
+								<span class="flex items-center gap-1.5 text-xs">
+									<SeverityMark severity={part.key} showLabel={false} />
+									<span class="text-muted-foreground">{part.label}</span>
+									<span class="font-mono tabular-nums">{part.count.toLocaleString()}</span>
 								</span>
-							{/if}
+							{/each}
 						</div>
 					</div>
-					<div class="flex shrink-0 items-center gap-2">
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							class="text-muted-foreground hover:text-foreground"
-							aria-label="{custom && isAdmin ? 'Edit' : 'View'} {template.name}"
-							onclick={() => (viewing = template)}
-						>
-							<FileCode class="size-4" />
-						</Button>
-						<Switch
-							checked={template.enabled}
-							disabled={!isAdmin}
-							onCheckedChange={(value) => toggle(template, value)}
-							aria-label="Enable {template.name}"
-						/>
+				</div>
+			{/if}
+		</div>
+
+		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+			<InputGroup.Root class="w-full sm:max-w-xs">
+				<InputGroup.Addon><Search /></InputGroup.Addon>
+				<InputGroup.Input
+					bind:value={search}
+					placeholder="Search checks by name or identifier"
+					aria-label="Search checks"
+				/>
+			</InputGroup.Root>
+			<Select.Root type="single" bind:value={severity}>
+				<Select.Trigger class="w-36" aria-label="Severity">
+					{severity === ALL ? 'Any severity' : SEVERITY_LABELS[severity]}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value={ALL} label="Any severity">Any severity</Select.Item>
+					{#each SEVERITY_ORDER as value (value)}
+						<Select.Item {value} label={SEVERITY_LABELS[value]}>
+							{SEVERITY_LABELS[value]}
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<Select.Root type="single" bind:value={set}>
+				<Select.Trigger class="w-44" aria-label="Check set">
+					{set === ALL ? 'Any check set' : (sets.find((s) => s.key === set)?.label ?? set)}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value={ALL} label="Any check set">Any check set</Select.Item>
+					{#each sets as spec (spec.key)}
+						<Select.Item value={spec.key} label={spec.label}>
+							{spec.label}
+							<span class="ml-auto text-xs text-muted-foreground tabular-nums">
+								{spec.count.toLocaleString()}
+							</span>
+						</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			<Select.Root type="single" bind:value={origin}>
+				<Select.Trigger class="w-40" aria-label="Origin">
+					{origin === ALL ? 'Any origin' : TEMPLATE_ORIGIN_LABELS[origin]}
+				</Select.Trigger>
+				<Select.Content>
+					<Select.Item value={ALL} label="Any origin">Any origin</Select.Item>
+					{#each Object.entries(TEMPLATE_ORIGIN_LABELS) as [value, label] (value)}
+						<Select.Item {value} {label}>{label}</Select.Item>
+					{/each}
+				</Select.Content>
+			</Select.Root>
+			{#if newCount > 0 || onlyNew}
+				<ToggleGroup.Root
+					type="single"
+					value={onlyNew ? 'new' : ''}
+					onValueChange={(v) => (onlyNew = v === 'new')}
+					variant="outline"
+					aria-label="New checks"
+				>
+					<ToggleGroup.Item value="new" class="h-9 gap-1.5 px-3 text-sm font-normal">
+						New
+						<span class="text-info tabular-nums">{newCount.toLocaleString()}</span>
+					</ToggleGroup.Item>
+				</ToggleGroup.Root>
+			{/if}
+			{#if onlyCallback}
+				<Button
+					variant="secondary"
+					aria-label="Clear the need a callback filter"
+					onclick={() => (onlyCallback = false)}
+				>
+					Need a callback
+					<X class="size-3.5" />
+				</Button>
+			{/if}
+			<Button
+				variant="outline"
+				size="icon"
+				class="ml-auto"
+				aria-label="Refresh"
+				onclick={() => {
+					void loadStats();
+					void loadList();
+				}}
+			>
+				<RefreshCw class="size-4 {listLoading ? 'animate-spin' : ''}" />
+			</Button>
+		</div>
+
+		{#if listLoading && items.length === 0}
+			<RowSkeleton rows={6} avatar="size-7 rounded-md" trailing="h-5 w-20 rounded-full" />
+		{:else if listError}
+			<EmptyState
+				icon={TriangleAlert}
+				title="Checks not loaded"
+				description={listError}
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button variant="outline" size="sm" onclick={() => void loadList()}>Retry</Button>
+			</EmptyState>
+		{:else if items.length === 0}
+			<EmptyState
+				icon={SearchX}
+				title="No checks match"
+				class="rounded-none border-0 bg-transparent py-16"
+			/>
+		{:else}
+			<div class="divide-y">
+				{#each items as template (template.id)}
+					{@const custom = template.origin === TemplateOrigin.CUSTOM}
+					{@const SetIcon = TEMPLATE_SET_ICONS[template.sets[0] ?? ''] ?? FileCode}
+					<div class="flex items-start gap-3 px-4 py-3 hover:bg-muted/40">
 						{#if custom && isAdmin}
+							<span class="flex h-7 shrink-0 items-center">
+								<Checkbox
+									checked={picked.has(template.id)}
+									onCheckedChange={() => toggleCheck(template.id)}
+									aria-label="Select {template.name}"
+								/>
+							</span>
+						{:else}
+							<span class="w-4 shrink-0"></span>
+						{/if}
+						<span
+							class="flex size-7 shrink-0 items-center justify-center rounded-md"
+							style={tileStyle(template.severity)}
+						>
+							<SetIcon class="size-4" />
+						</span>
+						<div class="flex min-w-0 flex-1 flex-col gap-1">
+							<div class="flex flex-wrap items-center gap-2">
+								<span class="text-sm leading-5 font-medium wrap-anywhere">
+									{template.name}
+								</span>
+								{#if custom}
+									<Badge variant="info" class="text-2xs font-normal">Custom</Badge>
+								{/if}
+								{#if isNew(template)}
+									<Hint text={`Added ${relativeTime(template.created_at)}`}>
+										{#snippet child(props)}
+											<span {...props} class="flex h-5 items-center">
+												<Badge variant="info" class="px-1.5 text-2xs font-normal">New</Badge>
+											</span>
+										{/snippet}
+									</Hint>
+								{/if}
+							</div>
+							<div
+								class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground"
+							>
+								<SeverityMark severity={template.severity} />
+								<span class="font-mono">{template.template_id}</span>
+								{#each template.sets.slice(0, 2) as key (key)}
+									<span>{TEMPLATE_SET_LABELS[key] ?? key}</span>
+								{/each}
+								<span>{PROTOCOL_LABELS[template.protocol] ?? template.protocol}</span>
+								{#each template.cve_ids
+									.filter((cve) => cve !== template.template_id)
+									.slice(0, 1) as cve (cve)}
+									<span class="font-mono">{cve}</span>
+								{/each}
+								{#if template.requests}
+									<span>
+										{template.requests}
+										{template.requests === 1 ? 'request' : 'requests'}
+									</span>
+								{/if}
+							</div>
+						</div>
+						<div class="flex shrink-0 items-center gap-2">
 							<Button
 								variant="ghost"
 								size="icon-sm"
-								class="text-muted-foreground hover:text-destructive"
-								aria-label="Delete {template.name}"
-								onclick={() => (removing = template)}
+								class="text-muted-foreground hover:text-foreground"
+								aria-label="{custom && isAdmin ? 'Edit' : 'View'} {template.name}"
+								onclick={() => (viewing = template)}
 							>
-								<Trash2 class="size-4" />
+								<FileCode class="size-4" />
 							</Button>
-						{/if}
+							<Switch
+								checked={template.enabled}
+								disabled={!isAdmin}
+								onCheckedChange={(value) => toggle(template, value)}
+								aria-label="Enable {template.name}"
+							/>
+							{#if custom && isAdmin}
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									class="text-muted-foreground hover:text-destructive"
+									aria-label="Delete {template.name}"
+									onclick={() => (removing = template)}
+								>
+									<Trash2 class="size-4" />
+								</Button>
+							{/if}
+						</div>
 					</div>
-				</div>
-			{/each}
-		</div>
-	{/if}
+				{/each}
+			</div>
+		{/if}
 
-	{#if total > PAGE_SIZE}
-		<ResultsPagination {total} page={pageIndex} pageSize={PAGE_SIZE} noun="check" onPage={page} />
+		{#if total > PAGE_SIZE}
+			<ResultsPagination {total} page={pageIndex} pageSize={PAGE_SIZE} noun="check" onPage={page} />
+		{/if}
 	{/if}
 </Card.Root>
+
+{#snippet syncButton()}
+	<Hint text={isAdmin ? null : 'Editable by administrators'}>
+		{#snippet child(props)}
+			<span {...props} class="inline-flex">
+				<LoadingButton
+					size="sm"
+					loading={syncing}
+					loadingLabel="Syncing"
+					disabled={!isAdmin}
+					onclick={sync}
+				>
+					<Download class="size-4" /> Sync library
+				</LoadingButton>
+			</span>
+		{/snippet}
+	</Hint>
+{/snippet}
 
 <TemplateSheet
 	template={viewing}

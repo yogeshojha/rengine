@@ -292,88 +292,92 @@
 			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
 		>
 			<div class="space-y-4 px-6 py-5">
-				<div class="flex flex-col gap-3">
-					<Label for="schedule-name">Name <span class="text-destructive">*</span></Label>
-					<Input id="schedule-name" bind:value={name} placeholder="Nightly recon" />
-				</div>
+				<FormField label="Name" required>
+					{#snippet children({ id })}
+						<Input {id} bind:value={name} placeholder="Nightly recon" />
+					{/snippet}
+				</FormField>
 
-				<div class="flex flex-col gap-3">
-					<Label for="schedule-targets">Targets <span class="text-destructive">*</span></Label>
-					{#if targetsLoading}
-						<Skeleton class="h-9 w-full rounded-md" />
-					{:else if targetsError}
-						<div
-							class="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
-						>
-							<AlertTriangle class="h-3.5 w-3.5 shrink-0" />
-							{targetsError}
-						</div>
-					{:else}
-						<MultiSelectCombobox
-							id="schedule-targets"
-							items={targetItems}
-							selected={selectedTargetItems}
-							onSelect={(item) =>
-								(targetIds = targetIds.includes(item.id) ? targetIds : [...targetIds, item.id])}
-							onRemove={(item) => (targetIds = targetIds.filter((id) => id !== item.id))}
-							onSearch={searchTargets}
-							allowCreate={false}
-							placeholder="Search targets"
-							emptyText="No targets"
-						/>
-					{/if}
-				</div>
+				<FormField label="Targets" required>
+					{#snippet children({ id })}
+						{#if targetsLoading}
+							<Skeleton class="h-9 w-full rounded-md" />
+						{:else if targetsError}
+							<div
+								class="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+							>
+								<AlertTriangle class="h-3.5 w-3.5 shrink-0" />
+								{targetsError}
+							</div>
+						{:else}
+							<MultiSelectCombobox
+								{id}
+								items={targetItems}
+								selected={selectedTargetItems}
+								onSelect={(item) =>
+									(targetIds = targetIds.includes(item.id) ? targetIds : [...targetIds, item.id])}
+								onRemove={(item) => (targetIds = targetIds.filter((id) => id !== item.id))}
+								onSearch={searchTargets}
+								allowCreate={false}
+								placeholder="Search targets"
+								emptyText="No targets"
+							/>
+						{/if}
+					{/snippet}
+				</FormField>
 
 				<div class="grid grid-cols-2 gap-3">
-					<div class="flex flex-col gap-3">
-						<Label for="schedule-engine">Engine <span class="text-destructive">*</span></Label>
-						{#if !enginesReady}
-							<Skeleton class="h-9 w-full rounded-md" />
-						{:else}
-							<Select.Root type="single" bind:value={engineId}>
-								<Select.Trigger id="schedule-engine" class="w-full">{engineLabel}</Select.Trigger>
-								<Select.Content>
-									{#each scanEnginesStore.engines as engine (engine.id)}
-										{@const locked = launchLocked(engine, auth.user)}
-										<Select.Item value={engine.id} label={engine.name} disabled={locked}>
-											{engine.name}
-											{#if locked}
-												<CredentialLock
-													reason={credentialLaunchRefusal(ENGINE_NOUN, engine.name)}
-												/>
-											{/if}
+					<FormField label="Engine" required>
+						{#snippet children({ id })}
+							{#if !enginesReady}
+								<Skeleton class="h-9 w-full rounded-md" />
+							{:else}
+								<Select.Root type="single" bind:value={engineId}>
+									<Select.Trigger {id} class="w-full">{engineLabel}</Select.Trigger>
+									<Select.Content>
+										{#each scanEnginesStore.engines as engine (engine.id)}
+											{@const locked = launchLocked(engine, auth.user)}
+											<Select.Item value={engine.id} label={engine.name} disabled={locked}>
+												{engine.name}
+												{#if locked}
+													<CredentialLock
+														reason={credentialLaunchRefusal(ENGINE_NOUN, engine.name)}
+													/>
+												{/if}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							{/if}
+						{/snippet}
+					</FormField>
+					<FormField label="Context">
+						{#snippet children({ id })}
+							{#if !contextsReady}
+								<Skeleton class="h-9 w-full rounded-md" />
+							{:else}
+								<Select.Root type="single" bind:value={contextId}>
+									<Select.Trigger {id} class="w-full">{contextLabel}</Select.Trigger>
+									<Select.Content>
+										<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>
+											{NO_CONTEXT_LABEL}
 										</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
-						{/if}
-					</div>
-					<div class="flex flex-col gap-3">
-						<Label for="schedule-context">Context</Label>
-						{#if !contextsReady}
-							<Skeleton class="h-9 w-full rounded-md" />
-						{:else}
-							<Select.Root type="single" bind:value={contextId}>
-								<Select.Trigger id="schedule-context" class="w-full">{contextLabel}</Select.Trigger>
-								<Select.Content>
-									<Select.Item value={SELECT_NONE} label={NO_CONTEXT_LABEL}>
-										{NO_CONTEXT_LABEL}
-									</Select.Item>
-									{#each scanContextsStore.contexts as context (context.id)}
-										{@const locked = launchLocked(context, auth.user)}
-										<Select.Item value={context.id} label={context.name} disabled={locked}>
-											{context.name}
-											{#if locked}
-												<CredentialLock
-													reason={credentialLaunchRefusal(CONTEXT_NOUN, context.name)}
-												/>
-											{/if}
-										</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
-						{/if}
-					</div>
+										{#each scanContextsStore.contexts as context (context.id)}
+											{@const locked = launchLocked(context, auth.user)}
+											<Select.Item value={context.id} label={context.name} disabled={locked}>
+												{context.name}
+												{#if locked}
+													<CredentialLock
+														reason={credentialLaunchRefusal(CONTEXT_NOUN, context.name)}
+													/>
+												{/if}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							{/if}
+						{/snippet}
+					</FormField>
 				</div>
 
 				<Separator />

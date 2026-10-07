@@ -149,6 +149,9 @@
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title>{editing ? editing.name : 'Connect a tracker'}</Sheet.Title>
+			<Sheet.Description class="sr-only">
+				Tracker connection and the default destination for filed issues.
+			</Sheet.Description>
 		</Sheet.Header>
 
 		<ScrollArea class="min-h-0 flex-1">
@@ -176,12 +179,12 @@
 
 				<section class="flex flex-col gap-4 py-5">
 					<h3 class={LABEL}>Connection</h3>
-					<FormField label="Name">
+					<FormField label="Name" required>
 						{#snippet children({ id })}
 							<Input {id} bind:value={name} maxlength={120} placeholder={spec.label} />
 						{/snippet}
 					</FormField>
-					<FormField label={spec.urlLabel}>
+					<FormField label={spec.urlLabel} required={!spec.defaultUrl}>
 						{#snippet children({ id })}
 							<Input
 								{id}
@@ -193,7 +196,11 @@
 						{/snippet}
 					</FormField>
 					{#each spec.fields as field (field.key)}
-						<FormField label={field.label} description={field.help || undefined}>
+						<FormField
+							label={field.label}
+							description={field.help || undefined}
+							required={!(editing && stored[field.key])}
+						>
 							{#snippet children({ id })}
 								<Input
 									{id}
@@ -211,32 +218,21 @@
 							{/snippet}
 						</FormField>
 					{/each}
-					<div class="flex flex-wrap items-center gap-3">
-						<LoadingButton
-							variant="outline"
-							size="sm"
-							loading={testing}
-							loadingLabel="Testing"
-							disabled={missing}
-							onclick={test}
+					{#if result}
+						<p
+							class="flex min-w-0 items-start gap-1.5 text-sm {result.success
+								? 'text-success'
+								: 'text-destructive'}"
+							role="status"
 						>
-							Test connection
-						</LoadingButton>
-						{#if result}
-							<span
-								class="inline-flex min-w-0 items-center gap-1.5 text-sm {result.success
-									? 'text-success'
-									: 'text-destructive'}"
-							>
-								{#if result.success}
-									<CheckIcon class="size-4 shrink-0" />
-								{:else}
-									<XIcon class="size-4 shrink-0" />
-								{/if}
-								<span class="wrap-anywhere">{result.message}</span>
-							</span>
-						{/if}
-					</div>
+							{#if result.success}
+								<CheckIcon class="mt-0.5 size-4 shrink-0" />
+							{:else}
+								<XIcon class="mt-0.5 size-4 shrink-0" />
+							{/if}
+							<span class="wrap-anywhere">{result.message}</span>
+						</p>
+					{/if}
 				</section>
 
 				<section class="flex flex-col gap-4 py-5">
@@ -272,19 +268,31 @@
 			</div>
 		</ScrollArea>
 
-		<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
-			<Button variant="outline" size="sm" disabled={saving} onclick={() => guard.close()}>
-				Cancel
-			</Button>
+		<Sheet.Footer class="flex-row items-center justify-between gap-2 border-t px-5 py-3">
 			<LoadingButton
+				variant="ghost"
 				size="sm"
-				loading={saving}
-				loadingLabel={editing ? 'Saving' : 'Connecting'}
-				disabled={missing}
-				onclick={save}
+				loading={testing}
+				loadingLabel="Testing"
+				disabled={missing || saving}
+				onclick={test}
 			>
-				{editing ? 'Save' : 'Connect'}
+				Test connection
 			</LoadingButton>
+			<div class="flex items-center gap-2">
+				<Button variant="outline" size="sm" disabled={saving} onclick={() => guard.close()}>
+					Cancel
+				</Button>
+				<LoadingButton
+					size="sm"
+					loading={saving}
+					loadingLabel={editing ? 'Saving' : 'Connecting'}
+					disabled={missing}
+					onclick={save}
+				>
+					{editing ? 'Save' : 'Connect'}
+				</LoadingButton>
+			</div>
 		</Sheet.Footer>
 	</Sheet.Content>
 </Sheet.Root>

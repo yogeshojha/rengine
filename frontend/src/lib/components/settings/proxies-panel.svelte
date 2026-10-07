@@ -217,8 +217,10 @@
 		return `Proxy ${proxy.name} is removed and cleared from ${n} scan context${n === 1 ? '' : 's'}.`;
 	}
 
+	const hasRows = $derived(proxies.length > 0);
+
 	$effect(() => {
-		if (!isAdmin) return;
+		if (!isAdmin || !hasRows) return;
 		settingsActions.set(addAction);
 		return () => settingsActions.clear(addAction);
 	});
@@ -363,14 +365,17 @@
 <Dialog.Root
 	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
 >
-	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editing ? 'Edit proxy' : 'Add proxy'}</Dialog.Title>
+			<Dialog.Description
+				>Scans send their traffic through one of these endpoints.</Dialog.Description
+			>
 		</Dialog.Header>
 		<div class="min-h-0 flex-1 overflow-y-auto">
 			<div class="flex flex-col gap-5 px-6 py-5">
 				<div class="grid gap-4 sm:grid-cols-2">
-					<FormField label="Name" error={nameError}>
+					<FormField label="Name" error={nameError} required>
 						{#snippet children({ id })}
 							<Input
 								{id}
@@ -406,7 +411,7 @@
 					</div>
 					<div class="overflow-hidden rounded-lg border">
 						<div
-							class="hidden grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem] gap-2 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
+							class="hidden grid-cols-[6.5rem_minmax(0,2fr)_5rem_minmax(0,1fr)_minmax(0,1fr)_2rem] gap-2 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase sm:grid"
 						>
 							<span>Scheme</span>
 							<span>Host</span>
@@ -417,7 +422,7 @@
 						</div>
 						{#each rows as row, i (i)}
 							<div
-								class="grid grid-cols-2 gap-2 border-b border-border/60 px-4 py-2 last:border-b-0 sm:grid-cols-[6.5rem_minmax(0,1fr)_5rem_minmax(0,0.8fr)_minmax(0,0.8fr)_2rem]"
+								class="grid grid-cols-2 gap-2 border-b border-border/60 px-4 py-2 last:border-b-0 sm:grid-cols-[6.5rem_minmax(0,2fr)_5rem_minmax(0,1fr)_minmax(0,1fr)_2rem]"
 							>
 								<Select.Root
 									type="single"

@@ -13,6 +13,7 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import TripwiresTable from '$lib/components/tripwires/tripwires-table.svelte';
 	import TripwireWizard, {
@@ -219,14 +220,11 @@
 <svelte:head><title>{pageTitle(routeLabels.tripwires)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.tripwires}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				A saved query that notifies or starts a scan when a result matches it
-			</p>
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
+	<PageHeader
+		title={routeLabels.tripwires}
+		description="A saved query that notifies or starts a scan when a result matches it"
+	>
+		{#snippet actions()}
 			<Button variant="outline" size="sm" onclick={() => (templatesOpen = true)}>
 				<LayoutTemplate class="size-4" />
 				Templates
@@ -235,8 +233,8 @@
 				<Plus class="size-4" />
 				New tripwire
 			</Button>
-		</div>
-	</div>
+		{/snippet}
+	</PageHeader>
 
 	{#if tripwiresStore.error && !tripwiresStore.isLoading && tripwires.length > 0}
 		<div

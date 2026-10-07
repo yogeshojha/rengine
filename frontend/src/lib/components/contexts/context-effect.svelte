@@ -60,6 +60,11 @@
 		if (!engineId && engines.length) untrack(() => (engineId = engines[0].id));
 	});
 
+	function retryEngines() {
+		const project = projectsStore.activeProject;
+		if (project) scanEnginesStore.fetchEngines(project.id);
+	}
+
 	function previewContext(d: ScanContextCreate): ScanContextCreate {
 		const auth = { ...d.auth } as AuthConfig;
 		const secret = secretFieldFor(d.auth_type);
@@ -264,6 +269,10 @@
 		<div class="body">
 			{#if error}
 				<p class="err">{error}</p>
+			{:else if !engines.length && scanEnginesStore.error && !scanEnginesStore.isLoading}
+				<EmptyState title="Scan engines not loaded" description={scanEnginesStore.error} compact>
+					<Button variant="outline" size="sm" onclick={retryEngines}>Retry</Button>
+				</EmptyState>
 			{:else if !engines.length && scanEnginesStore.hasFetched}
 				<EmptyState title="No scan engines" compact>
 					<Button variant="outline" size="sm" onclick={() => goto(ROUTES.engines)}>

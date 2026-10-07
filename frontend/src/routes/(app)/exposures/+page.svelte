@@ -8,6 +8,7 @@
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import RulesPanel from '$lib/components/interest/rules-panel.svelte';
 	import DismissedPanel from '$lib/components/interest/dismissed-panel.svelte';
 	import ExposuresTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
@@ -71,9 +72,13 @@
 <svelte:head><title>{pageTitle(routeLabels.exposures)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.exposures}</h1>
+	<PageHeader
+		title={routeLabels.exposures}
+		description="Assets that stand out, like admin panels, remote access and staging hosts"
+	/>
 
 	<Tabs.Root
+		class="gap-6"
 		value={activeTab}
 		onValueChange={(v) => {
 			if (v) activeTab = v as ExposureTab;
@@ -89,7 +94,7 @@
 			{/each}
 		</Tabs.List>
 
-		<Tabs.Content value="exposures" class="mt-6 space-y-4">
+		<Tabs.Content value="exposures" class="space-y-4">
 			{#if projectsStore.activeProject}
 				<ScopeBar
 					projectSlug={projectsStore.activeProject.slug}
@@ -109,10 +114,10 @@
 				/>
 			{/key}
 		</Tabs.Content>
-		<Tabs.Content value="rules" class="mt-6">
+		<Tabs.Content value="rules">
 			<RulesPanel />
 		</Tabs.Content>
-		<Tabs.Content value="dismissed" class="mt-6">
+		<Tabs.Content value="dismissed">
 			<DismissedPanel />
 		</Tabs.Content>
 	</Tabs.Root>

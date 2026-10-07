@@ -25,8 +25,12 @@
 		onOpen
 	}: Props = $props();
 
+	const SHOWN_TAGS = 3;
+
 	let subject = $derived(noteSubject(note));
 	let resolved = $derived(note.status === 'resolved');
+	let shownTags = $derived(note.tags.slice(0, SHOWN_TAGS));
+	let moreTags = $derived(note.tags.slice(SHOWN_TAGS));
 </script>
 
 <div
@@ -65,10 +69,24 @@
 			</span>
 			<span class="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
 				{#if note.tags.length}
-					<span class="hidden max-w-60 flex-wrap justify-end gap-1 sm:flex">
-						{#each note.tags as tag (tag)}
-							<span class="rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5">#{tag}</span>
+					<span class="hidden min-w-0 items-center gap-1 sm:flex">
+						{#each shownTags as tag (tag)}
+							<span
+								class="max-w-32 truncate rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5"
+								title="#{tag}">#{tag}</span
+							>
 						{/each}
+						{#if moreTags.length}
+							<Hint text={moreTags.map((t) => `#${t}`).join(' ')}>
+								{#snippet child(props)}
+									<span
+										{...props}
+										class="rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 tabular-nums"
+										>+{moreTags.length}</span
+									>
+								{/snippet}
+							</Hint>
+						{/if}
 					</span>
 				{/if}
 				<span class="whitespace-nowrap">
@@ -82,9 +100,10 @@
 			</span>
 		</span>
 		{#if note.title}
-			<span class="line-clamp-1 text-sm font-medium wrap-anywhere">{note.title}</span>
+			<span class="line-clamp-1 max-w-[100ch] text-sm font-medium wrap-anywhere">{note.title}</span>
 		{/if}
-		<span class="line-clamp-2 text-sm whitespace-pre-line text-foreground/90 wrap-anywhere"
+		<span
+			class="line-clamp-2 max-w-[100ch] text-sm whitespace-pre-line text-foreground/90 wrap-anywhere"
 			>{note.body}</span
 		>
 	</button>

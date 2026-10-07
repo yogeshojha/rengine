@@ -66,9 +66,12 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="gap-0 p-0 sm:max-w-xl">
+	<Dialog.Content class="grid-cols-[minmax(0,1fr)] gap-0 p-0 sm:max-w-xl">
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>About reNgine</Dialog.Title>
+			<Dialog.Description class="sr-only"
+				>Version, instance details and bundled tools.</Dialog.Description
+			>
 		</Dialog.Header>
 
 		<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(100dvh-12rem)]">

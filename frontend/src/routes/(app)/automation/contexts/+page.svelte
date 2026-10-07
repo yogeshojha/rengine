@@ -25,6 +25,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
@@ -179,14 +180,11 @@
 <svelte:head><title>{pageTitle(routeLabels.contexts)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">Scan contexts</h1>
-			<p class="mt-1 text-sm text-muted-foreground">
-				Credentials, rate limits, scope rules and proxy settings for a scan
-			</p>
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
+	<PageHeader
+		title="Scan contexts"
+		description="Credentials, rate limits, scope rules and proxy settings for a scan"
+	>
+		{#snippet actions()}
 			<Hint text="Refresh">
 				{#snippet child(props)}
 					<Button
@@ -205,8 +203,8 @@
 				<Plus class="size-4" />
 				New context
 			</Button>
-		</div>
-	</div>
+		{/snippet}
+	</PageHeader>
 
 	{#if loadFailed}
 		<EmptyState

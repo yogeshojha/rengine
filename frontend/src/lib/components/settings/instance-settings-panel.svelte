@@ -101,7 +101,7 @@
 	</EmptyState>
 {:else}
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<div class="px-5 pt-4 pb-2"><SectionHead title="Instance" /></div>
+		<div class="px-4 pt-4 pb-2"><SectionHead title="Instance" /></div>
 		<SettingRow
 			label="Name"
 			help="Shown in browser tab titles"
@@ -157,7 +157,7 @@
 			</Select.Root>
 		</SettingRow>
 
-		<div class="border-t px-5 pt-4 pb-2"><SectionHead title="Scanning" /></div>
+		<div class="border-t px-4 pt-4 pb-2"><SectionHead title="Scanning" /></div>
 		<SettingRow
 			label="Concurrent scans"
 			help="Scans past the limit wait in launch order"
@@ -221,7 +221,7 @@
 			/>
 		</SettingRow>
 
-		<div class="border-t px-5 pt-4 pb-2"><SectionHead title="Retention" /></div>
+		<div class="border-t px-4 pt-4 pb-2"><SectionHead title="Retention" /></div>
 		<SettingRow
 			label="Scan history"
 			help="Excludes the newest run of each target"
@@ -269,7 +269,7 @@
 		</SettingRow>
 
 		{#if !isAdmin}
-			<div class="border-t px-5 py-2.5 text-xs text-muted-foreground">
+			<div class="border-t px-4 py-2.5 text-xs text-muted-foreground">
 				Editable by administrators.
 			</div>
 		{/if}

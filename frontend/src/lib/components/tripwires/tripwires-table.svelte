@@ -107,14 +107,19 @@
 					</Hint>
 				{/each}
 				{#if tripwire.actions.length === 0}
-					<span class="text-2xs text-muted-foreground">No action</span>
+					<span class="text-sm text-muted-foreground">No action</span>
 				{/if}
 			</div>
 			<div class="{TRIPWIRE_COL.last} text-sm text-muted-foreground" role="cell">
 				{tripwire.last_fired_at ? relativeTime(tripwire.last_fired_at) : 'Not fired'}
 			</div>
-			<div class="{TRIPWIRE_COL.recent} text-sm tabular-nums" role="cell">
-				{tripwire.recent_fired > 0 ? tripwire.recent_fired.toLocaleString() : ''}
+			<div
+				class="{TRIPWIRE_COL.recent} text-sm tabular-nums {tripwire.recent_fired > 0
+					? ''
+					: 'text-muted-foreground'}"
+				role="cell"
+			>
+				{tripwire.recent_fired.toLocaleString()}
 			</div>
 			<div class={TRIPWIRE_COL.enabled} role="cell">
 				<Switch

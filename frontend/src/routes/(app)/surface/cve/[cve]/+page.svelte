@@ -17,6 +17,7 @@
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import LadderStrip from '$lib/components/cve/ladder-strip.svelte';
 	import CveLocations from '$lib/components/cve/cve-locations.svelte';
 	import ExploitMark from '$lib/components/threat-intel/exploit-mark.svelte';
@@ -105,72 +106,72 @@
 			<Button variant="outline" size="sm" onclick={() => void load(projectId, cve)}>Retry</Button>
 		</EmptyState>
 	{:else}
-		<header class="flex flex-wrap items-start justify-between gap-4">
-			<div class="flex min-w-0 flex-col gap-2">
-				<div class="flex flex-wrap items-center gap-2">
-					<h1 class="font-mono text-2xl font-semibold tracking-tight">{report.cve}</h1>
-					<CopyButton value={report.cve} class="size-7" />
-					{#if report.is_kev}
-						<Hint text="On the CISA Known Exploited Vulnerabilities list">
-							{#snippet child(props)}
-								<span {...props} class="flex h-5 items-center">
-									<Badge variant="destructive" class="gap-1 px-1.5 text-2xs font-normal">
-										<Flame class="size-2.5" /> Known exploited
-									</Badge>
-								</span>
-							{/snippet}
-						</Hint>
-					{/if}
-					{#if report.kev_ransomware}
-						<Badge variant="destructive" class="px-1.5 text-2xs font-normal">Ransomware</Badge>
-					{/if}
-				</div>
-				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-					{#if report.severity}
-						<SeverityMark severity={report.severity} />
-					{:else}
-						<span>Not scored by NVD</span>
-					{/if}
-					{#if cvss}
-						<Hint text={report.cvss_vector ?? 'CVSS base score'}>
-							{#snippet child(props)}
-								<span {...props} class="font-mono tabular-nums">CVSS {cvss}</span>
-							{/snippet}
-						</Hint>
-					{/if}
-					{#if report.published_at}
-						<span>Published {formatShortDate(report.published_at)}</span>
-					{/if}
-					{#if !report.known}
-						<span>Not in the local NVD corpus</span>
-					{/if}
-				</div>
-				{#if description}
-					<p class="max-w-3xl text-sm text-muted-foreground">
-						{shownDescription}
-						{#if description.length > DESCRIPTION_CLAMP}
-							<button
-								type="button"
-								class="ml-1 text-xs text-foreground hover:text-primary"
-								onclick={() => (showDescription = !showDescription)}
-							>
-								{showDescription ? 'Show less' : 'Show more'}
-							</button>
-						{/if}
-					</p>
+		{@const shown = report}
+		<PageHeader title={report.cve} mono>
+			{#snippet titleAside()}
+				<CopyButton value={shown.cve} class="size-7" />
+				{#if shown.is_kev}
+					<Hint text="On the CISA Known Exploited Vulnerabilities list">
+						{#snippet child(props)}
+							<span {...props} class="flex h-5 items-center">
+								<Badge variant="destructive" class="gap-1 px-1.5 text-2xs font-normal">
+									<Flame class="size-2.5" /> Known exploited
+								</Badge>
+							</span>
+						{/snippet}
+					</Hint>
+				{/if}
+				{#if shown.kev_ransomware}
+					<Badge variant="destructive" class="px-1.5 text-2xs font-normal">Ransomware</Badge>
+				{/if}
+			{/snippet}
+			{#snippet actions()}
+				<Button
+					variant="outline"
+					size="sm"
+					href={nvdUrl(shown.cve)}
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					<ExternalLink class="size-3.5" />
+					Open on NVD
+				</Button>
+			{/snippet}
+			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+				{#if report.severity}
+					<SeverityMark severity={report.severity} />
+				{:else}
+					<span>Not scored by NVD</span>
+				{/if}
+				{#if cvss}
+					<Hint text={report.cvss_vector ?? 'CVSS base score'}>
+						{#snippet child(props)}
+							<span {...props} class="font-mono tabular-nums">CVSS {cvss}</span>
+						{/snippet}
+					</Hint>
+				{/if}
+				{#if report.published_at}
+					<span>Published {formatShortDate(report.published_at)}</span>
+				{/if}
+				{#if !report.known}
+					<span>Not in the local NVD corpus</span>
 				{/if}
 			</div>
-			<Button
-				variant="outline"
-				size="sm"
-				href={nvdUrl(report.cve)}
-				target="_blank"
-				rel="noopener noreferrer"
-			>
-				<ExternalLink class="size-3.5" />
-				Open on NVD
-			</Button>
-		</header>
+			{#if description}
+				<p class="max-w-3xl text-sm text-muted-foreground">
+					{shownDescription}
+					{#if description.length > DESCRIPTION_CLAMP}
+						<button
+							type="button"
+							class="ml-1 text-xs text-foreground hover:text-primary"
+							onclick={() => (showDescription = !showDescription)}
+						>
+							{showDescription ? 'Show less' : 'Show more'}
+						</button>
+					{/if}
+				</p>
+			{/if}
+		</PageHeader>
 
 		{#if !report.corpus_ready}
 			<Alert.Alert>

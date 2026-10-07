@@ -15,7 +15,7 @@
 
 <div
 	class={cn(
-		'grid grid-cols-1 gap-2 border-t border-border/60 px-5 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6',
+		'grid grid-cols-1 gap-2 border-t border-border/60 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6',
 		className
 	)}
 >

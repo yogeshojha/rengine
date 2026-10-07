@@ -5,6 +5,7 @@
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScopeStrip from '$lib/components/surface/scope-strip.svelte';
 	import FindingsTabs from '$lib/components/surface/findings-tabs.svelte';
@@ -72,7 +73,7 @@
 		{#if findingsTab}
 			<FindingsTabs value={findingsTab} />
 		{:else}
-			<h1 class="text-2xl font-semibold tracking-tight">{spec.label}</h1>
+			<PageHeader title={spec.label} />
 		{/if}
 
 		<div class="overflow-hidden rounded-xl border bg-card">

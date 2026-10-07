@@ -330,7 +330,7 @@
 	}
 >
 	<Dialog.Content
-		class="flex h-[min(90vh,800px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+		class="flex max-h-[min(90vh,800px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
 		onkeydown={onKeydown}
 		onOpenAutoFocus={(e) => e.preventDefault()}
 	>
@@ -338,7 +338,7 @@
 			<div class="flex items-start justify-between gap-4">
 				<div class="flex flex-col gap-1">
 					<Dialog.Title>{isEdit ? tripwire?.name : 'New tripwire'}</Dialog.Title>
-					<Dialog.Description>
+					<Dialog.Description class="sr-only">
 						Step {step + 1} of {STEPS.length} · {STEPS[step].label}
 					</Dialog.Description>
 				</div>

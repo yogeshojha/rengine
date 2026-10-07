@@ -16,6 +16,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Popover from '$lib/components/ui/popover';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
@@ -308,7 +309,10 @@
 <svelte:window onkeydown={onKey} />
 
 <div class="flex flex-col gap-6">
-	<h1 class="text-2xl font-semibold tracking-tight">Notes</h1>
+	<PageHeader
+		title={routeLabels.notes}
+		description="Notes on targets, scans and results across the project"
+	/>
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		{#if filtered || total > 0 || !loaded}

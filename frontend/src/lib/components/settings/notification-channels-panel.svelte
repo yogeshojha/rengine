@@ -7,7 +7,6 @@
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
-	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
@@ -91,6 +90,13 @@
 		CHANNEL_LEVELS.find((l) => l.value === formPref.min_severity)?.label ?? CHANNEL_LEVELS[0].label
 	);
 	const allEvents = $derived(events.every((e) => formPref.types.includes(e.type)));
+	const configReady = $derived(
+		formMeta.fields.every((field) => {
+			if (!field.required || field.kind === 'bool' || field.default !== undefined) return true;
+			if (field.kind === 'secret' && editingId && formMasked[field.key]) return true;
+			return String(formConfig[field.key] ?? '').trim() !== '';
+		})
+	);
 	const dirty = $derived(snapshot() !== initial);
 	const guard = new DiscardGuard(
 		() => dirty,
@@ -347,8 +353,10 @@
 		}
 	}
 
+	const hasRows = $derived(channels.length > 0);
+
 	$effect(() => {
-		if (!isAdmin) return;
+		if (!isAdmin || !hasRows) return;
 		settingsActions.set(addAction);
 		return () => settingsActions.clear(addAction);
 	});
@@ -468,6 +476,7 @@
 	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editingId ? 'Edit channel' : 'Add channel'}</Dialog.Title>
+			<Dialog.Description>Where notifications are sent, and for which events.</Dialog.Description>
 		</Dialog.Header>
 
 		<div
@@ -524,7 +533,7 @@
 							{/if}
 						</div>
 
-						<FormField label="Name" error={nameError}>
+						<FormField label="Name" error={nameError} required>
 							{#snippet children({ id })}
 								<Input
 									{id}
@@ -560,6 +569,7 @@
 										label={field.label}
 										description={field.description}
 										error={fieldErrors[field.key]}
+										required={!!field.required && !stored}
 										class="sm:col-span-2"
 									>
 										{#snippet children({ id })}
@@ -599,6 +609,7 @@
 										label={field.label}
 										description={field.description}
 										error={fieldErrors[field.key]}
+										required={!!field.required && field.default === undefined}
 									>
 										{#snippet children({ id })}
 											<Input
@@ -686,28 +697,29 @@
 		</div>
 
 		<div class="flex flex-wrap items-center justify-between gap-3 border-t px-6 py-4">
-			<Label class="cursor-pointer gap-3" for="channel-active">
-				<Switch
-					id="channel-active"
-					checked={formActive}
-					onCheckedChange={(v) => (formActive = v)}
-					disabled={saving}
-				/>
-				<span class="text-sm font-medium">Active</span>
-			</Label>
-			<div class="flex items-center gap-2">
+			<div class="flex flex-wrap items-center gap-4">
+				<Label class="cursor-pointer gap-3" for="channel-active">
+					<Switch
+						id="channel-active"
+						checked={formActive}
+						onCheckedChange={(v) => (formActive = v)}
+						disabled={saving}
+					/>
+					<span class="text-sm font-medium">Active</span>
+				</Label>
 				{#if !editingId}
 					<LoadingButton
 						variant="ghost"
 						loading={testingDraft}
-						loadingLabel="Sending"
-						disabled={saving}
+						loadingLabel="Testing"
+						disabled={saving || !configReady}
 						onclick={testDraft}
 					>
-						<FlaskConicalIcon class="size-4" />
-						Send test
+						Test connection
 					</LoadingButton>
 				{/if}
+			</div>
+			<div class="flex items-center gap-2">
 				<Button variant="outline" onclick={() => guard.close()} disabled={saving}>Cancel</Button>
 				<LoadingButton onclick={save} loading={saving} loadingLabel="Saving">
 					{editingId ? 'Save' : 'Add channel'}

@@ -573,6 +573,7 @@
 	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Import targets</Dialog.Title>
+			<Dialog.Description>One target per line, JSON or a CSV file.</Dialog.Description>
 		</Dialog.Header>
 
 		<ScrollArea class="min-h-0">
@@ -724,20 +725,20 @@ https://app.example.com"
 		{#if isProcessing && validateTotal > 0}
 			<Progress value={validatePct} class="h-1 rounded-none" />
 		{/if}
-		<div class="flex items-center justify-between gap-2 border-t px-6 py-4">
+		<Dialog.Footer class="border-t px-6 py-4 sm:items-center sm:justify-between">
 			{#if mode === 'input'}
-				<Button variant="outline" disabled={busy} onclick={() => guard.close()}>Cancel</Button>
-				<div class="flex gap-2">
-					<LoadingButton
-						variant="outline"
-						onclick={handlePreview}
-						loading={isProcessing}
-						loadingLabel="Processing"
-						disabled={!hasInput || isImporting}
-					>
-						<Eye class="size-4" />
-						Preview
-					</LoadingButton>
+				<LoadingButton
+					variant="outline"
+					onclick={handlePreview}
+					loading={isProcessing}
+					loadingLabel="Processing"
+					disabled={!hasInput || isImporting}
+				>
+					<Eye class="size-4" />
+					Preview
+				</LoadingButton>
+				<div class="flex gap-2 max-sm:flex-col-reverse">
+					<Button variant="outline" disabled={busy} onclick={() => guard.close()}>Cancel</Button>
 					<LoadingButton
 						onclick={handleDirectImport}
 						loading={isImporting}
@@ -791,7 +792,7 @@ https://app.example.com"
 					{/if}
 				</div>
 			{/if}
-		</div>
+		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
 
