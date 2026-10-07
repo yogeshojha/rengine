@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import { untrack, tick } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
@@ -46,7 +47,7 @@
 	import { eligibility } from '$lib/utilities/compare';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
-	import { SEVERITY_CHIP, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
+	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import { plural, pluralWord } from '$lib/utilities/strings';
 	import type { ScanRead, ScanSortKey } from '$lib/types/scan';
 
@@ -542,18 +543,13 @@
 				>
 				<div class="flex items-center gap-1.5">
 					{#each sevRuns as s (s.sev)}
-						<button
-							type="button"
-							class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
-								s.sev
-							].chip} {s.active ? 'ring-2 ring-current/50' : ''} {s.n ? '' : 'opacity-50'}"
-							aria-pressed={s.active}
+						<SevCountChip
+							severity={s.sev}
+							count={s.n}
+							pressed={s.active}
 							aria-label="Runs with {SEVERITY_LABELS[s.sev].toLowerCase()} findings: {s.n}"
 							onclick={() => toggleSeverity(s.sev)}
-						>
-							<span class="text-2xs font-medium opacity-70">{SEVERITY_LABELS[s.sev]}</span>
-							{s.n}
-						</button>
+						/>
 					{/each}
 				</div>
 			</div>

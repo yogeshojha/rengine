@@ -135,7 +135,7 @@
 	--foreground: oklch(0.985 0.003 265);
 	--card: oklch(0.205 0.01 265);
 	--card-foreground: oklch(0.985 0.003 265);
-	--popover: oklch(0.269 0.012 265);
+	--popover: oklch(0.225 0.011 265);
 	--popover-foreground: oklch(0.985 0.003 265);
 	--primary: oklch(0.7 0.16 264);
 	--primary-foreground: oklch(0.16 0.02 264);
@@ -164,7 +164,7 @@
 	--sev-low: #26b7d3;
 	--sev-low-wash: #11282d;
 	--sev-low-ink: #26b7d3;
-	--sev-info: #85969a;
+	--sev-info: #6f7f83;
 	--sev-info-wash: #1d2021;
 	--sev-info-ink: #85969a;
 
@@ -188,8 +188,8 @@
 	--code-mark: oklch(0.42 0.1 95);
 	--info: oklch(0.74 0.12 215);
 	--info-foreground: oklch(0.205 0 0);
-	--border: oklch(0.275 0.012 265);
-	--input: oklch(0.325 0.014 265);
+	--border: oklch(0.32 0.012 265);
+	--input: oklch(0.36 0.014 265);
 	--ring: oklch(0.65 0.14 264);
 	--series: oklch(0.75 0.02 265);
 	--chart-1: oklch(0.66 0.11 215);
@@ -203,7 +203,7 @@
 	--sidebar-primary-foreground: oklch(0.16 0.02 264);
 	--sidebar-accent: oklch(0.269 0.012 265);
 	--sidebar-accent-foreground: oklch(0.985 0.003 265);
-	--sidebar-border: oklch(0.275 0.012 265);
+	--sidebar-border: oklch(0.32 0.012 265);
 	--sidebar-ring: oklch(0.65 0.14 264);
 }
 
@@ -273,6 +273,8 @@
 
 	--font-sans: var(--font-sans);
 	--font-mono: var(--font-mono);
+	/* JetBrains Mono ligatures turn >= into a single glyph in query syntax */
+	--font-mono--font-feature-settings: 'liga' 0, 'calt' 0;
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -310,6 +312,16 @@
 	h6 {
 		letter-spacing: -0.03em;
 		font-weight: 600;
+	}
+
+	/* show operators as typed (>=, !=, ->) rather than as ligatures */
+	code,
+	kbd,
+	pre,
+	samp,
+	.cm-editor,
+	.cm-content {
+		font-variant-ligatures: none;
 	}
 }
 

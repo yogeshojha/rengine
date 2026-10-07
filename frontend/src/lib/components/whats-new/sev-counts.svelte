@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { SEVERITY_CHIP, SEVERITY_LABELS, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
+	import SevCountChip from '$lib/components/sev-count-chip.svelte';
+	import { SEVERITY_CHIP, SEVERITY_ORDER } from '$lib/config/vulnerabilities';
 
 	interface Props {
 		severities: Record<string, number>;
@@ -17,14 +18,6 @@
 
 <span class="flex flex-wrap items-center gap-1">
 	{#each shown as c (c.sev)}
-		<span
-			class="inline-flex h-6 min-w-8 items-center justify-center gap-1 rounded-md px-1.5 font-mono text-xs font-semibold tabular-nums {SEVERITY_CHIP[
-				c.sev
-			].chip}"
-			aria-label="{c.n} {SEVERITY_LABELS[c.sev].toLowerCase()}"
-		>
-			<span class="font-sans text-2xs font-medium opacity-70">{SEVERITY_LABELS[c.sev]}</span>
-			{c.n.toLocaleString()}
-		</span>
+		<SevCountChip severity={c.sev} count={c.n} size="sm" />
 	{/each}
 </span>

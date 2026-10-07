@@ -40,12 +40,19 @@
 	);
 	let added = $derived(counts?.new.find((c) => c.key === dim) ?? null);
 	let retired = $derived(overview.retired_in_window[dim] ?? 0);
+	// dimensions that did not move stay out of the toggle, bar the one picked
 	let totals = $derived(
 		SURFACE_ORDER.map((spec) => ({
 			key: spec.key,
 			label: spec.label,
 			added: counts?.new.find((c) => c.key === spec.key) ?? null
-		}))
+		})).filter(
+			(t) =>
+				!counts ||
+				t.key === dim ||
+				(t.added?.count ?? 0) > 0 ||
+				(overview.retired_in_window[t.key] ?? 0) > 0
+		)
 	);
 	let metric = $derived(overview.surface.find((m) => m.key === dim));
 	let summary = $derived.by(() => {

@@ -1,6 +1,7 @@
 <script lang="ts">
+	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { SEVERITY_CHIP, SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
+	import { SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
 	import {
 		SIGNAL_LABELS,
 		type SignalFilter,
@@ -93,20 +94,15 @@
 			<div class="flex items-center gap-1.5">
 				{#each FINDINGS as f (f.signal)}
 					{@const on = active === f.signal}
-					<button
-						type="button"
-						class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
-							f.sev
-						].chip} {on ? 'ring-2 ring-current/50' : ''} {summary[f.signal] ? '' : 'opacity-45'}"
-						aria-pressed={on}
+					<SevCountChip
+						severity={f.sev}
+						count={summary[f.signal]}
+						pressed={on}
 						aria-label="Targets with {SEVERITY_LABELS[f.sev].toLowerCase()} findings: {summary[
 							f.signal
 						]}"
 						onclick={() => onSignal(on ? null : f.signal)}
-					>
-						<span class="text-2xs font-medium opacity-70">{SEVERITY_LABELS[f.sev]}</span>
-						{summary[f.signal].toLocaleString()}
-					</button>
+					/>
 				{/each}
 			</div>
 		</div>
@@ -118,10 +114,11 @@
 					{@const n = summary[e.signal]}
 					<button
 						type="button"
-						class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {on
+						class="inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 {on
 							? 'border-foreground/40 bg-muted'
-							: 'border-border hover:border-foreground/30'} {n ? '' : 'opacity-50'}"
+							: 'border-border hover:border-foreground/30'}"
 						aria-pressed={on}
+						disabled={!n && !on}
 						onclick={() => onSignal(on ? null : e.signal)}
 					>
 						<span class="text-muted-foreground">{SIGNAL_LABELS[e.signal]}</span>

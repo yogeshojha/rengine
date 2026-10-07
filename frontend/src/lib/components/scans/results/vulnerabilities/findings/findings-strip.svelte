@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import Hint from '$lib/components/hint.svelte';
@@ -81,20 +82,14 @@
 {#snippet sevChip(sev: string, small: boolean)}
 	{@const n = counts?.[sev] ?? 0}
 	{@const on = severities.includes(sev)}
-	<button
-		type="button"
-		class="inline-flex items-center gap-1.5 rounded-md font-mono font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {small
-			? 'h-6 px-2 text-xs'
-			: 'h-8 px-2.5 text-sm'} {SEVERITY_CHIP[sev].chip} {on ? 'ring-2 ring-current/50' : ''} {n
-			? ''
-			: 'opacity-45'}"
-		aria-pressed={on}
+	<SevCountChip
+		severity={sev}
+		count={n}
+		size={small ? 'sm' : 'default'}
+		pressed={on}
 		aria-label="{SEVERITY_LABELS[sev]}: {n}"
 		onclick={() => onSeverity(sev)}
-	>
-		<span class="text-2xs font-medium opacity-70">{SEVERITY_LABELS[sev]}</span>
-		{n.toLocaleString()}
-	</button>
+	/>
 {/snippet}
 
 {#if !findingPrefs.summary}

@@ -7,6 +7,7 @@
 	import CellSkeleton from '$lib/components/skeleton/cell-skeleton.svelte';
 	import type { SkeletonShape } from '$lib/components/skeleton/shapes';
 	import Hint from '$lib/components/hint.svelte';
+	import { cn } from '$lib/utils';
 
 	interface Props {
 		id: string;
@@ -46,13 +47,14 @@
 	data-widget={id}
 >
 	<div class="flex items-start justify-between gap-3 px-4 pt-3.5">
-		<div class="flex min-w-0 flex-col gap-0.5">
+		<!-- the end padding is where the hover-revealed Hide button lands -->
+		<div class={['flex min-w-0 flex-col gap-0.5', onHide && 'pe-4']}>
 			<h3 class="text-sm leading-5 font-semibold">{title}</h3>
 			{#if description}
 				<p class="text-xs text-muted-foreground">{description}</p>
 			{/if}
 		</div>
-		<div class="flex shrink-0 items-center gap-2">
+		<div class="relative flex shrink-0 items-center gap-2">
 			{#if tools}{@render tools()}{/if}
 			{#if href}
 				<a
@@ -70,7 +72,11 @@
 							{...props}
 							variant="ghost"
 							size="icon-xs"
-							class="text-muted-foreground opacity-0 group-hover/cell:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
+							class={cn(
+								'text-muted-foreground opacity-0 group-hover/cell:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100',
+								// out of flow so the header link stays flush with the cell's edge
+								(href || tools) && 'absolute top-1/2 right-full me-1 -translate-y-1/2'
+							)}
 							aria-label="Hide {title}"
 							onclick={onHide}
 						>

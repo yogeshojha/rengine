@@ -55,6 +55,16 @@ export const SCAN_STATUS_PILL: Record<ScanStatus, string> = {
 	pending: 'bg-muted text-muted-foreground'
 };
 
+/** Text tone matching SCAN_STATUS_PILL, for a status named inline. */
+export const SCAN_STATUS_TEXT: Record<ScanStatus, string> = {
+	completed: 'text-success',
+	cancelled: 'text-warning',
+	failed: 'text-destructive',
+	running: 'text-info',
+	paused: 'text-foreground',
+	pending: 'text-muted-foreground'
+};
+
 export function scanStatusVariant(s: ScanStatus): BadgeVariant {
 	return SCAN_STATUS_VARIANT[s];
 }

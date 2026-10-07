@@ -21,6 +21,7 @@
 	import { crumbHref, getRouteLabel, PROJECT_PARAM, ROUTES, UUID_REGEX } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
+	import { navTrail, useSidebarNav } from '$lib/components/layout/sidebar-nav.svelte';
 
 	let { children } = $props();
 
@@ -141,32 +142,46 @@
 		engines: 'New engine'
 	};
 
+	const sidebarNav = useSidebarNav();
+
+	type Crumb = { label: string; href: string };
+
 	let breadcrumbs = $derived.by(() => {
 		const path = page.url.pathname;
 		const segments = path.split('/').filter(Boolean);
 
-		return segments
-			.flatMap((segment, index) => {
-				const href = crumbHref('/' + segments.slice(0, index + 1).join('/'));
-				const trail = breadcrumbStore.getTrail(segment);
-				if (trail) return trail;
-				const override = breadcrumbStore.getLabel(segment);
-				if (override) return { label: override, href };
+		const segmentCrumbs = (segment: string, index: number): Crumb | Crumb[] | null => {
+			const href = crumbHref('/' + segments.slice(0, index + 1).join('/'));
+			const trail = breadcrumbStore.getTrail(segment);
+			if (trail) return trail;
+			const override = breadcrumbStore.getLabel(segment);
+			if (override) return { label: override, href };
 
-				if (segment === 'new') {
-					const parent = segments[index - 1];
-					return { label: NEW_ENTITY_LABEL[parent] ?? 'New', href };
-				}
+			if (segment === 'new') {
+				const parent = segments[index - 1];
+				return { label: NEW_ENTITY_LABEL[parent] ?? 'New', href };
+			}
 
-				if (UUID_REGEX.test(segment)) {
-					return { label: segment.slice(0, 8), href };
-				}
+			if (UUID_REGEX.test(segment)) {
+				return { label: segment.slice(0, 8), href };
+			}
 
-				const label = getRouteLabel(segment);
-				if (!label) return null;
-				return { label, href };
-			})
-			.filter(Boolean) as { label: string; href: string }[];
+			const label = getRouteLabel(segment);
+			if (!label) return null;
+			return { label, href };
+		};
+
+		// sections come from the sidebar, so crumbs read the way the nav does
+		const nav = navTrail(sidebarNav.all, path);
+		const from = nav ? nav.depth - (nav.sibling ? 1 : 0) : 0;
+		const crumbs = [
+			...(nav?.crumbs ?? []),
+			...segments
+				.slice(from)
+				.flatMap((segment, i) => segmentCrumbs(segment, from + i))
+				.filter((crumb): crumb is Crumb => crumb !== null)
+		];
+		return crumbs.filter((crumb, i) => i === 0 || crumb.label !== crumbs[i - 1].label);
 	});
 </script>
 

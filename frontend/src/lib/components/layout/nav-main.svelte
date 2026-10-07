@@ -70,10 +70,10 @@
 	};
 </script>
 
-{#snippet link(item: NavItem, props: Record<string, unknown>)}
+{#snippet link(item: NavItem, props: Record<string, unknown>, active: boolean)}
 	<a href={safeHref(item.url)} {...props}>
 		{#if item.icon}
-			<item.icon class="size-4" />
+			<item.icon class={cn('size-4', active && 'text-sidebar-primary')} />
 		{/if}
 		<span>{item.title}</span>
 	</a>
@@ -97,7 +97,7 @@
 	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0 group-data-[collapsible=icon]:pt-3', className)}>
 		{#if group.label}
 			<Sidebar.GroupLabel
-				class="h-6 px-2 text-2xs font-semibold tracking-wide text-muted-foreground/60 uppercase"
+				class="h-6 px-2 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
 			>
 				{group.label}
 			</Sidebar.GroupLabel>
@@ -121,7 +121,12 @@
 											isActive={railCollapsed() && branchActive(item)}
 										>
 											{#if item.icon}
-												<item.icon class="size-4" />
+												<item.icon
+													class={cn(
+														'size-4',
+														railCollapsed() && branchActive(item) && 'text-sidebar-primary'
+													)}
+												/>
 											{/if}
 											<span>{item.title}</span>
 											<ChevronRightIcon
@@ -137,7 +142,10 @@
 									<Sidebar.MenuSub class="gap-0.5">
 										{#each item.items as subItem (subItem.id)}
 											<Sidebar.MenuSubItem>
-												<Sidebar.MenuSubButton isActive={childActive(subItem)}>
+												<Sidebar.MenuSubButton
+													isActive={childActive(subItem)}
+													class="data-[active=true]:font-medium data-[active=true]:text-sidebar-primary"
+												>
 													{#snippet child({ props })}
 														<a href={safeHref(subItem.url)} {...props}>
 															<span>{subItem.title}</span>
@@ -159,7 +167,7 @@
 							isActive={childActive(item)}
 						>
 							{#snippet child({ props })}
-								{@render link(item, props)}
+								{@render link(item, props, childActive(item))}
 							{/snippet}
 						</Sidebar.MenuButton>
 						{#if item.badge}

@@ -58,7 +58,7 @@
 	{:else if ended && scan.error}
 		<Hint text={scan.error}>
 			{#snippet child(props)}
-				<span {...props} class="line-clamp-1 max-w-[140px] text-2xs text-destructive"
+				<span {...props} class="line-clamp-2 max-w-[140px] text-2xs wrap-anywhere text-destructive"
 					>{scan.error}</span
 				>
 			{/snippet}

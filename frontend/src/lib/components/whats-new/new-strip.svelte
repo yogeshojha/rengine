@@ -1,7 +1,8 @@
 <script lang="ts">
+	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ActivityLanes from './activity-lanes.svelte';
-	import { SEVERITY_CHIP, SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
+	import { SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
 	import { Fact, NewKind, Signal, type NewKindKey, type SignalKey } from '$lib/config/whats-new';
 	import type { NewFeed } from '$lib/types/whats-new';
 
@@ -57,18 +58,13 @@
 					{#each FINDINGS as f (f.signal)}
 						{@const on = active === f.signal}
 						{@const n = facts[f.signal] ?? 0}
-						<button
-							type="button"
-							class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
-								f.sev
-							].chip} {on ? 'ring-2 ring-current/50' : ''} {n ? '' : 'opacity-45'}"
-							aria-pressed={on}
+						<SevCountChip
+							severity={f.sev}
+							count={n}
+							pressed={on}
 							aria-label="New {SEVERITY_LABELS[f.sev].toLowerCase()} findings: {n}"
 							onclick={() => onSignal(on ? null : f.signal)}
-						>
-							<span class="text-2xs font-medium opacity-70">{SEVERITY_LABELS[f.sev]}</span>
-							{n.toLocaleString()}
-						</button>
+						/>
 					{/each}
 				</div>
 				{#if kev}

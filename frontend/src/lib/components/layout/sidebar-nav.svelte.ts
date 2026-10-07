@@ -13,7 +13,7 @@ import FileTextIcon from '@lucide/svelte/icons/file-text';
 import ScanEyeIcon from '@lucide/svelte/icons/scan-eye';
 import PlugIcon from '@lucide/svelte/icons/plug';
 import Settings2Icon from '@lucide/svelte/icons/settings-2';
-import type { NavGroup, NavItem } from './nav-main.svelte';
+import type { NavChild, NavGroup, NavItem } from './nav-main.svelte';
 import { ASSET_DIMENSIONS, FINDINGS_ROOT, SURFACE } from '$lib/config/surface';
 import { FINDINGS_PATHS, ROUTES, routeLabels } from '$lib/config/routes';
 import { Capability } from '$lib/config/capabilities';
@@ -44,6 +44,48 @@ function visible(groups: NavGroup[]): NavGroup[] {
 		if (items.length) out.push({ ...group, items });
 	}
 	return out;
+}
+
+export interface NavTrail {
+	/** section and item crumbs, as the sidebar names them */
+	crumbs: { label: string; href: string }[];
+	/** path segments the crumbs stand for */
+	depth: number;
+	/** lit through `match`: the last of those segments still needs its own crumb */
+	sibling: boolean;
+}
+
+const pathOf = (url: string) => url.split('?')[0];
+const depthOf = (path: string) => path.split('/').filter(Boolean).length;
+
+/** Breadcrumb trail for `path` from the nav item the sidebar lights for it, null when none does. */
+export function navTrail(groups: NavGroup[], path: string): NavTrail | null {
+	const entries = groups.flatMap((group) =>
+		group.items.flatMap((item): [NavChild, NavItem | null][] =>
+			item.items?.length ? item.items.map((child) => [child, item]) : [[item, null]]
+		)
+	);
+	let best: NavTrail | null = null;
+	let bestLength = -1;
+	for (const [item, parent] of entries) {
+		const own = pathOf(item.url);
+		const bases: [string, boolean][] = [
+			[own, item.exact ?? false],
+			...(item.match ?? []).map((m): [string, boolean] => [pathOf(m), false])
+		];
+		for (const [base, exact] of bases) {
+			const hit = path === base || (!exact && path.startsWith(base + '/'));
+			if (!hit || base.length <= bestLength) continue;
+			const crumbs: NavTrail['crumbs'] = [];
+			if (parent) crumbs.push({ label: parent.title, href: parent.url });
+			// an exact child on its section's own url is the section's landing page
+			if (!(parent && item.exact && own === pathOf(parent.url)))
+				crumbs.push({ label: item.title, href: item.url });
+			best = { crumbs, depth: depthOf(base), sibling: base !== own };
+			bestLength = base.length;
+		}
+	}
+	return best;
 }
 
 export function useSidebarNav() {

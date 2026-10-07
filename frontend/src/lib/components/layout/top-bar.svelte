@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import * as Breadcrumb from '$lib/components/ui/breadcrumb/index.js';
 	import Activity from '@lucide/svelte/icons/activity';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
@@ -45,36 +45,27 @@
 	<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 
 	{#if breadcrumbs.length > 0}
-		<nav
-			aria-label="Breadcrumb"
-			class="flex min-w-0 items-center gap-1.5 text-sm whitespace-nowrap"
-		>
-			{#each breadcrumbs as crumb, i (`${i}:${crumb.href ?? crumb.label}`)}
-				{@const last = i === breadcrumbs.length - 1}
-				{#if i > 0}
-					<ChevronRight
-						class="hidden size-3.5 shrink-0 text-muted-foreground/50 @3xl/topbar:block"
-					/>
-				{/if}
-
-				{#if crumb.href && !last}
-					<a
-						href={safeHref(crumb.href)}
-						class="hidden max-w-48 min-w-0 truncate text-muted-foreground transition-colors hover:text-foreground @3xl/topbar:inline"
-					>
-						{crumb.label}
-					</a>
-				{:else}
-					<span
-						aria-current={last ? 'page' : undefined}
-						class={[
-							'font-medium text-foreground',
-							last ? 'truncate' : 'hidden max-w-48 min-w-0 truncate @3xl/topbar:inline'
-						]}>{crumb.label}</span
-					>
-				{/if}
-			{/each}
-		</nav>
+		<Breadcrumb.Root class="min-w-0">
+			<Breadcrumb.List class="flex-nowrap gap-1.5 whitespace-nowrap sm:gap-1.5">
+				{#each breadcrumbs as crumb, i (`${i}:${crumb.href ?? crumb.label}`)}
+					{@const last = i === breadcrumbs.length - 1}
+					{#if i > 0}
+						<Breadcrumb.Separator class="hidden @3xl/topbar:block" />
+					{/if}
+					<Breadcrumb.Item class={last ? 'min-w-0' : 'hidden min-w-0 @3xl/topbar:inline-flex'}>
+						{#if last}
+							<Breadcrumb.Page class="truncate font-medium">{crumb.label}</Breadcrumb.Page>
+						{:else if crumb.href}
+							<Breadcrumb.Link href={safeHref(crumb.href)} class="max-w-48 truncate">
+								{crumb.label}
+							</Breadcrumb.Link>
+						{:else}
+							<span class="max-w-48 truncate">{crumb.label}</span>
+						{/if}
+					</Breadcrumb.Item>
+				{/each}
+			</Breadcrumb.List>
+		</Breadcrumb.Root>
 	{/if}
 
 	<div class="ml-3 hidden @5xl/topbar:block">

@@ -9,7 +9,7 @@
 		Severity,
 		severityLabel
 	} from '$lib/config/vulnerabilities';
-	import { SCAN_STATUS_LABEL } from '$lib/utilities/scan-status';
+	import { SCAN_STATUS_LABEL, SCAN_STATUS_TEXT } from '$lib/utilities/scan-status';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { SurfaceRiskTarget } from '$lib/types/dashboard';
 
@@ -95,7 +95,9 @@
 									{/if}
 									{#if !settled && r.scan_status}
 										{#if r.actionable}<span>·</span>{/if}
-										<span class="text-warning">{SCAN_STATUS_LABEL[r.scan_status]}</span>
+										<span class={SCAN_STATUS_TEXT[r.scan_status]}
+											>{SCAN_STATUS_LABEL[r.scan_status]}</span
+										>
 									{/if}
 								</span>
 							{/if}

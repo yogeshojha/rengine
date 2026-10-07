@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack, tick } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -51,7 +52,7 @@
 		REPORT_STAGE_ORDER,
 		formatMonies
 	} from '$lib/config/bounty-reports';
-	import { SEVERITY_CHIP, SEVERITY_LABELS } from '$lib/config/vulnerabilities';
+	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { externalHref, openExternal } from '$lib/utilities/links';
 	import {
@@ -596,18 +597,14 @@
 								{#each summary.severities as s (s.severity)}
 									{@const key = REPORT_SEVERITY_KEY[s.severity] ?? s.severity}
 									{@const on = filters.severities.includes(s.severity)}
-									<button
-										type="button"
-										class="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 font-mono text-sm font-semibold tabular-nums transition-shadow focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {SEVERITY_CHIP[
-											key
-										]?.chip ?? ''} {on ? 'ring-2 ring-current/50' : ''}"
-										aria-pressed={on}
+									<SevCountChip
+										severity={key}
+										label={severityLabel(s.severity)}
+										count={s.count}
+										pressed={on}
 										aria-label="{severityLabel(s.severity)} reports: {s.count}"
 										onclick={() => toggleIn('severity', s.severity, filters.severities)}
-									>
-										<span class="text-2xs font-medium opacity-70">{severityLabel(s.severity)}</span>
-										{s.count}
-									</button>
+									/>
 								{/each}
 							</div>
 						</div>

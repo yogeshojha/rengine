@@ -22,7 +22,7 @@
 	<div class={cn('flex flex-col', !first && 'mt-2 border-t pt-2')}>
 		{#if g.label || g === footer}
 			<p
-				class="flex h-7 items-center px-1.5 text-2xs font-semibold tracking-wide text-muted-foreground/60 uppercase"
+				class="flex h-7 items-center px-1.5 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
 			>
 				{g.label ?? FOOTER_LABEL}
 			</p>

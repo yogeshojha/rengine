@@ -11,7 +11,7 @@
 </script>
 
 <script lang="ts">
-	import { BarChart } from 'layerchart';
+	import { BarChart, Bars } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart';
 	import { formatDay } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
@@ -67,6 +67,15 @@
 			highlight: { area: true, bar: false }
 		}}
 	>
+		<!-- a zero still gets a stack inset and the rounded top, which draws a sliver -->
+		{#snippet marks({ context, visibleSeries, getBarsProps })}
+			{#each visibleSeries as s, i (s.key)}
+				<Bars
+					{...getBarsProps(s, i)}
+					data={context.data.filter((d: DailyPoint) => Number(d[s.key]) > 0)}
+				/>
+			{/each}
+		{/snippet}
 		{#snippet tooltip()}
 			<Chart.Tooltip class="min-w-[10rem]" labelFormatter={(v: string) => formatDay(v, true)}>
 				{#snippet formatter({ value, name, item })}

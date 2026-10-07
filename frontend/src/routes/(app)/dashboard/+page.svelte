@@ -259,7 +259,7 @@
 					<a href={headlineHref(VULNS, headline.vulns.query)} class="hover:text-primary"
 						>{cappedPlural(headline.vulns.count, headline.vulns.capped, 'finding')}</a
 					>
-					in {days} days.
+					<span class="whitespace-nowrap">in {days} days.</span>
 					<span class="font-medium text-muted-foreground">
 						<a href={headlineHref(WEB, headline.web.query)} class="hover:text-primary"
 							>{cappedPlural(headline.web.count, headline.web.capped, 'new web asset')}</a
@@ -268,7 +268,8 @@
 				</h1>
 			{:else if overview && !firstRun && (counts || !dashboardStore.windowLoading)}
 				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
-					{plural(overview.runs_in_window, 'run', 'runs')} in {days} days.
+					{plural(overview.runs_in_window, 'run', 'runs')}
+					<span class="whitespace-nowrap">in {days} days.</span>
 					<span class="font-medium text-muted-foreground">
 						{#if firstRuns}
 							{plural(firstRuns, 'first run', 'first runs')}.

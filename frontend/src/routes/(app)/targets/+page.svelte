@@ -395,7 +395,7 @@
 			const org = organizationSummaries.find((o) => o.id === id);
 			chips.push({
 				id: `org-${id}`,
-				label: org?.name ?? 'Org',
+				label: `Organization: ${org?.name ?? '…'}`,
 				remove: () => targetsStore.toggleOrganization(id)
 			});
 		}
@@ -403,7 +403,7 @@
 			const tag = tagSummaries.find((t) => t.id === id);
 			chips.push({
 				id: `tag-${id}`,
-				label: tag?.name ?? 'Tag',
+				label: `Tag: ${tag?.name ?? '…'}`,
 				color: tag?.color,
 				remove: () => targetsStore.toggleTag(id)
 			});
@@ -947,10 +947,6 @@
 				onPage={(p) => handlePageChange(p + 1)}
 				onPageSize={handlePageSizeChange}
 			>
-				{#snippet summary()}
-					{rows.length} of {targetsStore.pagination.totalItems}
-					{targetsStore.pagination.totalItems === 1 ? 'target' : 'targets'}
-				{/snippet}
 				{#snippet actions()}
 					{#if selectedTargetIds.size >= rows.length && selectedTargetIds.size < targetsStore.pagination.totalItems}
 						<Button

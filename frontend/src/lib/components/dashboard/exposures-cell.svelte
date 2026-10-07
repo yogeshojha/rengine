@@ -31,9 +31,18 @@
 		untrack(() => interestCatalog.load());
 	});
 
-	let bands = $derived(
-		BANDS.map((b) => ({ key: b, count: page?.summary.bands[b] ?? 0 })).filter((b) => b.count > 0)
-	);
+	const OTHER = 'other';
+	let bands = $derived.by(() => {
+		const counts = page?.summary.bands ?? {};
+		const known: string[] = [...BANDS];
+		const other = Object.entries(counts)
+			.filter(([key]) => !known.includes(key))
+			.reduce((n, [, count]) => n + count, 0);
+		return [
+			...BANDS.map((b) => ({ key: b as string, count: counts[b] ?? 0 })),
+			{ key: OTHER, count: other }
+		].filter((b) => b.count > 0);
+	});
 	let kinds = $derived<BarRow[]>(
 		Object.entries(page?.summary.kinds ?? {})
 			.sort((a, b) => b[1] - a[1])
@@ -57,9 +66,9 @@
 	class={className}
 >
 	{#if bands.length}
-		<div class="grid grid-cols-3 gap-2">
+		<div class="grid grid-cols-[repeat(auto-fit,minmax(6rem,1fr))] gap-2">
 			{#each bands as b (b.key)}
-				{@const href = rowLink({ [EXPOSURE_PARAMS.band]: b.key })}
+				{@const href = b.key === OTHER ? undefined : rowLink({ [EXPOSURE_PARAMS.band]: b.key })}
 				<svelte:element
 					this={href ? 'a' : 'div'}
 					{href}
@@ -68,8 +77,8 @@
 						: ''}"
 				>
 					<span class="flex items-center gap-1.5 text-2xs text-muted-foreground">
-						<span class="size-1.5 rounded-full {BAND_RAIL[b.key]}"></span>
-						{interestCatalog.bandLabel(b.key)}
+						<span class="size-1.5 rounded-full {BAND_RAIL[b.key] ?? 'bg-muted-foreground'}"></span>
+						{b.key === OTHER ? 'Other' : interestCatalog.bandLabel(b.key)}
 					</span>
 					<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
 						{b.count.toLocaleString()}

@@ -936,6 +936,50 @@
 					: null}
 				onChange={(k) => setTab(k as NewTabKey)}
 			/>
+			<div class="ml-auto flex flex-wrap items-center gap-2 py-1.5 pr-2">
+				<ToggleGroup.Root
+					type="single"
+					value={dayFrom ? '' : range}
+					onValueChange={(v) => v && setRange(v as NewWindowKey)}
+					variant="outline"
+					size="sm"
+					aria-label="Period"
+				>
+					{#each NEW_WINDOWS as option (option.key)}
+						<ToggleGroup.Item
+							value={option.key}
+							disabled={option.key === SINCE_KEY && !!feed && !feed.marked_at}
+							class="h-8 px-3 text-xs font-normal"
+						>
+							{option.label}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<Hint text="Keyboard shortcuts">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="outline"
+							size="icon-sm"
+							class="hidden sm:inline-flex"
+							aria-label="Keyboard shortcuts"
+							onclick={() => (shortcutsOpen = true)}
+						>
+							<Keyboard class="size-4" />
+						</Button>
+					{/snippet}
+				</Hint>
+				<LoadingButton
+					size="sm"
+					loading={catchingUp}
+					loadingLabel="Marking"
+					onclick={caughtUp}
+					disabled={!feed}
+				>
+					<Check class="size-4" />
+					Caught up
+				</LoadingButton>
+			</div>
 		</div>
 
 		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
@@ -1000,48 +1044,6 @@
 						<span class="text-muted-foreground tabular-nums">{visual.silent}</span>{/if}
 				</Button>
 			{/if}
-			<div class="flex flex-wrap items-center gap-2 lg:ml-auto">
-				<ToggleGroup.Root
-					type="single"
-					value={dayFrom ? '' : range}
-					onValueChange={(v) => v && setRange(v as NewWindowKey)}
-					variant="outline"
-					aria-label="Period"
-				>
-					{#each NEW_WINDOWS as option (option.key)}
-						<ToggleGroup.Item
-							value={option.key}
-							disabled={option.key === SINCE_KEY && !!feed && !feed.marked_at}
-							class="h-9 px-3 text-xs font-normal"
-						>
-							{option.label}
-						</ToggleGroup.Item>
-					{/each}
-				</ToggleGroup.Root>
-				<Hint text="Keyboard shortcuts">
-					{#snippet child(props)}
-						<Button
-							{...props}
-							variant="outline"
-							size="icon"
-							class="hidden sm:inline-flex"
-							aria-label="Keyboard shortcuts"
-							onclick={() => (shortcutsOpen = true)}
-						>
-							<Keyboard class="size-4" />
-						</Button>
-					{/snippet}
-				</Hint>
-				<LoadingButton
-					loading={catchingUp}
-					loadingLabel="Marking"
-					onclick={caughtUp}
-					disabled={!feed}
-				>
-					<Check class="size-4" />
-					Caught up
-				</LoadingButton>
-			</div>
 		</div>
 
 		<FilterChips
