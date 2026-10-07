@@ -48,8 +48,14 @@
 		ROUTES.scanTab(asset.last_scan_id, WEB.tab, { [WEB.queryParam]: `host:${asset.name}` })
 	);
 	const width = (key: string) => columns.find((c) => c.key === key)?.width ?? '';
-	const grow = (key: string) =>
-		columns.find((c) => c.key === key)?.grow ? 'min-w-0 flex-1' : 'shrink-0';
+	// same sizing as the list header's columnCell, so a long title never widens the row
+	const grow = (key: string) => {
+		const col = columns.find((c) => c.key === key);
+		if (!col?.grow) return 'shrink-0';
+		return /(^|\s)min-w-/.test(col.width)
+			? 'flex-1 contain-inline-size'
+			: 'min-w-0 flex-1 contain-inline-size';
+	};
 	const [HOST_COL, STATUS_COL] = ASSET_LEAD_COLUMNS;
 
 	async function copyHost() {

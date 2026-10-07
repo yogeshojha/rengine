@@ -11,12 +11,13 @@
 	import ExportMenu from '$lib/components/scans/results/export-menu.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import ListHeader from '$lib/components/scans/results/table/list-header.svelte';
+	import { fitColumns, trackWidth } from '$lib/components/scans/results/table/columns';
 	import SortMenu from '$lib/components/scans/results/table/sort-menu.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import AssetRow from './web-assets/asset-row.svelte';
@@ -51,7 +52,8 @@
 	let pageIndex = $state(0);
 	let debounce: ReturnType<typeof setTimeout> | undefined;
 
-	const columns = ASSET_COLUMNS;
+	let tableWidth = $state(0);
+	let columns = $derived(fitColumns(ASSET_COLUMNS, tableWidth, ASSET_LEAD_COLUMNS, false));
 	let facets = $derived(page?.facets ?? null);
 	let rows = $derived(page?.items ?? []);
 	let tabs = $derived.by(() => {
@@ -129,7 +131,7 @@
 	}
 </script>
 
-<Card.Root class="gap-0 overflow-hidden py-0">
+<Card.Root class="gap-0 overflow-hidden py-0" {@attach trackWidth((w) => (tableWidth = w))}>
 	<div class="border-b px-2">
 		<CountTabs
 			{tabs}
@@ -143,29 +145,26 @@
 	</div>
 
 	<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-		<div class="relative min-w-[min(100%,16rem)] flex-1">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input
+		<InputGroup.Root class="w-auto min-w-[min(100%,16rem)] flex-1">
+			<InputGroup.Addon><Search /></InputGroup.Addon>
+			<InputGroup.Input
 				bind:value={search}
 				placeholder="Search host, title or address"
-				class="h-9 pl-9"
 				aria-label="Search web assets"
 			/>
-		</div>
+		</InputGroup.Root>
 		<Hint text="Only assets that answered an HTTP request">
 			{#snippet child(props)}
 				<span {...props} class="inline-flex">
 					<Toggle
 						variant="outline"
-						size="sm"
+						size="lg"
 						pressed={live}
 						onPressedChange={(v) => {
 							live = v;
 							pageIndex = 0;
 						}}
-						class="h-9"
+						class="font-normal"
 					>
 						Responding
 						{#if facets}
@@ -189,7 +188,7 @@
 			{targetId}
 			filters={{}}
 		/>
-		<Button variant="outline" size="icon" class="size-9" aria-label="Refresh" onclick={retry}>
+		<Button variant="outline" size="icon" aria-label="Refresh" onclick={retry}>
 			<RefreshCw class="size-4 {loading ? 'animate-spin' : ''}" />
 		</Button>
 	</div>
@@ -219,7 +218,7 @@
 		</EmptyState>
 	{:else}
 		<ScrollArea orientation="horizontal">
-			<div class="min-w-max">
+			<div>
 				<ListHeader
 					lead={ASSET_LEAD_COLUMNS}
 					{columns}
