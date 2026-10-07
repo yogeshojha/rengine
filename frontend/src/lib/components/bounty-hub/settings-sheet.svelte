@@ -29,7 +29,7 @@
 
 	let { open = $bindable(), onSaved }: Props = $props();
 
-	const LABEL = 'text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';
+	const LABEL = 'text-2xs font-semibold tracking-wide text-muted-foreground uppercase';
 
 	let settings = $state<BountySettings | null>(null);
 	let vocabulary = $state<BountyVocabulary | null>(null);

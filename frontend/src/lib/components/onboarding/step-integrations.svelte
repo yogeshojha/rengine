@@ -123,7 +123,7 @@
 	{:else}
 		{#each groups as g (g.group)}
 			<section class="space-y-2">
-				<h3 class="text-sm font-medium">{g.items[0].group_label}</h3>
+				<h3 class="text-sm font-semibold">{g.items[0].group_label}</h3>
 				<div class="space-y-3">
 					{#each g.items as p (p.provider)}
 						{@const Icon = getProviderIcon(p.icon)}

@@ -143,7 +143,7 @@
 				<ShieldCheckIcon class="size-[18px]" />
 			</div>
 			<div class="flex-1 space-y-0.5">
-				<h3 class="text-sm font-medium">Authenticator app</h3>
+				<h3 class="text-sm font-semibold">Authenticator app</h3>
 				<p class="text-xs text-muted-foreground">
 					Google Authenticator, 1Password, Authy or any TOTP app.
 				</p>
@@ -260,7 +260,7 @@
 				<div class="flex items-start justify-between gap-3">
 					<div class="flex items-center gap-2">
 						<KeyRoundIcon class="size-4 text-muted-foreground" />
-						<h3 class="text-sm font-medium">Backup codes</h3>
+						<h3 class="text-sm font-semibold">Backup codes</h3>
 					</div>
 					<div class="flex shrink-0 items-center gap-1">
 						<Button variant="ghost" size="sm" class="h-7 px-2 text-xs" onclick={copyCodes}>

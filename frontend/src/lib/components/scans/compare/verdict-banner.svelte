@@ -67,7 +67,7 @@
 	let intelMoved = $derived(comparison.dimensions.reduce((n, d) => n + d.intel_moved, 0));
 </script>
 
-<section class="flex gap-3 border-b bg-muted/30 px-4 py-3 sm:px-5">
+<section class="flex gap-3 border-b bg-muted/30 px-6 py-3">
 	<span class={cn('w-[3px] shrink-0 self-stretch rounded-full', MARK[tone])}></span>
 
 	<div class="flex min-w-0 flex-col gap-1">

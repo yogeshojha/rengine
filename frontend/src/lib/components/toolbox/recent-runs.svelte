@@ -63,7 +63,7 @@
 {:else if shown.length}
 	<div class={cn('shrink-0 border-t p-2', className)}>
 		<div class="flex items-center justify-between px-2 pb-1">
-			<p class="text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Recent</p>
+			<p class="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Recent</p>
 			<Hint text="Runs are kept for seven days">
 				{#snippet child(props)}
 					<span {...props} class="inline-flex">

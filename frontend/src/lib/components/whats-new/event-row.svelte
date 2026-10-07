@@ -203,7 +203,7 @@
 				{/if}
 			</span>
 			{#if summary && !expanded}
-				<span class="pl-[1.375rem] text-xs text-muted-foreground wrap-anywhere">{summary}</span>
+				<span class="pl-5.5 text-xs text-muted-foreground wrap-anywhere">{summary}</span>
 			{/if}
 		</button>
 	</div>

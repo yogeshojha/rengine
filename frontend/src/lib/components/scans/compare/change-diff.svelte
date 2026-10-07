@@ -57,7 +57,7 @@
 </script>
 
 {#if loading}
-	<div class="p-4 sm:p-5"><Skeleton class="h-72" /></div>
+	<div class="px-6 py-5"><Skeleton class="h-72" /></div>
 {:else if error}
 	<EmptyState
 		icon={TriangleAlert}
@@ -71,7 +71,7 @@
 {:else if empty}
 	<EmptyState icon={CheckCheck} title="Nothing changed" class="m-4 sm:m-5" compact />
 {:else}
-	<div class="p-4 sm:p-5">
+	<div class="px-6 py-5">
 		<CodeBlock
 			code={text}
 			lang="diff"

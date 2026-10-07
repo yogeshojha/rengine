@@ -24,7 +24,7 @@
 	let blocked = $derived(runs.filter((r) => !r.comparable));
 </script>
 
-<div class="flex flex-col gap-4 p-4 sm:p-5">
+<div class="flex flex-col gap-4">
 	<div class="flex gap-3 rounded-lg border border-warning/40 bg-warning/5 p-4">
 		<TriangleAlert class="mt-0.5 size-4 shrink-0 text-warning" />
 		<div class="flex min-w-0 flex-col gap-1">

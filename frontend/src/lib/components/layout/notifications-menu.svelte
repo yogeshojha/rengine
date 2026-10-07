@@ -334,7 +334,7 @@
 				<div class="pb-1">
 					{#each inboxGroups as group (group.label)}
 						<div
-							class="sticky top-0 z-10 bg-popover/95 px-4 pt-2.5 pb-1 text-2xs font-semibold tracking-[0.1em] text-muted-foreground/70 uppercase backdrop-blur"
+							class="sticky top-0 z-10 bg-popover/95 px-4 pt-2.5 pb-1 text-2xs font-semibold tracking-wide text-muted-foreground/70 uppercase backdrop-blur"
 						>
 							{group.label}
 						</div>

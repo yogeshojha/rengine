@@ -188,7 +188,7 @@
 
 <div class="space-y-6">
 	<section class="space-y-2">
-		<h3 class="text-sm font-medium">Workers</h3>
+		<h3 class="text-sm font-semibold">Workers</h3>
 		<div
 			class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 rounded-lg border px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
 		>
@@ -239,7 +239,7 @@
 	</section>
 
 	<section class="space-y-2">
-		<h3 class="text-sm font-medium">Datasets</h3>
+		<h3 class="text-sm font-semibold">Datasets</h3>
 		<div class="rounded-lg border">
 			{#if datasets === null && !loadError}
 				{#each [0, 1, 2, 3] as i (i)}
@@ -310,7 +310,7 @@
 	</section>
 
 	<section class="space-y-2">
-		<h3 class="text-sm font-medium">Retention</h3>
+		<h3 class="text-sm font-semibold">Retention</h3>
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<FormField label="Scan history">
 				{#snippet children({ id })}

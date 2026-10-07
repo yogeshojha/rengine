@@ -103,7 +103,7 @@
 			<button
 				type="button"
 				onclick={() => onRescan?.(targetId)}
-				class="relative z-[1] mt-1 inline-flex items-center gap-1 rounded-sm text-xs font-medium text-primary hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+				class="relative z-1 mt-1 inline-flex items-center gap-1 rounded-sm text-xs font-medium text-primary hover:text-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			>
 				<RotateCw class="size-3" />
 				Rescan

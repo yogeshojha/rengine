@@ -53,7 +53,7 @@
 </script>
 
 {#if loading && !rows.length}
-	<div class="flex flex-col gap-px p-4 sm:p-5">
+	<div class="flex flex-col gap-px px-6 py-5">
 		{#each [0, 1, 2, 3, 4, 5] as i (i)}
 			<Skeleton class="h-14" />
 		{/each}
@@ -96,11 +96,11 @@
 
 	{#if digest}
 		{#if rows.length < total}
-			<p class="border-t bg-muted/20 px-4 py-3 text-xs text-muted-foreground sm:px-5">
+			<p class="border-t bg-muted/20 px-6 py-3 text-xs text-muted-foreground">
 				{rows.length.toLocaleString()} of {total.toLocaleString()} changes
 			</p>
 		{:else}
-			<p class="border-t bg-muted/20 px-4 py-3 text-xs text-muted-foreground sm:px-5">
+			<p class="border-t bg-muted/20 px-6 py-3 text-xs text-muted-foreground">
 				{plural(total, 'change')}
 			</p>
 		{/if}

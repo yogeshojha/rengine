@@ -27,7 +27,7 @@
 	type="button"
 	onclick={() => onOpen(row)}
 	class={cn(
-		'grid w-full grid-cols-[auto_minmax(0,1fr)] items-stretch gap-x-3 border-b px-4 py-2.5 text-left transition-colors last:border-b-0 sm:px-5',
+		'grid w-full grid-cols-[auto_minmax(0,1fr)] items-stretch gap-x-3 border-b px-6 py-2.5 text-left transition-colors last:border-b-0',
 		selected ? 'bg-accent/60' : 'hover:bg-accent/40'
 	)}
 >

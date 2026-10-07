@@ -25,7 +25,7 @@
 </script>
 
 {#snippet side(run: RunSide, label: string, which: 'baseline' | 'current')}
-	<div class="flex min-w-0 flex-col gap-2 px-4 py-3.5 sm:px-5">
+	<div class="flex min-w-0 flex-col gap-2 px-6 py-3.5">
 		<div class="flex items-center justify-between gap-2">
 			<span class="text-2xs tracking-wide text-muted-foreground uppercase">{label}</span>
 			{#if which === 'current'}

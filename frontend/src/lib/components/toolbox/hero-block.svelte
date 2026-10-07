@@ -18,7 +18,7 @@
 				</span>
 			{/if}
 			<div class="min-w-0">
-				<h3 class="truncate text-lg leading-6 font-medium tracking-tight">
+				<h3 class="truncate text-lg leading-6 font-semibold tracking-tight">
 					{block.headline}
 				</h3>
 				{#if block.sub}

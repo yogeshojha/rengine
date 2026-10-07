@@ -169,7 +169,7 @@
 						>
 							<Icon class="size-[18px]" />
 						</div>
-						<h4 class="text-sm font-medium">{meta.name}</h4>
+						<h4 class="text-sm font-semibold">{meta.name}</h4>
 					</div>
 					<Switch
 						checked={d.enabled}

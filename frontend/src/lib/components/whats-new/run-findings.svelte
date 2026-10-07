@@ -64,7 +64,7 @@
 								>{EVIDENCE_LABELS[Evidence.PROVEN]}</Badge
 							>{/if}
 					</span>
-					<span class="flex min-w-0 items-baseline gap-2 pl-4 sm:pl-[5.5rem]">
+					<span class="flex min-w-0 items-baseline gap-2 pl-4 sm:pl-22">
 						<span class="min-w-0 flex-1 font-mono text-xs text-muted-foreground wrap-anywhere">
 							<span class="sm:hidden">{v.host || v.matched_at}</span>
 							<span class="hidden sm:inline">{v.matched_at || v.host}</span>

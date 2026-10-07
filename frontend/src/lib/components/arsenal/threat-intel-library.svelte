@@ -130,7 +130,7 @@
 
 {#snippet group(label: string)}
 	<div
-		class="border-b bg-muted/10 px-4 py-2 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase"
+		class="border-b bg-muted/10 px-4 py-2 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
 	>
 		{label}
 	</div>

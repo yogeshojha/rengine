@@ -97,7 +97,7 @@
 	<Sidebar.Group class={cn(groupIndex > 0 && 'pt-0 group-data-[collapsible=icon]:pt-3', className)}>
 		{#if group.label}
 			<Sidebar.GroupLabel
-				class="h-6 px-2 text-2xs font-semibold tracking-[0.1em] text-muted-foreground/60 uppercase"
+				class="h-6 px-2 text-2xs font-semibold tracking-wide text-muted-foreground/60 uppercase"
 			>
 				{group.label}
 			</Sidebar.GroupLabel>

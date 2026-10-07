@@ -162,7 +162,7 @@
 					{formatClock(startedAt)}
 				</span>
 				<span class="relative flex justify-center">
-					<span class="z-[1] flex h-5 items-center"
+					<span class="z-1 flex h-5 items-center"
 						><span
 							class="size-2.5 rounded-full border-2 {SCAN_STATUS_DOT[s.status]}"
 							aria-hidden="true"
@@ -222,7 +222,7 @@
 							class="absolute top-[9px] -left-[calc(1.25rem-1px)] w-[calc(0.625rem+1px)] border-t-2 border-dotted"
 							aria-hidden="true"
 						></span>
-						<span class="z-[1] flex h-5 items-center">
+						<span class="z-1 flex h-5 items-center">
 							<span
 								class="size-2 rounded-full border-2 border-primary bg-background"
 								aria-hidden="true"
@@ -251,7 +251,7 @@
 				{formatClock(target.created_at)}
 			</span>
 			<span class="relative flex justify-center">
-				<span class="z-[1] flex h-5 items-center"
+				<span class="z-1 flex h-5 items-center"
 					><span
 						class="size-2.5 rounded-full border-2 border-muted-foreground/60 bg-card"
 						aria-hidden="true"

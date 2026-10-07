@@ -157,7 +157,7 @@
 	<div class="flex flex-col">
 		{#each groups as g (g.sev)}
 			<div
-				class="sticky top-0 z-[1] flex items-center gap-2 bg-muted/40 px-3 py-1.5 text-2xs font-semibold tracking-[0.08em] uppercase backdrop-blur {SEVERITY_CHIP[
+				class="sticky top-0 z-1 flex items-center gap-2 bg-muted/40 px-3 py-1.5 text-2xs font-semibold tracking-wide uppercase backdrop-blur {SEVERITY_CHIP[
 					g.sev
 				].ink}"
 			>

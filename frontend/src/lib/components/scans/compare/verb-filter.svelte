@@ -23,7 +23,7 @@
 </script>
 
 <div
-	class="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-5"
+	class="sticky top-0 z-10 flex flex-wrap items-center gap-1.5 border-b bg-background/95 px-6 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80"
 >
 	{#each shown as verb (verb)}
 		{@const spec = VERB[verb]}
