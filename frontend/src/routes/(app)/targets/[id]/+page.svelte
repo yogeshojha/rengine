@@ -76,6 +76,14 @@
 	import LookalikeTray from '$lib/components/lookalikes/lookalike-tray.svelte';
 	import LookalikeCell from '$lib/components/lookalikes/lookalike-cell.svelte';
 	import { lookalikesApi } from '$lib/api/lookalikes';
+	import CloudStorageTab from '$lib/components/cloud-storage/cloud-storage-tab.svelte';
+	import { cloudStorageApi } from '$lib/api/cloud-storage';
+	import {
+		CLOUD_STORAGE_TAB,
+		CLOUD_STORAGE_TAB_ICON,
+		CLOUD_STORAGE_TAB_LABEL
+	} from '$lib/config/cloud-storage';
+	import type { CloudBucketSummary } from '$lib/types/cloud-storage';
 	import type { LookalikeSummary } from '$lib/types/lookalike';
 	import ActivityCell from '$lib/components/targets/target-detail/overview/activity-cell.svelte';
 	import RunsCell from '$lib/components/targets/target-detail/overview/runs-cell.svelte';
@@ -113,7 +121,16 @@
 	import { downloadBlob } from '$lib/utilities/download';
 	import { csvCell } from '$lib/utilities/csv';
 
-	const TABS = ['overview', 'web-assets', 'dns', 'whois', 'bgp', 'infostealer', 'notes'] as const;
+	const TABS = [
+		'overview',
+		'web-assets',
+		'dns',
+		'whois',
+		'bgp',
+		'infostealer',
+		CLOUD_STORAGE_TAB,
+		'notes'
+	] as const;
 	type TabKey = (typeof TABS)[number];
 	const TAB_DEFS: Record<TabKey, { label: string; icon: IconComponent }> = {
 		overview: { label: 'Overview', icon: LayoutDashboard },
@@ -125,6 +142,7 @@
 		whois: { label: 'WHOIS', icon: FileText },
 		bgp: { label: 'BGP', icon: Router },
 		infostealer: { label: 'Infostealers', icon: KeyRound },
+		[CLOUD_STORAGE_TAB]: { label: CLOUD_STORAGE_TAB_LABEL, icon: CLOUD_STORAGE_TAB_ICON },
 		notes: { label: 'Notes', icon: StickyNote }
 	};
 	const ENRICHMENT_LABELS: Record<EnrichmentKind, string> = {
@@ -161,6 +179,7 @@
 	let programs = $state<ProgramMatch[]>([]);
 	let estate = $state<TargetEstate | null>(null);
 	let lookalikes = $state<LookalikeSummary | null>(null);
+	let cloud = $state<CloudBucketSummary | null>(null);
 	let programsLoaded = false;
 	let ipFacets = $state<IpFacetSet | null>(null);
 	let hosting = $state<HostingComposition | null>(null);
@@ -225,6 +244,7 @@
 		dns: detail?.dns ? dnsRecords : undefined,
 		bgp: detail?.bgp?.announced_prefixes.length || undefined,
 		infostealer: stealerTotal ? detail?.infostealer?.host_count : undefined,
+		[CLOUD_STORAGE_TAB]: cloud?.total || undefined,
 		notes: notesTotal ?? undefined
 	});
 	let bgpHasData = $derived(
@@ -248,6 +268,8 @@
 					return showBgp && (detailLoading || bgpHasData || inFlight(bgpStatus));
 				case 'infostealer':
 					return showStealer && (detailLoading || stealerTotal > 0 || inFlight(stealerStatus));
+				case CLOUD_STORAGE_TAB:
+					return (cloud?.total ?? 0) > 0;
 				default:
 					return true;
 			}
@@ -487,7 +509,8 @@
 			settle('Estate', targetsApi.getEstate(targetId, project.id, scanId), (e) => {
 				estate = e;
 			}),
-			fetchLookalikes()
+			fetchLookalikes(),
+			fetchCloud()
 		]);
 	}
 
@@ -496,6 +519,14 @@
 		if (!project || !showDns) return;
 		await settle('Lookalike domains', lookalikesApi.target(project.id, targetId), (l) => {
 			lookalikes = l;
+		});
+	}
+
+	async function fetchCloud() {
+		const project = projectsStore.activeProject;
+		if (!project || !showDns) return;
+		await settle('Cloud storage', cloudStorageApi.target(project.id, targetId), (c) => {
+			cloud = c;
 		});
 	}
 
@@ -651,7 +682,7 @@
 		error = detailError = null;
 		programs = [];
 		programsLoaded = false;
-		estate = lookalikes = ipFacets = hosting = tech = hygiene = ai = null;
+		estate = lookalikes = cloud = ipFacets = hosting = tech = hygiene = ai = null;
 		posture = postureHosts = certBuckets = reach = exposures = exposure = null;
 		vulns = software = summary = detail = stealer = null;
 		stealerFor = null;
@@ -1251,6 +1282,19 @@
 						loading={detailLoading || (stealerLoading && !stealer)}
 						refreshing={!!refreshing.infostealer}
 						onRefresh={() => refreshOne('infostealer')}
+					/>
+				</Tabs.Content>
+			{/if}
+
+			{#if (cloud?.total ?? 0) > 0}
+				<Tabs.Content value={CLOUD_STORAGE_TAB} class="mt-4">
+					<CloudStorageTab
+						projectId={projectsStore.activeProject?.id ?? ''}
+						targetId={target.id}
+						active={activeTab === CLOUD_STORAGE_TAB}
+						onTotal={(n) => {
+							if (cloud) cloud.total = n;
+						}}
 					/>
 				</Tabs.Content>
 			{/if}

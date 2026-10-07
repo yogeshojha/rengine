@@ -10,6 +10,7 @@ from app.api.v1 import (
     bounty_programs,
     bounty_reports,
     celery_health,
+    cloud_storage,
     connectors,
     cves,
     dashboard,
@@ -82,6 +83,7 @@ router.include_router(scans.router)
 router.include_router(subdomains.router)
 router.include_router(domain_posture.router)
 router.include_router(lookalikes.router)
+router.include_router(cloud_storage.router)
 router.include_router(surface.router)
 router.include_router(mcp.router)
 router.include_router(remote_control.router)

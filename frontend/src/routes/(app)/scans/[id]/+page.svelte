@@ -87,6 +87,8 @@
 	import TabMenu from '$lib/components/scans/results/tab-menu.svelte';
 	import { INTEREST_TAB } from '$lib/config/interest';
 	import { CORRELATION_TAB } from '$lib/config/correlation';
+	import { CLOUD_STORAGE_STAGE, CLOUD_STORAGE_TAB } from '$lib/config/cloud-storage';
+	import CloudStorageTab from '$lib/components/cloud-storage/cloud-storage-tab.svelte';
 	import CorrelationTab from '$lib/components/scans/results/correlation/correlation-tab.svelte';
 	import NotePanel from '$lib/components/notes/note-panel.svelte';
 	import InterestingTable from '$lib/components/scans/results/interesting/interesting-table.svelte';
@@ -410,6 +412,7 @@
 	let softwareSearch = $state('');
 	let secretsTotal = $state<number | null>(null);
 	let secretSearch = $state('');
+	let cloudTotal = $state<number | null>(null);
 	let tabCounts = $derived<Record<ScanTab, number | null>>({
 		overview: null,
 		[INTEREST_TAB]: interestTotal,
@@ -420,9 +423,14 @@
 		vulnerabilities: vulnsTotal ?? scan?.vulnerabilities_found ?? 0,
 		software: softwareTotal,
 		secrets: secretsTotal,
+		[CLOUD_STORAGE_TAB]: cloudTotal,
 		[CORRELATION_TAB]: correlationTotal,
 		[NOTES_TAB]: notesTotal
 	});
+	let cloudPlanned = $derived(
+		!!scan &&
+			plannedStages(scan, engineCatalogStore.stages).some((st) => st.name === CLOUD_STORAGE_STAGE)
+	);
 	let plannedKinds = $derived(
 		new Set(scan ? plannedStages(scan, engineCatalogStore.stages).flatMap((st) => st.produces) : [])
 	);
@@ -434,6 +442,7 @@
 		new Set(
 			SCAN_TAB_DEFS.filter((t) => {
 				if (t.key === 'overview' || t.key === NOTES_TAB) return true;
+				if (t.key === CLOUD_STORAGE_TAB) return cloudPlanned || (cloudTotal ?? 0) > 0;
 				if (t.key === CORRELATION_TAB) return (scan?.subdomains_found ?? 0) >= 2;
 				if (t.key === INTEREST_TAB) return dimensionOn(SURFACE[SurfaceDimension.WEB_ASSETS]);
 				const spec = SURFACE_ORDER.find((sp) => sp.tab === t.key);
@@ -1138,6 +1147,20 @@
 						{/key}
 					</svelte:boundary>
 				{/if}
+			</Tabs.Content>
+
+			<Tabs.Content value={CLOUD_STORAGE_TAB} class="mt-6">
+				<svelte:boundary failed={tabFailed}>
+					{#key scan.id}
+						<CloudStorageTab
+							scanId={scan.id}
+							{projectId}
+							active={activeTab === CLOUD_STORAGE_TAB}
+							revision={liveTick}
+							onTotal={(n) => (cloudTotal = n)}
+						/>
+					{/key}
+				</svelte:boundary>
 			</Tabs.Content>
 
 			<Tabs.Content value={CORRELATION_TAB} class="mt-6">

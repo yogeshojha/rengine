@@ -3,6 +3,7 @@ from shared.models.activity_log import ActivityLog
 from shared.models.ai import AiCall, AiConnection, AiNarrative
 from shared.models.api_key import APIKey
 from shared.models.ask import AskMessage, AskThread
+from shared.models.cloud_storage import CloudBucket, CloudBucketTriage
 from shared.models.connector import (
     Connector,
     ConnectorAction,
@@ -99,6 +100,8 @@ __all__ = [
     "AiNarrative",
     "AskMessage",
     "AskThread",
+    "CloudBucket",
+    "CloudBucketTriage",
     "Connector",
     "ConnectorAction",
     "ConnectorCandidate",
