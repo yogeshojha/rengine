@@ -480,7 +480,7 @@
 						{@render tabTrigger('overview', 'Overview', null)}
 						<Tabs.Trigger
 							value="ask"
-							bind:ref={tabRefs.ask}
+							bind:ref={() => tabRefs.ask ?? null, (el) => (tabRefs.ask = el)}
 							class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-primary shadow-none hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
 						>
 							<Sparkles class="size-3.5" />
@@ -1357,7 +1357,7 @@
 {#snippet tabTrigger(value: string, label: string, count: number | null)}
 	<Tabs.Trigger
 		{value}
-		bind:ref={tabRefs[value]}
+		bind:ref={() => tabRefs[value] ?? null, (el) => (tabRefs[value] = el)}
 		class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
 	>
 		{label}
