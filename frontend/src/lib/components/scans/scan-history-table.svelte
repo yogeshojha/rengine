@@ -820,7 +820,7 @@
 			{/if}
 		</Empty.Root>
 	{:else}
-		<div class="overflow-x-auto">
+		<div class="@container/scans overflow-x-auto">
 			<div class="w-full min-w-[720px]" role="table" aria-label="Scans">
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
