@@ -25,7 +25,6 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as InputGroup from '$lib/components/ui/input-group';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
@@ -825,7 +824,7 @@
 			{/if}
 		</Empty.Root>
 	{:else}
-		<ScrollArea orientation="horizontal">
+		<div class="overflow-x-auto">
 			<div class="w-full min-w-[720px]" role="table" aria-label="Scans">
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -898,7 +897,7 @@
 					{/if}
 				{/each}
 			</div>
-		</ScrollArea>
+		</div>
 		<ResultsPagination
 			total={pagination.totalItems}
 			page={pagination.currentPage - 1}

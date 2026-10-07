@@ -25,7 +25,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Kbd } from '$lib/components/ui/kbd';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -955,7 +954,7 @@
 					</Hint>
 				</EmptyState>
 			{:else}
-				<ScrollArea orientation="horizontal">
+				<div class="overflow-x-auto">
 					<div
 						class="w-full min-w-[720px] {loading ? 'opacity-60' : ''}"
 						role="table"
@@ -990,7 +989,7 @@
 							/>
 						{/each}
 					</div>
-				</ScrollArea>
+				</div>
 				<ResultsPagination
 					page={pageIndex - 1}
 					{pageSize}

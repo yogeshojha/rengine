@@ -740,6 +740,19 @@
 				counts={targetsStore.counts as unknown as Record<string, number>}
 				onChange={handleTabChange}
 			/>
+			<div class="ml-auto flex items-center gap-2 py-1.5 pr-2">
+				{#if targetsStore.hasFetched && rows.length > 0}
+					<Button variant="outline" size="sm" onclick={handleScanAll}>
+						<Play class="size-4" /> Scan {rows.length}
+					</Button>
+				{/if}
+				<Button variant="outline" size="sm" onclick={() => (showImportModal = true)}>
+					<Upload class="size-4" /> Import
+				</Button>
+				<Button size="sm" onclick={() => (showAddModal = true)}>
+					<Plus class="size-4" /> Add target
+				</Button>
+			</div>
 		</div>
 
 		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
@@ -826,17 +839,6 @@
 						</Button>
 					{/snippet}
 				</Hint>
-				{#if targetsStore.hasFetched && rows.length > 0}
-					<Button variant="outline" onclick={handleScanAll}>
-						<Play class="size-4" /> Scan {rows.length}
-					</Button>
-				{/if}
-				<Button variant="outline" onclick={() => (showImportModal = true)}>
-					<Upload class="size-4" /> Import
-				</Button>
-				<Button onclick={() => (showAddModal = true)}>
-					<Plus class="size-4" /> Add target
-				</Button>
 			</div>
 		</div>
 

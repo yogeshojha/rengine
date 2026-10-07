@@ -120,7 +120,7 @@
 							>
 							{#if r.kev}
 								<span
-									class="rounded-sm bg-sev-critical-wash px-1.5 text-2xs font-semibold text-sev-critical-ink"
+									class="shrink-0 rounded-sm bg-sev-critical-wash px-1.5 text-2xs font-semibold whitespace-nowrap text-sev-critical-ink"
 								>
 									KEV {r.kev}
 								</span>

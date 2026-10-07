@@ -378,43 +378,45 @@
 					{#each kpis as k, i (k.key)}
 						<button
 							type="button"
-							class="group flex min-w-0 cursor-pointer items-end justify-between gap-3 border-t border-l px-5 py-4 text-left transition-colors hover:bg-muted/40 {i ===
+							class="group flex min-w-0 cursor-pointer flex-col gap-1.5 border-t border-l px-5 py-4 text-left transition-colors hover:bg-muted/40 {i ===
 							kpis.length - 1
 								? `${lastSpanMobile} ${LAST_SPAN[lastSpan]}`
 								: ''}"
 							onclick={() => onTab(k.tab, k.filter)}
 						>
-							<span class="flex min-w-0 flex-col gap-1.5">
-								<span class="truncate text-xs text-muted-foreground group-hover:text-foreground">
-									{k.label}
-								</span>
-								<span class="text-2xl leading-none font-semibold tracking-tight tabular-nums">
-									{k.value == null ? '—' : k.value.toLocaleString()}
-								</span>
-								<span class="flex h-4 items-center gap-2 text-xs tabular-nums">
-									{#if (k.added ?? 0) > 0 || (k.gone ?? 0) > 0}
-										{#if (k.added ?? 0) > 0}
-											<span class="inline-flex items-center text-success">
-												<ArrowUpRight class="size-3" />{k.added}
-											</span>
-										{/if}
-										{#if (k.gone ?? 0) > 0}
-											<span class="inline-flex items-center text-muted-foreground">
-												<ArrowDownRight class="size-3" />{k.gone}
-											</span>
-										{/if}
-									{:else if k.hint}
-										<span class="truncate text-muted-foreground">{k.hint}</span>
-									{/if}
-								</span>
+							<span class="truncate text-xs text-muted-foreground group-hover:text-foreground">
+								{k.label}
 							</span>
-							{#if k.trend}
-								<ScanTrendSparkline
-									values={k.trend}
-									label={k.label}
-									class="hidden h-9 w-20 shrink-0 xl:flex"
-								/>
-							{/if}
+							<span class="flex min-w-0 items-end justify-between gap-3">
+								<span class="flex min-w-0 flex-col gap-1.5">
+									<span class="text-2xl leading-none font-semibold tracking-tight tabular-nums">
+										{k.value == null ? '—' : k.value.toLocaleString()}
+									</span>
+									<span class="flex h-4 items-center gap-2 text-xs tabular-nums">
+										{#if (k.added ?? 0) > 0 || (k.gone ?? 0) > 0}
+											{#if (k.added ?? 0) > 0}
+												<span class="inline-flex items-center text-success">
+													<ArrowUpRight class="size-3" />{k.added}
+												</span>
+											{/if}
+											{#if (k.gone ?? 0) > 0}
+												<span class="inline-flex items-center text-muted-foreground">
+													<ArrowDownRight class="size-3" />{k.gone}
+												</span>
+											{/if}
+										{:else if k.hint}
+											<span class="truncate text-muted-foreground">{k.hint}</span>
+										{/if}
+									</span>
+								</span>
+								{#if k.trend}
+									<ScanTrendSparkline
+										values={k.trend}
+										label={k.label}
+										class="hidden h-9 w-20 shrink-0 xl:flex"
+									/>
+								{/if}
+							</span>
 						</button>
 					{/each}
 				</div>

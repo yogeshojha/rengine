@@ -2,7 +2,6 @@
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -101,7 +100,7 @@
 {#if rows.length === 0}
 	<EmptyState title="No programs match" compact class="border-0 bg-transparent py-16" />
 {:else}
-	<ScrollArea orientation="horizontal">
+	<div class="overflow-x-auto">
 		<div class="w-full min-w-[640px]" role="table" aria-label="Programs">
 			<div
 				class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -224,5 +223,5 @@
 				</div>
 			{/each}
 		</div>
-	</ScrollArea>
+	</div>
 {/if}
