@@ -279,25 +279,27 @@
 	</div>
 
 	<div class="flex flex-col gap-1 {WEB_ASSET_LEAD_COLUMNS[0].width}">
-		<div class="flex items-start gap-1.5">
-			{#if s.is_important}
-				<span class="flex h-5 shrink-0 items-center">
-					<Star class="size-3 fill-warning text-warning" />
-				</span>
-			{/if}
-			<span class="min-w-0 leading-5 wrap-anywhere">
-				<HostHoverCard sub={s}>
-					<span
-						class="font-mono text-sm leading-5 font-medium {s.is_active
-							? ''
-							: 'text-muted-foreground'}"
-					>
-						{#each headLabels as part, i (i)}{part}{#if i < headLabels.length - 1}.<wbr
-								/>{/if}{/each}{#if apexSuffix}<wbr /><span class="font-normal text-muted-foreground"
-								>{apexSuffix}</span
-							>{/if}
+		<div class="flex flex-wrap items-start gap-x-1.5 gap-y-1">
+			<span class="flex max-w-full min-w-0 items-start gap-1.5">
+				{#if s.is_important}
+					<span class="flex h-5 shrink-0 items-center">
+						<Star class="size-3 fill-warning text-warning" />
 					</span>
-				</HostHoverCard>
+				{/if}
+				<span class="min-w-0 leading-5 wrap-anywhere">
+					<HostHoverCard sub={s}>
+						<span
+							class="font-mono text-sm leading-5 font-medium {s.is_active
+								? ''
+								: 'text-muted-foreground'}"
+						>
+							{#each headLabels as part, i (i)}{part}{#if i < headLabels.length - 1}.<wbr
+									/>{/if}{/each}{#if apexSuffix}<wbr /><span
+									class="font-normal text-muted-foreground">{apexSuffix}</span
+								>{/if}
+						</span>
+					</HostHoverCard>
+				</span>
 			</span>
 			{#if aiServices.length > 0}
 				<Hint text={aiServices.map(aiServiceLabel).join(' · ')}>
