@@ -8,7 +8,6 @@
 	import { PROJECT_NAME_MAX } from '$lib/constants';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
-	import { tick } from 'svelte';
 
 	let { open }: { open: boolean } = $props();
 
@@ -20,12 +19,6 @@
 	let nameLength = $derived(name.length);
 	let isValid = $derived(name.trim().length > 0 && name.length <= PROJECT_NAME_MAX);
 	let isOverLimit = $derived(name.length > PROJECT_NAME_MAX);
-
-	$effect(() => {
-		if (open) {
-			tick().then(() => nameInput?.focus());
-		}
-	});
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -54,6 +47,10 @@
 		showCloseButton={false}
 		interactOutsideBehavior="ignore"
 		escapeKeydownBehavior="ignore"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			nameInput?.focus();
+		}}
 		class="sm:max-w-md"
 	>
 		<Dialog.Header class="text-center sm:text-left">

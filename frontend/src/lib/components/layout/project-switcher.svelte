@@ -2,7 +2,6 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -82,26 +81,24 @@
 					{/snippet}
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content
-					class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg max-h-none overflow-visible"
+					class="w-(--bits-dropdown-menu-anchor-width) min-w-56 rounded-lg"
 					align="start"
 					side={sidebar.isMobile ? 'bottom' : 'right'}
 					sideOffset={4}
 				>
 					<DropdownMenu.Label class="text-muted-foreground text-xs">Projects</DropdownMenu.Label>
 
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						{#each projects as project (project.id)}
-							<DropdownMenu.Item onSelect={() => handleProjectSelect(project)} class="gap-2 p-2">
-								<div class="flex size-6 items-center justify-center rounded-md border">
-									<ProjectIcon {project} class="size-4" />
-								</div>
-								<span class="flex-1 truncate">{project.name}</span>
-								{#if project.id === activeProject?.id}
-									<CheckIcon class="size-4 text-muted-foreground" />
-								{/if}
-							</DropdownMenu.Item>
-						{/each}
-					</ScrollArea>
+					{#each projects as project (project.id)}
+						<DropdownMenu.Item onSelect={() => handleProjectSelect(project)} class="gap-2 p-2">
+							<div class="flex size-6 items-center justify-center rounded-md border">
+								<ProjectIcon {project} class="size-4" />
+							</div>
+							<span class="flex-1 truncate">{project.name}</span>
+							{#if project.id === activeProject?.id}
+								<CheckIcon class="size-4 text-muted-foreground" />
+							{/if}
+						</DropdownMenu.Item>
+					{/each}
 
 					<DropdownMenu.Separator />
 

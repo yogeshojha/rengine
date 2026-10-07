@@ -4,7 +4,6 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 
 	interface Props {
 		value: string;
@@ -47,20 +46,18 @@
 	<Popover.Content class="w-72 p-0" align="end">
 		<Command.Root>
 			<Command.Input placeholder="Search time zones" />
-			<Command.List class="max-h-none overflow-visible">
+			<Command.List class="max-h-72">
 				<Command.Empty>No time zone</Command.Empty>
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-					<Command.Group>
-						{#each zones as zone (zone)}
-							<Command.Item value={zone} onSelect={() => pick(zone)}>
-								<span class="flex-1 truncate">{zone}</span>
-								{#if zone === value}
-									<CheckIcon class="size-4 text-primary" />
-								{/if}
-							</Command.Item>
-						{/each}
-					</Command.Group>
-				</ScrollArea>
+				<Command.Group>
+					{#each zones as zone (zone)}
+						<Command.Item value={zone} onSelect={() => pick(zone)}>
+							<span class="flex-1 truncate">{zone}</span>
+							{#if zone === value}
+								<CheckIcon class="size-4 text-primary" />
+							{/if}
+						</Command.Item>
+					{/each}
+				</Command.Group>
 			</Command.List>
 		</Command.Root>
 	</Popover.Content>

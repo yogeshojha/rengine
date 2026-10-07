@@ -6,7 +6,6 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import * as HoverCard from '$lib/components/ui/hover-card';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -173,7 +172,7 @@
 		<Popover.Content class="w-[240px] p-0" align="start">
 			<Command.Root shouldFilter={false}>
 				<Command.Input placeholder="Search or create organizations" bind:value={searchValue} />
-				<Command.List class="max-h-none overflow-visible">
+				<Command.List class="max-h-80">
 					<Command.Empty>
 						{#if !showCreateOption}
 							<div class="flex flex-col items-center gap-1 py-2">
@@ -182,25 +181,23 @@
 							</div>
 						{/if}
 					</Command.Empty>
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						<Command.Group>
-							{#each filteredOrgs as org (org.id)}
-								{@const isApplied = appliedIds.has(org.id)}
-								<Command.Item
-									value={org.id}
-									onSelect={() => toggleOrg(org)}
-									class="flex items-center gap-2"
-									disabled={isUpdating}
-								>
-									<Building2 class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-									<span class="flex-1 truncate">{org.name}</span>
-									{#if isApplied}
-										<Check class="h-4 w-4 text-primary shrink-0" />
-									{/if}
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</ScrollArea>
+					<Command.Group>
+						{#each filteredOrgs as org (org.id)}
+							{@const isApplied = appliedIds.has(org.id)}
+							<Command.Item
+								value={org.id}
+								onSelect={() => toggleOrg(org)}
+								class="flex items-center gap-2"
+								disabled={isUpdating}
+							>
+								<Building2 class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+								<span class="flex-1 truncate">{org.name}</span>
+								{#if isApplied}
+									<Check class="h-4 w-4 text-primary shrink-0" />
+								{/if}
+							</Command.Item>
+						{/each}
+					</Command.Group>
 
 					{#if showCreateOption}
 						<Command.Group>

@@ -2,6 +2,7 @@
 	import Layers from '@lucide/svelte/icons/layers';
 	import type { IconComponent } from '$lib/config/icons';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import ChangeBar from './change-bar.svelte';
 	import { cn } from '$lib/utils';
 	import { COMPARE_TAB_ALL } from '$lib/config/compare';
@@ -29,16 +30,9 @@
 	foot: string,
 	delta: DimensionDelta | null
 )}
-	{@const on = active === key}
-	<button
-		type="button"
-		role="tab"
-		aria-selected={on}
-		onclick={() => onSelect(key)}
-		class={cn(
-			'flex min-w-[9.5rem] flex-1 flex-col gap-1.5 border-r px-4 py-3 text-left transition-colors last:border-r-0',
-			on ? 'bg-accent/50' : 'hover:bg-accent/30'
-		)}
+	<ToggleGroup.Item
+		value={key}
+		class="h-auto min-w-[9.5rem] flex-1 flex-col items-stretch justify-start gap-1.5 rounded-none border-r px-4 py-3 text-left font-normal whitespace-normal last:border-r-0 hover:bg-accent/30 data-[state=on]:bg-accent/50"
 	>
 		<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
 			<Icon class="size-3.5" />
@@ -63,12 +57,19 @@
 			<span class="h-1"></span>
 		{/if}
 		<span class="truncate text-2xs text-muted-foreground tabular-nums">{foot}</span>
-	</button>
+	</ToggleGroup.Item>
 {/snippet}
 
-<div class="border-b" role="tablist" aria-label="Result dimension">
+<div class="border-b">
 	<ScrollArea.Root orientation="horizontal" class="w-full">
-		<div class="flex min-w-max">
+		<ToggleGroup.Root
+			type="single"
+			spacing={1}
+			value={active}
+			onValueChange={(v) => v && onSelect(v)}
+			aria-label="Result dimension"
+			class="w-full min-w-max gap-0 rounded-none"
+		>
 			{@render card(
 				COMPARE_TAB_ALL,
 				'All changes',
@@ -91,6 +92,6 @@
 					covered ? d : null
 				)}
 			{/each}
-		</div>
+		</ToggleGroup.Root>
 	</ScrollArea.Root>
 </div>

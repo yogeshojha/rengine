@@ -26,8 +26,8 @@
 <Empty.Root class={cn('border bg-muted/20', compact ? 'py-8' : 'py-20', className)}>
 	<Empty.Header>
 		{#if Icon}
-			<Empty.Media class={cn('rounded-2xl bg-muted', compact ? 'size-12' : 'size-16')}>
-				<Icon size={compact ? 20 : 28} class="text-muted-foreground" />
+			<Empty.Media variant="icon" class={compact ? 'size-12' : 'size-16'}>
+				<Icon class={cn('text-muted-foreground', compact ? 'size-5' : 'size-7')} />
 			</Empty.Media>
 		{/if}
 		<Empty.Title class={compact ? '' : 'text-lg font-semibold'}>{title}</Empty.Title>

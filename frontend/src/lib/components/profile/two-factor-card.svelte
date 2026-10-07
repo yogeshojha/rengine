@@ -48,18 +48,14 @@
 
 	let copiedBackup = $state(false);
 
-	let setupOtpWrap = $state<HTMLDivElement | null>(null);
-	let disableOtpWrap = $state<HTMLDivElement | null>(null);
-
-	function focusOtp(wrap: HTMLDivElement | null) {
-		queueMicrotask(() => wrap?.querySelector('input')?.focus());
-	}
+	let setupOtpInput = $state<HTMLInputElement | null>(null);
+	let disableOtpInput = $state<HTMLInputElement | null>(null);
 
 	$effect(() => {
-		if (setupOpen && setupQr && !backupCodes) focusOtp(setupOtpWrap);
+		if (setupOpen && setupQr && !backupCodes) setupOtpInput?.focus();
 	});
 	$effect(() => {
-		if (disableOpen && !disableUseBackupCode) focusOtp(disableOtpWrap);
+		if (disableOpen && !disableUseBackupCode) disableOtpInput?.focus();
 	});
 
 	const canDisable = $derived(
@@ -268,14 +264,13 @@
 						/>
 					{:else}
 						<Label for="disable-otp" class="sr-only">Authentication code</Label>
-						<div bind:this={disableOtpWrap}>
-							<OtpInput
-								id="disable-otp"
-								value={disableCode}
-								onValueChange={(v) => (disableCode = v)}
-								disabled={isDisabling}
-							/>
-						</div>
+						<OtpInput
+							id="disable-otp"
+							bind:inputRef={disableOtpInput}
+							value={disableCode}
+							onValueChange={(v) => (disableCode = v)}
+							disabled={isDisabling}
+						/>
 					{/if}
 					<Button
 						variant="link"
@@ -378,14 +373,13 @@
 						</div>
 						<FormField label="Verification code">
 							{#snippet children({ id })}
-								<div bind:this={setupOtpWrap}>
-									<OtpInput
-										{id}
-										value={setupCode}
-										onValueChange={(v) => (setupCode = v)}
-										disabled={isVerifying}
-									/>
-								</div>
+								<OtpInput
+									{id}
+									bind:inputRef={setupOtpInput}
+									value={setupCode}
+									onValueChange={(v) => (setupCode = v)}
+									disabled={isVerifying}
+								/>
 							{/snippet}
 						</FormField>
 						<div class="flex items-center gap-2 pt-1">

@@ -6,9 +6,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import * as Popover from '$lib/components/ui/popover';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as Command from '$lib/components/ui/command';
 	import * as HoverCard from '$lib/components/ui/hover-card';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { targetsApi } from '$lib/api/targets';
 	import { targetsStore } from '$lib/stores/targets.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -203,25 +203,28 @@
 					<p class="text-sm font-medium truncate">
 						Color for "<span class="text-primary">{searchValue}</span>"
 					</p>
-					<div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Color">
+					<ToggleGroup.Root
+						type="single"
+						size="sm"
+						spacing={2}
+						value={selectedColor}
+						onValueChange={(v) => v && (selectedColor = v)}
+						aria-label="Color"
+						class="flex-wrap gap-2"
+					>
 						{#each TAG_COLORS as color (color)}
-							<button
-								type="button"
-								role="radio"
-								aria-checked={selectedColor === color}
+							<ToggleGroup.Item
+								value={color}
 								aria-label={color}
-								class="h-6 w-6 rounded-full border-2 {selectedColor === color
-									? 'border-foreground'
-									: 'border-transparent'}"
+								class="size-6 min-w-6 rounded-full border-2 border-transparent p-0 data-[state=on]:border-foreground"
 								style="background-color: {color}"
-								onclick={() => (selectedColor = color)}
 							>
 								{#if selectedColor === color}
-									<Check class="h-3 w-3 text-white mx-auto" />
+									<Check class="size-3 text-white" />
 								{/if}
-							</button>
+							</ToggleGroup.Item>
 						{/each}
-					</div>
+					</ToggleGroup.Root>
 					<div class="flex items-center gap-2 pt-1">
 						<Button variant="ghost" size="sm" onclick={handleCancelCreate} disabled={isUpdating}>
 							Cancel
@@ -241,7 +244,7 @@
 			{:else}
 				<Command.Root shouldFilter={false}>
 					<Command.Input placeholder="Search or create tags" bind:value={searchValue} />
-					<Command.List class="max-h-none overflow-visible">
+					<Command.List class="max-h-80">
 						<Command.Empty>
 							{#if !showCreateOption}
 								<div class="flex flex-col items-center gap-1 py-2">
@@ -250,28 +253,26 @@
 								</div>
 							{/if}
 						</Command.Empty>
-						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-							<Command.Group>
-								{#each filteredTags as tag (tag.id)}
-									{@const isApplied = appliedIds.has(tag.id)}
-									<Command.Item
-										value={tag.id}
-										onSelect={() => toggleTag(tag)}
-										class="flex items-center gap-2"
-										disabled={isUpdating}
-									>
-										<span
-											class="h-2.5 w-2.5 rounded-full shrink-0"
-											style="background-color: {tag.color}"
-										></span>
-										<span class="flex-1 truncate">{tag.name}</span>
-										{#if isApplied}
-											<Check class="h-4 w-4 text-primary shrink-0" />
-										{/if}
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						</ScrollArea>
+						<Command.Group>
+							{#each filteredTags as tag (tag.id)}
+								{@const isApplied = appliedIds.has(tag.id)}
+								<Command.Item
+									value={tag.id}
+									onSelect={() => toggleTag(tag)}
+									class="flex items-center gap-2"
+									disabled={isUpdating}
+								>
+									<span
+										class="h-2.5 w-2.5 rounded-full shrink-0"
+										style="background-color: {tag.color}"
+									></span>
+									<span class="flex-1 truncate">{tag.name}</span>
+									{#if isApplied}
+										<Check class="h-4 w-4 text-primary shrink-0" />
+									{/if}
+								</Command.Item>
+							{/each}
+						</Command.Group>
 
 						{#if showCreateOption}
 							<Command.Group>

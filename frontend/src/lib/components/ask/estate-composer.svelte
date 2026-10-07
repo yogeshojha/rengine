@@ -6,6 +6,8 @@
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Square from '@lucide/svelte/icons/square';
 	import X from '@lucide/svelte/icons/x';
+	import { Button } from '$lib/components/ui/button';
+	import { Toggle } from '$lib/components/ui/toggle';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import Hint from '$lib/components/hint.svelte';
 	import { ABOUT_SEPARATOR, BLOCK_ID, MAX_QUESTION_CHARS } from '$lib/config/ask';
@@ -117,36 +119,31 @@
 				{/if}
 				<span class="truncate text-foreground/80">{about.label}</span>
 				{#if onClearAbout}
-					<button
-						type="button"
-						class="inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						class="text-muted-foreground hover:bg-primary/10"
 						onclick={onClearAbout}
 						aria-label="Ask about everything in scope"
 					>
 						<X class="size-3" />
-					</button>
+					</Button>
 				{/if}
 			</span>
 		{/if}
 		<Hint text="Checks one more fact and writes follow-ups. Uses more AI tokens.">
 			{#snippet child(props)}
-				<button
+				<Toggle
 					{...props}
-					type="button"
-					role="switch"
-					aria-checked={intelligent}
+					size="sm"
+					pressed={intelligent}
+					onPressedChange={onIntelligent}
 					{disabled}
-					onclick={() => onIntelligent(!intelligent)}
-					class={cn(
-						'inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors disabled:opacity-50',
-						intelligent
-							? 'border-primary/30 bg-primary/10 text-primary'
-							: 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
-					)}
+					class="gap-1.5 border border-transparent px-2 text-muted-foreground aria-pressed:bg-primary/10 data-[state=on]:border-primary/30 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
 				>
 					<Brain class="size-3.5" />
 					Intelligent
-				</button>
+				</Toggle>
 			{/snippet}
 		</Hint>
 		<span class="ml-auto"></span>

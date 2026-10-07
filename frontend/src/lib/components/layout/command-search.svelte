@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Command from '$lib/components/ui/command/index.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Kbd } from '$lib/components/ui/kbd/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import Crosshair from '@lucide/svelte/icons/crosshair';
@@ -338,258 +337,246 @@
 >
 	<SearchIcon class="h-4 w-4" />
 	<span>Search…</span>
-	<kbd
-		class="pointer-events-none absolute right-1.5 top-1.5 hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-2xs font-medium opacity-100 sm:flex"
+	<Kbd class="absolute top-1/2 right-1.5 hidden -translate-y-1/2 sm:inline-flex"
+		>{searchShortcut}</Kbd
 	>
-		{searchShortcut}
-	</kbd>
 </Button>
 
-<Dialog.Root bind:open={commandOpen}>
-	<Dialog.Content class="overflow-hidden p-0 shadow-lg sm:max-w-xl">
-		<Dialog.Header class="sr-only">
-			<Dialog.Title>Search</Dialog.Title>
-			<Dialog.Description>Assets, searches and commands</Dialog.Description>
-		</Dialog.Header>
-		<Command.Root shouldFilter={false} class="[&_[data-cmd-input-wrapper]]:border-b">
-			<Command.Input
-				bind:value={raw}
-				placeholder="Search a value, run a query, or type {COMMAND_PREFIX} for commands"
-			/>
-			<Command.List class="max-h-none overflow-visible">
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[24rem]">
-					{#if searching && !commandMode && term.length >= 2 && !searchResults.length && !validValue}
-						<div class="flex flex-col gap-2 p-2" aria-busy="true">
-							{#each Array(3) as _, i (i)}
-								<div class="flex items-center gap-2 px-2 py-1.5">
-									<Skeleton class="size-4 shrink-0 rounded" />
-									<Skeleton class="h-3.5 {i % 2 ? 'w-40' : 'w-56'} max-w-full" />
-								</div>
-							{/each}
-						</div>
-					{/if}
-
-					{#if showRecents}
-						{#if visits.length}
-							<Command.Group heading="Recent">
-								{#each visits as visit (visit.kind + visit.id)}
-									<Command.Item
-										value="visit:{visit.id}"
-										onSelect={() =>
-											run(() =>
-												goto(
-													visit.kind === 'scan' ? ROUTES.scan(visit.id) : ROUTES.target(visit.id)
-												)
-											)}
-									>
-										{#if visit.kind === 'scan'}
-											<Radar class="h-4 w-4 shrink-0" />
-										{:else}
-											<Crosshair class="h-4 w-4 shrink-0" />
-										{/if}
-										<span class="truncate">{visit.label}</span>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-						{#if searches.length}
-							<Command.Group heading="Recent searches">
-								{#each searches as entry (entry.dimension + entry.query)}
-									{@const spec = SURFACE[entry.dimension]}
-									<Command.Item
-										value="search:{entry.dimension}:{entry.query}"
-										onSelect={() =>
-											run(() => goto(searchHref(entry.dimension, entry.query, scope, 'project')))}
-									>
-										<spec.icon class="h-4 w-4 shrink-0" />
-										<span class="truncate font-mono text-xs">{entry.query}</span>
-										<Command.Shortcut>{spec.label}</Command.Shortcut>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-						{#if starters.length}
-							<Command.Group heading="Commands">
-								{#each starters as command (command.id)}
-									<Command.Item value={command.id} onSelect={() => run(command.run)}>
-										<command.icon class="h-4 w-4 shrink-0" />
-										<span class="truncate">{command.label}</span>
-										{#if command.hint}
-											<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
-										{/if}
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-					{/if}
-
-					{#if !commandMode && term}
-						{#if searchResults.length}
-							<Command.Group heading="Targets">
-								{#each searchResults as t (t.id)}
-									<Command.Item
-										value="target:{t.id}"
-										onSelect={() => run(() => goto(ROUTES.target(t.id)))}
-									>
-										<Crosshair class="h-4 w-4 shrink-0" />
-										<span class="truncate">{t.target_value}</span>
-										<Command.Shortcut>{t.target_type}</Command.Shortcut>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-
-						{#if isCve(term) || lookups.length}
-							<Command.Group heading="Find">
-								{#if isCve(term)}
-									<Command.Item
-										value="cve:page"
-										onSelect={() => run(() => goto(ROUTES.cve(cveId(term))))}
-									>
-										<ShieldAlert class="h-4 w-4 shrink-0" />
-										<span class="truncate">{cveId(term)}</span>
-										<Command.Shortcut>Exposure</Command.Shortcut>
-									</Command.Item>
-								{/if}
-								{#each lookups as lookup (lookup.dimension + lookup.query)}
-									{@const spec = SURFACE[lookup.dimension]}
-									<Command.Item
-										value="find:{lookup.dimension}:{lookup.query}"
-										onSelect={() =>
-											run(() => goto(searchHref(lookup.dimension, lookup.query, scope, 'project')))}
-									>
-										<spec.icon class="h-4 w-4 shrink-0" />
-										<span class="truncate">{spec.label}</span>
-										<Command.Shortcut class="truncate font-mono">{lookup.query}</Command.Shortcut>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-
-						{#if queryMatches.length}
-							<Command.Group heading="Search">
-								{#each queryMatches as match (match.dimension)}
-									{@const spec = SURFACE[match.dimension]}
-									{#if scope.kind !== 'project'}
-										<Command.Item
-											value="query:here:{match.dimension}"
-											onSelect={() =>
-												run(() => goto(searchHref(match.dimension, term, scope, 'here')))}
-										>
-											<spec.icon class="h-4 w-4 shrink-0" />
-											<span class="truncate">{spec.label}</span>
-											<Command.Shortcut class="truncate">{scope.label}</Command.Shortcut>
-										</Command.Item>
-									{/if}
-									<Command.Item
-										value="query:project:{match.dimension}"
-										onSelect={() =>
-											run(() => goto(searchHref(match.dimension, term, scope, 'project')))}
-									>
-										<spec.icon class="h-4 w-4 shrink-0" />
-										<span class="truncate">{spec.label}</span>
-										<Command.Shortcut class="truncate">{activeProject?.name ?? ''}</Command.Shortcut
-										>
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-
-						{#if askReady && isQuestion(term)}
-							<Command.Group heading="Ask">
-								<Command.Item
-									value="ask:{term}"
-									onSelect={() => run(() => goto(ROUTES.ask({ q: term })))}
-								>
-									<Sparkles class="h-4 w-4 shrink-0 text-primary" />
-									<span class="truncate">{term}</span>
-									<Command.Shortcut>Ask</Command.Shortcut>
-								</Command.Item>
-							</Command.Group>
-						{/if}
-
-						{#if validValue}
-							<Command.Group heading="Run">
-								<Command.Item
-									value="scan:{validValue}"
-									onSelect={() => run(() => onScan(validValue ?? undefined))}
-								>
-									<Play class="h-4 w-4 shrink-0" />
-									<span class="truncate">Start scan</span>
-									<Command.Shortcut class="truncate font-mono">{validValue}</Command.Shortcut>
-								</Command.Item>
-								<Command.Item
-									value="toolbox:{validValue}"
-									onSelect={() => run(() => onToolbox(validValue ?? ''))}
-								>
-									<TOOLBOX_ICON class="h-4 w-4 shrink-0" />
-									<span class="truncate">Open in Toolbox</span>
-									<Command.Shortcut class="truncate font-mono">{validValue}</Command.Shortcut>
-								</Command.Item>
-							</Command.Group>
-						{/if}
-
-						{#if matched.length}
-							<Command.Group heading="Commands">
-								{#each matched.slice(0, MAX_COMMANDS) as command (command.id)}
-									<Command.Item value={command.id} onSelect={() => run(command.run)}>
-										<command.icon class="h-4 w-4 shrink-0" />
-										<span class="truncate">{command.label}</span>
-										{#if command.hint}
-											<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
-										{/if}
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/if}
-
-						{#if !searching && !searchResults.length && !lookups.length && !queryMatches.length && !matched.length && !validValue}
-							<div class="py-6 text-center text-sm text-muted-foreground">Nothing matches</div>
-						{/if}
-					{/if}
-
-					{#if commandMode}
-						{#each grouped as entry (entry.group)}
-							<Command.Group heading={GROUP_LABELS[entry.group]}>
-								{#each entry.items as command (command.id)}
-									<Command.Item value={command.id} onSelect={() => run(command.run)}>
-										<command.icon class="h-4 w-4 shrink-0" />
-										<span class="truncate">{command.label}</span>
-										{#if command.hint}
-											<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
-										{/if}
-									</Command.Item>
-								{/each}
-							</Command.Group>
-						{/each}
-						{#if !grouped.length}
-							<div class="py-6 text-center text-sm text-muted-foreground">No command matches</div>
-						{/if}
-					{/if}
-				</ScrollArea>
-			</Command.List>
-
-			<div
-				class="flex items-center gap-3 border-t px-3 py-2 text-2xs text-muted-foreground"
-				data-palette-legend
-			>
-				<span class="flex items-center gap-1">
-					<kbd class="rounded border bg-muted px-1 font-mono">{COMMAND_PREFIX}</kbd>
-					Commands
-				</span>
-				<span class="flex items-center gap-1">
-					<kbd class="rounded border bg-muted px-1 font-mono">↵</kbd>
-					Open
-				</span>
-				<span class="ml-auto flex items-center gap-1">
-					<kbd class="rounded border bg-muted px-1 font-mono">{IS_MAC ? '⌘⇧K' : 'Ctrl+Shift+K'}</kbd
-					>
-					Toolbox
-				</span>
+<Command.Dialog
+	bind:open={commandOpen}
+	title="Search"
+	description="Assets, searches and commands"
+	shouldFilter={false}
+	class="sm:max-w-xl"
+>
+	<Command.Input
+		bind:value={raw}
+		placeholder="Search a value, run a query, or type {COMMAND_PREFIX} for commands"
+	/>
+	<Command.List class="max-h-96">
+		{#if searching && !commandMode && term.length >= 2 && !searchResults.length && !validValue}
+			<div class="flex flex-col gap-2 p-2" aria-busy="true">
+				{#each Array(3) as _, i (i)}
+					<div class="flex items-center gap-2 px-2 py-1.5">
+						<Skeleton class="size-4 shrink-0 rounded" />
+						<Skeleton class="h-3.5 {i % 2 ? 'w-40' : 'w-56'} max-w-full" />
+					</div>
+				{/each}
 			</div>
-		</Command.Root>
-	</Dialog.Content>
-</Dialog.Root>
+		{/if}
+
+		{#if showRecents}
+			{#if visits.length}
+				<Command.Group heading="Recent">
+					{#each visits as visit (visit.kind + visit.id)}
+						<Command.Item
+							value="visit:{visit.id}"
+							onSelect={() =>
+								run(() =>
+									goto(visit.kind === 'scan' ? ROUTES.scan(visit.id) : ROUTES.target(visit.id))
+								)}
+						>
+							{#if visit.kind === 'scan'}
+								<Radar class="h-4 w-4 shrink-0" />
+							{:else}
+								<Crosshair class="h-4 w-4 shrink-0" />
+							{/if}
+							<span class="truncate">{visit.label}</span>
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+			{#if searches.length}
+				<Command.Group heading="Recent searches">
+					{#each searches as entry (entry.dimension + entry.query)}
+						{@const spec = SURFACE[entry.dimension]}
+						<Command.Item
+							value="search:{entry.dimension}:{entry.query}"
+							onSelect={() =>
+								run(() => goto(searchHref(entry.dimension, entry.query, scope, 'project')))}
+						>
+							<spec.icon class="h-4 w-4 shrink-0" />
+							<span class="truncate font-mono text-xs">{entry.query}</span>
+							<Command.Shortcut>{spec.label}</Command.Shortcut>
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+			{#if starters.length}
+				<Command.Group heading="Commands">
+					{#each starters as command (command.id)}
+						<Command.Item value={command.id} onSelect={() => run(command.run)}>
+							<command.icon class="h-4 w-4 shrink-0" />
+							<span class="truncate">{command.label}</span>
+							{#if command.hint}
+								<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
+							{/if}
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+		{/if}
+
+		{#if !commandMode && term}
+			{#if searchResults.length}
+				<Command.Group heading="Targets">
+					{#each searchResults as t (t.id)}
+						<Command.Item
+							value="target:{t.id}"
+							onSelect={() => run(() => goto(ROUTES.target(t.id)))}
+						>
+							<Crosshair class="h-4 w-4 shrink-0" />
+							<span class="truncate">{t.target_value}</span>
+							<Command.Shortcut>{t.target_type}</Command.Shortcut>
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+
+			{#if isCve(term) || lookups.length}
+				<Command.Group heading="Find">
+					{#if isCve(term)}
+						<Command.Item
+							value="cve:page"
+							onSelect={() => run(() => goto(ROUTES.cve(cveId(term))))}
+						>
+							<ShieldAlert class="h-4 w-4 shrink-0" />
+							<span class="truncate">{cveId(term)}</span>
+							<Command.Shortcut>Exposure</Command.Shortcut>
+						</Command.Item>
+					{/if}
+					{#each lookups as lookup (lookup.dimension + lookup.query)}
+						{@const spec = SURFACE[lookup.dimension]}
+						<Command.Item
+							value="find:{lookup.dimension}:{lookup.query}"
+							onSelect={() =>
+								run(() => goto(searchHref(lookup.dimension, lookup.query, scope, 'project')))}
+						>
+							<spec.icon class="h-4 w-4 shrink-0" />
+							<span class="truncate">{spec.label}</span>
+							<Command.Shortcut class="truncate font-mono">{lookup.query}</Command.Shortcut>
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+
+			{#if queryMatches.length}
+				<Command.Group heading="Search">
+					{#each queryMatches as match (match.dimension)}
+						{@const spec = SURFACE[match.dimension]}
+						{#if scope.kind !== 'project'}
+							<Command.Item
+								value="query:here:{match.dimension}"
+								onSelect={() => run(() => goto(searchHref(match.dimension, term, scope, 'here')))}
+							>
+								<spec.icon class="h-4 w-4 shrink-0" />
+								<span class="truncate">{spec.label}</span>
+								<Command.Shortcut class="truncate">{scope.label}</Command.Shortcut>
+							</Command.Item>
+						{/if}
+						<Command.Item
+							value="query:project:{match.dimension}"
+							onSelect={() => run(() => goto(searchHref(match.dimension, term, scope, 'project')))}
+						>
+							<spec.icon class="h-4 w-4 shrink-0" />
+							<span class="truncate">{spec.label}</span>
+							<Command.Shortcut class="truncate">{activeProject?.name ?? ''}</Command.Shortcut>
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+
+			{#if askReady && isQuestion(term)}
+				<Command.Group heading="Ask">
+					<Command.Item
+						value="ask:{term}"
+						onSelect={() => run(() => goto(ROUTES.ask({ q: term })))}
+					>
+						<Sparkles class="h-4 w-4 shrink-0 text-primary" />
+						<span class="truncate">{term}</span>
+						<Command.Shortcut>Ask</Command.Shortcut>
+					</Command.Item>
+				</Command.Group>
+			{/if}
+
+			{#if validValue}
+				<Command.Group heading="Run">
+					<Command.Item
+						value="scan:{validValue}"
+						onSelect={() => run(() => onScan(validValue ?? undefined))}
+					>
+						<Play class="h-4 w-4 shrink-0" />
+						<span class="truncate">Start scan</span>
+						<Command.Shortcut class="truncate font-mono">{validValue}</Command.Shortcut>
+					</Command.Item>
+					<Command.Item
+						value="toolbox:{validValue}"
+						onSelect={() => run(() => onToolbox(validValue ?? ''))}
+					>
+						<TOOLBOX_ICON class="h-4 w-4 shrink-0" />
+						<span class="truncate">Open in Toolbox</span>
+						<Command.Shortcut class="truncate font-mono">{validValue}</Command.Shortcut>
+					</Command.Item>
+				</Command.Group>
+			{/if}
+
+			{#if matched.length}
+				<Command.Group heading="Commands">
+					{#each matched.slice(0, MAX_COMMANDS) as command (command.id)}
+						<Command.Item value={command.id} onSelect={() => run(command.run)}>
+							<command.icon class="h-4 w-4 shrink-0" />
+							<span class="truncate">{command.label}</span>
+							{#if command.hint}
+								<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
+							{/if}
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/if}
+
+			{#if !searching && !searchResults.length && !lookups.length && !queryMatches.length && !matched.length && !validValue}
+				<div class="py-6 text-center text-sm text-muted-foreground">Nothing matches</div>
+			{/if}
+		{/if}
+
+		{#if commandMode}
+			{#each grouped as entry (entry.group)}
+				<Command.Group heading={GROUP_LABELS[entry.group]}>
+					{#each entry.items as command (command.id)}
+						<Command.Item value={command.id} onSelect={() => run(command.run)}>
+							<command.icon class="h-4 w-4 shrink-0" />
+							<span class="truncate">{command.label}</span>
+							{#if command.hint}
+								<Command.Shortcut class="truncate">{command.hint}</Command.Shortcut>
+							{/if}
+						</Command.Item>
+					{/each}
+				</Command.Group>
+			{/each}
+			{#if !grouped.length}
+				<div class="py-6 text-center text-sm text-muted-foreground">No command matches</div>
+			{/if}
+		{/if}
+	</Command.List>
+
+	<div
+		class="flex items-center gap-3 border-t px-3 py-2 text-2xs text-muted-foreground"
+		data-palette-legend
+	>
+		<span class="flex items-center gap-1">
+			<Kbd>{COMMAND_PREFIX}</Kbd>
+			Commands
+		</span>
+		<span class="flex items-center gap-1">
+			<Kbd>↵</Kbd>
+			Open
+		</span>
+		<span class="ml-auto flex items-center gap-1">
+			<Kbd>{IS_MAC ? '⌘⇧K' : 'Ctrl+Shift+K'}</Kbd>
+			Toolbox
+		</span>
+	</div>
+</Command.Dialog>
 
 <ConfirmDialog
 	open={!!cancelTarget}

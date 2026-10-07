@@ -5,7 +5,6 @@
 	import Tag from '@lucide/svelte/icons/tag';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import type { EnrichmentKind } from '$lib/types/target';
@@ -66,19 +65,17 @@
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="center" class="max-h-none w-48 overflow-visible">
+		<DropdownMenu.Content align="center" class="max-h-72 w-48">
 			{#if tags.length === 0}
 				<DropdownMenu.Item disabled>No tags</DropdownMenu.Item>
 			{:else}
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-					{#each tags as tag (tag.id)}
-						<DropdownMenu.Item onclick={() => onAddTag(tag.name)} class="gap-2">
-							<span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {tag.color}"
-							></span>
-							<span class="truncate">{tag.name}</span>
-						</DropdownMenu.Item>
-					{/each}
-				</ScrollArea>
+				{#each tags as tag (tag.id)}
+					<DropdownMenu.Item onclick={() => onAddTag(tag.name)} class="gap-2">
+						<span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {tag.color}"
+						></span>
+						<span class="truncate">{tag.name}</span>
+					</DropdownMenu.Item>
+				{/each}
 			{/if}
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
@@ -92,17 +89,15 @@
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="center" class="max-h-none w-48 overflow-visible">
+		<DropdownMenu.Content align="center" class="max-h-72 w-48">
 			{#if organizations.length === 0}
 				<DropdownMenu.Item disabled>No organizations</DropdownMenu.Item>
 			{:else}
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-					{#each organizations as org (org.id)}
-						<DropdownMenu.Item onclick={() => onAddOrg(org.name)} class="truncate">
-							{org.name}
-						</DropdownMenu.Item>
-					{/each}
-				</ScrollArea>
+				{#each organizations as org (org.id)}
+					<DropdownMenu.Item onclick={() => onAddOrg(org.name)} class="truncate">
+						{org.name}
+					</DropdownMenu.Item>
+				{/each}
 			{/if}
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>

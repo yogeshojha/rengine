@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { PinInput } from 'bits-ui';
-	import { cn } from '$lib/utils.js';
+	import * as InputOTP from '$lib/components/ui/input-otp';
 	import { TOTP_DIGITS } from '$lib/constants';
 
 	interface Props {
@@ -8,37 +7,42 @@
 		onValueChange: (v: string) => void;
 		disabled?: boolean;
 		id?: string;
+		/** The underlying input, for callers that need to move focus into the code field. */
+		inputRef?: HTMLInputElement | null;
 	}
 
-	let { value, onValueChange, disabled = false, id }: Props = $props();
+	let { value, onValueChange, disabled = false, id, inputRef = $bindable(null) }: Props = $props();
+
+	const half = Math.ceil(TOTP_DIGITS / 2);
+
+	function attachInput(node: HTMLInputElement) {
+		inputRef = node;
+		return () => {
+			if (inputRef === node) inputRef = null;
+		};
+	}
 </script>
 
-<PinInput.Root
+<InputOTP.Root
 	{value}
 	{disabled}
 	inputId={id}
 	maxlength={TOTP_DIGITS}
 	inputmode="numeric"
 	onValueChange={(v) => onValueChange(v.replace(/\D/g, '').slice(0, TOTP_DIGITS))}
-	class="flex w-full items-center gap-1.5 sm:gap-2"
+	{@attach attachInput}
 >
 	{#snippet children({ cells })}
-		{#each cells as cell, i (i)}
-			<PinInput.Cell
-				{cell}
-				class={cn(
-					'relative flex aspect-square h-12 w-full max-w-12 min-w-0 flex-1 items-center justify-center rounded-md border border-input bg-background text-lg font-medium tabular-nums shadow-xs transition-[color,box-shadow] outline-none dark:bg-input/30',
-					cell.isActive && 'border-ring ring-ring/50 z-10 ring-[3px]',
-					disabled && 'cursor-not-allowed opacity-50'
-				)}
-			>
-				{#if cell.char}{cell.char}{/if}
-				{#if cell.hasFakeCaret}
-					<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-						<div class="h-5 w-px animate-caret-blink bg-foreground"></div>
-					</div>
-				{/if}
-			</PinInput.Cell>
-		{/each}
+		<InputOTP.Group>
+			{#each cells.slice(0, half) as cell, i (i)}
+				<InputOTP.Slot {cell} class="size-10 text-lg tabular-nums" />
+			{/each}
+		</InputOTP.Group>
+		<InputOTP.Separator />
+		<InputOTP.Group>
+			{#each cells.slice(half) as cell, i (i)}
+				<InputOTP.Slot {cell} class="size-10 text-lg tabular-nums" />
+			{/each}
+		</InputOTP.Group>
 	{/snippet}
-</PinInput.Root>
+</InputOTP.Root>

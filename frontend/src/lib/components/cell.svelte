@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import X from '@lucide/svelte/icons/x';
+	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CellSkeleton from '$lib/components/skeleton/cell-skeleton.svelte';
 	import type { SkeletonShape } from '$lib/components/skeleton/shapes';
@@ -65,15 +66,16 @@
 			{#if onHide}
 				<Hint text="Hide">
 					{#snippet child(props)}
-						<button
+						<Button
 							{...props}
-							type="button"
-							class="flex size-5 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity group-hover/cell:opacity-100 hover:bg-muted hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+							variant="ghost"
+							size="icon-xs"
+							class="text-muted-foreground opacity-0 group-hover/cell:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100"
 							aria-label="Hide {title}"
 							onclick={onHide}
 						>
 							<X class="size-3.5" />
-						</button>
+						</Button>
 					{/snippet}
 				</Hint>
 			{/if}

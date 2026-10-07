@@ -5,7 +5,6 @@
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
 	import Hint from '$lib/components/hint.svelte';
@@ -188,7 +187,7 @@
 							</span>
 						</div>
 					{/if}
-					<Command.List class="max-h-none overflow-visible">
+					<Command.List class="max-h-80">
 						{#if loading && !options.length}
 							<div class="flex flex-col gap-1.5 p-2">
 								<Skeleton class="h-8 w-full" />
@@ -198,22 +197,20 @@
 						{:else}
 							<Command.Empty>No models</Command.Empty>
 						{/if}
-						<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-							{#if recommended.length}
-								<Command.Group heading="Recommended">
-									{#each recommended as m (m.id)}
-										{@render option(m)}
-									{/each}
-								</Command.Group>
-							{/if}
-							{#if others.length}
-								<Command.Group heading={recommended.length ? 'All models' : undefined}>
-									{#each others as m (m.id)}
-										{@render option(m)}
-									{/each}
-								</Command.Group>
-							{/if}
-						</ScrollArea>
+						{#if recommended.length}
+							<Command.Group heading="Recommended">
+								{#each recommended as m (m.id)}
+									{@render option(m)}
+								{/each}
+							</Command.Group>
+						{/if}
+						{#if others.length}
+							<Command.Group heading={recommended.length ? 'All models' : undefined}>
+								{#each others as m (m.id)}
+									{@render option(m)}
+								{/each}
+							</Command.Group>
+						{/if}
 						{#if offerTyped}
 							<Command.Group>
 								<Command.Item value={`use ${typed}`} onSelect={() => pick(typed)}>

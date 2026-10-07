@@ -2,9 +2,9 @@
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import X from '@lucide/svelte/icons/x';
+	import { Button } from '$lib/components/ui/button';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import type { IconComponent } from '$lib/config/icons';
 
 	export interface PickerItem {
@@ -112,46 +112,44 @@
 					bind:value={search}
 					oninput={() => onSearch?.(search.trim())}
 				/>
-				<Command.List class="max-h-none overflow-visible">
+				<Command.List class="max-h-72">
 					<Command.Empty>{loading ? 'Loading' : 'No matches'}</Command.Empty>
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						<Command.Group>
-							{#each visible as item (item.id)}
-								<Command.Item
-									value={item.id}
-									onSelect={() => pick(item.id)}
-									class="flex items-center gap-2"
+					<Command.Group>
+						{#each visible as item (item.id)}
+							<Command.Item
+								value={item.id}
+								onSelect={() => pick(item.id)}
+								class="flex items-center gap-2"
+							>
+								<span
+									class="flex size-4 shrink-0 items-center justify-center rounded-sm border {chosen.includes(
+										item.id
+									)
+										? 'border-primary bg-primary text-primary-foreground'
+										: ''}"
 								>
-									<span
-										class="flex size-4 shrink-0 items-center justify-center rounded-sm border {chosen.includes(
-											item.id
-										)
-											? 'border-primary bg-primary text-primary-foreground'
-											: ''}"
-									>
-										{#if chosen.includes(item.id)}<Check class="size-3" />{/if}
-									</span>
-									{#if item.color}
-										<span class="size-2 shrink-0 rounded-full" style="background:{item.color}"
-										></span>
-									{/if}
-									<span class="flex-1 truncate">{item.label}</span>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</ScrollArea>
+									{#if chosen.includes(item.id)}<Check class="size-3" />{/if}
+								</span>
+								{#if item.color}
+									<span class="size-2 shrink-0 rounded-full" style="background:{item.color}"></span>
+								{/if}
+								<span class="flex-1 truncate">{item.label}</span>
+							</Command.Item>
+						{/each}
+					</Command.Group>
 				</Command.List>
 			</Command.Root>
 		</Popover.Content>
 	</Popover.Root>
 	{#if selected.length}
-		<button
-			type="button"
-			class="mr-1 flex size-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+		<Button
+			variant="ghost"
+			size="icon-xs"
+			class="mr-1 text-muted-foreground"
 			aria-label="Clear {label.toLowerCase()}"
 			onclick={() => onChange([])}
 		>
 			<X class="size-3.5" />
-		</button>
+		</Button>
 	{/if}
 </div>

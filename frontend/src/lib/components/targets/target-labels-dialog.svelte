@@ -6,6 +6,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -158,26 +159,28 @@
 									</Button>
 								</form>
 								{#if kind === 'tag'}
-									<div class="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Color">
+									<ToggleGroup.Root
+										type="single"
+										size="sm"
+										spacing={2}
+										value={TAG_COLORS.find((c) => sameColor(draftColor, c)) ?? ''}
+										onValueChange={(v) => v && (draftColor = v)}
+										aria-label="Color"
+										class="mt-2 flex-wrap gap-1.5"
+									>
 										{#each TAG_COLORS as color (color)}
-											{@const picked = sameColor(draftColor, color)}
-											<button
-												type="button"
-												role="radio"
-												aria-checked={picked}
+											<ToggleGroup.Item
+												value={color}
 												aria-label={color}
-												class="flex size-6 items-center justify-center rounded-full border-2 {picked
-													? 'border-foreground'
-													: 'border-transparent'}"
+												class="size-6 min-w-6 rounded-full border-2 border-transparent p-0 data-[state=on]:border-foreground"
 												style="background-color: {color}"
-												onclick={() => (draftColor = color)}
 											>
-												{#if picked}
+												{#if sameColor(draftColor, color)}
 													<Check class="size-3 text-white" />
 												{/if}
-											</button>
+											</ToggleGroup.Item>
 										{/each}
-									</div>
+									</ToggleGroup.Root>
 								{/if}
 							{:else}
 								<div class="flex items-center gap-2">

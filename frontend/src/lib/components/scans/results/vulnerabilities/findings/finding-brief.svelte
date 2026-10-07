@@ -5,6 +5,7 @@
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Button } from '$lib/components/ui/button';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import EvidenceMark from '$lib/components/evidence-mark.svelte';
@@ -78,7 +79,7 @@
 							>{v.host_count - 1}</span
 						>
 					{/if}
-					<kbd class="hidden font-mono text-2xs text-muted-foreground sm:inline">{i + 1}</kbd>
+					<Kbd class="hidden sm:inline-flex">{i + 1}</Kbd>
 				</Tabs.Trigger>
 			{/each}
 		</Tabs.List>
@@ -128,13 +129,14 @@
 						<dt class="text-muted-foreground">Technology</dt>
 						<dd class="flex min-w-0 flex-wrap gap-1">
 							{#each asset.tech as tech (tech)}
-								<button
-									type="button"
-									class="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-2xs hover:bg-muted"
+								<Button
+									variant="outline"
+									size="xs"
+									class="font-normal"
 									onclick={() => onFilter(exactToken('tech', tech))}
 								>
 									<TechIcon name={tech} class="size-3" />{tech}
-								</button>
+								</Button>
 							{/each}
 						</dd>
 					{/if}
@@ -236,9 +238,10 @@
 			<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/20 px-3 py-1.5 text-2xs">
 				<span class="text-muted-foreground">Cross-checked by</span>
 				{#each v.corroborated_by as c (c.template_id)}
-					<button
-						type="button"
-						class="inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 hover:bg-muted"
+					<Button
+						variant="outline"
+						size="xs"
+						class="text-2xs font-normal"
 						onclick={() => onFilter(exactToken('template', c.template_id))}
 					>
 						<span
@@ -249,7 +252,7 @@
 						<span class="text-muted-foreground"
 							>· {CORROBORATION_BASIS_LABELS[c.basis] ?? c.basis}</span
 						>
-					</button>
+					</Button>
 				{/each}
 			</div>
 		{/if}

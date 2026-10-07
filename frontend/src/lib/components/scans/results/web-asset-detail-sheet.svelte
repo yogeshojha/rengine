@@ -155,6 +155,7 @@
 	const MAX_HOSTS = 16;
 
 	let tab = $state('overview');
+	let tabRefs = $state<Record<string, HTMLElement | null>>({});
 	let queued = $state('');
 	let recheckCount = $derived(sub ? rechecks.history(scanId, sub.name).length : 0);
 	let contentEl = $state<HTMLElement | null>(null);
@@ -187,7 +188,7 @@
 			bodyEl?.scrollTo({ top: 0 });
 			const held = document.activeElement;
 			if (held?.getAttribute('role') === 'tab' && contentEl?.contains(held)) {
-				contentEl.querySelector<HTMLElement>(`[role=tab][data-value="${tab}"]`)?.focus();
+				tabRefs[tab]?.focus();
 			}
 		});
 	});
@@ -479,6 +480,7 @@
 						{@render tabTrigger('overview', 'Overview', null)}
 						<Tabs.Trigger
 							value="ask"
+							bind:ref={tabRefs.ask}
 							class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-primary shadow-none hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
 						>
 							<Sparkles class="size-3.5" />
@@ -978,9 +980,9 @@
 											<Progress
 												value={validityPct}
 												class="h-1.5 {cert === 'expired'
-													? '[&>div]:bg-destructive'
+													? '*:data-[slot=progress-indicator]:bg-destructive'
 													: cert === 'expiring'
-														? '[&>div]:bg-warning'
+														? '*:data-[slot=progress-indicator]:bg-warning'
 														: ''}"
 												aria-label="Certificate validity remaining"
 											/>
@@ -1355,6 +1357,7 @@
 {#snippet tabTrigger(value: string, label: string, count: number | null)}
 	<Tabs.Trigger
 		{value}
+		bind:ref={tabRefs[value]}
 		class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
 	>
 		{label}

@@ -583,7 +583,7 @@
 	<section class="controls">
 		<div class="toolbar">
 			<InputGroup.Root
-				class="h-7 min-w-0 flex-1 rounded-md border-0 bg-transparent shadow-none has-[[data-slot=input-group-control]:focus-visible]:ring-0 dark:bg-transparent"
+				class="h-7 min-w-0 flex-1 rounded-md border-0 bg-transparent shadow-none dark:bg-transparent"
 			>
 				<InputGroup.Addon class="text-muted-foreground">
 					<Search />

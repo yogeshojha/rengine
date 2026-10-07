@@ -3,6 +3,7 @@
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Copy from '@lucide/svelte/icons/copy';
 	import X from '@lucide/svelte/icons/x';
+	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import Hint from '$lib/components/hint.svelte';
 	import { TraceStatus } from '$lib/config/ask';
@@ -98,15 +99,15 @@
 				{#if onCopy}
 					<Hint text="Copy answer">
 						{#snippet child(props)}
-							<button
+							<Button
 								{...props}
-								type="button"
-								class="inline-flex size-6 items-center justify-center rounded-md hover:bg-muted hover:text-foreground"
+								variant="ghost"
+								size="icon-xs"
 								onclick={onCopy}
 								aria-label="Copy answer"
 							>
 								<Copy class="size-3.5" />
-							</button>
+							</Button>
 						{/snippet}
 					</Hint>
 				{/if}

@@ -2,6 +2,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { Button } from '$lib/components/ui/button';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
@@ -69,15 +70,16 @@
 			<li class="border-b last:border-b-0">
 				<div class="{GRID} group px-4 py-2 text-sm">
 					<span class="flex min-w-0 items-center gap-1.5">
-						<button
-							type="button"
-							class="flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+						<Button
+							variant="ghost"
+							size="icon-xs"
+							class="text-muted-foreground"
 							aria-expanded={expanded}
 							aria-label="{expanded ? 'Hide' : 'Show'} logins on {h.host}"
 							onclick={() => toggle(h.host)}
 						>
 							<ChevronRight class="size-3.5 transition-transform {expanded ? 'rotate-90' : ''}" />
-						</button>
+						</Button>
 						{#if href}
 							<a
 								href={safeHref(href)}

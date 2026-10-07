@@ -10,7 +10,6 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import { Button } from '$lib/components/ui/button';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import Hint from '$lib/components/hint.svelte';
 	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import type { TreeNode } from '$lib/utilities/endpoints';
@@ -102,31 +101,29 @@
 					<Popover.Content class="w-96 p-0" align="start">
 						<Command.Root shouldFilter={false}>
 							<Command.Input placeholder="Find a web asset…" bind:value={term} />
-							<Command.List class="max-h-none overflow-visible">
-								<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
-									{#if searching}
-										<div class="flex flex-col gap-1 p-2" aria-busy="true">
-											{#each Array(4) as _, i (i)}
-												<Skeleton class="h-6 {i % 2 ? 'w-40' : 'w-56'} max-w-full" />
-											{/each}
-										</div>
-									{:else if options.length === 0}
-										<Command.Empty>No web asset matches</Command.Empty>
-									{/if}
-									<Command.Group>
-										{#each options as n (n.key)}
-											<Command.Item value={n.name} onSelect={() => pick(n.name)} class="gap-2">
-												<Check
-													class="size-3.5 shrink-0 {n.name === host ? 'opacity-100' : 'opacity-0'}"
-												/>
-												<span class="min-w-0 flex-1 truncate font-mono text-xs">{n.name}</span>
-												<span class="text-xs tabular-nums text-muted-foreground">
-													{n.subtree_count.toLocaleString()}
-												</span>
-											</Command.Item>
+							<Command.List class="max-h-80">
+								{#if searching}
+									<div class="flex flex-col gap-1 p-2" aria-busy="true">
+										{#each Array(4) as _, i (i)}
+											<Skeleton class="h-6 {i % 2 ? 'w-40' : 'w-56'} max-w-full" />
 										{/each}
-									</Command.Group>
-								</ScrollArea>
+									</div>
+								{:else if options.length === 0}
+									<Command.Empty>No web asset matches</Command.Empty>
+								{/if}
+								<Command.Group>
+									{#each options as n (n.key)}
+										<Command.Item value={n.name} onSelect={() => pick(n.name)} class="gap-2">
+											<Check
+												class="size-3.5 shrink-0 {n.name === host ? 'opacity-100' : 'opacity-0'}"
+											/>
+											<span class="min-w-0 flex-1 truncate font-mono text-xs">{n.name}</span>
+											<span class="text-xs tabular-nums text-muted-foreground">
+												{n.subtree_count.toLocaleString()}
+											</span>
+										</Command.Item>
+									{/each}
+								</Command.Group>
 							</Command.List>
 						</Command.Root>
 					</Popover.Content>

@@ -5,7 +5,6 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { AskThread } from '$lib/types/ask';
 
@@ -35,31 +34,23 @@
 			</Button>
 		{/snippet}
 	</DropdownMenu.Trigger>
-	<DropdownMenu.Content
-		align="start"
-		class="w-72 max-h-none overflow-visible"
-		onCloseAutoFocus={(e) => e.preventDefault()}
-	>
+	<DropdownMenu.Content align="start" class="w-72" onCloseAutoFocus={(e) => e.preventDefault()}>
 		{#if threads.length}
-			<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-64">
-				<DropdownMenu.Group>
-					{#each threads as thread (thread.id)}
-						<DropdownMenu.Item
-							class="flex flex-col items-start gap-0.5"
-							data-active={thread.id === active?.id || undefined}
-							onclick={() => onPick(thread)}
-						>
-							<span class="w-full truncate text-sm">{thread.title}</span>
-							<span class="text-2xs text-muted-foreground">
-								{thread.message_count}
-								{thread.message_count === 1 ? 'message' : 'messages'} · {relativeTime(
-									thread.last_at
-								)}
-							</span>
-						</DropdownMenu.Item>
-					{/each}
-				</DropdownMenu.Group>
-			</ScrollArea>
+			<DropdownMenu.Group>
+				{#each threads as thread (thread.id)}
+					<DropdownMenu.Item
+						class="flex flex-col items-start gap-0.5"
+						data-active={thread.id === active?.id || undefined}
+						onclick={() => onPick(thread)}
+					>
+						<span class="w-full truncate text-sm">{thread.title}</span>
+						<span class="text-2xs text-muted-foreground">
+							{thread.message_count}
+							{thread.message_count === 1 ? 'message' : 'messages'} · {relativeTime(thread.last_at)}
+						</span>
+					</DropdownMenu.Item>
+				{/each}
+			</DropdownMenu.Group>
 			<DropdownMenu.Separator />
 		{/if}
 		<DropdownMenu.Group>

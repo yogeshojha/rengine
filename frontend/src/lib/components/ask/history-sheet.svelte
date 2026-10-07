@@ -2,6 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import MessagesSquare from '@lucide/svelte/icons/messages-square';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import { Button } from '$lib/components/ui/button';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -82,15 +83,16 @@
 								</button>
 								<Hint text="Delete">
 									{#snippet child(props)}
-										<button
+										<Button
 											{...props}
-											type="button"
-											class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100"
+											variant="ghost"
+											size="icon-sm"
+											class="text-muted-foreground opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100"
 											onclick={() => (pending = t)}
 											aria-label="Delete {t.title}"
 										>
 											<Trash2 class="size-3.5" />
-										</button>
+										</Button>
 									{/snippet}
 								</Hint>
 							</li>

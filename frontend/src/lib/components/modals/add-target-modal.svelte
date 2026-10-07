@@ -34,7 +34,7 @@
 	} from '$lib/utilities/quick-scan';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
-	import { tick, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 
 	interface Props {
 		open: boolean;
@@ -297,7 +297,6 @@
 				targetValue = initialValue;
 				validateValue(initialValue);
 			}
-			tick().then(() => targetInput?.focus());
 		} else {
 			prefilled = false;
 		}
