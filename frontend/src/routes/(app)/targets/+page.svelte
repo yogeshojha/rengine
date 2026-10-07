@@ -11,7 +11,6 @@
 	import { targetsApi } from '$lib/api/targets';
 	import type { Target } from '$lib/types/target';
 	import * as Card from '$lib/components/ui/card';
-	import * as Pagination from '$lib/components/ui/pagination';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Upload from '@lucide/svelte/icons/upload';
@@ -53,7 +52,7 @@
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
-	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
+	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import ScanHistoryModal from '$lib/components/targets/scan-history-modal.svelte';
 	import BulkActionBar from '$lib/components/targets/bulk-action-bar.svelte';
 	import ImportTargetsModal from '$lib/components/modals/import-targets-modal.svelte';
@@ -260,8 +259,6 @@
 			color: tag.color
 		}))
 	);
-
-	let showPagination = $derived(targetsStore.pagination.totalPages > 1);
 
 	const TYPE_TABS = [
 		{ key: 'all', label: 'All' },
@@ -939,54 +936,32 @@
 				{/each}
 			</div>
 
-			<div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
-				<div class="flex flex-wrap items-center gap-4">
-					<span class="text-xs text-muted-foreground tabular-nums">
-						{rows.length} of {targetsStore.pagination.totalItems}
-						{targetsStore.pagination.totalItems === 1 ? 'target' : 'targets'}
-					</span>
+			<ResultsPagination
+				total={targetsStore.pagination.totalItems}
+				page={targetsStore.pagination.currentPage - 1}
+				pageSize={targetsStore.pagination.pageSize}
+				noun="target"
+				sizes={[10, 20, 25, 50, 100]}
+				onPage={(p) => handlePageChange(p + 1)}
+				onPageSize={handlePageSizeChange}
+			>
+				{#snippet summary()}
+					{rows.length} of {targetsStore.pagination.totalItems}
+					{targetsStore.pagination.totalItems === 1 ? 'target' : 'targets'}
+				{/snippet}
+				{#snippet actions()}
 					{#if selectedTargetIds.size >= rows.length && selectedTargetIds.size < targetsStore.pagination.totalItems}
-						<button
-							type="button"
-							class="text-xs font-medium text-primary hover:text-primary/80"
+						<Button
+							variant="link"
+							size="sm"
+							class="h-auto px-0 text-xs"
 							onclick={handleSelectAllMatching}
 						>
 							Select all {targetsStore.pagination.totalItems} matching
-						</button>
+						</Button>
 					{/if}
-					<PageSizeSelector
-						pageSize={targetsStore.pagination.pageSize}
-						onPageSizeChange={handlePageSizeChange}
-					/>
-				</div>
-				{#if showPagination}
-					<Pagination.Root
-						count={targetsStore.pagination.totalItems}
-						perPage={targetsStore.pagination.pageSize}
-						page={targetsStore.pagination.currentPage}
-						onPageChange={(p) => handlePageChange(p)}
-						class="mx-0 w-auto"
-					>
-						{#snippet children({ pages, currentPage })}
-							<Pagination.Content>
-								<Pagination.Item><Pagination.Previous /></Pagination.Item>
-								{#each pages as p (p.key)}
-									{#if p.type === 'ellipsis'}
-										<Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
-									{:else}
-										<Pagination.Item>
-											<Pagination.Link page={p} isActive={currentPage === p.value}
-												>{p.value}</Pagination.Link
-											>
-										</Pagination.Item>
-									{/if}
-								{/each}
-								<Pagination.Item><Pagination.Next /></Pagination.Item>
-							</Pagination.Content>
-						{/snippet}
-					</Pagination.Root>
-				{/if}
-			</div>
+				{/snippet}
+			</ResultsPagination>
 		{/if}
 	</Card.Root>
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends { id: string; label: string; color?: string }">
 	import X from '@lucide/svelte/icons/x';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
 
 	interface Props {
@@ -15,37 +16,42 @@
 {#if chips.length > 0}
 	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
 		{#each chips as chip (chip.id)}
-			<Badge variant="outline" class="gap-1 bg-background font-normal">
+			<Badge
+				variant="outline"
+				class="max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal"
+			>
 				{#if chip.color}
 					<span
-						class="size-2 rounded-full"
+						class="size-2 shrink-0 rounded-full"
 						style="background-color: {chip.color}"
 						aria-hidden="true"
 					></span>
 				{/if}
-				{chip.label}
+				<span class="min-w-0 truncate" title={chip.label}>{chip.label}</span>
 				<Hint text="Remove filter {chip.label}">
 					{#snippet child(props)}
-						<button
+						<Button
 							{...props}
-							type="button"
-							class="rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							variant="ghost"
+							size="icon-xs"
+							class="size-4 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
 							onclick={() => onRemove(chip)}
 							aria-label="Remove filter {chip.label}"
 						>
-							<X class="h-3 w-3" />
-						</button>
+							<X class="size-3" />
+						</Button>
 					{/snippet}
 				</Hint>
 			</Badge>
 		{/each}
-		<button
-			type="button"
-			class="ml-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+		<Button
+			variant="ghost"
+			size="xs"
+			class="text-muted-foreground"
 			onclick={() => onClear()}
 			aria-label="Clear all filters"
 		>
 			Clear all
-		</button>
+		</Button>
 	</div>
 {/if}

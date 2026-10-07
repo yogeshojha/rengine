@@ -1,5 +1,7 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import * as Pagination from '$lib/components/ui/pagination';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
 	import PageSizeSelector from '$lib/components/targets/page-size-selector.svelte';
 
 	const SIZES = [25, 50, 100, 200];
@@ -14,6 +16,8 @@
 		sizes?: number[];
 		onPage: (page: number) => void;
 		onPageSize?: (size: number) => void;
+		summary?: Snippet;
+		actions?: Snippet;
 	}
 
 	let {
@@ -25,8 +29,12 @@
 		plural = '',
 		sizes = SIZES,
 		onPage,
-		onPageSize
+		onPageSize,
+		summary,
+		actions
 	}: Props = $props();
+
+	const narrow = new IsMobile(640);
 
 	let from = $derived(total === 0 ? 0 : page * pageSize + 1);
 	let to = $derived(Math.min((page + 1) * pageSize, total));
@@ -35,11 +43,16 @@
 <div class="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-3">
 	<div class="flex flex-wrap items-center gap-4">
 		<span class="text-xs text-muted-foreground tabular-nums">
-			Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}{capped
-				? '+'
-				: ''}
-			{total === 1 ? noun : plural || `${noun}s`}
+			{#if summary}
+				{@render summary()}
+			{:else}
+				Showing {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}{capped
+					? '+'
+					: ''}
+				{total === 1 ? noun : plural || `${noun}s`}
+			{/if}
 		</span>
+		{@render actions?.()}
 		{#if onPageSize}
 			<PageSizeSelector {pageSize} options={sizes} onPageSizeChange={onPageSize} />
 		{/if}
@@ -49,6 +62,7 @@
 			count={total}
 			perPage={pageSize}
 			page={page + 1}
+			siblingCount={narrow.current ? 0 : 1}
 			onPageChange={(p) => onPage(p - 1)}
 			class="mx-0 w-auto"
 		>

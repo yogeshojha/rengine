@@ -33,17 +33,9 @@
 @font-face {
 	font-family: 'JetBrains Mono';
 	font-style: normal;
-	font-weight: 400;
+	font-weight: 100 800;
 	font-display: swap;
-	src: url('./lib/assets/fonts/jetbrains-mono-400.woff2') format('woff2');
-}
-
-@font-face {
-	font-family: 'JetBrains Mono';
-	font-style: normal;
-	font-weight: 700;
-	font-display: swap;
-	src: url('./lib/assets/fonts/jetbrains-mono-700.woff2') format('woff2');
+	src: url('./lib/assets/fonts/jetbrains-mono-variable.woff2') format('woff2');
 }
 
 /* hue anchors: indigo 264 interactive · red 25 · orange 50 · amber 90 · green 150 · cyan 215 · purple 320 · magenta 355 */
@@ -122,7 +114,7 @@
 	--sidebar-accent-foreground: oklch(0.205 0.014 265);
 	--sidebar-border: oklch(0.922 0.01 265);
 	--sidebar-ring: oklch(0.55 0.14 264);
-	--font-sans: DM Sans, ui-sans-serif, sans-serif, system-ui;
+	--font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 	--font-mono:
 		'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
 		'Courier New', monospace;
@@ -299,16 +291,23 @@
 		border-color: var(--border);
 		outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
 	}
-}
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	letter-spacing: -0.03em;
-	font-weight: 600;
+	body {
+		background-color: var(--background);
+		color: var(--foreground);
+		font-family: var(--font-sans);
+	}
+
+	/* layered so a heading's own font-* / tracking-* utilities win */
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		letter-spacing: -0.03em;
+		font-weight: 600;
+	}
 }
 
 /* ---------- ask motion ---------- */
