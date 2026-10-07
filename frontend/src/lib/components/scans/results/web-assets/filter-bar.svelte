@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { appendToken, tokenize } from '$lib/utilities/scan-insights';
 	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Layers from '@lucide/svelte/icons/layers';
@@ -72,6 +73,8 @@
 		exportFilters = {}
 	}: Props = $props();
 
+	const NEW_TOKEN = 'is:new';
+
 	let dimensions = $derived(querySchema.schema.group_dimensions);
 
 	const QUICK = [
@@ -81,15 +84,24 @@
 	];
 
 	let quick = $derived(
-		[query.newOnly && 'new', query.issuesOnly && 'issues', query.waf === 'none' && 'nowaf'].filter(
-			(v): v is string => !!v
-		)
+		[
+			(query.newOnly || tokenize(query.search).includes(NEW_TOKEN)) && 'new',
+			query.issuesOnly && 'issues',
+			query.waf === 'none' && 'nowaf'
+		].filter((v): v is string => !!v)
 	);
 
 	function setQuick(values: string[]) {
+		// one New filter: the is:new token the tab strip and the IPs bar use
+		const search = values.includes('new')
+			? appendToken(query.search, NEW_TOKEN)
+			: tokenize(query.search)
+					.filter((t) => t !== NEW_TOKEN)
+					.join(' ');
 		onQuery({
 			...query,
-			newOnly: values.includes('new'),
+			search,
+			newOnly: false,
 			issuesOnly: values.includes('issues'),
 			waf: values.includes('nowaf') ? 'none' : query.waf === 'none' ? 'any' : query.waf
 		});

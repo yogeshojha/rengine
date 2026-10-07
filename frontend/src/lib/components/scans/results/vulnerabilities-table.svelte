@@ -43,7 +43,9 @@
 		rowPadding,
 		selectAllState,
 		writePref,
-		type TableColumn
+		type TableColumn,
+		fitColumns,
+		trackWidth
 	} from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
@@ -1108,6 +1110,9 @@
 
 	let barH = $state(0);
 	let scrollRef = $state<HTMLElement | null>(null);
+
+	let tableWidth = $state(0);
+	let issueColumns = $derived(fitColumns(ISSUE_COLUMNS, tableWidth, ISSUE_LEAD_COLUMNS));
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -1177,7 +1182,10 @@
 	/>
 </div>
 
-<Card.Root class="gap-0 overflow-clip rounded-t-none border-t-0 py-0">
+<Card.Root
+	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
+	{@attach trackWidth((w) => (tableWidth = w))}
+>
 	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pt-2 pr-3 pl-2 sm:pt-0">
 		<div class="order-last min-w-0 grow basis-full sm:order-none sm:basis-0">
 			<CountTabs
@@ -1272,7 +1280,7 @@
 		<ScrollArea orientation="horizontal">
 			<TableSkeleton
 				lead={isIssues ? ISSUE_LEAD_COLUMNS : VULN_LEAD_COLUMNS}
-				columns={isIssues ? ISSUE_COLUMNS : []}
+				columns={isIssues ? issueColumns : []}
 				{density}
 				selectable
 			/>
@@ -1341,7 +1349,7 @@
 			top={barH}
 			follow={scrollRef}
 			lead={ISSUE_LEAD_COLUMNS}
-			columns={ISSUE_COLUMNS}
+			columns={issueColumns}
 			{selectAllChecked}
 			selectAllLabel="Select all weaknesses on this page"
 			onSelectAll={toggleSelectAll}
@@ -1357,7 +1365,7 @@
 							{issue}
 							index={i}
 							{term}
-							columns={ISSUE_COLUMNS}
+							columns={issueColumns}
 							checked={checkedIds.has(issue.template_id)}
 							onCheck={toggleCheck}
 							expanded={expandedId === issue.template_id}

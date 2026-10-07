@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { appendToken, tokenize } from '$lib/utilities/scan-insights';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
@@ -56,6 +57,8 @@
 		exportFilters = {}
 	}: Props = $props();
 
+	const NEW_TOKEN = 'is:new';
+
 	const QUICK = [
 		{ value: 'new', label: 'New' },
 		{ value: 'sensitive', label: 'Sensitive' },
@@ -66,7 +69,7 @@
 
 	let quick = $derived(
 		[
-			query.newOnly && 'new',
+			(query.newOnly || tokenize(query.search).includes(NEW_TOKEN)) && 'new',
 			query.sensitiveOnly && 'sensitive',
 			query.http === 'no' && 'nonweb',
 			query.namedOnly && 'named',
@@ -75,9 +78,16 @@
 	);
 
 	function setQuick(values: string[]) {
+		// one New filter: the is:new token the tab strip and the IPs bar use
+		const search = values.includes('new')
+			? appendToken(query.search, NEW_TOKEN)
+			: tokenize(query.search)
+					.filter((t) => t !== NEW_TOKEN)
+					.join(' ');
 		onQuery({
 			...query,
-			newOnly: values.includes('new'),
+			search,
+			newOnly: false,
 			sensitiveOnly: values.includes('sensitive'),
 			namedOnly: values.includes('named'),
 			http: values.includes('nonweb') ? 'no' : query.http === 'no' ? 'any' : query.http,

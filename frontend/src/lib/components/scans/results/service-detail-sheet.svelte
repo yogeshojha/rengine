@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import { untrack } from 'svelte';
 	import { SHEET_ROW, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
 	import SheetTop from './sheet-top.svelte';
@@ -121,7 +122,7 @@
 				<div class="flex flex-wrap gap-1">
 					<Badge variant="outline" class="font-normal">{s.protocol.toUpperCase()}</Badge>
 					{#if s.is_new}
-						<Badge variant="info" class="font-normal">New</Badge>
+						<NewBadge size="sm" />
 					{/if}
 					{#if s.is_http}
 						<Badge variant="secondary" class="font-normal">HTTP</Badge>

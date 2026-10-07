@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { appendToken, tokenize } from '$lib/utilities/scan-insights';
 	import Layers from '@lucide/svelte/icons/layers';
 	import Network from '@lucide/svelte/icons/network';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
@@ -88,6 +89,8 @@
 		exportFilters = {}
 	}: Props = $props();
 
+	const NEW_TOKEN = 'is:new';
+
 	const LENSES: { value: EndpointView; label: string; hint: string; icon: IconComponent }[] = [
 		{
 			value: 'hosts',
@@ -120,7 +123,7 @@
 	);
 	let quick = $derived(
 		[
-			query.newOnly && 'new',
+			(query.newOnly || tokenize(query.search).includes(NEW_TOKEN)) && 'new',
 			query.probed === 'no' && 'unverified',
 			query.browsed === 'yes' && 'browsed',
 			query.browsed === 'no' && 'unbrowsed',
@@ -130,9 +133,16 @@
 	);
 
 	function setQuick(values: string[]) {
+		// one New filter: the is:new token the tab strip and the IPs bar use
+		const search = values.includes('new')
+			? appendToken(query.search, NEW_TOKEN)
+			: tokenize(query.search)
+					.filter((t) => t !== NEW_TOKEN)
+					.join(' ');
 		onQuery({
 			...query,
-			newOnly: values.includes('new'),
+			search,
+			newOnly: false,
 			probed: values.includes('unverified') ? 'no' : 'any',
 			browsed: values.includes('browsed') ? 'yes' : values.includes('unbrowsed') ? 'no' : 'any'
 		});

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { appendToken, tokenize } from '$lib/utilities/scan-insights';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
@@ -58,6 +59,8 @@
 		exportFilters = {}
 	}: Props = $props();
 
+	const NEW_TOKEN = 'is:new';
+
 	const QUICK = [
 		{ value: 'new', label: 'New' },
 		{ value: 'kev', label: 'Known exploited' },
@@ -69,7 +72,7 @@
 
 	let quick = $derived(
 		[
-			query.newOnly && 'new',
+			(query.newOnly || tokenize(query.search).includes(NEW_TOKEN)) && 'new',
 			query.kevOnly && 'kev',
 			query.cveOnly && 'cve',
 			query.corroboratedOnly && 'corroborated',
@@ -79,9 +82,16 @@
 	);
 
 	function setQuick(values: string[]) {
+		// one New filter: the is:new token the tab strip and the IPs bar use
+		const search = values.includes('new')
+			? appendToken(query.search, NEW_TOKEN)
+			: tokenize(query.search)
+					.filter((t) => t !== NEW_TOKEN)
+					.join(' ');
 		onQuery({
 			...query,
-			newOnly: values.includes('new'),
+			search,
+			newOnly: false,
 			kevOnly: values.includes('kev'),
 			cveOnly: values.includes('cve'),
 			corroboratedOnly: values.includes('corroborated'),
