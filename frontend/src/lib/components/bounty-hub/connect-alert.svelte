@@ -47,15 +47,15 @@
 </script>
 
 {#if pending.length > 0}
-	<Alert.Root class="flex items-center gap-3">
+	<Alert.Root class="flex flex-wrap items-center gap-3">
 		<KeyRoundIcon class="size-4 shrink-0 translate-y-0 text-muted-foreground" />
-		<div class="flex min-w-0 flex-1 flex-col gap-0.5">
+		<div class="flex min-w-48 flex-1 flex-col gap-0.5">
 			<Alert.Title class="line-clamp-none">{names} not connected</Alert.Title>
 			<Alert.Description>
 				Public programs come from the feed. Credentials add private programs.
 			</Alert.Description>
 		</div>
-		<div class="flex shrink-0 items-center gap-1">
+		<div class="ml-auto flex shrink-0 items-center gap-1">
 			<Button href={ROUTES.settings('api-keys')} size="sm" variant="outline">Add credentials</Button
 			>
 			<Button variant="ghost" size="icon-sm" onclick={dismiss} aria-label="Dismiss">
