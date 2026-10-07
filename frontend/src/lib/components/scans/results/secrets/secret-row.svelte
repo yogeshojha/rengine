@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { REVEAL_SM, REVEAL } from '$lib/components/scans/results/table/columns';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import { excludeToken } from '$lib/utilities/scan-insights';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -95,7 +96,7 @@
 		</div>
 		<div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 			{#if row.is_new}
-				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
+				<NewBadge />
 			{/if}
 			<span class="truncate @3xl/secrets:hidden">{row.kind_label}</span>
 			<span class="hidden truncate @3xl/secrets:inline"

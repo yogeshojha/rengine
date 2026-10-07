@@ -8,6 +8,9 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import SearchX from '@lucide/svelte/icons/search-x';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -23,6 +26,8 @@
 	import {
 		ACCESS_BY_KEY,
 		ACCESS_ORDER,
+		CLOUD_STORAGE_TAB_ICON,
+		CLOUD_STORAGE_TAB_LABEL,
 		OPEN_ACCESS,
 		PROVIDER_LABELS,
 		ReviewState,
@@ -143,128 +148,134 @@
 	}
 </script>
 
-<div class="flex flex-col gap-4">
-	<div class="flex flex-wrap items-center justify-between gap-2">
-		<div class="flex flex-col">
-			<span class="text-sm font-medium">Cloud storage</span>
-			{#if subtitle}
-				<span class="text-xs text-muted-foreground">{subtitle}</span>
-			{/if}
-		</div>
-		{#if tabs.length > 1}
-			<CountTabs {tabs} value={filter} {counts} onChange={(k) => (filter = k)} />
+<Card.Root class="gap-0 overflow-hidden py-0">
+	<div class="flex min-w-0 flex-col gap-0.5 border-b px-4 py-3">
+		<h2 class="text-base leading-6 font-semibold">{CLOUD_STORAGE_TAB_LABEL}</h2>
+		{#if subtitle}
+			<p class="text-xs text-muted-foreground">{subtitle}</p>
 		{/if}
 	</div>
+	{#if tabs.length > 1}
+		<div class="border-b px-4">
+			<CountTabs {tabs} value={filter} {counts} onChange={(k) => (filter = k)} />
+		</div>
+	{/if}
 
 	{#if loading && !summary}
-		<div class="flex flex-col gap-2">
+		<div class="flex flex-col gap-2 p-4">
 			{#each Array(4) as _, i (i)}
 				<Skeleton class="h-12 w-full rounded-lg" />
 			{/each}
 		</div>
 	{:else if errored}
-		<EmptyState compact title="Could not load" class="border-dashed" />
+		<EmptyState
+			icon={TriangleAlert}
+			title="Cloud storage not loaded"
+			class="rounded-none border-0 bg-transparent py-16"
+		>
+			<Button variant="outline" size="sm" onclick={() => load()}>Retry</Button>
+		</EmptyState>
 	{:else if !summary?.covered}
-		<EmptyState compact title="Not scanned" class="border-dashed" />
+		<EmptyState
+			icon={CLOUD_STORAGE_TAB_ICON}
+			title="Not scanned"
+			class="rounded-none border-0 bg-transparent py-16"
+		/>
 	{:else if shown.length === 0}
 		<EmptyState
-			compact
+			icon={filter === 'all' ? CLOUD_STORAGE_TAB_ICON : SearchX}
 			title={filter === 'all' ? 'No buckets' : 'No matches'}
-			class="border-dashed"
+			class="rounded-none border-0 bg-transparent py-16"
 		/>
 	{:else}
-		<div class="overflow-hidden rounded-xl border bg-card">
-			<div
-				class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0 divide-y divide-border/60 sm:grid-cols-[7rem_minmax(0,1fr)_8rem_auto]"
-			>
-				{#each shown as b (keyOf(b))}
-					{@const spec = ACCESS_BY_KEY[b.access]}
-					{@const sev = SEVERITY_CHIP[spec.severity]}
-					{@const current = stateOf(b)}
-					<div class="col-span-full grid grid-cols-subgrid items-center px-4 py-2.5">
-						<div class="order-1">
-							<span
-								title={spec.help}
-								class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium {OPEN_ACCESS.has(
-									b.access
-								)
-									? `${sev.ink}`
-									: 'text-muted-foreground'}"
+		<div
+			class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0 divide-y divide-border/60 sm:grid-cols-[7rem_minmax(0,1fr)_8rem_auto]"
+		>
+			{#each shown as b (keyOf(b))}
+				{@const spec = ACCESS_BY_KEY[b.access]}
+				{@const sev = SEVERITY_CHIP[spec.severity]}
+				{@const current = stateOf(b)}
+				<div class="col-span-full grid grid-cols-subgrid items-center px-4 py-2.5">
+					<div class="order-1">
+						<span
+							title={spec.help}
+							class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium {OPEN_ACCESS.has(
+								b.access
+							)
+								? `${sev.ink}`
+								: 'text-muted-foreground'}"
+						>
+							<span class="size-2 rounded-full {sev.edge}"></span>
+							{spec.label}
+						</span>
+					</div>
+					<div class="order-3 col-span-full min-w-0 sm:order-2 sm:col-span-1">
+						<div class="flex items-center gap-2">
+							<a
+								href={externalHref(b.url)}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="truncate font-mono text-sm hover:text-foreground hover:underline"
+								title={b.url}
 							>
-								<span class="size-2 rounded-full {sev.edge}"></span>
-								{spec.label}
+								{b.name}
+							</a>
+							<ArrowUpRight class="size-3 shrink-0 text-muted-foreground" />
+						</div>
+						<div class="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+							<span>{PROVIDER_LABELS[b.provider] ?? b.provider}</span>
+							{#if b.region}<span>· {b.region}</span>{/if}
+							<span title={SOURCE_HELP[b.source]} class="rounded border px-1 py-px">
+								{SOURCE_LABELS[b.source] ?? b.source}
 							</span>
-						</div>
-						<div class="order-3 col-span-full min-w-0 sm:order-2 sm:col-span-1">
-							<div class="flex items-center gap-2">
-								<a
-									href={externalHref(b.url)}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="truncate font-mono text-sm hover:text-foreground hover:underline"
-									title={b.url}
-								>
-									{b.name}
-								</a>
-								<ArrowUpRight class="size-3 shrink-0 text-muted-foreground" />
-							</div>
-							<div class="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-								<span>{PROVIDER_LABELS[b.provider] ?? b.provider}</span>
-								{#if b.region}<span>· {b.region}</span>{/if}
-								<span title={SOURCE_HELP[b.source]} class="rounded border px-1 py-px">
-									{SOURCE_LABELS[b.source] ?? b.source}
-								</span>
-								{#if current !== ReviewState.OPEN}
-									<span class="rounded border border-dashed px-1 py-px"
-										>{STATE_LABELS[current]}</span
-									>
-								{/if}
-							</div>
-						</div>
-						<div class="order-2 text-right text-xs text-muted-foreground tabular-nums sm:order-3">
-							{#if b.object_count != null}
-								{plural(b.object_count, 'object')}
+							{#if current !== ReviewState.OPEN}
+								<span class="rounded border border-dashed px-1 py-px">{STATE_LABELS[current]}</span>
 							{/if}
-							{#if b.size != null}
-								<div>{formatBytes(b.size)}</div>
-							{/if}
-						</div>
-						<div class="order-4 justify-self-end">
-							<DropdownMenu.Root>
-								<DropdownMenu.Trigger>
-									{#snippet child({ props })}
-										<Button {...props} variant="ghost" size="icon" class="size-7">
-											<Ellipsis class="size-4" />
-											<span class="sr-only">Actions for {b.name}</span>
-										</Button>
-									{/snippet}
-								</DropdownMenu.Trigger>
-								<DropdownMenu.Content align="end" class="w-44">
-									{#if current !== ReviewState.CONFIRMED}
-										<DropdownMenu.Item onclick={() => setReview(b, ReviewState.CONFIRMED)}>
-											<Check class="size-3.5" /> Confirm
-										</DropdownMenu.Item>
-									{/if}
-									{#if current !== ReviewState.IGNORED}
-										<DropdownMenu.Item onclick={() => setReview(b, ReviewState.IGNORED)}>
-											<EyeOff class="size-3.5" /> Ignore
-										</DropdownMenu.Item>
-									{/if}
-									{#if current !== ReviewState.OPEN}
-										<DropdownMenu.Item onclick={() => setReview(b, ReviewState.OPEN)}>
-											<RotateCcw class="size-3.5" /> Reopen
-										</DropdownMenu.Item>
-									{/if}
-									<DropdownMenu.Separator />
-									<DropdownMenu.Item onclick={() => copy(b.url)}>
-										<Copy class="size-3.5" /> Copy URL
-									</DropdownMenu.Item>
-								</DropdownMenu.Content>
-							</DropdownMenu.Root>
 						</div>
 					</div>
-				{/each}
-			</div>
+					<div class="order-2 text-right text-xs text-muted-foreground tabular-nums sm:order-3">
+						{#if b.object_count != null}
+							{plural(b.object_count, 'object')}
+						{/if}
+						{#if b.size != null}
+							<div>{formatBytes(b.size)}</div>
+						{/if}
+					</div>
+					<div class="order-4 justify-self-end">
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<Button {...props} variant="ghost" size="icon" class="size-7">
+										<Ellipsis class="size-4" />
+										<span class="sr-only">Actions for {b.name}</span>
+									</Button>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content align="end" class="w-44">
+								{#if current !== ReviewState.CONFIRMED}
+									<DropdownMenu.Item onclick={() => setReview(b, ReviewState.CONFIRMED)}>
+										<Check class="size-3.5" /> Confirm
+									</DropdownMenu.Item>
+								{/if}
+								{#if current !== ReviewState.IGNORED}
+									<DropdownMenu.Item onclick={() => setReview(b, ReviewState.IGNORED)}>
+										<EyeOff class="size-3.5" /> Ignore
+									</DropdownMenu.Item>
+								{/if}
+								{#if current !== ReviewState.OPEN}
+									<DropdownMenu.Item onclick={() => setReview(b, ReviewState.OPEN)}>
+										<RotateCcw class="size-3.5" /> Reopen
+									</DropdownMenu.Item>
+								{/if}
+								<DropdownMenu.Separator />
+								<DropdownMenu.Item onclick={() => copy(b.url)}>
+									<Copy class="size-3.5" /> Copy URL
+								</DropdownMenu.Item>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
+					</div>
+				</div>
+			{/each}
 		</div>
 	{/if}
-</div>
+</Card.Root>

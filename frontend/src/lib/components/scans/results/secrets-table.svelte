@@ -452,7 +452,7 @@
 		/>
 	</div>
 
-	<CoverageStrip {coverage} />
+	<CoverageStrip {coverage} {projectWide} />
 
 	<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
 		<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
@@ -527,7 +527,7 @@
 			>
 				<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
 			</EmptyState>
-		{:else if coverage && !coverage.ran}
+		{:else if items.length === 0 && !filtered && !projectWide && coverage && !coverage.ran}
 			<EmptyState
 				icon={KeyRound}
 				title="Not scanned"

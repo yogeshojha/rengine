@@ -13,7 +13,12 @@
 	import type { Segment } from './composition-bar.svelte';
 	import RankedList from './ranked-list.svelte';
 	import type { RankedRow } from './ranked-list.svelte';
-	import { ENDPOINT_CLASS_FILL, EndpointClass } from '$lib/config/endpoints';
+	import {
+		ENDPOINT_CLASS_FILL,
+		ENDPOINT_CLASS_LABELS,
+		EndpointClass,
+		INTEREST_LABELS
+	} from '$lib/config/endpoints';
 	import type { ScanStructure } from '$lib/utilities/endpoints';
 	import { plural } from '$lib/utilities/strings';
 
@@ -34,6 +39,11 @@
 		archive_only: Archive
 	} as const;
 
+	const sentence = (s: string) => {
+		const text = s.replace(/[_-]+/g, ' ').trim();
+		return text.charAt(0).toUpperCase() + text.slice(1);
+	};
+
 	function pick(filter: string) {
 		onTab(EP.tab, filter);
 	}
@@ -46,7 +56,7 @@
 			.filter((c) => c.count > 0)
 			.map((c) => ({
 				key: c.key,
-				label: c.label,
+				label: ENDPOINT_CLASS_LABELS[c.key] ?? sentence(c.label),
 				count: c.count,
 				color: ENDPOINT_CLASS_FILL[c.key] ?? ENDPOINT_CLASS_FILL[EndpointClass.OTHER],
 				filter: c.query
@@ -67,7 +77,7 @@
 	let interest = $derived.by<RankedRow[]>(() =>
 		(structure?.interest ?? []).slice(0, TOP).map((i) => ({
 			key: i.key,
-			label: i.label,
+			label: INTEREST_LABELS[i.key] ?? sentence(i.label),
 			sub: i.hosts ? `on ${plural(i.hosts, 'web asset', 'web assets')}` : undefined,
 			count: i.count,
 			filter: i.query
@@ -77,6 +87,15 @@
 	let sharedBase = $derived(structure?.hosts ?? 0);
 	let interestBase = $derived(structure?.endpoints ?? 0);
 	let findings = $derived((structure?.findings ?? []).slice(0, 4));
+	let sections = $derived(
+		1 + (findings.length ? 1 : 0) + (shared.length ? 1 : 0) + (interest.length ? 1 : 0)
+	);
+	const GRID: Record<number, string> = {
+		1: '',
+		2: 'md:grid-cols-2',
+		3: 'md:grid-cols-2 xl:grid-cols-3',
+		4: 'md:grid-cols-2 2xl:grid-cols-4'
+	};
 </script>
 
 {#if loading && !structure}
@@ -124,7 +143,7 @@
 			</div>
 		</div>
 
-		<div class="-mt-px -ml-px grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(18rem,1fr))]">
+		<div class="-mt-px -ml-px grid grid-cols-1 {GRID[sections]}">
 			{#if findings.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
 					<h3 class="text-sm font-semibold">Interest</h3>

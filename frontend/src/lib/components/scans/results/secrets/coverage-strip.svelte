@@ -11,9 +11,10 @@
 
 	interface Props {
 		coverage: SecretCoverage | null;
+		projectWide?: boolean;
 	}
 
-	let { coverage }: Props = $props();
+	let { coverage, projectWide = false }: Props = $props();
 
 	const n = (v: number) => v.toLocaleString();
 
@@ -54,77 +55,80 @@
 		return out;
 	});
 	let summary = $derived.by(() => {
-		if (!coverage || !ran) return 'Not scanned';
+		if (!coverage || !ran)
+			return coverage?.secrets ? 'No scanner coverage recorded' : 'Not scanned';
 		const parts = [`${n(coverage.documents_read)} responses read`];
 		if (coverage.truncated) parts.push(`${n(coverage.truncated)} truncated`);
 		return parts.join(' · ');
 	});
 </script>
 
-<div
-	class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted/10 px-4 py-2 text-xs {tone}"
->
-	<Icon class="size-3.5 shrink-0" />
-	<span>{summary}</span>
-	{#if coverage && ran}
-		<Popover.Root>
-			<Popover.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="sm"
-						class="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
-					>
-						<Info class="size-3" /> Coverage
-					</Button>
-				{/snippet}
-			</Popover.Trigger>
-			<Popover.Content class="w-72 p-0" align="start">
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
-					<dl class="divide-y">
-						{#each facts as [label, value] (label)}
-							<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
-								<dt class="text-muted-foreground">{label}</dt>
-								<dd class="font-mono tabular-nums">{value}</dd>
-							</div>
-						{/each}
-					</dl>
-					{#if sources.length > 1}
-						<div
-							class="border-t px-3 py-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+{#if ran || !projectWide}
+	<div
+		class="flex flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted/10 px-4 py-2 text-xs {tone}"
+	>
+		<Icon class="size-3.5 shrink-0" />
+		<span>{summary}</span>
+		{#if coverage && ran}
+			<Popover.Root>
+				<Popover.Trigger>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="ghost"
+							size="sm"
+							class="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
 						>
-							Sources
-						</div>
+							<Info class="size-3" /> Coverage
+						</Button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Content class="w-72 p-0" align="start">
+					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
 						<dl class="divide-y">
-							{#each sources as [source, { label, read }] (source)}
+							{#each facts as [label, value] (label)}
 								<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
 									<dt class="text-muted-foreground">{label}</dt>
-									<dd class="font-mono tabular-nums">{n(read)}</dd>
+									<dd class="font-mono tabular-nums">{value}</dd>
 								</div>
 							{/each}
 						</dl>
-					{/if}
-					{#if drops.length}
-						<div
-							class="border-t px-3 py-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
-						>
-							Dropped
-						</div>
-						<dl class="divide-y">
-							{#each drops as [reason, count] (reason)}
-								<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
-									<dt class="text-muted-foreground">{DROP_REASON_LABELS[reason] ?? reason}</dt>
-									<dd class="font-mono tabular-nums">{n(count)}</dd>
-								</div>
-							{/each}
-						</dl>
-					{/if}
-					{#if error}
-						<p class="border-t px-3 py-2 text-xs text-warning">{error}</p>
-					{/if}
-				</ScrollArea>
-			</Popover.Content>
-		</Popover.Root>
-	{/if}
-</div>
+						{#if sources.length > 1}
+							<div
+								class="border-t px-3 py-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+							>
+								Sources
+							</div>
+							<dl class="divide-y">
+								{#each sources as [source, { label, read }] (source)}
+									<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
+										<dt class="text-muted-foreground">{label}</dt>
+										<dd class="font-mono tabular-nums">{n(read)}</dd>
+									</div>
+								{/each}
+							</dl>
+						{/if}
+						{#if drops.length}
+							<div
+								class="border-t px-3 py-1.5 text-2xs tracking-wide text-muted-foreground uppercase"
+							>
+								Dropped
+							</div>
+							<dl class="divide-y">
+								{#each drops as [reason, count] (reason)}
+									<div class="flex items-center justify-between gap-3 px-3 py-1.5 text-xs">
+										<dt class="text-muted-foreground">{DROP_REASON_LABELS[reason] ?? reason}</dt>
+										<dd class="font-mono tabular-nums">{n(count)}</dd>
+									</div>
+								{/each}
+							</dl>
+						{/if}
+						{#if error}
+							<p class="border-t px-3 py-2 text-xs text-warning">{error}</p>
+						{/if}
+					</ScrollArea>
+				</Popover.Content>
+			</Popover.Root>
+		{/if}
+	</div>
+{/if}

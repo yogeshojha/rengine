@@ -10,6 +10,10 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { SHEET_HEAD } from '../sheet';
+	import SheetTop from '../sheet-top.svelte';
+	import SheetBar from '../sheet-bar.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import EvidenceMark from '$lib/components/evidence-mark.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -37,42 +41,79 @@
 	const SOFTWARE = SURFACE[SurfaceDimension.SOFTWARE];
 	let epss = $derived(row?.epss_score == null ? null : epssLabel(row.epss_score));
 	let location = $derived(row ? (row.host ?? row.ip ?? '') : '');
+	let contentEl = $state<HTMLElement | null>(null);
 </script>
 
 <Sheet.Root {open} {onOpenChange}>
-	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+	<Sheet.Content
+		bind:ref={contentEl}
+		side="right"
+		tabindex={-1}
+		class="flex w-full flex-col gap-0 p-0 outline-none sm:max-w-xl"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			contentEl?.focus();
+		}}
+	>
 		{#if row}
-			<Sheet.Header class="gap-1 border-b px-5 py-4">
-				<Sheet.Title class="flex items-center gap-2 font-mono text-base font-medium break-all">
-					{row.cve}
-					<a
-						href={nvdUrl(row.cve)}
-						target="_blank"
-						rel="noreferrer noopener"
-						aria-label="Open {row.cve} on NVD"
-						class="text-muted-foreground hover:text-foreground"
+			<Sheet.Header class={SHEET_HEAD}>
+				<SheetTop noun={SOFTWARE.noun}>
+					<span
+						class="text-xs font-medium {SEVERITY_TEXT[row.severity] ?? 'text-muted-foreground'}"
 					>
-						<ExternalLink class="size-3.5" />
-					</a>
-				</Sheet.Title>
-				<Sheet.Description class="flex flex-wrap items-center gap-1.5">
-					<span class={SEVERITY_TEXT[row.severity] ?? 'text-muted-foreground'}>
 						{severityLabel(row.severity)}
 					</span>
 					{#if row.cvss_score != null}
-						<span class="text-muted-foreground tabular-nums">CVSS {row.cvss_score.toFixed(1)}</span>
+						<span class="text-xs text-muted-foreground tabular-nums"
+							>CVSS {row.cvss_score.toFixed(1)}</span
+						>
 					{/if}
 					{#if row.is_kev}
-						<Badge variant="destructive" class="h-4 px-1 text-2xs">Known exploited</Badge>
+						<Badge variant="destructive" class="font-normal">Known exploited</Badge>
 					{/if}
 					{#if row.kev_ransomware}
-						<Badge variant="destructive" class="h-4 px-1 text-2xs">Ransomware</Badge>
+						<Badge variant="destructive" class="font-normal">Ransomware</Badge>
+					{/if}
+				</SheetTop>
+				<div class="flex min-w-0 items-center gap-1">
+					<Sheet.Title class="min-w-0 truncate font-mono text-base font-medium"
+						>{row.cve}</Sheet.Title
+					>
+					<CopyButton value={row.cve} />
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-sm"
+									class="size-7 shrink-0"
+									href={nvdUrl(row.cve)}
+									target="_blank"
+									rel="noreferrer noopener"
+									aria-label="Open {row.cve} on NVD"
+								>
+									<ExternalLink class="size-3.5 text-muted-foreground" />
+								</Button>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Content>Open on NVD</Tooltip.Content>
+					</Tooltip.Root>
+				</div>
+				<Sheet.Description class="flex min-w-0 items-center gap-1.5">
+					<TechIcon name={row.name} class="size-3.5 shrink-0" />
+					<span class="truncate">{row.name} {row.version}</span>
+					{#if location}
+						<span class="min-w-0 truncate font-mono text-xs" title={location}>
+							· {bracketed(location)}
+						</span>
 					{/if}
 				</Sheet.Description>
-				<div class="pt-1">
-					<Button variant="outline" size="sm" href={ROUTES.cve(row.cve)}>Open CVE exposure</Button>
-				</div>
 			</Sheet.Header>
+
+			<SheetBar>
+				<Button variant="outline" size="sm" href={ROUTES.cve(row.cve)}>Open CVE exposure</Button>
+			</SheetBar>
 
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-6 px-5 py-4">

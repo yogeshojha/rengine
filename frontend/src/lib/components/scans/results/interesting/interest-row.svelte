@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { REVEAL } from '$lib/components/scans/results/table/columns';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
@@ -84,7 +84,7 @@
 				</span>
 			{/if}
 			{#if row.is_new}
-				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
+				<NewBadge />
 			{/if}
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<!-- svelte-ignore a11y_no_static_element_interactions -->

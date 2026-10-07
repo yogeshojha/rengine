@@ -12,6 +12,7 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
 	import VerbRail from './verb-rail.svelte';
+	import { titleClass } from './change-row.svelte';
 	import { SIGNAL_TONE_CLASS, VERB, signalSpec } from '$lib/config/compare';
 	import { surfaceSpec } from '$lib/config/surface';
 	import { ROUTES } from '$lib/config/routes';
@@ -102,7 +103,7 @@
 					{/if}
 				</div>
 
-				<Sheet.Title class="flex min-w-0 items-start gap-2 font-mono text-sm break-all">
+				<Sheet.Title class="flex min-w-0 items-start gap-2 text-sm {titleClass(row.dimension)}">
 					{#if row.severity}
 						<SeverityMark severity={row.severity} class="mt-0.5 shrink-0" />
 					{/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import { excludeToken, filterToken } from '$lib/utilities/scan-insights';
 	import { formatBytes } from '$lib/utilities/format';
@@ -133,7 +134,7 @@
 				</Badge>
 			{/each}
 			{#if compact && endpoint.is_new}
-				<Badge variant="info" class="h-4 px-1.5 text-2xs">New</Badge>
+				<NewBadge />
 			{/if}
 			{#if endpoint.sources.includes(EndpointSource.ROBOTS)}
 				<Hint text="Listed in robots.txt.">
@@ -236,7 +237,7 @@
 					</span>
 				{/if}
 				{#if endpoint.is_new}
-					<Badge variant="info" class="h-4 px-1.5 text-2xs">New</Badge>
+					<NewBadge />
 				{/if}
 			</div>
 			{@render badges(false)}

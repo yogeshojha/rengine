@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Globe from '@lucide/svelte/icons/globe';
@@ -127,7 +128,7 @@
 				<HighlightText text={row.cve} {term} />
 			</span>
 			{#if row.is_new}
-				<Badge variant="info" class="h-4 px-1 text-2xs">New</Badge>
+				<NewBadge />
 			{/if}
 			{#if row.is_kev}
 				<Badge variant="destructive" class="h-4 px-1 text-2xs">KEV</Badge>

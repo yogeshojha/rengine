@@ -89,6 +89,19 @@
 
 	let ptr = $derived(g.ptr_hostnames ?? []);
 	let ports = $derived(g.ports ?? []);
+	// The w-44 ports column fits about 16 digits of port badges beside the "+N" trigger;
+	// show fewer when ports are long so the row stays on one line.
+	const PORT_DIGITS = 16;
+	let shownPorts = $derived.by(() => {
+		let digits = 0;
+		let n = 0;
+		for (const p of ports.slice(0, MAX_PORTS)) {
+			digits += String(p.number).length;
+			if (n > 0 && digits > PORT_DIGITS) break;
+			n++;
+		}
+		return n;
+	});
 	let hosts = $derived(g.hosts ?? []);
 	let priv = $derived(isPrivateIp(g.ip));
 	let tone = $derived(rowTone(selected || checked, focused));
@@ -260,8 +273,8 @@
 				<TargetCell values={g.targets} {onFilter} />
 			{:else if col.key === 'ports'}
 				{#if ports.length}
-					<div class="flex flex-nowrap items-center gap-0.5 overflow-hidden">
-						{#each ports.slice(0, MAX_PORTS) as p (p.id)}
+					<div class="flex flex-wrap items-center gap-0.5">
+						{#each ports.slice(0, shownPorts) as p (p.id)}
 							<PortHoverCard
 								port={p.number}
 								load={() => loadServices(g.ip)}
@@ -284,7 +297,7 @@
 						{/each}
 						<PortOverflow
 							ports={ports.map((p) => p.number)}
-							shown={MAX_PORTS}
+							shown={shownPorts}
 							load={() => loadServices(g.ip)}
 							onSelect={(p) => onFilter(`port:${p}`)}
 						/>

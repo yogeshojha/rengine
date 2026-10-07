@@ -129,7 +129,8 @@
 	let headerEl = $state<HTMLElement | null>(null);
 	let condensed = $state(false);
 	let tabsHeight = $state(0);
-	let tabStripEl = $state<HTMLElement | null>(null);
+	let tabViewport = $state<HTMLElement | null>(null);
+	let tabsScrolled = $state(false);
 	let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 	let now = $state(Date.now());
 	const initialSearch = (key: string) => page.url.searchParams.get(key) ?? '';
@@ -178,19 +179,38 @@
 	}
 	let activeTab = $state<ScanTab>(resolveTab(page.url.searchParams.get('tab')));
 
+	// Keep the active tab clear of the 1.5rem edge fades.
+	function revealActiveTab(view: HTMLElement) {
+		const tab = view.querySelector<HTMLElement>('[role=tab][data-state=active]');
+		if (!tab) return;
+		const fade = 1.5 * parseFloat(getComputedStyle(document.documentElement).fontSize);
+		const t = tab.getBoundingClientRect();
+		const v = view.getBoundingClientRect();
+		if (t.right > v.right - fade) view.scrollLeft += t.right - (v.right - fade);
+		else if (t.left < v.left + fade) view.scrollLeft -= v.left + fade - t.left;
+	}
+
+	$effect(() => {
+		const view = tabViewport;
+		const list = view?.querySelector('[role=tablist]');
+		if (!view || !list) return;
+		const sync = () => (tabsScrolled = view.scrollLeft > 0);
+		sync();
+		view.addEventListener('scroll', sync, { passive: true });
+		// Tab counts load after the strip renders and widen the tabs.
+		const resize = new ResizeObserver(() => revealActiveTab(view));
+		resize.observe(list);
+		return () => {
+			view.removeEventListener('scroll', sync);
+			resize.disconnect();
+		};
+	});
+
 	$effect(() => {
 		void activeTab;
-		const strip = tabStripEl;
-		if (!strip) return;
-		const frame = requestAnimationFrame(() => {
-			const tab = strip.querySelector<HTMLElement>('[role=tab][data-state=active]');
-			const view = tab?.closest<HTMLElement>('[data-slot=scroll-area-viewport]');
-			if (!tab || !view) return;
-			const t = tab.getBoundingClientRect();
-			const v = view.getBoundingClientRect();
-			if (t.right > v.right) view.scrollLeft += t.right - v.right;
-			else if (t.left < v.left) view.scrollLeft -= v.left - t.left;
-		});
+		const view = tabViewport;
+		if (!view) return;
+		const frame = requestAnimationFrame(() => revealActiveTab(view));
 		return () => cancelAnimationFrame(frame);
 	});
 
@@ -273,29 +293,46 @@
 				return '';
 		}
 	});
-	let newOnly = $derived(tokenize(activeSearch).includes(NEW_TOKEN));
+	// The toolbars' "New" quick toggle sets the query's newOnly flag (except IPs, which use the
+	// is:new token like this toggle), so either one counts as on and turning this off clears both.
+	let queryNewOnly = $derived.by(() => {
+		switch (activeTab) {
+			case 'web-assets':
+				return webQuery.newOnly;
+			case 'services':
+				return serviceQuery.newOnly;
+			case 'endpoints':
+				return endpointQuery.newOnly;
+			case 'vulnerabilities':
+				return vulnQuery.newOnly;
+			default:
+				return false;
+		}
+	});
+	let newOnly = $derived(tokenize(activeSearch).includes(NEW_TOKEN) || queryNewOnly);
 
 	function toggleNew() {
-		const search = newOnly
+		const off = newOnly;
+		const search = off
 			? tokenize(activeSearch)
 					.filter((t) => t !== NEW_TOKEN)
 					.join(' ')
 			: appendToken(activeSearch, NEW_TOKEN);
 		switch (activeTab) {
 			case 'web-assets':
-				webQuery = { ...webQuery, search };
+				webQuery = { ...webQuery, search, newOnly: off ? false : webQuery.newOnly };
 				break;
 			case 'ips':
 				ipQuery = { ...ipQuery, search };
 				break;
 			case 'services':
-				serviceQuery = { ...serviceQuery, search };
+				serviceQuery = { ...serviceQuery, search, newOnly: off ? false : serviceQuery.newOnly };
 				break;
 			case 'endpoints':
-				endpointQuery = { ...endpointQuery, search };
+				endpointQuery = { ...endpointQuery, search, newOnly: off ? false : endpointQuery.newOnly };
 				break;
 			case 'vulnerabilities':
-				vulnQuery = { ...vulnQuery, search };
+				vulnQuery = { ...vulnQuery, search, newOnly: off ? false : vulnQuery.newOnly };
 				break;
 			default:
 				return;
@@ -1002,7 +1039,6 @@
 
 		<Tabs.Root value={activeTab} onValueChange={setTab} style="--scan-tabs-h: {tabsHeight}px">
 			<div
-				bind:this={tabStripEl}
 				bind:clientHeight={tabsHeight}
 				class="sticky top-0 z-30 -mx-6 border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/80"
 			>
@@ -1046,10 +1082,15 @@
 					{/if}
 					<ScrollArea
 						orientation="horizontal"
-						class="min-w-0 flex-1 mask-r-from-[calc(100%-1.5rem)]"
+						bind:viewportRef={tabViewport}
+						class="min-w-0 flex-1 mask-r-from-[calc(100%-1.5rem)] {tabsScrolled
+							? 'mask-l-from-[calc(100%-1.5rem)]'
+							: ''}"
 						scrollbarXClasses="h-1"
 					>
-						<Tabs.List class="h-auto w-max justify-start gap-0 rounded-none bg-transparent p-0">
+						<Tabs.List
+							class="h-auto w-max justify-start gap-0 rounded-none bg-transparent p-0 pr-6"
+						>
 							{#each visibleTabs as t, i (t.key)}
 								{@const n = tabCounts[t.key]}
 								<Tooltip.Root>
@@ -1060,7 +1101,7 @@
 												value={t.key}
 												class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
 											>
-												<t.icon class="size-3.5" />
+												<t.icon class="hidden size-3.5 2xl:block" />
 												{t.label}
 												{#if n != null}
 													<span

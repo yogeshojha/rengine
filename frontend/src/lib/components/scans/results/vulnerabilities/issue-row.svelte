@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import Bug from '@lucide/svelte/icons/bug';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -222,9 +223,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, 'is:new')}
 							>
-								<Badge variant="info" class="px-1 text-2xs font-normal">
-									{it.new_count === it.findings ? 'new' : `${it.new_count} new`}
-								</Badge>
+								<NewBadge count={it.new_count === it.findings ? null : it.new_count} />
 							</button>
 						{/snippet}
 					</Hint>

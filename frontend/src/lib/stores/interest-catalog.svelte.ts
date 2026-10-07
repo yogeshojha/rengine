@@ -1,6 +1,13 @@
 import { interestApi } from '$lib/api/interest';
 import type { InterestCatalog, InterestKindEntry } from '$lib/types/interest';
 
+const titleCase = (key: string): string =>
+	key
+		.split(/[_\s-]+/)
+		.filter(Boolean)
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(' ');
+
 class InterestCatalogStore {
 	catalog = $state<InterestCatalog | null>(null);
 	loading = $state(false);
@@ -19,7 +26,7 @@ class InterestCatalogStore {
 	}
 
 	bandLabel(key: string): string {
-		return this.catalog?.bands.find((b) => b.key === key)?.label ?? key;
+		return this.catalog?.bands.find((b) => b.key === key)?.label ?? titleCase(key);
 	}
 
 	async load(): Promise<void> {

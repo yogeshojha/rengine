@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import { filterToken } from '$lib/utilities/scan-insights';
 	import Copy from '@lucide/svelte/icons/copy';
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert';
@@ -176,9 +177,7 @@
 					</button>
 				{/if}
 				{#if leaf.new_count}
-					<Badge variant="info" class="h-4 px-1.5 text-2xs">
-						{leaf.new_count === leaf.endpoints ? 'New' : `+${leaf.new_count} new`}
-					</Badge>
+					<NewBadge count={leaf.new_count === leaf.endpoints ? null : leaf.new_count} />
 				{/if}
 				{#if sensitive.length || testable.length}
 					<span class="flex flex-wrap items-center gap-1">

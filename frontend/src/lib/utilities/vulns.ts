@@ -437,9 +437,9 @@ export function vulnQueryChips(q: VulnQuery): VulnFilterChip[] {
 	list('severities', (v) => SEVERITY_LABELS[v] ?? v);
 	list('states', (v) => VULN_STATE_LABELS[v] ?? v);
 	list('protocols', (v) => PROTOCOL_LABELS[v] ?? v);
-	list('templates', (v) => v);
-	list('tags', (v) => v);
-	list('hosts', (v) => v);
+	list('templates', (v) => `Check ${v}`);
+	list('tags', (v) => `Category ${v}`);
+	list('hosts', (v) => `Web asset ${v}`);
 	list('scanners', (v) => SCANNER_LABELS[v] ?? v);
 	if (q.kevOnly)
 		chips.push({ id: 'kev', label: 'Known exploited', remove: (x) => ({ ...x, kevOnly: false }) });

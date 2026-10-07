@@ -113,6 +113,7 @@
 		const b = comparison?.current.started_at;
 		if (!a || !b) return '';
 		const seconds = Math.abs(new Date(b).getTime() - new Date(a).getTime()) / 1000;
+		if (seconds >= 48 * 3600) return `${plural(Math.round(seconds / 86400), 'day')} apart`;
 		return `${formatSeconds(seconds)} apart`;
 	});
 

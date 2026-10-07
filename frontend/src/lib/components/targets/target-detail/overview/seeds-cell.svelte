@@ -186,9 +186,9 @@
 		</div>
 		<Dialog.Footer>
 			<Button variant="outline" disabled={adding} onclick={() => guard.close()}>Cancel</Button>
-			<LoadingButton loading={adding} loadingLabel="Storing" disabled={!lines.length} onclick={add}>
+			<LoadingButton loading={adding} loadingLabel="Adding" disabled={!lines.length} onclick={add}>
 				<Plus />
-				Store
+				Add
 			</LoadingButton>
 		</Dialog.Footer>
 	</Dialog.Content>

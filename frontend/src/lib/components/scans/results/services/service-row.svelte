@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -85,7 +86,7 @@
 		recheck = null
 	}: Props = $props();
 
-	const MAX_HOSTS = 3;
+	const MAX_HOSTS = 2;
 
 	let hosts = $derived(s.hosts ?? []);
 	let endpoint = $derived(hostPort(s.ip, s.port));
@@ -238,7 +239,7 @@
 								class="flex h-5 shrink-0 items-center"
 								onclick={(e) => pivot(e, 'is:new')}
 							>
-								<Badge variant="info" class="px-1 text-2xs font-normal">new</Badge>
+								<NewBadge />
 							</button>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -337,13 +338,14 @@
 				<TargetCell value={s.target_value} {onFilter} />
 			{:else if col.key === 'hosts'}
 				{#if s.host_count}
-					<div class="flex min-w-0 flex-wrap items-center gap-1">
+					<div class="flex min-w-0 flex-nowrap items-center gap-1 overflow-hidden">
 						{#each hosts.slice(0, MAX_HOSTS) as h (h)}
 							<Hint text="Open {h} in Web assets">
 								{#snippet child(props)}
 									<button
 										{...props}
 										type="button"
+										class="max-w-44 min-w-0 shrink"
 										onclick={(e) => {
 											stopProp(e);
 											onHosts(exactToken('host', h));
@@ -351,7 +353,7 @@
 									>
 										<Badge
 											variant="outline"
-											class="max-w-full cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
+											class="max-w-full shrink cursor-pointer font-mono text-2xs font-normal hover:bg-accent"
 										>
 											<span class="truncate">{h}</span>
 										</Badge>

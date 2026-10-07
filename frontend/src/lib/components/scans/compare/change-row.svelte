@@ -1,3 +1,19 @@
+<script lang="ts" module>
+	import { SurfaceDimension } from '$lib/config/surface';
+
+	// Titles that are a host, address or URL read best in mono; names (checks, software,
+	// secret kinds) read as prose.
+	const MONO_TITLE: ReadonlySet<string> = new Set([
+		SurfaceDimension.WEB_ASSETS,
+		SurfaceDimension.ENDPOINTS,
+		SurfaceDimension.SERVICES,
+		SurfaceDimension.IPS
+	]);
+
+	export const titleClass = (dimension: string): string =>
+		MONO_TITLE.has(dimension) ? 'font-mono break-all' : 'break-words';
+</script>
+
 <script lang="ts">
 	import Flame from '@lucide/svelte/icons/flame';
 	import { cn } from '$lib/utils';
@@ -38,7 +54,7 @@
 			{#if row.severity}
 				<SeverityMark severity={row.severity} />
 			{/if}
-			<span class="min-w-0 font-mono text-sm break-all">{row.title}</span>
+			<span class="min-w-0 text-sm {titleClass(row.dimension)}">{row.title}</span>
 			{#if row.is_kev}
 				<Badge variant="destructive" class="px-1.5 py-0 text-2xs">
 					<Flame class="size-2.5" /> KEV

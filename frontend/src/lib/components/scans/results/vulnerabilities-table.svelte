@@ -1220,7 +1220,7 @@
 	</div>
 
 	{#if overview}
-		<CoverageStrip vulns={overview} />
+		<CoverageStrip vulns={overview} {projectWide} />
 	{/if}
 
 	<FilterBar
@@ -1314,7 +1314,7 @@
 					<X class="h-4 w-4" /> Clear filters
 				</Button>
 			</EmptyState>
-		{:else if ranScan}
+		{:else if ranScan || (overview && projectWide)}
 			<EmptyState
 				icon={ShieldCheck}
 				title="No findings"

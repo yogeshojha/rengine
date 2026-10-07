@@ -11,15 +11,14 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import Copy from '@lucide/svelte/icons/copy';
-	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import * as InputGroup from '$lib/components/ui/input-group';
-	import { Badge } from '$lib/components/ui/badge';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import type { TableColumn } from '../table/columns';
+	import type { SortOption, TableColumn } from '../table/columns';
+	import FacetedFilter from '../faceted-filter.svelte';
+	import SortMenu from '../table/sort-menu.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -27,7 +26,7 @@
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import { interestApi } from '$lib/api/interest';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
-	import { INTEREST_SORTS, kindIcon, sourceIcon } from '$lib/config/interest';
+	import { INTEREST_SORTS } from '$lib/config/interest';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
 	import {
@@ -36,7 +35,7 @@
 		type InterestRow,
 		type RuleSuggestion
 	} from '$lib/types/interest';
-	import { exactToken } from '$lib/utilities/scan-insights';
+	import { exactToken, type Facet } from '$lib/utilities/scan-insights';
 	import type { TargetScope } from '$lib/utilities/surface-scope';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -91,7 +90,6 @@
 	let sources = $state<string[]>([]);
 	let kinds = $state<string[]>(untrack(() => [...initialKinds]));
 	let sort = $state<string>(INTEREST_SORTS[0].value);
-	let sortLabel = $derived(INTEREST_SORTS.find((s) => s.value === sort)?.label ?? 'Sort');
 	let page = $state(1);
 	let judging = $state(false);
 	let retry: ReturnType<typeof setTimeout> | null = null;
@@ -119,6 +117,17 @@
 		(interestCatalog.catalog?.sources ?? []).filter((s) => (summary?.sources?.[s.key] ?? 0) > 0)
 	);
 	let filtered = $derived(q.trim() !== '' || sources.length > 0 || kinds.length > 0);
+	const SORTS: SortOption[] = INTEREST_SORTS.map((o) => ({ key: o.value, label: o.label }));
+	let kindOptions = $derived<Facet[]>(
+		activeKinds.map((k) => ({ value: k.key, label: k.label, count: summary?.kinds?.[k.key] ?? 0 }))
+	);
+	let sourceOptions = $derived<Facet[]>(
+		activeSources.map((s) => ({
+			value: s.key,
+			label: s.label,
+			count: summary?.sources?.[s.key] ?? 0
+		}))
+	);
 
 	$effect(() => {
 		if (!active) return;
@@ -351,98 +360,35 @@
 				/>
 			</InputGroup.Root>
 
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button
-							{...props}
-							variant="outline"
-							class={kinds.length ? 'border-primary/50 bg-primary/5' : ''}
-						>
-							<SlidersHorizontal />
-							Reason
-							{#if kinds.length}
-								<Badge variant="secondary" class="h-5 px-1.5 text-xs">{kinds.length}</Badge>
-							{/if}
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="w-64">
-					{#each activeKinds as k (k.key)}
-						{@const Icon = kindIcon(k.key)}
-						<DropdownMenu.CheckboxItem
-							checked={kinds.includes(k.key)}
-							onCheckedChange={() => pickKind(k.key)}
-							closeOnSelect={false}
-						>
-							<Icon class="size-3.5 text-muted-foreground" />
-							<span class="flex-1 truncate">{k.label}</span>
-							<span class="text-xs tabular-nums text-muted-foreground"
-								>{(summary?.kinds?.[k.key] ?? 0).toLocaleString()}</span
-							>
-						</DropdownMenu.CheckboxItem>
-					{/each}
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+			<FacetedFilter
+				title="Reason"
+				options={kindOptions}
+				selected={kinds}
+				onChange={(next) => {
+					kinds = next;
+					page = 1;
+				}}
+			/>
 
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button
-							{...props}
-							variant="outline"
-							class={sources.length ? 'border-primary/50 bg-primary/5' : ''}
-						>
-							Flagged by
-							{#if sources.length}
-								<Badge variant="secondary" class="h-5 px-1.5 text-xs">{sources.length}</Badge>
-							{/if}
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="start" class="w-56">
-					{#each activeSources as s (s.key)}
-						{@const Icon = sourceIcon(s.key)}
-						<DropdownMenu.CheckboxItem
-							checked={sources.includes(s.key)}
-							onCheckedChange={() => {
-								sources = toggle(sources, s.key);
-								page = 1;
-							}}
-							closeOnSelect={false}
-						>
-							<Icon class="size-3.5 text-muted-foreground" />
-							<span class="flex-1 truncate">{s.label}</span>
-							<span class="text-xs tabular-nums text-muted-foreground"
-								>{(summary?.sources?.[s.key] ?? 0).toLocaleString()}</span
-							>
-						</DropdownMenu.CheckboxItem>
-					{/each}
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+			<FacetedFilter
+				title="Flagged by"
+				options={sourceOptions}
+				selected={sources}
+				onChange={(next) => {
+					sources = next;
+					page = 1;
+				}}
+			/>
 
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" aria-label="Sort by {sortLabel}">
-							{sortLabel}
-						</Button>
-					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end">
-					<DropdownMenu.RadioGroup
-						value={sort}
-						onValueChange={(v) => {
-							sort = v;
-							page = 1;
-						}}
-					>
-						{#each INTEREST_SORTS as option (option.value)}
-							<DropdownMenu.RadioItem value={option.value}>{option.label}</DropdownMenu.RadioItem>
-						{/each}
-					</DropdownMenu.RadioGroup>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
+			<SortMenu
+				sorts={SORTS}
+				sortKey={sort}
+				sortDir={sort === 'host' ? 1 : -1}
+				onSort={(key) => {
+					sort = key;
+					page = 1;
+				}}
+			/>
 
 			{#if filtered}
 				<Button
@@ -503,16 +449,14 @@
 					/>
 				{/each}
 			</div>
-			<div class="border-t px-4 py-2">
-				<ResultsPagination
-					total={data.total}
-					page={page - 1}
-					pageSize={PAGE_SIZE}
-					noun={WEB.noun}
-					plural={WEB.nounPlural}
-					onPage={(p) => (page = p + 1)}
-				/>
-			</div>
+			<ResultsPagination
+				total={data.total}
+				page={page - 1}
+				pageSize={PAGE_SIZE}
+				noun={WEB.noun}
+				plural={WEB.nounPlural}
+				onPage={(p) => (page = p + 1)}
+			/>
 		{/if}
 
 		{#if summary && (summary.judged_at || summary.dismissed > 0)}

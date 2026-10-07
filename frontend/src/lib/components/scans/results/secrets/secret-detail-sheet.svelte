@@ -11,6 +11,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
+	import { SHEET_HEAD } from '../sheet';
+	import SheetTop from '../sheet-top.svelte';
+	import SheetBar from '../sheet-bar.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
 	import { contextLang, metaLabel } from '$lib/utilities/secrets';
 	import { ROUTES } from '$lib/config/routes';
@@ -29,6 +32,9 @@
 
 	const DT = 'text-2xs tracking-wide text-muted-foreground uppercase';
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
+	const SEC = SURFACE[SurfaceDimension.SECRETS];
+
+	let contentEl = $state<HTMLElement | null>(null);
 
 	let lang = $derived(contextLang(row?.context));
 	let assetHref = $derived(
@@ -48,23 +54,35 @@
 </script>
 
 <Sheet.Root {open} {onOpenChange}>
-	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+	<Sheet.Content
+		bind:ref={contentEl}
+		side="right"
+		tabindex={-1}
+		class="flex w-full flex-col gap-0 p-0 outline-none sm:max-w-xl"
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			contentEl?.focus();
+		}}
+	>
 		{#if row}
-			<Sheet.Header class="gap-2 border-b px-5 py-4 pr-12">
-				<div class="flex flex-wrap items-center gap-2">
-					<Badge variant={STATE_BADGE[row.state] ?? 'outline'}>
+			<Sheet.Header class={SHEET_HEAD}>
+				<SheetTop noun={SEC.noun}>
+					<Badge variant={STATE_BADGE[row.state] ?? 'outline'} class="font-normal">
 						{STATE_LABELS[row.state] ?? row.state}
 					</Badge>
-					<Sheet.Title class="text-base">{row.kind_label}</Sheet.Title>
 					{#if row.vendor}<span class="text-xs text-muted-foreground">{row.vendor}</span>{/if}
-				</div>
-				<Sheet.Description class="truncate font-mono text-xs">{row.url}</Sheet.Description>
-				<div class="pt-1">
-					<Button variant="outline" size="sm" href={assetHref}>
-						Open web asset <ArrowUpRight class="size-3.5" />
-					</Button>
-				</div>
+				</SheetTop>
+				<Sheet.Title class="min-w-0 truncate text-base font-medium">{row.kind_label}</Sheet.Title>
+				<Sheet.Description class="truncate font-mono text-xs" title={row.url}
+					>{row.url}</Sheet.Description
+				>
 			</Sheet.Header>
+
+			<SheetBar>
+				<Button variant="outline" size="sm" href={assetHref}>
+					Open web asset <ArrowUpRight class="size-3.5" />
+				</Button>
+			</SheetBar>
 
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-6 px-5 py-4">

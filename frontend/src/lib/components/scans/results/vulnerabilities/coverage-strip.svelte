@@ -14,9 +14,10 @@
 	interface Props {
 		vulns: ScanVulnerabilities;
 		compact?: boolean;
+		projectWide?: boolean;
 	}
 
-	let { vulns, compact = false }: Props = $props();
+	let { vulns, compact = false, projectWide = false }: Props = $props();
 
 	let coverage = $derived(vulns.coverage);
 
@@ -111,7 +112,7 @@
 		!ran ? 'text-muted-foreground' : partial ? 'text-warning' : 'text-muted-foreground'
 	);
 	let summary = $derived.by(() => {
-		if (!ran) return 'Not scanned';
+		if (!ran) return vulns.total ? 'No scanner coverage recorded' : 'Not scanned';
 		const parts = [
 			`${n(checks)} ${checks === 1 ? 'check' : 'checks'}`,
 			`${n(targets)} ${targets === 1 ? 'target' : 'targets'}`
@@ -126,104 +127,108 @@
 	});
 </script>
 
-<div
-	class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs {tone} {compact
-		? ''
-		: 'border-b bg-muted/10 px-4 py-2'}"
->
-	<Icon class="size-3.5 shrink-0" />
-	<span>{summary}</span>
-	{#if coverage.length}
-		<Popover.Root>
-			<Popover.Trigger>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="ghost"
-						size="sm"
-						class="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
-					>
-						<Info class="size-3" /> What ran
-					</Button>
-				{/snippet}
-			</Popover.Trigger>
-			<Popover.Content class="w-96 p-0" align="start">
-				<div class="border-b px-3 py-2">
-					<p class="text-sm font-medium">Scanner coverage</p>
-					<p class="text-xs text-muted-foreground">A dash is a count the scanner did not report.</p>
-				</div>
-				<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
-					<div class="divide-y">
-						{#each tiers as row (row.key)}
-							<div class="space-y-2 px-3 py-2.5">
-								<div class="flex items-baseline justify-between gap-2">
-									<span class="text-xs font-medium">{row.label}</span>
-									<span
-										class="text-2xs tracking-wide uppercase {row.status === 'completed'
-											? 'text-success'
-											: row.status === 'skipped'
-												? 'text-muted-foreground'
-												: 'text-warning'}"
-									>
-										{COVERAGE_STATUS_LABELS[row.status] ?? row.status}
-									</span>
-								</div>
-								{#if row.help}
-									<p class="text-2xs text-muted-foreground">{row.help}</p>
-								{/if}
-								<dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs">
-									<div class="flex justify-between gap-2">
-										<dt class="text-muted-foreground">Checks</dt>
-										<dd class="font-mono tabular-nums">{n(row.checks) ?? '—'}</dd>
-									</div>
-									<div class="flex justify-between gap-2">
-										<dt class="text-muted-foreground">Batches</dt>
-										<dd class="font-mono tabular-nums">{n(row.batches)}</dd>
-									</div>
-									<div class="flex justify-between gap-2">
-										<dt class="text-muted-foreground">Targets</dt>
-										<dd class="font-mono tabular-nums">{n(row.targets)}</dd>
-									</div>
-									<div class="flex justify-between gap-2">
-										<dt class="text-muted-foreground">Covered</dt>
-										<dd class="font-mono tabular-nums">{n(row.covered)}</dd>
-									</div>
-									<div class="flex justify-between gap-2">
-										<dt class="text-muted-foreground">Requests</dt>
-										<dd class="font-mono tabular-nums">{n(row.requests) ?? '—'}</dd>
-									</div>
-									<div class="flex justify-between gap-2">
-										<dt class="text-muted-foreground">Errors</dt>
-										<dd class="font-mono tabular-nums">{n(row.errors) ?? '—'}</dd>
-									</div>
-								</dl>
-								{#if row.unloaded}
-									<p class="text-2xs text-warning">
-										{n(row.unloaded)} selected {row.unloaded === 1 ? 'check' : 'checks'} did not load.
-									</p>
-								{/if}
-								{#if row.dropped && row.sample}
-									<p class="text-2xs text-warning">
-										{n(row.dropped)}
-										{row.dropped === 1 ? 'target' : 'targets'} dropped after repeated errors:
-										<span class="font-mono">{row.sample}</span>
-										{#if row.dropped > 1}and {n(row.dropped - 1)} more{/if}
-									</p>
-								{/if}
-								{#if row.filtered}
-									<p class="text-2xs text-muted-foreground">
-										{n(row.filtered)} injection {row.filtered === 1 ? 'match' : 'matches'} filtered. The
-										request URL was reflected into the response.
-									</p>
-								{/if}
-								{#if row.error}
-									<p class="text-2xs text-muted-foreground">{row.error}</p>
-								{/if}
-							</div>
-						{/each}
+{#if ran || !projectWide}
+	<div
+		class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs {tone} {compact
+			? ''
+			: 'border-b bg-muted/10 px-4 py-2'}"
+	>
+		<Icon class="size-3.5 shrink-0" />
+		<span>{summary}</span>
+		{#if coverage.length}
+			<Popover.Root>
+				<Popover.Trigger>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="ghost"
+							size="sm"
+							class="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
+						>
+							<Info class="size-3" /> What ran
+						</Button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Content class="w-96 p-0" align="start">
+					<div class="border-b px-3 py-2">
+						<p class="text-sm font-medium">Scanner coverage</p>
+						<p class="text-xs text-muted-foreground">
+							A dash is a count the scanner did not report.
+						</p>
 					</div>
-				</ScrollArea>
-			</Popover.Content>
-		</Popover.Root>
-	{/if}
-</div>
+					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-96">
+						<div class="divide-y">
+							{#each tiers as row (row.key)}
+								<div class="space-y-2 px-3 py-2.5">
+									<div class="flex items-baseline justify-between gap-2">
+										<span class="text-xs font-medium">{row.label}</span>
+										<span
+											class="text-2xs tracking-wide uppercase {row.status === 'completed'
+												? 'text-success'
+												: row.status === 'skipped'
+													? 'text-muted-foreground'
+													: 'text-warning'}"
+										>
+											{COVERAGE_STATUS_LABELS[row.status] ?? row.status}
+										</span>
+									</div>
+									{#if row.help}
+										<p class="text-2xs text-muted-foreground">{row.help}</p>
+									{/if}
+									<dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs">
+										<div class="flex justify-between gap-2">
+											<dt class="text-muted-foreground">Checks</dt>
+											<dd class="font-mono tabular-nums">{n(row.checks) ?? '—'}</dd>
+										</div>
+										<div class="flex justify-between gap-2">
+											<dt class="text-muted-foreground">Batches</dt>
+											<dd class="font-mono tabular-nums">{n(row.batches)}</dd>
+										</div>
+										<div class="flex justify-between gap-2">
+											<dt class="text-muted-foreground">Targets</dt>
+											<dd class="font-mono tabular-nums">{n(row.targets)}</dd>
+										</div>
+										<div class="flex justify-between gap-2">
+											<dt class="text-muted-foreground">Covered</dt>
+											<dd class="font-mono tabular-nums">{n(row.covered)}</dd>
+										</div>
+										<div class="flex justify-between gap-2">
+											<dt class="text-muted-foreground">Requests</dt>
+											<dd class="font-mono tabular-nums">{n(row.requests) ?? '—'}</dd>
+										</div>
+										<div class="flex justify-between gap-2">
+											<dt class="text-muted-foreground">Errors</dt>
+											<dd class="font-mono tabular-nums">{n(row.errors) ?? '—'}</dd>
+										</div>
+									</dl>
+									{#if row.unloaded}
+										<p class="text-2xs text-warning">
+											{n(row.unloaded)} selected {row.unloaded === 1 ? 'check' : 'checks'} did not load.
+										</p>
+									{/if}
+									{#if row.dropped && row.sample}
+										<p class="text-2xs text-warning">
+											{n(row.dropped)}
+											{row.dropped === 1 ? 'target' : 'targets'} dropped after repeated errors:
+											<span class="font-mono">{row.sample}</span>
+											{#if row.dropped > 1}and {n(row.dropped - 1)} more{/if}
+										</p>
+									{/if}
+									{#if row.filtered}
+										<p class="text-2xs text-muted-foreground">
+											{n(row.filtered)} injection {row.filtered === 1 ? 'match' : 'matches'} filtered.
+											The request URL was reflected into the response.
+										</p>
+									{/if}
+									{#if row.error}
+										<p class="text-2xs text-muted-foreground">{row.error}</p>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					</ScrollArea>
+				</Popover.Content>
+			</Popover.Root>
+		{/if}
+	</div>
+{/if}

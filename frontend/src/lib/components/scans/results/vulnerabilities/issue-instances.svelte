@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import NewBadge from '$lib/components/new-badge.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Badge } from '$lib/components/ui/badge';
@@ -106,7 +107,7 @@
 										</Badge>
 									{/if}
 									{#if v.is_new}
-										<Badge variant="info" class="px-1 text-2xs font-normal">new</Badge>
+										<NewBadge />
 									{/if}
 									{#if reviewed}
 										<Badge variant="secondary" class="px-1 text-2xs font-normal">
