@@ -271,7 +271,7 @@
 			{/if}
 		</span>
 
-		<div class="relative min-w-40 flex-1">
+		<div class="relative min-w-40 flex-1 @max-md/query:basis-[calc(100%-2.75rem)]">
 			<div
 				bind:this={overlay}
 				aria-hidden="true"

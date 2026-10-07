@@ -35,6 +35,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -1043,7 +1044,11 @@
 							{/if}
 						</div>
 					{/if}
-					<ScrollArea orientation="horizontal" class="min-w-0 flex-1" scrollbarXClasses="h-1">
+					<ScrollArea
+						orientation="horizontal"
+						class="min-w-0 flex-1 mask-r-from-[calc(100%-1.5rem)]"
+						scrollbarXClasses="h-1"
+					>
 						<Tabs.List class="h-auto w-max justify-start gap-0 rounded-none bg-transparent p-0">
 							{#each visibleTabs as t, i (t.key)}
 								{@const n = tabCounts[t.key]}
@@ -1079,6 +1084,7 @@
 						</Tabs.List>
 					</ScrollArea>
 					{#if activeTab in NEW_PARAM}
+						<div class="flex h-5 items-stretch"><Separator orientation="vertical" /></div>
 						<Hint text="Not recorded by an earlier scan of this target">
 							{#snippet child(props)}
 								<Button

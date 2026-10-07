@@ -1021,7 +1021,11 @@
 							{/if}
 						</div>
 					{/if}
-					<ScrollArea orientation="horizontal" class="min-w-0 flex-1" scrollbarXClasses="h-1">
+					<ScrollArea
+						orientation="horizontal"
+						class="min-w-0 flex-1 mask-r-from-[calc(100%-1.5rem)]"
+						scrollbarXClasses="h-1"
+					>
 						<Tabs.List
 							class="h-auto w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0"
 						>

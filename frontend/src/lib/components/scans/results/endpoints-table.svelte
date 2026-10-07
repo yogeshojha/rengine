@@ -1155,7 +1155,7 @@
 	{:else if filtered || (hideStatic && scanTotal > 0)}
 		<EmptyState
 			icon={SearchX}
-			title={atEstate ? 'No web asset matches' : 'No endpoints match'}
+			title={atEstate ? 'No web assets match' : 'No endpoints match'}
 			description={hideStatic && !filtered ? 'All matching endpoints are static files.' : undefined}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
