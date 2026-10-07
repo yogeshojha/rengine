@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { BODY_ROW, HEAD_ROW } from '$lib/components/settings/columns';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
@@ -53,10 +54,7 @@
 
 {#if chats.length}
 	<div class="@container/chats w-full" role="table" aria-label="Paired chats">
-		<div
-			class="flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-			role="row"
-		>
+		<div class={HEAD_ROW} role="row">
 			<div class={CHAT_COL.chat} role="columnheader">Chat</div>
 			<div class={CHAT_COL.account} role="columnheader">Account</div>
 			<div class={CHAT_COL.project} role="columnheader">Project</div>
@@ -66,12 +64,7 @@
 		</div>
 		{#each chats as chat (chat.id)}
 			{@const usable = chatUsable(chat)}
-			<div
-				class="flex items-center gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0 {usable
-					? ''
-					: 'text-muted-foreground'}"
-				role="row"
-			>
+			<div class="{BODY_ROW} {usable ? '' : 'text-muted-foreground'}" role="row">
 				<div class={CHAT_COL.chat} role="cell">
 					<div class="text-sm leading-5 font-medium wrap-anywhere">
 						{chat.display || chat.external_id}

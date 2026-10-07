@@ -21,7 +21,14 @@
 	import TechIcon from '../tech-icon.svelte';
 	import SourceMarks from './source-marks.svelte';
 	import StatusBar from './status-bar.svelte';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		pinTone,
+		rowTone,
+		type TableColumn,
+		REVEAL
+	} from '../table/columns';
 	import { HOST_LEAD_COLUMNS } from './columns';
 	import ProxyMenuItems from './proxy-menu-items.svelte';
 	import type { ActionKind } from '$lib/config/connectors';
@@ -246,7 +253,7 @@
 							{...props}
 							variant="ghost"
 							size="icon"
-							class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+							class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 							aria-label="Hide all {node.name}"
 							onclick={(e) => {
 								e.stopPropagation();

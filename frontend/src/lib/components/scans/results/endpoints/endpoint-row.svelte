@@ -15,7 +15,7 @@
 	import TechIcon from '../tech-icon.svelte';
 	import SourceMarks from './source-marks.svelte';
 	import StatusMark from './status-mark.svelte';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone } from '../table/columns';
+	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, REVEAL } from '../table/columns';
 	import { ENDPOINT_COLUMNS, ENDPOINT_LEAD_COLUMNS, OUTLINE_LEAD_COLUMNS } from './columns';
 	import { GUIDE, OUTLINE_ROW_ATTR } from './outline-context';
 	import {
@@ -182,9 +182,7 @@
 				{checked}
 				onCheckedChange={() => onCheck(endpoint)}
 				aria-label="Select {endpoint.url}"
-				class="transition-opacity {checked
-					? 'opacity-100'
-					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+				class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 			/>
 		</div>
 	{/if}
@@ -382,7 +380,7 @@
 							{...props}
 							variant="ghost"
 							size="icon"
-							class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+							class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 							aria-label="Hide all {endpoint.path}"
 							onclick={(e) => {
 								e.stopPropagation();

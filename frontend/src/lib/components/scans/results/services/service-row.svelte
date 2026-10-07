@@ -41,7 +41,8 @@
 		columnCell,
 		pinTone,
 		rowTone,
-		type TableColumn
+		type TableColumn,
+		REVEAL
 	} from '../table/columns';
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { Recheck } from '$lib/types/recheck';
@@ -129,9 +130,7 @@
 			{checked}
 			onCheckedChange={() => onCheck(s.id)}
 			aria-label="Select {endpoint}"
-			class="transition-opacity {checked
-				? 'opacity-100'
-				: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 		/>
 	</div>
 
@@ -271,10 +270,7 @@
 				</button>
 			{/if}
 			<span class="hidden h-5 shrink-0 items-center sm:flex">
-				<CopyButton
-					value={endpoint}
-					class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-				/>
+				<CopyButton value={endpoint} class="transition-opacity {REVEAL}" />
 			</span>
 		</div>
 
@@ -471,7 +467,7 @@
 								target="_blank"
 								rel="noopener noreferrer"
 								aria-label="Open {s.url}"
-								class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+								class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 								onclick={stopProp}
 							>
 								<ExternalLink />
@@ -487,7 +483,7 @@
 						{...props}
 						variant="ghost"
 						size="icon-sm"
-						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 						aria-label="Hide all port {s.port}"
 						onclick={(e) => {
 							e.stopPropagation();

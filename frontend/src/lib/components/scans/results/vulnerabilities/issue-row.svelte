@@ -50,7 +50,8 @@
 		columnCell,
 		pinTone,
 		rowTone,
-		type TableColumn
+		type TableColumn,
+		REVEAL
 	} from '../table/columns';
 	import { ISSUE_LEAD_COLUMNS } from './columns';
 
@@ -161,9 +162,7 @@
 			{checked}
 			onCheckedChange={() => onCheck(it.template_id)}
 			aria-label="Select {it.template_name}"
-			class="transition-opacity {checked
-				? 'opacity-100'
-				: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 		/>
 	</div>
 
@@ -449,7 +448,7 @@
 						{...props}
 						variant="ghost"
 						size="icon"
-						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 						aria-label="Hide all {it.template_name}"
 						onclick={(e) => {
 							e.stopPropagation();

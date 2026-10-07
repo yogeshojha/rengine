@@ -3,6 +3,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import * as Table from '$lib/components/ui/table';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -113,44 +114,40 @@
 						</div>
 						<div><span class="font-medium text-foreground">Later</span> · {side(data.current)}</div>
 					</div>
-					<ScrollArea orientation="horizontal">
-						<table class="w-full min-w-[560px] text-xs">
-							<thead>
-								<tr class="text-left text-2xs tracking-wide text-muted-foreground uppercase">
-									<th class="py-1.5 pr-3 font-medium">Dimension</th>
-									<th class="py-1.5 pr-3 text-right font-medium">Earlier</th>
-									<th class="py-1.5 pr-3 text-right font-medium">Later</th>
-									<th class="py-1.5 pr-3 text-right font-medium">Delta</th>
-									<th class="w-40 py-1.5 pr-3 font-medium"></th>
-									<th class="py-1.5 font-medium">Note</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each data.dimensions as d (d.dimension)}
-									<tr class="border-t border-border/50">
-										<td class="py-1.5 pr-3">{d.label}</td>
-										<td class="py-1.5 pr-3 text-right font-mono tabular-nums text-muted-foreground"
-											>{d.verdict.covered_baseline ? n(d.total_baseline) : 'Not scanned'}</td
-										>
-										<td class="py-1.5 pr-3 text-right font-mono tabular-nums"
-											>{d.verdict.covered_current ? n(d.total_current) : 'Not scanned'}</td
-										>
-										<td class="py-1.5 pr-3 text-right font-mono font-semibold tabular-nums"
-											>{d.verdict.covered_baseline && d.verdict.covered_current
-												? delta(d.total_baseline, d.total_current)
-												: ''}</td
-										>
-										<td class="py-1.5 pr-3"><ChangeBar delta={d} /></td>
-										<td class="py-1.5 text-2xs text-muted-foreground">
-											{d.verdict.comparability === COMPARABILITY.LIKE_FOR_LIKE
-												? ''
-												: d.verdict.note}
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</ScrollArea>
+					<Table.Root class="min-w-[560px] text-xs">
+						<Table.Header>
+							<Table.Row>
+								<Table.Head>Dimension</Table.Head>
+								<Table.Head class="text-right">Earlier</Table.Head>
+								<Table.Head class="text-right">Later</Table.Head>
+								<Table.Head class="text-right">Delta</Table.Head>
+								<Table.Head class="w-40"><span class="sr-only">Change</span></Table.Head>
+								<Table.Head>Note</Table.Head>
+							</Table.Row>
+						</Table.Header>
+						<Table.Body>
+							{#each data.dimensions as d (d.dimension)}
+								<Table.Row>
+									<Table.Cell>{d.label}</Table.Cell>
+									<Table.Cell class="text-right font-mono text-muted-foreground tabular-nums"
+										>{d.verdict.covered_baseline ? n(d.total_baseline) : 'Not scanned'}</Table.Cell
+									>
+									<Table.Cell class="text-right font-mono tabular-nums"
+										>{d.verdict.covered_current ? n(d.total_current) : 'Not scanned'}</Table.Cell
+									>
+									<Table.Cell class="text-right font-mono font-semibold tabular-nums"
+										>{d.verdict.covered_baseline && d.verdict.covered_current
+											? delta(d.total_baseline, d.total_current)
+											: ''}</Table.Cell
+									>
+									<Table.Cell><ChangeBar delta={d} /></Table.Cell>
+									<Table.Cell class="text-2xs whitespace-normal text-muted-foreground">
+										{d.verdict.comparability === COMPARABILITY.LIKE_FOR_LIKE ? '' : d.verdict.note}
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
 				{/if}
 			</div>
 		</ScrollArea>

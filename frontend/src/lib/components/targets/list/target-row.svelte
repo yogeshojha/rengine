@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { REVEAL_SM, rowPadding } from '$lib/components/scans/results/table/columns';
 	import { goto } from '$app/navigation';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -142,9 +143,9 @@
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
-		class="flex cursor-pointer items-center gap-3 px-4 hover:bg-muted/30 {compact
-			? 'py-1.5'
-			: 'py-2.5'}"
+		class="flex cursor-pointer items-center gap-3 px-4 hover:bg-muted/30 {rowPadding(
+			compact ? 'compact' : 'cozy'
+		)}"
 		role="row"
 		tabindex="-1"
 		data-target-row-index={index}
@@ -157,9 +158,7 @@
 				checked={selected}
 				onCheckedChange={onSelect}
 				aria-label="Select {target.target_value}"
-				class="transition-opacity {selected
-					? ''
-					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
+				class="transition-opacity {selected ? '' : REVEAL_SM}"
 			/>
 		</div>
 
@@ -169,12 +168,10 @@
 					<a
 						href={ROUTES.target(target.id)}
 						class="truncate font-mono text-sm font-medium hover:text-primary"
+						title={target.target_value}
 						onclick={stopProp}>{target.target_value}</a
 					>
-					<CopyButton
-						value={target.target_value}
-						class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
-					/>
+					<CopyButton value={target.target_value} class="shrink-0 transition-opacity {REVEAL_SM}" />
 				</div>
 				{#if editing}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -201,7 +198,7 @@
 							{formatTargetType(target.target_type)}
 						</span>
 						{#if target.display_name && target.display_name !== target.target_value}
-							<span class="truncate">{target.display_name}</span>
+							<span class="truncate" title={target.display_name}>{target.display_name}</span>
 						{/if}
 						{#if targetPrefs.folded('run')}
 							{#if run}

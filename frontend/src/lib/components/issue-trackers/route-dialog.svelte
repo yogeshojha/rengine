@@ -5,7 +5,6 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
 	import { Button } from '$lib/components/ui/button';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
@@ -149,34 +148,32 @@
 						<Popover.Content class="w-(--bits-popover-anchor-width) p-0" align="start">
 							<Command.Root shouldFilter={false}>
 								<Command.Input placeholder="Search targets" bind:value={search} />
-								<Command.List class="max-h-none overflow-visible">
+								<Command.List class="max-h-72">
 									<Command.Empty>No matches</Command.Empty>
-									<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-										<Command.Group>
+									<Command.Group>
+										<Command.Item
+											value={SELECT_NONE}
+											onSelect={() => {
+												targetId = SELECT_NONE;
+												targetValue = '';
+												pickerOpen = false;
+											}}
+										>
+											Every target
+										</Command.Item>
+										{#each found as target (target.id)}
 											<Command.Item
-												value={SELECT_NONE}
+												value={target.id}
 												onSelect={() => {
-													targetId = SELECT_NONE;
-													targetValue = '';
+													targetId = target.id;
+													targetValue = target.value;
 													pickerOpen = false;
 												}}
 											>
-												Every target
+												<span class="min-w-0 truncate font-mono">{target.value}</span>
 											</Command.Item>
-											{#each found as target (target.id)}
-												<Command.Item
-													value={target.id}
-													onSelect={() => {
-														targetId = target.id;
-														targetValue = target.value;
-														pickerOpen = false;
-													}}
-												>
-													<span class="min-w-0 truncate font-mono">{target.value}</span>
-												</Command.Item>
-											{/each}
-										</Command.Group>
-									</ScrollArea>
+										{/each}
+									</Command.Group>
 								</Command.List>
 							</Command.Root>
 						</Popover.Content>

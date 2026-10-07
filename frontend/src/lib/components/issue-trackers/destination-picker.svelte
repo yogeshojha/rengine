@@ -5,7 +5,6 @@
 	import * as Command from '$lib/components/ui/command';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { issueTrackersApi } from '$lib/api/issue-trackers';
 	import type { TrackerOption } from '$lib/types/issue-tracker';
@@ -114,7 +113,7 @@
 		<Popover.Content class="w-(--bits-popover-anchor-width) p-0" align="start">
 			<Command.Root shouldFilter={kind === 'issue-type'}>
 				<Command.Input placeholder={searchLabel} bind:value={search} />
-				<Command.List class="max-h-none overflow-visible">
+				<Command.List class="max-h-72">
 					{#if loading && !options.length}
 						<div class="flex flex-col gap-1.5 p-2">
 							<Skeleton class="h-8 w-full" />
@@ -126,23 +125,21 @@
 					{:else}
 						<Command.Empty>No matches</Command.Empty>
 					{/if}
-					<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-72">
-						<Command.Group>
-							{#each options as option (option.key)}
-								<Command.Item value={option.key} onSelect={() => pick(option.key)}>
-									<span class="min-w-0 flex-1 truncate">
-										<span class="font-mono">{option.key}</span>
-										{#if option.name !== option.key}
-											<span class="ml-1 text-muted-foreground">{option.name}</span>
-										{/if}
-									</span>
-									{#if option.key === value}
-										<CheckIcon class="size-4 text-primary" />
+					<Command.Group>
+						{#each options as option (option.key)}
+							<Command.Item value={option.key} onSelect={() => pick(option.key)}>
+								<span class="min-w-0 flex-1 truncate">
+									<span class="font-mono">{option.key}</span>
+									{#if option.name !== option.key}
+										<span class="ml-1 text-muted-foreground">{option.name}</span>
 									{/if}
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</ScrollArea>
+								</span>
+								{#if option.key === value}
+									<CheckIcon class="size-4 text-primary" />
+								{/if}
+							</Command.Item>
+						{/each}
+					</Command.Group>
 					{#if clearable && value}
 						<Command.Group>
 							<Command.Item value="__none__ none" onSelect={() => pick('')}>

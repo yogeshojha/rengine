@@ -17,12 +17,13 @@
 	import ListTreeIcon from '@lucide/svelte/icons/list-tree';
 	import CopyIcon from '@lucide/svelte/icons/copy';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import { Input } from '$lib/components/ui/input/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import { selectAllState } from '$lib/components/scans/results/table/columns';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
@@ -94,8 +95,6 @@
 		all: 'No requests'
 	};
 
-	const HEAD =
-		'px-4 py-2 text-left text-2xs font-medium tracking-wide text-muted-foreground uppercase whitespace-nowrap';
 	const PAGE_SIZE = 50;
 	const PARAMS_SHOWN = 3;
 
@@ -202,6 +201,10 @@
 		else picked.add(id);
 	}
 
+	const selectAll = $derived(
+		selectAllState(rows.filter((r) => picked.has(r.id)).length, rows.length)
+	);
+
 	function toggleAll() {
 		const all = picked.size === rows.length;
 		picked.clear();
@@ -301,12 +304,10 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-	<div class="relative min-w-52 flex-1">
-		<SearchIcon
-			class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2"
-		/>
-		<Input bind:value={search} placeholder="Filter by URL" class="h-8 pl-8 text-xs" />
-	</div>
+	<InputGroup.Root class="min-w-52 flex-1">
+		<InputGroup.Addon><SearchIcon class="size-4" /></InputGroup.Addon>
+		<InputGroup.Input bind:value={search} placeholder="Filter by URL" aria-label="Filter by URL" />
+	</InputGroup.Root>
 	{#if hosts.length > 1 || host}
 		<Select.Root
 			type="single"
@@ -316,7 +317,7 @@
 				pageNumber = 0;
 			}}
 		>
-			<Select.Trigger class="h-8 w-64 text-xs">
+			<Select.Trigger class="w-64" aria-label="Host">
 				{host || `All hosts · ${hosts.length}`}
 			</Select.Trigger>
 			<Select.Content>
@@ -335,7 +336,7 @@
 			pageNumber = 0;
 		}}
 	>
-		<Select.Trigger class="h-8 w-36 text-xs">
+		<Select.Trigger class="w-36" aria-label="State">
 			{stateFilter ? CANDIDATE_STATE_LABELS[stateFilter as Candidate['state']] : 'Any state'}
 		</Select.Trigger>
 		<Select.Content>
@@ -388,179 +389,177 @@
 		class="rounded-none border-0 bg-transparent py-16"
 	/>
 {:else}
-	<ScrollArea orientation="horizontal">
-		<table class="w-full min-w-[760px] table-fixed text-sm">
-			<thead>
-				<tr class="border-b bg-muted/20">
-					<th class="w-10 px-3 py-2">
-						<Checkbox
-							checked={picked.size === rows.length && rows.length > 0}
-							onCheckedChange={toggleAll}
-							aria-label="Select all"
-						/>
-					</th>
-					<th class="{HEAD} w-16">Method</th>
-					<th class={HEAD}>Shape</th>
-					<th class="{HEAD} w-32">Parameters</th>
-					<th class="{HEAD} w-16 text-right">Status</th>
-					<th class="{HEAD} w-12 text-right">Hits</th>
-					<th class="{HEAD} w-20">Source</th>
-					<th class="{HEAD} w-20 text-right">Seen</th>
-					<th class="w-24 px-2 py-2"></th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each rows as row (row.id)}
-					<tr class="border-b last:border-b-0">
-						<td class="px-3 py-2.5 align-top">
-							<span class="flex h-5 items-center">
-								<Checkbox
-									checked={picked.has(row.id)}
-									onCheckedChange={() => toggle(row.id)}
-									aria-label={row.url}
-								/>
-							</span>
-						</td>
-						<td
-							class="text-muted-foreground px-4 py-2.5 align-top font-mono text-2xs leading-5 whitespace-nowrap"
-						>
-							{row.methods.join(' ') || 'GET'}
-						</td>
-						<td class="px-4 py-2.5 align-top">
-							<div class="flex min-w-0 items-center gap-1.5">
-								{#if row.authenticated}
-									<Hint text="Session present">
-										{#snippet child(props)}
-											<span {...props} class="flex h-5 shrink-0 items-center">
-												<LockIcon class="text-muted-foreground size-3" />
-											</span>
-										{/snippet}
-									</Hint>
-								{/if}
-								<button
-									type="button"
-									class="hover:text-primary min-w-0 truncate text-left font-mono text-xs leading-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-									onclick={() => (openedId = row.id)}
-								>
-									{row.path}
-								</button>
-								{#if fresh(row)}
-									<span class="text-info shrink-0 text-2xs font-medium">New</span>
-								{/if}
-							</div>
-							{#if row.notices.length > 0 || row.title || (!host && hosts.length > 1)}
-								<div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2">
-									{#if !host && hosts.length > 1}
-										<span class="text-muted-foreground min-w-0 truncate font-mono text-2xs"
-											>{row.host}</span
-										>
-									{/if}
-									{#each row.notices as item (item)}
-										<Hint text={NOTICE_HELP[item] ?? ''}>
-											{#snippet child(props)}
-												<span {...props} class="text-2xs whitespace-nowrap {noticeTone(item)}">
-													{NOTICE_LABELS[item] ?? item}
-												</span>
-											{/snippet}
-										</Hint>
-									{/each}
-									{#if row.title}
-										<span class="text-muted-foreground/70 min-w-0 truncate text-2xs"
-											>{row.title}</span
-										>
-									{/if}
-								</div>
-							{/if}
-						</td>
-						<td class="px-4 py-2.5 align-top">
-							{#if row.param_count > 0}
-								<Hint text={row.params.join(', ')}>
+	<Table.Root class="min-w-[760px] table-fixed">
+		<Table.Header>
+			<Table.Row>
+				<Table.Head class="w-10">
+					<Checkbox
+						checked={selectAll === true}
+						indeterminate={selectAll === 'indeterminate'}
+						onCheckedChange={toggleAll}
+						aria-label="Select all"
+					/>
+				</Table.Head>
+				<Table.Head class="w-16">Method</Table.Head>
+				<Table.Head>Shape</Table.Head>
+				<Table.Head class="w-32">Parameters</Table.Head>
+				<Table.Head class="w-16 text-right">Status</Table.Head>
+				<Table.Head class="w-12 text-right">Hits</Table.Head>
+				<Table.Head class="w-20">Source</Table.Head>
+				<Table.Head class="w-20 text-right">Seen</Table.Head>
+				<Table.Head class="w-24"><span class="sr-only">Actions</span></Table.Head>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
+			{#each rows as row (row.id)}
+				<Table.Row data-state={picked.has(row.id) ? 'selected' : undefined}>
+					<Table.Cell class="align-top">
+						<span class="flex h-5 items-center">
+							<Checkbox
+								checked={picked.has(row.id)}
+								onCheckedChange={() => toggle(row.id)}
+								aria-label={row.url}
+							/>
+						</span>
+					</Table.Cell>
+					<Table.Cell
+						class="text-muted-foreground align-top font-mono text-2xs leading-5 whitespace-nowrap"
+					>
+						{row.methods.join(' ') || 'GET'}
+					</Table.Cell>
+					<Table.Cell class="align-top whitespace-normal">
+						<div class="flex min-w-0 items-center gap-1.5">
+							{#if row.authenticated}
+								<Hint text="Session present">
 									{#snippet child(props)}
-										<span {...props} class="block truncate font-mono text-2xs leading-5">
-											{row.params.slice(0, PARAMS_SHOWN).join(' ')}{row.param_count > PARAMS_SHOWN
-												? ` +${row.param_count - PARAMS_SHOWN}`
-												: ''}
+										<span {...props} class="flex h-5 shrink-0 items-center">
+											<LockIcon class="text-muted-foreground size-3" />
 										</span>
 									{/snippet}
 								</Hint>
-							{:else}
-								<span class="text-muted-foreground/40 text-2xs leading-5">—</span>
 							{/if}
-						</td>
-						<td
-							class="px-4 py-2.5 text-right align-top font-mono text-xs leading-5 tabular-nums {httpStatusTextClass(
-								row.status_code
-							)}">{row.status_code ?? '—'}</td
-						>
-						<td
-							class="text-muted-foreground px-4 py-2.5 text-right align-top text-2xs leading-5 tabular-nums"
-							>{row.hits > 1 ? row.hits : ''}</td
-						>
-						<td class="text-muted-foreground px-4 py-2.5 align-top text-2xs leading-5"
-							>{SOURCE_TOOL_LABELS[row.source_tool] ?? row.source_tool}</td
-						>
-						<td
-							class="text-muted-foreground px-4 py-2.5 text-right align-top text-2xs leading-5 whitespace-nowrap"
-							>{relativeTime(row.last_seen_at)}</td
-						>
-						<td class="px-2 py-1.5 align-top">
-							<span class="flex h-7 items-center justify-end gap-0.5">
-								{#if !connector.paused}
-									<Hint text={sendLabel}>
+							<button
+								type="button"
+								class="hover:text-primary min-w-0 truncate text-left font-mono text-xs leading-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+								onclick={() => (openedId = row.id)}
+							>
+								{row.path}
+							</button>
+							{#if fresh(row)}
+								<span class="text-info shrink-0 text-2xs font-medium">New</span>
+							{/if}
+						</div>
+						{#if row.notices.length > 0 || row.title || (!host && hosts.length > 1)}
+							<div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2">
+								{#if !host && hosts.length > 1}
+									<span class="text-muted-foreground min-w-0 truncate font-mono text-2xs"
+										>{row.host}</span
+									>
+								{/if}
+								{#each row.notices as item (item)}
+									<Hint text={NOTICE_HELP[item] ?? ''}>
 										{#snippet child(props)}
-											<Button
-												{...props}
-												variant="ghost"
-												size="icon"
-												class="size-7"
-												aria-label={sendLabel}
-												disabled={sending.has(row.id)}
-												onclick={() => sendRow(row)}
-											>
-												<SendIcon class="size-3.5" />
-											</Button>
+											<span {...props} class="text-2xs whitespace-nowrap {noticeTone(item)}">
+												{NOTICE_LABELS[item] ?? item}
+											</span>
 										{/snippet}
 									</Hint>
+								{/each}
+								{#if row.title}
+									<span class="text-muted-foreground/70 min-w-0 truncate text-2xs">{row.title}</span
+									>
 								{/if}
-								{#if row.target_id}
-									<Hint text="Open in Endpoints">
-										{#snippet child(props)}
-											<Button
-												{...props}
-												variant="ghost"
-												size="icon"
-												class="size-7"
-												aria-label="Open in Endpoints"
-												href={endpointsLink(row)}
-											>
-												<ListTreeIcon class="size-3.5" />
-											</Button>
-										{/snippet}
-									</Hint>
-								{/if}
-								<Hint text="Open in a new tab">
+							</div>
+						{/if}
+					</Table.Cell>
+					<Table.Cell class="align-top whitespace-normal">
+						{#if row.param_count > 0}
+							<Hint text={row.params.join(', ')}>
+								{#snippet child(props)}
+									<span {...props} class="block truncate font-mono text-2xs leading-5">
+										{row.params.slice(0, PARAMS_SHOWN).join(' ')}{row.param_count > PARAMS_SHOWN
+											? ` +${row.param_count - PARAMS_SHOWN}`
+											: ''}
+									</span>
+								{/snippet}
+							</Hint>
+						{:else}
+							<span class="text-muted-foreground/40 text-2xs leading-5">—</span>
+						{/if}
+					</Table.Cell>
+					<Table.Cell
+						class="text-right align-top font-mono text-xs leading-5 tabular-nums {httpStatusTextClass(
+							row.status_code
+						)}">{row.status_code ?? '—'}</Table.Cell
+					>
+					<Table.Cell
+						class="text-muted-foreground text-right align-top text-2xs leading-5 tabular-nums"
+						>{row.hits > 1 ? row.hits : ''}</Table.Cell
+					>
+					<Table.Cell class="text-muted-foreground align-top text-2xs leading-5"
+						>{SOURCE_TOOL_LABELS[row.source_tool] ?? row.source_tool}</Table.Cell
+					>
+					<Table.Cell
+						class="text-muted-foreground text-right align-top text-2xs leading-5 whitespace-nowrap"
+						>{relativeTime(row.last_seen_at)}</Table.Cell
+					>
+					<Table.Cell class="px-2 py-1.5 align-top">
+						<span class="flex h-7 items-center justify-end gap-0.5">
+							{#if !connector.paused}
+								<Hint text={sendLabel}>
 									{#snippet child(props)}
 										<Button
 											{...props}
 											variant="ghost"
 											size="icon"
 											class="size-7"
-											aria-label="Open in a new tab"
-											href={externalHref(row.url)}
-											target="_blank"
-											rel="noopener noreferrer"
+											aria-label={sendLabel}
+											disabled={sending.has(row.id)}
+											onclick={() => sendRow(row)}
 										>
-											<ExternalLinkIcon class="size-3.5" />
+											<SendIcon class="size-3.5" />
 										</Button>
 									{/snippet}
 								</Hint>
-							</span>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	</ScrollArea>
+							{/if}
+							{#if row.target_id}
+								<Hint text="Open in Endpoints">
+									{#snippet child(props)}
+										<Button
+											{...props}
+											variant="ghost"
+											size="icon"
+											class="size-7"
+											aria-label="Open in Endpoints"
+											href={endpointsLink(row)}
+										>
+											<ListTreeIcon class="size-3.5" />
+										</Button>
+									{/snippet}
+								</Hint>
+							{/if}
+							<Hint text="Open in a new tab">
+								{#snippet child(props)}
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon"
+										class="size-7"
+										aria-label="Open in a new tab"
+										href={externalHref(row.url)}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										<ExternalLinkIcon class="size-3.5" />
+									</Button>
+								{/snippet}
+							</Hint>
+						</span>
+					</Table.Cell>
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	</Table.Root>
 	<ResultsPagination
 		total={page?.total ?? 0}
 		page={pageNumber}

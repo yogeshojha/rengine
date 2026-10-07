@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { REVEAL_SM, rowPadding } from '$lib/components/scans/results/table/columns';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
@@ -93,9 +94,9 @@
 	{/if}
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
-		class="flex cursor-pointer items-center gap-3 px-4 {compact
-			? 'py-1.5'
-			: 'py-2.5'} hover:bg-muted/30 {focused ? 'bg-muted/40' : ''} {nested ? 'pl-10' : ''}"
+		class="flex cursor-pointer items-center gap-3 px-4 {rowPadding(
+			compact ? 'compact' : 'cozy'
+		)} hover:bg-muted/30 {focused ? 'bg-muted/40' : ''} {nested ? 'pl-10' : ''}"
 		role="row"
 		tabindex="-1"
 		onclick={onOpen}
@@ -106,9 +107,7 @@
 				checked={selected}
 				onCheckedChange={onSelect}
 				aria-label="Select run of {scan.execution_config.target_value}"
-				class="transition-opacity {selected
-					? ''
-					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
+				class="transition-opacity {selected ? '' : REVEAL_SM}"
 			/>
 		</div>
 		<div class={COL.target} role="cell">
@@ -132,7 +131,7 @@
 		{/if}
 		{#if showTarget && historyPrefs.shows('engine')}
 			<div class={COL.engine} role="cell">
-				<div class="truncate text-sm">{scan.engine_name}</div>
+				<div class="truncate text-sm" title={scan.engine_name}>{scan.engine_name}</div>
 				<div class="text-2xs text-muted-foreground">
 					{INTENSITY_LABELS[scan.execution_config.intensity as Intensity] ??
 						scan.execution_config.intensity}

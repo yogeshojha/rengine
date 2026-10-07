@@ -286,11 +286,17 @@
 							{#if key}
 								<div class="flex items-center gap-1">
 									<span class="flex min-w-0 flex-col">
-										<code class="truncate font-mono text-xs text-muted-foreground">
+										<code
+											class="truncate font-mono text-xs text-muted-foreground"
+											title={key.key_value_masked}
+										>
 											{key.key_value_masked}
 										</code>
 										{#if key.key_meta?.username}
-											<code class="truncate font-mono text-2xs text-muted-foreground">
+											<code
+												class="truncate font-mono text-2xs text-muted-foreground"
+												title={String(key.key_meta.username)}
+											>
 												{key.key_meta.username}
 											</code>
 										{/if}

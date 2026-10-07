@@ -63,7 +63,8 @@
 	{#if col.sort}
 		<button
 			type="button"
-			class="flex items-center gap-1 uppercase hover:text-foreground {sortKey === col.sort
+			class="flex items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 {sortKey ===
+			col.sort
 				? 'text-foreground'
 				: ''}"
 			onclick={() => onSort(col.sort ?? col.key)}
@@ -110,7 +111,7 @@
 			</div>
 		{/each}
 		<div class={ACTIONS_PIN}>
-			<div class="{ACTIONS_BODY} bg-muted/20"></div>
+			<div class="{ACTIONS_BODY} bg-muted/20"><span class="sr-only">Actions</span></div>
 		</div>
 	</div>
 </div>

@@ -2,7 +2,8 @@
 	import Flame from '@lucide/svelte/icons/flame';
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import { Badge } from '$lib/components/ui/badge';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { Button } from '$lib/components/ui/button';
+	import * as Table from '$lib/components/ui/table';
 	import Hint from '$lib/components/hint.svelte';
 	import EvidenceMark from '$lib/components/evidence-mark.svelte';
 	import CountryFlag from '$lib/components/scans/results/country-flag.svelte';
@@ -95,57 +96,54 @@
 	{/if}
 {/snippet}
 
-<ScrollArea orientation="horizontal" class="w-full">
-	<table class="w-full border-collapse text-left">
-		<thead>
-			<tr class="border-b">
-				{#each columns as col (col.key)}
-					<th
-						class="h-8 px-3 text-2xs font-medium tracking-wide whitespace-nowrap text-muted-foreground uppercase first:pl-4 {col.width}"
-					>
-						{col.label}
-					</th>
-				{/each}
-				<th class="w-10 pr-3"><span class="sr-only">Actions</span></th>
-			</tr>
-		</thead>
-		<tbody>
-			{#each rows as row, i (i)}
-				{@const href = rowHref(dimension, row)}
-				<tr class="group border-b last:border-b-0 hover:bg-muted/40">
-					{#each columns as col, j (col.key)}
-						<td class="px-3 py-1.5 align-top first:pl-4 {col.width}">
-							{#if j === 0 && href}
-								<a
-									{href}
-									class="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									{@render cell(col.cell(row))}
-								</a>
-							{:else}
-								{@render cell(col.cell(row))}
-							{/if}
-						</td>
-					{/each}
-					<td class="w-10 py-1.5 pr-3 text-right align-top">
-						{#if onAbout}
-							<Hint text="Ask about this {noun}">
-								{#snippet child(props)}
-									<button
-										{...props}
-										type="button"
-										class="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100 hover:bg-accent hover:text-primary focus-visible:opacity-100"
-										onclick={() => onAbout(aboutRow(dimension, row), rowLabel(dimension, row))}
-										aria-label="Ask about this {noun}"
-									>
-										<Sparkles class="size-3.5" />
-									</button>
-								{/snippet}
-							</Hint>
-						{/if}
-					</td>
-				</tr>
+<Table.Root class="border-collapse">
+	<Table.Header>
+		<Table.Row>
+			{#each columns as col (col.key)}
+				<Table.Head class="first:pl-4 {col.width}">
+					{col.label}
+				</Table.Head>
 			{/each}
-		</tbody>
-	</table>
-</ScrollArea>
+			<Table.Head class="w-10 pr-3"><span class="sr-only">Actions</span></Table.Head>
+		</Table.Row>
+	</Table.Header>
+	<Table.Body>
+		{#each rows as row, i (i)}
+			{@const href = rowHref(dimension, row)}
+			<Table.Row class="group">
+				{#each columns as col, j (col.key)}
+					<Table.Cell class="align-top whitespace-normal first:pl-4 {col.width}">
+						{#if j === 0 && href}
+							<a
+								{href}
+								class="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								{@render cell(col.cell(row))}
+							</a>
+						{:else}
+							{@render cell(col.cell(row))}
+						{/if}
+					</Table.Cell>
+				{/each}
+				<Table.Cell class="w-10 text-right align-top">
+					{#if onAbout}
+						<Hint text="Ask about this {noun}">
+							{#snippet child(props)}
+								<Button
+									{...props}
+									variant="ghost"
+									size="icon-xs"
+									class="text-muted-foreground opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100 hover:text-primary focus-visible:opacity-100"
+									onclick={() => onAbout(aboutRow(dimension, row), rowLabel(dimension, row))}
+									aria-label="Ask about this {noun}"
+								>
+									<Sparkles class="size-3.5" />
+								</Button>
+							{/snippet}
+						</Hint>
+					{/if}
+				</Table.Cell>
+			</Table.Row>
+		{/each}
+	</Table.Body>
+</Table.Root>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { REVEAL_SM, REVEAL } from '$lib/components/scans/results/table/columns';
 	import { excludeToken } from '$lib/utilities/scan-insights';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -82,9 +83,7 @@
 				{checked}
 				onCheckedChange={() => onCheck(row.id)}
 				aria-label="Select {row.kind_label}"
-				class="transition-opacity {checked
-					? 'opacity-100'
-					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+				class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 			/>
 		</div>
 	{/if}
@@ -92,10 +91,7 @@
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="truncate font-mono text-sm">{firstLine}</span>
-			<CopyButton
-				value={row.value}
-				class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-			/>
+			<CopyButton value={row.value} class="shrink-0 transition-opacity {REVEAL_SM}" />
 		</div>
 		<div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 			{#if row.is_new}
@@ -162,7 +158,7 @@
 						{...props}
 						variant="ghost"
 						size="icon"
-						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 						aria-label="Hide all {firstLine}"
 						onclick={(e) => {
 							e.stopPropagation();

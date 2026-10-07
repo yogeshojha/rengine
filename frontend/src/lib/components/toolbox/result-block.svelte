@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as Table from '$lib/components/ui/table';
 	import CodeBlock from '$lib/components/code-block.svelte';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
@@ -112,32 +112,26 @@
 	{:else if block.kind === 'table' && block.action}
 		<SelectableTable {block} {organization} {onLookup} {onNavigate} />
 	{:else if block.kind === 'table'}
-		<ScrollArea orientation="horizontal" class="w-full">
-			<table class="w-full min-w-full text-left">
-				<thead>
-					<tr class="border-b border-border bg-muted/20">
-						{#each block.columns as column (column)}
-							<th
-								class="px-2 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-							>
-								{column}
-							</th>
-						{/each}
-					</tr>
-				</thead>
-				<tbody>
-					{#each shownRows as row, i (i)}
-						<tr class="border-b border-border/60 last:border-0">
-							{#each row as c, j (j)}
-								<td class="px-2 py-1 align-top">
-									<ResultCell cell={c} {onLookup} {onNavigate} />
-								</td>
-							{/each}
-						</tr>
+		<Table.Root>
+			<Table.Header>
+				<Table.Row>
+					{#each block.columns as column (column)}
+						<Table.Head>{column}</Table.Head>
 					{/each}
-				</tbody>
-			</table>
-		</ScrollArea>
+				</Table.Row>
+			</Table.Header>
+			<Table.Body>
+				{#each shownRows as row, i (i)}
+					<Table.Row>
+						{#each row as c, j (j)}
+							<Table.Cell class="align-top whitespace-normal">
+								<ResultCell cell={c} {onLookup} {onNavigate} />
+							</Table.Cell>
+						{/each}
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
 		{#if folded > 0}
 			<button
 				type="button"

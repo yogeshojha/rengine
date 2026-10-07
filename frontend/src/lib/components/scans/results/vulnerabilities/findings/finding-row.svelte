@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { REVEAL_SM, REVEAL, rowPadding } from '$lib/components/scans/results/table/columns';
 	import { toast } from 'svelte-sonner';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -142,9 +143,9 @@
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
-		class="flex cursor-pointer items-center gap-3 px-4 hover:bg-muted/30 {compact
-			? 'py-1.5'
-			: 'py-2.5'}"
+		class="flex cursor-pointer items-center gap-3 px-4 hover:bg-muted/30 {rowPadding(
+			compact ? 'compact' : 'cozy'
+		)}"
 		role="row"
 		tabindex="-1"
 		data-vuln-row-index={index}
@@ -157,9 +158,7 @@
 				{checked}
 				onCheckedChange={onCheck}
 				aria-label="Select {v.template_name}"
-				class="transition-opacity {checked
-					? ''
-					: 'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100'}"
+				class="transition-opacity {checked ? '' : REVEAL_SM}"
 			/>
 		</div>
 
@@ -280,10 +279,7 @@
 					{/snippet}
 				</Hint>
 				<span class="flex h-5 shrink-0 items-center">
-					<CopyButton
-						value={v.matched_at}
-						class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-					/>
+					<CopyButton value={v.matched_at} class="shrink-0 transition-opacity {REVEAL}" />
 				</span>
 			</div>
 			{#if hostTotal > 1}

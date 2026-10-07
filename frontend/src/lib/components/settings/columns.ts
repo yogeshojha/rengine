@@ -60,10 +60,10 @@ export const USAGE_COL = {
 } as const;
 
 export const HEAD_ROW =
-	'flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase';
+	'flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase';
 
 export const BODY_ROW =
-	'flex items-center gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0';
+	'flex items-center gap-3 border-b border-border/60 px-4 py-2.5 transition-colors last:border-b-0 hover:bg-muted/30';
 
 export const GROUP_ROW =
 	'border-b border-border/60 bg-muted/10 px-4 pt-3 pb-1.5 text-2xs font-semibold tracking-[0.08em] text-muted-foreground uppercase';

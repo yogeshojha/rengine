@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { BODY_ROW, HEAD_ROW } from '$lib/components/settings/columns';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
@@ -50,20 +51,14 @@
 	</div>
 
 	<div class="@container/calls w-full" role="table" aria-label="Commands">
-		<div
-			class="flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-			role="row"
-		>
+		<div class={HEAD_ROW} role="row">
 			<div class={CALL_COL.time} role="columnheader">Time</div>
 			<div class={CALL_COL.chat} role="columnheader">Chat</div>
 			<div class={CALL_COL.command} role="columnheader">Command</div>
 			<div class={CALL_COL.result} role="columnheader">Result</div>
 		</div>
 		{#each rows as call, i (call.at + call.tool + i)}
-			<div
-				class="flex items-center gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0"
-				role="row"
-			>
+			<div class={BODY_ROW} role="row">
 				<div
 					class="{CALL_COL.time} text-xs leading-5 text-muted-foreground tabular-nums"
 					role="cell"

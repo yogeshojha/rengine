@@ -41,7 +41,8 @@
 		columnCell,
 		pinTone,
 		rowTone,
-		type TableColumn
+		type TableColumn,
+		REVEAL
 	} from '../table/columns';
 	import { IP_LEAD_COLUMNS } from './columns';
 	import RecheckChip from '../recheck-chip.svelte';
@@ -123,9 +124,7 @@
 			{checked}
 			onCheckedChange={() => onCheck(g.ip)}
 			aria-label="Select {g.ip}"
-			class="transition-opacity {checked
-				? 'opacity-100'
-				: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 		/>
 	</div>
 
@@ -200,10 +199,7 @@
 				</Tooltip.Root>
 			{/if}
 			<span class="hidden h-5 shrink-0 items-center sm:flex">
-				<CopyButton
-					value={g.ip}
-					class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-				/>
+				<CopyButton value={g.ip} class="transition-opacity {REVEAL}" />
 			</span>
 		</div>
 
@@ -383,7 +379,7 @@
 								{...props}
 								variant="ghost"
 								size="icon-sm"
-								class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+								class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 								onclick={(e) => {
 									stopProp(e);
 									onHosts(filterToken('ip', g.ip));
@@ -403,7 +399,7 @@
 						{...props}
 						variant="ghost"
 						size="icon-sm"
-						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 						aria-label="Hide all {g.ip}"
 						onclick={(e) => {
 							e.stopPropagation();

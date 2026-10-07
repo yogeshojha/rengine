@@ -11,7 +11,8 @@
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import { ISSUE_SKELETON, TRACKER_SKELETON } from '$lib/components/issue-trackers/columns';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -276,10 +277,10 @@
 			<Button size="sm" variant="outline" onclick={() => issueTrackers.load(true)}>Retry</Button>
 		</EmptyState>
 	{:else if !issueTrackers.loaded}
-		<Card.Root class="gap-3 p-4">
-			<Skeleton class="h-8 w-full" />
-			<Skeleton class="h-10 w-full" />
-			<Skeleton class="h-10 w-full" />
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<div class="@container/trackers w-full">
+				<TableSkeleton lead={TRACKER_SKELETON} rows={3} actions={false} />
+			</div>
 		</Card.Root>
 	{:else if !trackers.length}
 		<EmptyState icon={SquareKanbanIcon} title="No issue trackers">
@@ -320,9 +321,8 @@
 						{/if}
 					</EmptyState>
 				{:else if issueTrackers.issuesLoading && !issueTrackers.issues.length}
-					<div class="flex flex-col gap-2 p-4">
-						<Skeleton class="h-10 w-full" />
-						<Skeleton class="h-10 w-full" />
+					<div class="@container/issues w-full">
+						<TableSkeleton lead={ISSUE_SKELETON} rows={3} actions={false} />
 					</div>
 				{:else}
 					<FilterChips

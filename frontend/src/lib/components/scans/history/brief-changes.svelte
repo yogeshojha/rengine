@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as Table from '$lib/components/ui/table';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { compareApi } from '$lib/api/compare';
 	import ChangeBar from '$lib/components/scans/compare/change-bar.svelte';
@@ -109,47 +109,45 @@
 				{/each}
 			</div>
 		{/if}
-		<ScrollArea orientation="horizontal">
-			<table class="w-full min-w-[520px] text-xs">
-				<thead>
-					<tr class="text-left text-2xs tracking-wide text-muted-foreground uppercase">
-						<th class="py-1.5 pr-3 font-medium">Dimension</th>
-						<th class="w-40 py-1.5 pr-3 font-medium"></th>
-						<th class="py-1.5 pr-3 text-right font-medium">Appeared</th>
-						<th class="py-1.5 pr-3 text-right font-medium">Changed</th>
-						<th class="py-1.5 pr-3 text-right font-medium">Gone</th>
-						<th class="py-1.5 text-right font-medium">Now</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each data.dimensions as d (d.dimension)}
-						<tr class="border-t border-border/50">
-							<td class="py-1.5 pr-3">
-								<a href={ROUTES.compare(scan.id, data.baseline.scan_id)} class="hover:text-primary"
-									>{d.label}</a
-								>
-								{#if d.verdict.comparability !== COMPARABILITY.LIKE_FOR_LIKE}
-									<div class="text-2xs text-muted-foreground">{d.verdict.note}</div>
-								{/if}
-							</td>
-							<td class="py-1.5 pr-3"><ChangeBar delta={d} /></td>
-							<td
-								class="py-1.5 pr-3 text-right font-mono tabular-nums {d.appeared
-									? 'font-semibold'
-									: 'text-muted-foreground'}">{d.appeared ? `+${n(d.appeared)}` : '0'}</td
+		<Table.Root class="min-w-[520px] text-xs">
+			<Table.Header>
+				<Table.Row>
+					<Table.Head>Dimension</Table.Head>
+					<Table.Head class="w-40"><span class="sr-only">Change</span></Table.Head>
+					<Table.Head class="text-right">Appeared</Table.Head>
+					<Table.Head class="text-right">Changed</Table.Head>
+					<Table.Head class="text-right">Gone</Table.Head>
+					<Table.Head class="text-right">Now</Table.Head>
+				</Table.Row>
+			</Table.Header>
+			<Table.Body>
+				{#each data.dimensions as d (d.dimension)}
+					<Table.Row>
+						<Table.Cell class="whitespace-normal">
+							<a href={ROUTES.compare(scan.id, data.baseline.scan_id)} class="hover:text-primary"
+								>{d.label}</a
 							>
-							<td class="py-1.5 pr-3 text-right font-mono tabular-nums text-muted-foreground"
-								>{n(d.changed)}</td
-							>
-							<td class="py-1.5 pr-3 text-right font-mono tabular-nums text-muted-foreground"
-								>{d.disappeared ? `−${n(d.disappeared)}` : '0'}</td
-							>
-							<td class="py-1.5 text-right font-mono tabular-nums">{n(d.total_current)}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</ScrollArea>
+							{#if d.verdict.comparability !== COMPARABILITY.LIKE_FOR_LIKE}
+								<div class="text-2xs text-muted-foreground">{d.verdict.note}</div>
+							{/if}
+						</Table.Cell>
+						<Table.Cell><ChangeBar delta={d} /></Table.Cell>
+						<Table.Cell
+							class="text-right font-mono tabular-nums {d.appeared
+								? 'font-semibold'
+								: 'text-muted-foreground'}">{d.appeared ? `+${n(d.appeared)}` : '0'}</Table.Cell
+						>
+						<Table.Cell class="text-right font-mono text-muted-foreground tabular-nums"
+							>{n(d.changed)}</Table.Cell
+						>
+						<Table.Cell class="text-right font-mono text-muted-foreground tabular-nums"
+							>{d.disappeared ? `−${n(d.disappeared)}` : '0'}</Table.Cell
+						>
+						<Table.Cell class="text-right font-mono tabular-nums">{n(d.total_current)}</Table.Cell>
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
 		<a
 			href={ROUTES.compare(scan.id, data.baseline.scan_id)}
 			class="px-1 text-xs text-primary hover:text-primary/80"

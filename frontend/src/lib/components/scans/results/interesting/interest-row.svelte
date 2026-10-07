@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { REVEAL } from '$lib/components/scans/results/table/columns';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
 	import X from '@lucide/svelte/icons/x';
@@ -54,9 +55,7 @@
 				{checked}
 				onCheckedChange={() => onCheck(row)}
 				aria-label="Select {row.host}"
-				class="transition-opacity {checked
-					? 'opacity-100'
-					: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+				class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 			/>
 		</span>
 	{/if}

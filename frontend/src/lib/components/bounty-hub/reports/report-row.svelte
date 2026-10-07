@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { rowPadding } from '$lib/components/scans/results/table/columns';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
@@ -91,28 +92,30 @@
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
-		class="flex cursor-pointer items-center gap-3 px-4 {compact
-			? 'py-1.5'
-			: 'py-2.5'} hover:bg-muted/30"
+		class="flex cursor-pointer items-center gap-3 px-4 {rowPadding(
+			compact ? 'compact' : 'cozy'
+		)} hover:bg-muted/30"
 		role="row"
 		tabindex="-1"
 		onclick={onToggle}
 	>
 		<div role="cell" class={RCOL.report}>
 			<div class="flex min-w-0 items-center gap-1.5">
-				<span class="truncate text-sm font-medium">{report.title}</span>
+				<span class="truncate text-sm font-medium" title={report.title}>{report.title}</span>
 			</div>
 			<div
 				class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-2xs text-muted-foreground"
 			>
 				<span class="font-mono">#{report.external_id}</span>
 				{#if report.weakness}
-					<span class="truncate">{report.weakness}</span>
+					<span class="truncate" title={report.weakness}>{report.weakness}</span>
 				{/if}
 				{#if report.asset_identifier}
-					<span class="truncate font-mono">{report.asset_identifier}</span>
+					<span class="truncate font-mono" title={report.asset_identifier}
+						>{report.asset_identifier}</span
+					>
 				{/if}
-				<span class="truncate md:hidden">{programName}</span>
+				<span class="truncate md:hidden" title={programName}>{programName}</span>
 			</div>
 		</div>
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -123,6 +126,7 @@
 					target={report.program_in_hub ? undefined : '_blank'}
 					rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
 					class="block truncate text-sm hover:text-primary"
+					title={programName}
 				>
 					{programName}
 				</a>
@@ -251,7 +255,7 @@
 									<span class="size-[7px] rounded-full" style="background: {s.tone}"></span>
 								</span>
 								<span class="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm">
-									<span class="truncate">{s.label}</span>
+									<span class="truncate" title={s.label}>{s.label}</span>
 									<span class="shrink-0 font-mono text-2xs text-muted-foreground">
 										{formatShortDate(s.at!)}
 									</span>
@@ -275,7 +279,8 @@
 									href={programHref}
 									target={report.program_in_hub ? undefined : '_blank'}
 									rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
-									class="truncate text-sm font-medium hover:text-primary">{programName}</a
+									class="truncate text-sm font-medium hover:text-primary"
+									title={programName}>{programName}</a
 								>
 							{/if}
 							<span class="font-mono text-2xs text-muted-foreground">@{report.program_handle}</span>
@@ -319,6 +324,7 @@
 								<button
 									type="button"
 									class="truncate text-left hover:text-primary"
+									title={report.weakness}
 									onclick={() => onSearch(report.weakness!)}>{report.weakness}</button
 								>
 							</dd>
@@ -329,6 +335,7 @@
 								<button
 									type="button"
 									class="truncate text-left font-mono text-xs hover:text-primary"
+									title={report.asset_identifier}
 									onclick={() => onSearch(report.asset_identifier!)}
 									>{report.asset_identifier}</button
 								>

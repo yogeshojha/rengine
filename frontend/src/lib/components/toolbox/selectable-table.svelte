@@ -2,9 +2,9 @@
 	import { untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as Table from '$lib/components/ui/table';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 	import LoadingButton from '$lib/components/loading-button.svelte';
@@ -170,17 +170,10 @@
 <div class="space-y-2">
 	{#if block.rows.length > SELECT_FILTER_AT}
 		<div class="flex items-center gap-2">
-			<div class="relative max-w-xs flex-1">
-				<Search
-					class="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
-				/>
-				<Input
-					bind:value={query}
-					placeholder="Filter"
-					aria-label="Filter rows"
-					class="h-7 pl-7 text-xs"
-				/>
-			</div>
+			<InputGroup.Root class="max-w-xs flex-1">
+				<InputGroup.Addon><Search class="size-4" /></InputGroup.Addon>
+				<InputGroup.Input bind:value={query} placeholder="Filter" aria-label="Filter rows" />
+			</InputGroup.Root>
 			{#if needle}
 				<span class="font-mono text-2xs text-muted-foreground">
 					{filtered.length} of {entries.length}
@@ -189,66 +182,56 @@
 		</div>
 	{/if}
 
-	<ScrollArea orientation="horizontal" class="w-full">
-		<table class="w-full min-w-full text-left">
-			<thead>
-				<tr class="border-b border-border bg-muted/20">
-					<th class="w-6 py-2 pl-2 align-middle">
-						<Checkbox
-							checked={allPicked}
-							indeterminate={somePicked}
-							disabled={pickable.length === 0}
-							onCheckedChange={toggleAll}
-							aria-label="Select all rows"
-						/>
-					</th>
-					{#each block.columns as column (column)}
-						<th
-							class="px-2 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-						>
-							{column}
-						</th>
-					{/each}
-				</tr>
-			</thead>
-			<tbody>
-				{#each visible as entry, i (entry.key ?? `row:${i}`)}
-					{@const done = entry.key !== null ? added.get(entry.key) : undefined}
-					<tr
-						class="border-b border-border/60 last:border-0 {entry.key && picked.has(entry.key)
-							? 'bg-muted/40'
-							: ''}"
-					>
-						<td class="py-1 pl-2 align-top">
-							<span class="flex h-5 items-center">
-								{#if done}
-									<CircleCheck
-										class="size-4 {done.existed ? 'text-muted-foreground' : 'text-success'}"
-										aria-label={done.existed ? 'Already a target' : 'Added as a target'}
-									/>
-								{:else if entry.key !== null}
-									<Checkbox
-										checked={picked.has(entry.key)}
-										onCheckedChange={(on) => toggle(entry.key as string, on === true)}
-										aria-label="Select {entry.key}"
-									/>
-								{/if}
-							</span>
-						</td>
-						{#each entry.cells as cell, j (j)}
-							<td class="px-2 py-1 align-top">
-								<ResultCell
-									cell={done && j === entry.cells.length - 1 ? tracked(done) : cell}
-									{onLookup}
-									{onNavigate}
-								/>
-							</td>
-						{/each}
-					</tr>
+	<Table.Root>
+		<Table.Header>
+			<Table.Row>
+				<Table.Head class="w-6 pl-3">
+					<Checkbox
+						checked={allPicked}
+						indeterminate={somePicked}
+						disabled={pickable.length === 0}
+						onCheckedChange={toggleAll}
+						aria-label="Select all rows"
+					/>
+				</Table.Head>
+				{#each block.columns as column (column)}
+					<Table.Head>{column}</Table.Head>
 				{/each}
-			</tbody>
-		</table>
-	</ScrollArea>
+			</Table.Row>
+		</Table.Header>
+		<Table.Body>
+			{#each visible as entry, i (entry.key ?? `row:${i}`)}
+				{@const done = entry.key !== null ? added.get(entry.key) : undefined}
+				<Table.Row data-state={entry.key && picked.has(entry.key) ? 'selected' : undefined}>
+					<Table.Cell class="pl-3 align-top">
+						<span class="flex h-5 items-center">
+							{#if done}
+								<CircleCheck
+									class="size-4 {done.existed ? 'text-muted-foreground' : 'text-success'}"
+									aria-label={done.existed ? 'Already a target' : 'Added as a target'}
+								/>
+							{:else if entry.key !== null}
+								<Checkbox
+									checked={picked.has(entry.key)}
+									onCheckedChange={(on) => toggle(entry.key as string, on === true)}
+									aria-label="Select {entry.key}"
+								/>
+							{/if}
+						</span>
+					</Table.Cell>
+					{#each entry.cells as cell, j (j)}
+						<Table.Cell class="align-top whitespace-normal">
+							<ResultCell
+								cell={done && j === entry.cells.length - 1 ? tracked(done) : cell}
+								{onLookup}
+								{onNavigate}
+							/>
+						</Table.Cell>
+					{/each}
+				</Table.Row>
+			{/each}
+		</Table.Body>
+	</Table.Root>
 
 	{#if filtered.length === 0}
 		<p class="text-sm text-muted-foreground">No rows match the filter.</p>

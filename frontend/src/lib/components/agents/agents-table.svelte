@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { BODY_ROW, HEAD_ROW } from '$lib/components/settings/columns';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
@@ -44,10 +45,7 @@
 </script>
 
 <div class="@container/agents w-full" role="table" aria-label="Agents">
-	<div
-		class="flex items-center gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-		role="row"
-	>
+	<div class={HEAD_ROW} role="row">
 		<div class={AGENT_COL.agent} role="columnheader">Agent</div>
 		<div class={AGENT_COL.access} role="columnheader">Access</div>
 		<div class={AGENT_COL.scope} role="columnheader">Scope</div>
@@ -62,12 +60,7 @@
 		{@const client = token.last_client ? parseClient(token.last_client) : null}
 		{@const top = MCP_CAPABILITIES[ladderLevel(token.capabilities)]}
 		{@const tone = expiryTone(token)}
-		<div
-			class="flex items-center gap-4 border-b border-border/60 px-4 py-2.5 last:border-b-0 {usable
-				? ''
-				: 'text-muted-foreground'}"
-			role="row"
-		>
+		<div class="{BODY_ROW} {usable ? '' : 'text-muted-foreground'}" role="row">
 			<div class="{AGENT_COL.agent} flex items-start gap-2.5" role="cell">
 				<span class="flex h-5 shrink-0 items-center">
 					<span class="size-2 rounded-full {AGENT_PRESENCE_DOT[presence]}" aria-hidden="true"

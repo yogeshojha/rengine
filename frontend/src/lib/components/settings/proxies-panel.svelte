@@ -14,7 +14,6 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
@@ -284,7 +283,10 @@
 						</span>
 					</div>
 					<div class="{PROXY_COL.endpoint} flex min-w-0 flex-col" role="cell">
-						<code class="truncate font-mono text-xs text-muted-foreground">
+						<code
+							class="truncate font-mono text-xs text-muted-foreground"
+							title={proxy.endpoints[0]?.url_masked}
+						>
 							{proxy.endpoints[0]?.url_masked ?? ''}
 						</code>
 						{#if proxy.endpoint_count > 1}
@@ -365,9 +367,7 @@
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{editing ? 'Edit proxy' : 'Add proxy'}</Dialog.Title>
 		</Dialog.Header>
-		<ScrollArea
-			class="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
-		>
+		<div class="min-h-0 flex-1 overflow-y-auto">
 			<div class="flex flex-col gap-5 px-6 py-5">
 				<div class="grid gap-4 sm:grid-cols-2">
 					<FormField label="Name" error={nameError}>
@@ -505,7 +505,7 @@
 					<Switch id="proxy-default" bind:checked={asDefault} disabled={saving} />
 				</label>
 			</div>
-		</ScrollArea>
+		</div>
 		<Dialog.Footer class="border-t px-6 py-4">
 			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
 			<LoadingButton loading={saving} loadingLabel="Saving" onclick={save}>

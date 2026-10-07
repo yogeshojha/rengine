@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { rowPadding } from '$lib/components/scans/results/table/columns';
 	import { TCOL } from './columns';
 	import { targetPrefs } from './prefs.svelte';
 
 	const NAME = ['w-44', 'w-36', 'w-52', 'w-40', 'w-32', 'w-48'];
 	const ROWS = 8;
+
+	let pad = $derived(rowPadding(targetPrefs.density));
 </script>
 
 <div class="@container/targets w-full" aria-busy="true" bind:clientWidth={targetPrefs.width}>
@@ -22,7 +25,7 @@
 		<div class={TCOL.actions}></div>
 	</div>
 	{#each { length: ROWS } as _, i (i)}
-		<div class="flex items-center gap-3 border-b border-border/60 px-4 py-2.5">
+		<div class="flex items-center gap-3 border-b border-border/60 px-4 {pad}">
 			<div class="{TCOL.select} h-6"><Skeleton class="size-4 rounded-[4px]" /></div>
 			<div class="{TCOL.target} flex flex-col gap-1.5">
 				<Skeleton class="h-4 {NAME[i % NAME.length]}" />

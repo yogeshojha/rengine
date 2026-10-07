@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { REVEAL_SM } from '$lib/components/scans/results/table/columns';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import { STALE_DAYS } from '$lib/config/dashboard';
@@ -37,13 +38,16 @@
 <div class="flex min-w-0 items-center gap-3">
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-1.5">
-			<span class="truncate font-mono text-sm font-medium">
+			<span
+				class="truncate font-mono text-sm font-medium"
+				title={showTarget ? scan.execution_config.target_value : scan.engine_name}
+			>
 				{showTarget ? scan.execution_config.target_value : scan.engine_name}
 			</span>
 			{#if showTarget}
 				<CopyButton
 					value={scan.execution_config.target_value}
-					class="shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+					class="shrink-0 transition-opacity {REVEAL_SM}"
 				/>
 			{/if}
 		</div>
@@ -59,7 +63,7 @@
 				<span>Focused · {plural(scan.seed_count, 'asset')}</span>
 			{/if}
 			{#if scan.context_name}
-				<span class="truncate">{scan.context_name}</span>
+				<span class="truncate" title={scan.context_name}>{scan.context_name}</span>
 			{/if}
 			{#if schedule}
 				<span>{schedule}</span>

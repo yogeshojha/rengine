@@ -22,6 +22,13 @@ export interface SortOption {
 	label: string;
 }
 
+/** Hover-revealed row control; always visible on touch (no hover) and on keyboard focus. */
+export const REVEAL =
+	'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100';
+/** Like REVEAL, but only hidden from the sm breakpoint up. */
+export const REVEAL_SM =
+	'sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 pointer-coarse:opacity-100';
+
 export const ACTIONS_PIN = 'sticky right-0 z-10 ml-auto shrink-0 self-stretch bg-card';
 export const ACTIONS_BODY =
 	'flex h-full w-8 items-center justify-end gap-0.5 transition-colors sm:w-[5.75rem]';

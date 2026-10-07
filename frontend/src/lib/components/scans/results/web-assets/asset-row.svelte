@@ -79,7 +79,14 @@
 	import RecheckChip from '../recheck-chip.svelte';
 	import type { ServiceRead } from '$lib/utilities/services';
 	import { externalHref } from '$lib/utilities/links';
-	import { ACTIONS_BODY, ACTIONS_PIN, pinTone, rowTone, type TableColumn } from '../table/columns';
+	import {
+		ACTIONS_BODY,
+		ACTIONS_PIN,
+		pinTone,
+		rowTone,
+		type TableColumn,
+		REVEAL
+	} from '../table/columns';
 	import { WEB_ASSET_LEAD_COLUMNS } from './columns';
 
 	interface Props {
@@ -267,9 +274,7 @@
 			{checked}
 			onCheckedChange={() => onCheck(s.id)}
 			aria-label="Select {s.name}"
-			class="transition-opacity {checked
-				? 'opacity-100'
-				: 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}"
+			class="transition-opacity {checked ? 'opacity-100' : REVEAL}"
 		/>
 	</div>
 
@@ -373,10 +378,7 @@
 				</Tooltip.Root>
 			{/if}
 			<span class="hidden h-5 shrink-0 items-center sm:flex">
-				<CopyButton
-					value={s.name}
-					class="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-				/>
+				<CopyButton value={s.name} class="transition-opacity {REVEAL}" />
 			</span>
 		</div>
 
@@ -807,7 +809,7 @@
 				<Button
 					variant="ghost"
 					size="icon"
-					class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+					class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 					href={externalHref(s.http_url)}
 					target="_blank"
 					rel="noreferrer noopener"
@@ -822,7 +824,7 @@
 						{...props}
 						variant="ghost"
 						size="icon"
-						class="hidden size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
+						class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
 						aria-label="Hide all {s.name}"
 						onclick={(e) => {
 							e.stopPropagation();

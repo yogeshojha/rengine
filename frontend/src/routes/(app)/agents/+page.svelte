@@ -8,7 +8,8 @@
 	import BotIcon from '@lucide/svelte/icons/bot';
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import { AGENT_SKELETON } from '$lib/components/agents/columns';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -147,10 +148,10 @@
 	{#if !canAdmin}
 		<EmptyState icon={BotIcon} title="Agents are managed by administrators" />
 	{:else if !status || !mcp.tokensLoaded}
-		<Card.Root class="gap-3 p-4">
-			<Skeleton class="h-8 w-full" />
-			<Skeleton class="h-10 w-full" />
-			<Skeleton class="h-10 w-full" />
+		<Card.Root class="gap-0 overflow-hidden py-0">
+			<div class="@container/agents w-full">
+				<TableSkeleton lead={AGENT_SKELETON} rows={3} actions={false} />
+			</div>
 		</Card.Root>
 	{:else if !tokens.length}
 		<EmptyState icon={BotIcon} title="No agents">
