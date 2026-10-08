@@ -132,7 +132,7 @@
 	);
 </script>
 
-<div class="max-w-5xl space-y-6">
+<div class="space-y-6">
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<Card.Header class="border-b px-4 py-5">
 			<Card.Title>Wordlists</Card.Title>

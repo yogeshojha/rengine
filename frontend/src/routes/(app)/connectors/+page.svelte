@@ -200,7 +200,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels.connectors)}</title></svelte:head>
 
-<div class="flex w-full max-w-5xl flex-col gap-6">
+<div class="flex flex-col gap-6">
 	<PageHeader
 		title={routeLabels.connectors}
 		description="Proxy traffic from Burp Suite, compared with what scans found"

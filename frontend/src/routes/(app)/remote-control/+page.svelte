@@ -145,7 +145,7 @@
 			</div>
 		</Card.Root>
 	{:else}
-		<Card.Root class="gap-0 overflow-hidden py-0 {status.configured ? '' : 'w-full max-w-xl'}">
+		<Card.Root class="gap-0 overflow-hidden py-0">
 			{#if !status.configured}
 				<ConnectPanel {channel} label={status.label} {canAdmin} />
 			{:else}

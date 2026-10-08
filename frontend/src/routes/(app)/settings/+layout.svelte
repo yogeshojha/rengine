@@ -41,7 +41,7 @@
 	);
 </script>
 
-<div class="flex w-full max-w-5xl flex-col gap-6">
+<div class="flex flex-col gap-6">
 	<PageHeader title={routeLabels.settings} description="Instance-wide configuration" />
 
 	<div class="flex flex-wrap items-center justify-between gap-3 border-b">

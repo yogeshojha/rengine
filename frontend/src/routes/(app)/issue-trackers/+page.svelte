@@ -242,7 +242,7 @@
 
 <svelte:head><title>{pageTitle(routeLabels['issue-trackers'])}</title></svelte:head>
 
-<div class="flex w-full max-w-5xl flex-col gap-6">
+<div class="flex flex-col gap-6">
 	<PageHeader
 		title={routeLabels['issue-trackers']}
 		description="File findings as issues in Jira, GitHub or GitLab"
