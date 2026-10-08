@@ -12,7 +12,7 @@
 </script>
 
 <div
-	class="grid grid-cols-[6rem_minmax(0,1fr)] border-t last:border-b sm:grid-cols-[8rem_minmax(0,1fr)]"
+	class="grid grid-cols-[6rem_minmax(0,1fr)] border-t first:border-t-0 sm:grid-cols-[8rem_minmax(0,1fr)]"
 >
 	<div class="flex flex-col gap-0.5 py-2.5 pr-3">
 		<span class="text-xs font-medium {mono ? 'font-mono' : ''}">{label}</span>

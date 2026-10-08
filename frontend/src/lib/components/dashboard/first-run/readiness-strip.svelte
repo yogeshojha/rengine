@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
@@ -10,9 +12,11 @@
 
 	interface Props {
 		readiness: DashboardReadiness | null;
+		failed?: boolean;
+		onRetry?: () => void;
 	}
 
-	let { readiness }: Props = $props();
+	let { readiness, failed = false, onRetry }: Props = $props();
 
 	let syncing = $state(false);
 	let downloading = $state(false);
@@ -43,7 +47,16 @@
 	}
 </script>
 
-{#if !readiness}
+{#if !readiness && failed}
+	<div class="flex flex-wrap items-center gap-x-2 gap-y-1 border-t px-5 py-3 text-sm">
+		<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
+		<span class="text-muted-foreground">Readiness not loaded</span>
+		{#if onRetry}
+			<span class="text-muted-foreground" aria-hidden="true">·</span>
+			<Button variant="link" size="sm" class="h-auto p-0" onclick={onRetry}>Retry</Button>
+		{/if}
+	</div>
+{:else if !readiness}
 	<div class="flex items-center gap-3 border-t px-5 py-3">
 		<Skeleton class="size-2 rounded-full" />
 		<Skeleton class="h-4 w-72" />

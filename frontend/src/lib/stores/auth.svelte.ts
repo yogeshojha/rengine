@@ -1,6 +1,6 @@
 import { toast } from 'svelte-sonner';
 import { authApi, type User } from '$lib/api/auth';
-import { retryTransient } from '$lib/api/client';
+import { isTransient, NO_RESPONSE, retryTransient } from '$lib/api/client';
 import { watchesStore } from '$lib/stores/watches.svelte';
 import { whatsNewStore } from '$lib/stores/whats-new.svelte';
 import { projectsStore } from '$lib/stores/projects.svelte';
@@ -52,23 +52,28 @@ interface AuthState {
 	user: User | null;
 	isAuthenticated: boolean;
 	isLoading: boolean;
+	/** The session could not be checked because the server failed, not because it is over. */
+	unreachable: string | null;
 }
 
 function createAuthStore() {
 	const state = $state<AuthState>({
 		user: null,
 		isAuthenticated: false,
-		isLoading: true
+		isLoading: true,
+		unreachable: null
 	});
 
-	async function checkAuth() {
+	async function checkAuth(delays: readonly number[] = SESSION_RETRY_MS) {
 		state.isLoading = true;
 		try {
-			state.user = await retryTransient(() => authApi.me(), SESSION_RETRY_MS);
+			state.user = await retryTransient(() => authApi.me(), delays);
 			state.isAuthenticated = true;
-		} catch {
+			state.unreachable = null;
+		} catch (e) {
 			state.user = null;
 			state.isAuthenticated = false;
+			state.unreachable = isTransient(e) ? (e instanceof Error ? e.message : NO_RESPONSE) : null;
 		} finally {
 			state.isLoading = false;
 		}
@@ -114,6 +119,7 @@ function createAuthStore() {
 	function clearSession() {
 		state.user = null;
 		state.isAuthenticated = false;
+		state.unreachable = null;
 		projectsStore.clear();
 		watchesStore.clear();
 		whatsNewStore.clear();
@@ -166,6 +172,9 @@ function createAuthStore() {
 		},
 		get isLoading() {
 			return state.isLoading;
+		},
+		get unreachable() {
+			return state.unreachable;
 		},
 		checkAuth,
 		refreshUser,

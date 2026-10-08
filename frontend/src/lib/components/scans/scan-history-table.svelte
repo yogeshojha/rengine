@@ -18,6 +18,8 @@
 
 	import * as Card from '$lib/components/ui/card';
 	import * as Empty from '$lib/components/ui/empty';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import type { TableColumn } from '$lib/components/scans/results/table/columns';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -150,6 +152,30 @@
 	let parseError = $derived(scansStore.parsed.error);
 	let days = $derived(scansStore.days);
 	let windowTotals = $derived(scansStore.daily?.window ?? null);
+	let loadFailed = $derived(!!scansStore.loadError && scans.length === 0);
+	// no runs at all and nothing narrowing the list: the empty state is the whole card
+	let empty = $derived(
+		scansStore.hasFetched && !loadFailed && pagination.totalItems === 0 && !filtered
+	);
+	let skeletonColumns = $derived<TableColumn[]>([
+		{ key: 'target', label: targetId ? 'Engine' : 'Target', width: COL.target },
+		{ key: 'status', label: 'Status', width: COL.status },
+		{ key: 'findings', label: 'Findings', width: COL.findings },
+		...(historyPrefs.shows('assets')
+			? [{ key: 'assets', label: 'Assets', width: COL.assets }]
+			: []),
+		...(historyPrefs.shows('change')
+			? [{ key: 'change', label: 'Change', width: COL.change }]
+			: []),
+		...(!targetId && historyPrefs.shows('engine')
+			? [{ key: 'engine', label: 'Engine', width: COL.engine }]
+			: []),
+		...(historyPrefs.shows('duration')
+			? [{ key: 'duration', label: 'Duration', width: COL.duration, align: 'right' as const }]
+			: []),
+		{ key: 'started', label: 'Started', width: COL.started, align: 'right' },
+		{ key: 'actions', label: '', width: COL.actions, align: 'right' }
+	]);
 	let windowRuns = $derived(windowTotals?.runs ?? 0);
 	let byStatus = $derived(scansStore.stats?.by_status);
 	let openCount = $derived(byStatus ? byStatus.running + byStatus.pending + byStatus.paused : 0);
@@ -513,289 +539,322 @@
 	</Badge>
 {/snippet}
 
+{#snippet unknown(failed: boolean, width: string)}
+	{#if failed}
+		<span class="text-muted-foreground" title="Not loaded">—</span>
+	{:else}
+		<Skeleton class="h-6 {width}" />
+	{/if}
+{/snippet}
+
 <Card.Root class="gap-0 overflow-hidden py-0">
-	<!-- strip -->
-	<div class="grid gap-x-8 gap-y-4 border-b px-4 py-4 lg:grid-cols-[auto_minmax(0,1fr)]">
-		<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
-			<div class="flex flex-col gap-0.5">
-				<span class="text-2xs tracking-wide text-muted-foreground uppercase"
-					>Runs · {HISTORY_DAYS} days</span
-				>
-				<span class="font-mono text-2xl font-semibold tabular-nums"
-					>{windowRuns.toLocaleString()}</span
-				>
-			</div>
-			<div class="flex flex-col gap-0.5">
-				<span class="text-2xs tracking-wide text-muted-foreground uppercase">Running now</span>
-				<span class="flex items-center gap-2 font-mono text-2xl font-semibold tabular-nums">
-					{byStatus?.running ?? 0}
-					{#if (byStatus?.running ?? 0) > 0}
-						<span class="size-2 rounded-full bg-info" aria-hidden="true"></span>
-					{/if}
-				</span>
-				<span class="text-2xs text-muted-foreground">
-					{byStatus?.pending ?? 0} queued · {byStatus?.paused ?? 0} paused
-				</span>
-			</div>
-			<div class="flex flex-col gap-1">
-				<span class="text-2xs tracking-wide text-muted-foreground uppercase"
-					>Runs with findings · {HISTORY_DAYS} days</span
-				>
-				<div class="flex items-center gap-1.5">
-					{#each sevRuns as s (s.sev)}
-						<SevCountChip
-							severity={s.sev}
-							count={s.n}
-							pressed={s.active}
-							aria-label="Runs with {SEVERITY_LABELS[s.sev].toLowerCase()} findings: {s.n}"
-							onclick={() => toggleSeverity(s.sev)}
-						/>
-					{/each}
+	{#if !empty}
+		<!-- strip -->
+		<div class="grid gap-x-8 gap-y-4 border-b px-4 py-4 lg:grid-cols-[auto_minmax(0,1fr)]">
+			<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
+				<div class="flex flex-col gap-0.5">
+					<span class="text-2xs tracking-wide text-muted-foreground uppercase"
+						>Runs · {HISTORY_DAYS} days</span
+					>
+					<span class="flex h-8 items-center font-mono text-2xl font-semibold tabular-nums">
+						{#if windowTotals}
+							{windowRuns.toLocaleString()}
+						{:else}
+							{@render unknown(scansStore.dailyFailed, 'w-12')}
+						{/if}
+					</span>
+				</div>
+				<div class="flex flex-col gap-0.5">
+					<span class="text-2xs tracking-wide text-muted-foreground uppercase">Running now</span>
+					<span class="flex h-8 items-center gap-2 font-mono text-2xl font-semibold tabular-nums">
+						{#if byStatus}
+							{byStatus.running}
+							{#if byStatus.running > 0}
+								<span class="size-2 rounded-full bg-info" aria-hidden="true"></span>
+							{/if}
+						{:else}
+							{@render unknown(scansStore.statsFailed, 'w-8')}
+						{/if}
+					</span>
+					<span class="flex h-4 items-center text-2xs text-muted-foreground">
+						{#if byStatus}
+							{byStatus.pending} queued · {byStatus.paused} paused
+						{:else if !scansStore.statsFailed}
+							<Skeleton class="h-3 w-24" />
+						{/if}
+					</span>
+				</div>
+				<div class="flex flex-col gap-1">
+					<span class="text-2xs tracking-wide text-muted-foreground uppercase"
+						>Runs with findings · {HISTORY_DAYS} days</span
+					>
+					<div class="flex h-8 items-center gap-1.5">
+						{#if windowTotals}
+							{#each sevRuns as s (s.sev)}
+								<SevCountChip
+									severity={s.sev}
+									count={s.n}
+									pressed={s.active}
+									aria-label="Runs with {SEVERITY_LABELS[s.sev].toLowerCase()} findings: {s.n}"
+									onclick={() => toggleSeverity(s.sev)}
+								/>
+							{/each}
+						{:else if scansStore.dailyFailed}
+							<span
+								class="font-mono text-2xl font-semibold text-muted-foreground"
+								title="Not loaded">—</span
+							>
+						{:else}
+							{#each sevRuns as s (s.sev)}
+								<Skeleton class="h-8 w-20 rounded-md" />
+							{/each}
+						{/if}
+					</div>
 				</div>
 			</div>
+			<HistoryChart
+				{days}
+				from={scansStore.filters.startedFrom}
+				to={scansStore.filters.startedTo}
+				onRange={(f, t) => scansStore.setRange(f, t)}
+			/>
 		</div>
-		<HistoryChart
-			{days}
-			from={scansStore.filters.startedFrom}
-			to={scansStore.filters.startedTo}
-			onRange={(f, t) => scansStore.setRange(f, t)}
-		/>
-	</div>
 
-	<!-- tabs -->
-	<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
-		<ScanStatusTabs
-			active={statusTab}
-			counts={scansStore.stats?.by_status ?? null}
-			total={scansStore.stats?.total ?? 0}
-			onChange={(tab) =>
-				scansStore.setStatuses(SCAN_STATUS_TABS.find((t) => t.key === tab)?.statuses ?? [])}
-		/>
-		{#if !targetId}
-			<ToggleGroup.Root
-				type="single"
-				variant="outline"
-				size="sm"
-				value={latest ? 'latest' : 'all'}
-				onValueChange={(v) => v && scansStore.setLatest(v === 'latest')}
-				aria-label="View"
-				class="my-1.5"
-			>
-				<ToggleGroup.Item value="all" class="px-3 text-xs">All runs</ToggleGroup.Item>
-				<ToggleGroup.Item value="latest" class="px-3 text-xs">Latest per target</ToggleGroup.Item>
-			</ToggleGroup.Root>
-		{/if}
-	</div>
-
-	<!-- filters -->
-	<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
-		<div class="flex min-w-[240px] flex-1 flex-col gap-1">
-			<InputGroup.Root>
-				<InputGroup.Addon><Search /></InputGroup.Addon>
-				<InputGroup.Input
-					bind:ref={searchEl}
-					id="scan-history-search"
-					class="font-mono placeholder:font-sans"
-					placeholder={targetId
-						? 'engine:default severity:critical status:failed is:added'
-						: 'target:acme severity:critical status:failed is:added'}
-					value={queryText}
-					oninput={(e) => setQuery(e.currentTarget.value)}
-					onkeydown={(e) => {
-						if (e.key === 'Enter') setQuery(queryText, true);
-						if (e.key === 'Escape') e.currentTarget.blur();
-					}}
-					aria-label="Search runs"
-					aria-invalid={!!parseError}
-					aria-describedby={parseError ? 'scan-history-search-error' : undefined}
-				/>
-				<InputGroup.Addon align="inline-end">
-					{#if queryText}
-						<InputGroup.Button
-							size="icon-xs"
-							aria-label="Clear search"
-							onclick={() => setQuery('', true)}><X /></InputGroup.Button
-						>
-					{:else}
-						<Kbd class="hidden sm:inline-flex">/</Kbd>
-					{/if}
-				</InputGroup.Addon>
-			</InputGroup.Root>
-			{#if parseError}
-				<p id="scan-history-search-error" class="text-2xs text-destructive">{parseError}</p>
+		<!-- tabs -->
+		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
+			<ScanStatusTabs
+				active={statusTab}
+				counts={scansStore.stats?.by_status ?? null}
+				total={scansStore.stats?.total ?? 0}
+				onChange={(tab) =>
+					scansStore.setStatuses(SCAN_STATUS_TABS.find((t) => t.key === tab)?.statuses ?? [])}
+			/>
+			{#if !targetId}
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					size="sm"
+					value={latest ? 'latest' : 'all'}
+					onValueChange={(v) => v && scansStore.setLatest(v === 'latest')}
+					aria-label="View"
+					class="my-1.5"
+				>
+					<ToggleGroup.Item value="all" class="px-3 text-xs">All runs</ToggleGroup.Item>
+					<ToggleGroup.Item value="latest" class="px-3 text-xs">Latest per target</ToggleGroup.Item>
+				</ToggleGroup.Root>
 			{/if}
 		</div>
-		<div class="flex flex-wrap items-center gap-2">
-			{#if scansStore.stats?.engines?.length}
+
+		<!-- filters -->
+		<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
+			<div class="flex min-w-[240px] flex-1 flex-col gap-1">
+				<InputGroup.Root>
+					<InputGroup.Addon><Search /></InputGroup.Addon>
+					<InputGroup.Input
+						bind:ref={searchEl}
+						id="scan-history-search"
+						class="font-mono placeholder:font-sans"
+						placeholder={targetId
+							? 'engine:default severity:critical status:failed is:added'
+							: 'target:acme severity:critical status:failed is:added'}
+						value={queryText}
+						oninput={(e) => setQuery(e.currentTarget.value)}
+						onkeydown={(e) => {
+							if (e.key === 'Enter') setQuery(queryText, true);
+							if (e.key === 'Escape') e.currentTarget.blur();
+						}}
+						aria-label="Search runs"
+						aria-invalid={!!parseError}
+						aria-describedby={parseError ? 'scan-history-search-error' : undefined}
+					/>
+					<InputGroup.Addon align="inline-end">
+						{#if queryText}
+							<InputGroup.Button
+								size="icon-xs"
+								aria-label="Clear search"
+								onclick={() => setQuery('', true)}><X /></InputGroup.Button
+							>
+						{:else}
+							<Kbd class="hidden sm:inline-flex">/</Kbd>
+						{/if}
+					</InputGroup.Addon>
+				</InputGroup.Root>
+				{#if parseError}
+					<p id="scan-history-search-error" class="text-2xs text-destructive">{parseError}</p>
+				{/if}
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				{#if scansStore.stats?.engines?.length}
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="outline"
+									class={engineCount ? 'border-primary/50 bg-primary/5' : ''}
+									aria-label={engineCount ? `Engine, ${engineCount} selected` : 'Engine'}
+								>
+									Engine
+									{#if engineCount}
+										<Badge variant="secondary" class="h-5 px-1.5 text-xs">{engineCount}</Badge>
+									{/if}
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="w-56">
+							{#each scansStore.stats.engines as e (e.name)}
+								{@const token = `engine:${quote(e.name)}`}
+								<DropdownMenu.CheckboxItem
+									checked={hasToken(queryText, token)}
+									onCheckedChange={() => toggleToken(token)}
+									closeOnSelect={false}
+								>
+									<span class="flex-1 truncate">{e.name}</span>
+									<span class="font-mono text-2xs text-muted-foreground">{e.count}</span>
+								</DropdownMenu.CheckboxItem>
+							{/each}
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				{/if}
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="outline"
-								class={engineCount ? 'border-primary/50 bg-primary/5' : ''}
-								aria-label={engineCount ? `Engine, ${engineCount} selected` : 'Engine'}
-							>
-								Engine
-								{#if engineCount}
-									<Badge variant="secondary" class="h-5 px-1.5 text-xs">{engineCount}</Badge>
-								{/if}
+							<Button {...props} variant="outline" size="icon" aria-label="Columns and density">
+								<Columns3 class="size-4" />
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-56">
-						{#each scansStore.stats.engines as e (e.name)}
-							{@const token = `engine:${quote(e.name)}`}
+					<DropdownMenu.Content align="end" class="w-48">
+						<DropdownMenu.Label>Columns</DropdownMenu.Label>
+						{#each HISTORY_COLUMNS as c (c)}
 							<DropdownMenu.CheckboxItem
-								checked={hasToken(queryText, token)}
-								onCheckedChange={() => toggleToken(token)}
-								closeOnSelect={false}
+								checked={historyPrefs.shows(c)}
+								onCheckedChange={() => historyPrefs.toggle(c)}
 							>
-								<span class="flex-1 truncate">{e.name}</span>
-								<span class="font-mono text-2xs text-muted-foreground">{e.count}</span>
+								{HISTORY_COLUMN_LABELS[c]}
 							</DropdownMenu.CheckboxItem>
 						{/each}
+						<DropdownMenu.Separator />
+						<DropdownMenu.Label>Density</DropdownMenu.Label>
+						<DropdownMenu.RadioGroup
+							value={historyPrefs.density}
+							onValueChange={(v) =>
+								(historyPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
+						>
+							<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
+						</DropdownMenu.RadioGroup>
 					</DropdownMenu.Content>
 				</DropdownMenu.Root>
-			{/if}
-			<DropdownMenu.Root>
-				<DropdownMenu.Trigger>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" size="icon" aria-label="Columns and density">
-							<Columns3 class="size-4" />
+				<Hint text="Refresh">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="outline"
+							size="icon"
+							aria-label="Refresh"
+							onclick={() => scansStore.refresh()}
+						>
+							<RefreshCw class="size-4 {scansStore.refreshing ? 'animate-spin' : ''}" />
 						</Button>
 					{/snippet}
-				</DropdownMenu.Trigger>
-				<DropdownMenu.Content align="end" class="w-48">
-					<DropdownMenu.Label>Columns</DropdownMenu.Label>
-					{#each HISTORY_COLUMNS as c (c)}
-						<DropdownMenu.CheckboxItem
-							checked={historyPrefs.shows(c)}
-							onCheckedChange={() => historyPrefs.toggle(c)}
-						>
-							{HISTORY_COLUMN_LABELS[c]}
-						</DropdownMenu.CheckboxItem>
-					{/each}
-					<DropdownMenu.Separator />
-					<DropdownMenu.Label>Density</DropdownMenu.Label>
-					<DropdownMenu.RadioGroup
-						value={historyPrefs.density}
-						onValueChange={(v) =>
-							(historyPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
-					>
-						<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
-						<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
-					</DropdownMenu.RadioGroup>
-				</DropdownMenu.Content>
-			</DropdownMenu.Root>
-			<Hint text="Refresh">
-				{#snippet child(props)}
-					<Button
-						{...props}
-						variant="outline"
-						size="icon"
-						aria-label="Refresh"
-						onclick={() => scansStore.refresh()}
-					>
-						<RefreshCw class="size-4 {scansStore.refreshing ? 'animate-spin' : ''}" />
-					</Button>
-				{/snippet}
-			</Hint>
-			<Hint text="Keyboard shortcuts">
-				{#snippet child(props)}
-					<Button
-						{...props}
-						variant="outline"
-						size="icon"
-						class="hidden sm:inline-flex"
-						aria-label="Keyboard shortcuts"
-						onclick={() => (shortcutsOpen = true)}
-					>
-						<Keyboard class="size-4" />
-					</Button>
-				{/snippet}
-			</Hint>
-			<Hint text={canCancelAll ? null : 'No unfinished scans.'}>
-				{#snippet child(props)}
-					<span {...props} class="inline-flex">
-						<LoadingButton
+				</Hint>
+				<Hint text="Keyboard shortcuts">
+					{#snippet child(props)}
+						<Button
+							{...props}
 							variant="outline"
-							disabled={!canCancelAll}
-							loading={cancellingAll}
-							loadingLabel="Cancelling"
-							onclick={() => (cancelAllOpen = true)}
+							size="icon"
+							class="hidden sm:inline-flex"
+							aria-label="Keyboard shortcuts"
+							onclick={() => (shortcutsOpen = true)}
 						>
-							<Ban class="size-4" /> Cancel all
-						</LoadingButton>
-					</span>
-				{/snippet}
-			</Hint>
-			{#if onLaunch}
-				<Button onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
+							<Keyboard class="size-4" />
+						</Button>
+					{/snippet}
+				</Hint>
+				<Hint text={canCancelAll ? null : 'No unfinished scans.'}>
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<LoadingButton
+								variant="outline"
+								disabled={!canCancelAll}
+								loading={cancellingAll}
+								loadingLabel="Cancelling"
+								onclick={() => (cancelAllOpen = true)}
+							>
+								<Ban class="size-4" /> Cancel all
+							</LoadingButton>
+						</span>
+					{/snippet}
+				</Hint>
+				{#if onLaunch}
+					<Button onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
+				{/if}
+			</div>
+		</div>
+
+		<!-- saved views and active filters -->
+		<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
+			<ToggleGroup.Root
+				type="multiple"
+				variant="outline"
+				size="sm"
+				spacing={1}
+				value={activeViews}
+				onValueChange={setViews}
+				aria-label="Saved views"
+				class="flex-wrap"
+			>
+				{#each SAVED_VIEWS as v (v.token)}
+					<ToggleGroup.Item
+						value={v.token}
+						class="rounded-full font-normal data-[state=on]:border-primary/50 data-[state=on]:bg-primary/5"
+					>
+						{v.label}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+			{#if scoped}
+				{@render chip(
+					scopeLabel ?? '',
+					'Remove target filter',
+					() => onClearScope?.(),
+					targetIds?.length === 1 ? 'font-mono' : 'tabular-nums'
+				)}
+			{/if}
+			{#if scansStore.filters.startedFrom}
+				{@render chip(dateLabel, 'Remove date filter', () => scansStore.setRange(null, null))}
+			{/if}
+			{#if filtered}
+				<Button variant="ghost" size="xs" class="ml-auto text-muted-foreground" onclick={clearAll}>
+					Clear all
+				</Button>
 			{/if}
 		</div>
-	</div>
+	{/if}
 
-	<!-- saved views and active filters -->
-	<div class="flex flex-wrap items-center gap-1.5 border-b bg-muted/10 px-4 py-2">
-		<ToggleGroup.Root
-			type="multiple"
-			variant="outline"
-			size="sm"
-			spacing={1}
-			value={activeViews}
-			onValueChange={setViews}
-			aria-label="Saved views"
-			class="flex-wrap"
+	{#if loadFailed}
+		<EmptyState
+			compact
+			icon={TriangleAlert}
+			title="Scans not loaded"
+			description={scansStore.loadError ?? undefined}
+			class="border-0 bg-transparent py-16"
 		>
-			{#each SAVED_VIEWS as v (v.token)}
-				<ToggleGroup.Item
-					value={v.token}
-					class="rounded-full font-normal data-[state=on]:border-primary/50 data-[state=on]:bg-primary/5"
-				>
-					{v.label}
-				</ToggleGroup.Item>
-			{/each}
-		</ToggleGroup.Root>
-		{#if scoped}
-			{@render chip(
-				scopeLabel ?? '',
-				'Remove target filter',
-				() => onClearScope?.(),
-				targetIds?.length === 1 ? 'font-mono' : 'tabular-nums'
-			)}
-		{/if}
-		{#if scansStore.filters.startedFrom}
-			{@render chip(dateLabel, 'Remove date filter', () => scansStore.setRange(null, null))}
-		{/if}
-		{#if filtered}
-			<Button variant="ghost" size="xs" class="ml-auto text-muted-foreground" onclick={clearAll}>
-				Clear all
-			</Button>
-		{/if}
-	</div>
-
-	{#if scansStore.isLoading && scans.length === 0}
-		<TableSkeleton
-			lead={[{ key: 'name', label: 'Target', width: 'min-w-0 flex-1' }]}
-			actions={false}
-			selectable
-		/>
-	{:else if scansStore.error && scans.length === 0}
-		<Empty.Root class="py-16">
-			<Empty.Header>
-				<Empty.Media class="size-12 rounded-2xl bg-destructive/10">
-					<TriangleAlert class="size-6 text-destructive" />
-				</Empty.Media>
-				<Empty.Title>Scans not loaded</Empty.Title>
-				<Empty.Description class="max-w-md">{scansStore.error}</Empty.Description>
-			</Empty.Header>
-			<Empty.Content>
-				<Button size="sm" variant="outline" onclick={() => scansStore.refresh()}>
-					<RefreshCw class="size-4" /> Retry
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+			<Button
+				size="sm"
+				variant="outline"
+				disabled={scansStore.isLoading}
+				onclick={() => scansStore.retry()}>Retry</Button
+			>
+		</EmptyState>
+	{:else if scansStore.isLoading && scans.length === 0}
+		<div class="@container/scans overflow-x-auto">
+			<div class="w-full min-w-[720px]">
+				<TableSkeleton lead={skeletonColumns} actions={false} selectable />
+			</div>
+		</div>
 	{:else if scans.length === 0 && filtered}
 		<Empty.Root class="py-16">
 			<Empty.Header><Empty.Title>No runs match</Empty.Title></Empty.Header>

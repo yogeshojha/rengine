@@ -7,7 +7,6 @@
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 	import FileText from '@lucide/svelte/icons/file-text';
@@ -53,6 +52,8 @@
 	import type { ScanVulnerabilities } from '$lib/utilities/vulns';
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import BackLink from '$lib/components/back-link.svelte';
+	import LoadNotice from '$lib/components/load-notice.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -174,6 +175,7 @@
 	let detailError = $state<string | null>(null);
 	let summary = $state<TargetSummaryRead | null>(null);
 	let summaryLoading = $state(true);
+	let summaryError = $state<string | null>(null);
 	let history = $state<ScanRead[]>([]);
 	let historyLoaded = $state(false);
 	let programs = $state<ProgramMatch[]>([]);
@@ -217,6 +219,9 @@
 	let showDns = $derived(!!target && dnsApplies(target.target_type));
 	let showBgp = $derived(!!target && bgpApplies(target.target_type));
 	let showStealer = $derived(!!target && infostealerApplies(target.target_type));
+	// a failed load is not "no data": keep the tabs and say what did not load
+	let detailFailed = $derived(!detail && !!detailError && !detailLoading);
+	let summaryFailed = $derived(!summary && !!summaryError && !summaryLoading);
 	let whoisStatus = $derived(detail?.whois_status ?? target?.whois_status ?? TaskStatus.PENDING);
 	let dnsStatus = $derived(detail?.dns_status ?? target?.dns_status ?? TaskStatus.PENDING);
 	let bgpStatus = $derived(detail?.bgp_status ?? target?.bgp_status ?? TaskStatus.PENDING);
@@ -259,15 +264,20 @@
 		TABS.filter((t) => {
 			switch (t) {
 				case 'web-assets':
-					return summaryLoading || live || (summary?.inventory_total ?? 0) > 0;
+					return summaryLoading || summaryFailed || live || (summary?.inventory_total ?? 0) > 0;
 				case 'dns':
-					return showDns && (detailLoading || dnsRecords > 0 || inFlight(dnsStatus));
+					return (
+						showDns && (detailLoading || detailFailed || dnsRecords > 0 || inFlight(dnsStatus))
+					);
 				case 'whois':
-					return detailLoading || !!detail?.whois || inFlight(whoisStatus);
+					return detailLoading || detailFailed || !!detail?.whois || inFlight(whoisStatus);
 				case 'bgp':
-					return showBgp && (detailLoading || bgpHasData || inFlight(bgpStatus));
+					return showBgp && (detailLoading || detailFailed || bgpHasData || inFlight(bgpStatus));
 				case 'infostealer':
-					return showStealer && (detailLoading || stealerTotal > 0 || inFlight(stealerStatus));
+					return (
+						showStealer &&
+						(detailLoading || detailFailed || stealerTotal > 0 || inFlight(stealerStatus))
+					);
 				case CLOUD_STORAGE_TAB:
 					return (cloud?.total ?? 0) > 0;
 				default:
@@ -376,9 +386,9 @@
 		if (activeTab === 'web-assets') webSeen = true;
 	});
 
+	// only once both loaded: a failed load must not rewrite the tab in the URL
 	$effect(() => {
-		if (target && !detailLoading && !summaryLoading && !tabs.includes(activeTab))
-			setTab('overview');
+		if (target && detail && summary && !tabs.includes(activeTab)) setTab('overview');
 	});
 
 	function setTab(value: string) {
@@ -415,7 +425,10 @@
 			target = fresh;
 			breadcrumbStore.set(id, fresh.target_value);
 		} catch (e) {
-			if (id === targetId && !target) error = e instanceof Error ? e.message : 'Target not loaded';
+			if (id === targetId && !target) {
+				error = e instanceof Error ? e.message : 'Target not loaded';
+				breadcrumbStore.set(id, id.slice(0, 8));
+			}
 		} finally {
 			if (id === targetId) isLoading = false;
 		}
@@ -442,8 +455,10 @@
 		if (!silent) summaryLoading = true;
 		try {
 			summary = await targetsApi.getSummary(targetId, project.id);
+			summaryError = null;
 			loaded('Surface');
-		} catch {
+		} catch (e) {
+			summaryError = e instanceof Error ? e.message : 'Summary not loaded';
 			notLoadedNow('Surface');
 		} finally {
 			if (!silent) summaryLoading = false;
@@ -679,7 +694,7 @@
 		shownId = id;
 		stopPolling();
 		target = null;
-		error = detailError = null;
+		error = detailError = summaryError = null;
 		programs = [];
 		programsLoaded = false;
 		estate = lookalikes = cloud = ipFacets = hosting = tech = hygiene = ai = null;
@@ -733,6 +748,13 @@
 			clearInterval(poll);
 		};
 	});
+
+	let loadIssues = $derived([...(detailError ? ['Enrichment'] : []), ...notLoaded]);
+
+	function retryLoads() {
+		if (detailError) void fetchDetail();
+		refreshSections();
+	}
 
 	function refreshSections() {
 		webFor = geoFor = servicesFor = vulnsFor = softwareFor = estateFor = stealerFor = null;
@@ -951,16 +973,10 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="flex w-full flex-col gap-6">
-	<a
-		href={ROUTES.targets}
-		class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-	>
-		<ArrowLeft class="size-3.5" />
-		Targets
-	</a>
+	<BackLink href={ROUTES.targets} label="Targets" />
 
 	{#if isLoading && !target}
-		<TargetHeaderSkeleton />
+		<TargetHeaderSkeleton tab={activeTab} />
 	{:else if error}
 		<EmptyState icon={TriangleAlert} title="Target not loaded" description={error}>
 			<Button size="sm" variant="outline" onclick={() => fetchTarget()}>Retry</Button>
@@ -982,27 +998,8 @@
 			/>
 		</div>
 
-		{#if detailError && !detailLoading}
-			<div
-				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-2.5"
-			>
-				<p class="text-sm text-destructive">
-					Enrichment not loaded. {detailError}
-				</p>
-				<Button variant="outline" size="sm" class="ml-auto" onclick={() => fetchDetail()}
-					>Retry</Button
-				>
-			</div>
-		{/if}
-
-		{#if notLoaded.size}
-			<div
-				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-dashed px-4 py-2.5 text-sm text-muted-foreground"
-			>
-				<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
-				<span>{[...notLoaded].join(', ')} did not load.</span>
-				<Button variant="outline" size="sm" class="ml-auto" onclick={refreshSections}>Retry</Button>
-			</div>
+		{#if loadIssues.length && !detailLoading}
+			<LoadNotice sections={loadIssues} busy={summaryLoading} onRetry={retryLoads} />
 		{/if}
 
 		<Tabs.Root value={activeTab} onValueChange={setTab} style="--target-tabs-h: {tabsHeight}px">
@@ -1071,9 +1068,9 @@
 						targetId={target.id}
 						{summary}
 						loading={summaryLoading}
+						failed={summaryFailed}
 						{history}
 						{run}
-						onScan={handleScan}
 					/>
 
 					<!-- estate -->
@@ -1242,6 +1239,7 @@
 						status={dnsStatus}
 						error={detail?.dns_error ?? target.dns_error}
 						loading={detailLoading}
+						unloaded={detailFailed ? detailError : null}
 						refreshing={!!refreshing.dns}
 						{ipsScanId}
 						onRefresh={() => refreshOne('dns')}
@@ -1257,6 +1255,7 @@
 					status={whoisStatus}
 					error={detail?.whois_error ?? target.whois_error}
 					loading={detailLoading}
+					unloaded={detailFailed ? detailError : null}
 					refreshing={!!refreshing.whois}
 					onRefresh={() => refreshOne('whois')}
 				/>
@@ -1270,6 +1269,7 @@
 						bgp={detail?.bgp ?? null}
 						status={bgpStatus}
 						loading={detailLoading}
+						unloaded={detailFailed ? detailError : null}
 						refreshing={!!refreshing.bgp}
 						onRefresh={() => refreshOne('bgp')}
 					/>
@@ -1284,6 +1284,7 @@
 						status={stealerStatus}
 						error={detail?.infostealer_error ?? target.infostealer_error}
 						loading={detailLoading || (stealerLoading && !stealer)}
+						unloaded={detailFailed ? detailError : null}
 						refreshing={!!refreshing.infostealer}
 						onRefresh={() => refreshOne('infostealer')}
 					/>

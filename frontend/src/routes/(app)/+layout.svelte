@@ -16,6 +16,10 @@
 	import { SIDEBAR_COOKIE_NAME } from '$lib/components/ui/sidebar/constants.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import ServerOff from '@lucide/svelte/icons/server-off';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import CreateFirstProjectModal from '$lib/components/modals/create-first-project-modal.svelte';
 	import ProxySendConfirm from '$lib/components/scans/results/endpoints/proxy-send-confirm.svelte';
 	import { crumbHref, getRouteLabel, PROJECT_PARAM, ROUTES, UUID_REGEX } from '$lib/config/routes';
@@ -38,7 +42,7 @@
 	});
 
 	$effect(() => {
-		if (!auth.isLoading && !auth.isAuthenticated) {
+		if (!auth.isLoading && !auth.isAuthenticated && !auth.unreachable) {
 			goto(ROUTES.loginThen(page.url.pathname + page.url.search));
 		}
 	});
@@ -128,6 +132,10 @@
 		if (auth.isAuthenticated && !auth.isLoading && projectId) liveScans.init(projectId);
 	});
 
+	let projectsFailed = $derived(
+		!!projectsStore.loadError && !projectsStore.hasFetched && projectsStore.projects.length === 0
+	);
+
 	let showRequiredProjectCreateModal = $derived(
 		auth.isAuthenticated &&
 			!auth.isLoading &&
@@ -144,7 +152,17 @@
 
 	const sidebarNav = useSidebarNav();
 
-	type Crumb = { label: string; href: string };
+	type Crumb = { label: string; href: string; pending?: boolean };
+
+	// an id crumb waits briefly for its page to name it; a page that fails to load never does
+	const CRUMB_WAIT_MS = 2500;
+	let crumbWaiting = $state(true);
+	$effect(() => {
+		void page.url.pathname;
+		crumbWaiting = true;
+		const timer = setTimeout(() => (crumbWaiting = false), CRUMB_WAIT_MS);
+		return () => clearTimeout(timer);
+	});
 
 	let breadcrumbs = $derived.by(() => {
 		const path = page.url.pathname;
@@ -163,7 +181,7 @@
 			}
 
 			if (UUID_REGEX.test(segment)) {
-				return { label: segment.slice(0, 8), href };
+				return { label: segment.slice(0, 8), href, pending: crumbWaiting };
 			}
 
 			const label = getRouteLabel(segment);
@@ -194,6 +212,17 @@
 		<Spinner />
 		<p class="text-muted-foreground">Loading…</p>
 	</div>
+{:else if auth.unreachable}
+	<div class="flex min-h-screen items-center justify-center p-6">
+		<EmptyState
+			icon={ServerOff}
+			title="Server not reachable"
+			description={auth.unreachable}
+			class="w-full max-w-lg"
+		>
+			<Button size="sm" variant="outline" onclick={() => auth.checkAuth([])}>Retry</Button>
+		</EmptyState>
+	</div>
 {:else if auth.isAuthenticated}
 	<Sidebar.Provider open={sidebarOpen} class="!h-svh !min-h-0 overflow-hidden">
 		<a
@@ -220,7 +249,24 @@
 								tabindex="-1"
 								class="p-6 outline-none has-[[data-selection-bar]]:pb-48 sm:has-[[data-selection-bar]]:pb-32"
 							>
-								{@render children()}
+								{#if projectsFailed}
+									<EmptyState
+										icon={TriangleAlert}
+										title="Projects not loaded"
+										description={projectsStore.loadError ?? undefined}
+									>
+										<Button
+											size="sm"
+											variant="outline"
+											disabled={projectsStore.isLoading}
+											onclick={() => projectsStore.fetchProjects()}
+										>
+											Retry
+										</Button>
+									</EmptyState>
+								{:else}
+									{@render children()}
+								{/if}
 							</div>
 						</ScrollArea>
 						<ActivityPanel />

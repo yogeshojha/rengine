@@ -27,6 +27,9 @@
 	);
 	let blocked = $derived(runs.filter((r) => !r.comparable));
 
+	const when = (run: ComparableRun) =>
+		run.started_at ? formatDateTime(run.started_at) : 'Not started';
+
 	function choose(scanId: string) {
 		open = false;
 		onPick(scanId);
@@ -35,9 +38,7 @@
 
 {#snippet meta(run: ComparableRun)}
 	<span class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-		<span class="tabular-nums"
-			>{run.started_at ? formatDateTime(run.started_at) : 'not started'}</span
-		>
+		<span>{run.engine_name}</span>
 		{#if run.duration_seconds != null}
 			<span class="opacity-40">·</span>
 			<span class="tabular-nums">{formatSeconds(run.duration_seconds)}</span>
@@ -79,8 +80,8 @@
 						onclick={() => choose(run.scan_id)}
 						class="flex flex-col gap-0.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent/60"
 					>
-						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
-							{run.engine_name}
+						<span class="flex items-center gap-2 text-sm leading-5 font-medium tabular-nums">
+							{when(run)}
 						</span>
 						{@render meta(run)}
 					</button>
@@ -90,7 +91,7 @@
 					<p class="px-2.5 pt-3 pb-1 text-2xs text-muted-foreground">Cannot be compared</p>
 					{#each blocked as run (run.scan_id)}
 						<div class="flex flex-col gap-0.5 px-2.5 py-2 opacity-60">
-							<span class="text-sm leading-5 font-medium">{run.engine_name}</span>
+							<span class="text-sm leading-5 font-medium tabular-nums">{when(run)}</span>
 							{@render meta(run)}
 							<span class="text-xs text-muted-foreground">{run.reason}</span>
 						</div>

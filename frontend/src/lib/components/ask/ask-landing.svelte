@@ -14,6 +14,8 @@
 
 	interface Props {
 		status: EstateStatus | null;
+		statusError?: string | null;
+		onRetryStatus?: () => void;
 		starters: EstateStarters | null;
 		startersLoading: boolean;
 		recent: EstateThread[];
@@ -37,6 +39,8 @@
 
 	let {
 		status,
+		statusError = null,
+		onRetryStatus,
 		starters,
 		startersLoading,
 		recent,
@@ -61,6 +65,7 @@
 	let composer = $state<EstateComposer | null>(null);
 	let available = $derived(status?.available ?? false);
 	let offline = $derived(status !== null && !status.available);
+	let unknown = $derived(status === null && !!statusError);
 	let scopeValues = $derived(starters?.filtered ? starters.scope_values : null);
 
 	$effect(() => {
@@ -83,14 +88,17 @@
 			{intelligent}
 			{busy}
 			sendable={available}
-			placeholder={starters?.example ?? undefined}
+			disabled={offline || unknown}
+			placeholder={offline ? 'Set up AI to ask questions' : (starters?.example ?? undefined)}
 			leading={filters}
 			{onIntelligent}
 			onSend={onAsk}
 			{onStop}
 		/>
 	</div>
-	{#if status && !available}
+	{#if unknown}
+		<AskOff reason="AI status not loaded" detail={statusError} onRetry={onRetryStatus} />
+	{:else if status && !available}
 		<AskOff reason={status.off_reason ?? ''} code={status.off_code} {admin} />
 	{/if}
 

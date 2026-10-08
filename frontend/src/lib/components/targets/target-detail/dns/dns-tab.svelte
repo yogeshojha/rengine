@@ -3,7 +3,9 @@
 	import Search from '@lucide/svelte/icons/search';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { REVEAL_SM } from '$lib/components/scans/results/table/columns';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -26,12 +28,23 @@
 		status: TaskStatus;
 		error: string | null;
 		loading: boolean;
+		unloaded?: string | null;
 		refreshing: boolean;
 		ipsScanId: string | null;
 		onRefresh: () => void;
 	}
 
-	let { host, lookup, status, error, loading, refreshing, ipsScanId, onRefresh }: Props = $props();
+	let {
+		host,
+		lookup,
+		status,
+		error,
+		loading,
+		unloaded = null,
+		refreshing,
+		ipsScanId,
+		onRefresh
+	}: Props = $props();
 
 	const IPS = SURFACE[SurfaceDimension.IPS];
 	const ALL = 'all';
@@ -143,51 +156,44 @@
 	queriedAt={lookup?.queried_at}
 	{refreshing}
 	{loading}
+	{unloaded}
 	empty={records.length === 0}
 	emptyText="No records for {host}"
 	{onRefresh}
 >
 	{#snippet bar()}
-		<div class="flex flex-wrap items-center gap-0.5">
-			<button
-				type="button"
-				class="rounded-md px-2 py-1 text-sm {type === ALL
-					? 'bg-muted font-medium'
-					: 'text-muted-foreground hover:text-foreground'}"
-				aria-pressed={type === ALL}
-				onclick={() => (type = ALL)}
-			>
-				All <span class="ml-1 text-2xs tabular-nums">{records.length}</span>
-			</button>
+		<ToggleGroup.Root
+			type="single"
+			variant="outline"
+			value={type}
+			onValueChange={(v) => v && (type = v)}
+			aria-label="Record type"
+			class="flex-wrap"
+		>
+			<ToggleGroup.Item value={ALL} class="h-9 px-3 font-normal">
+				All <span class="text-xs text-muted-foreground tabular-nums">{records.length}</span>
+			</ToggleGroup.Item>
 			{#each typeCounts as [key, n] (key)}
-				<button
-					type="button"
-					class="rounded-md px-2 py-1 font-mono text-xs {type === key
-						? 'bg-muted font-medium'
-						: 'text-muted-foreground hover:text-foreground'}"
-					aria-pressed={type === key}
-					onclick={() => (type = key)}
-				>
-					{key} <span class="ml-1 font-sans text-2xs tabular-nums">{n}</span>
-				</button>
+				<ToggleGroup.Item value={key} class="h-9 px-3 font-mono text-xs font-normal">
+					{key} <span class="font-sans text-xs text-muted-foreground tabular-nums">{n}</span>
+				</ToggleGroup.Item>
 			{/each}
-		</div>
-		<span class="text-xs text-muted-foreground">
-			{#if lookup?.status_code}<span class="font-mono">{lookup.status_code}</span>{/if}
-			{#if cdnName}
-				· {cdnName}{/if}
-		</span>
-		<div class="relative">
-			<Search
-				class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-			/>
-			<Input
+		</ToggleGroup.Root>
+		<InputGroup.Root class="w-52">
+			<InputGroup.Addon><Search /></InputGroup.Addon>
+			<InputGroup.Input
 				bind:value={query}
 				placeholder="Filter records"
 				aria-label="Filter records"
-				class="h-8 w-52 pl-8 text-sm"
 			/>
-		</div>
+		</InputGroup.Root>
+		{#if lookup?.status_code || cdnName}
+			<span class="text-xs text-muted-foreground">
+				{#if lookup?.status_code}<span class="font-mono">{lookup.status_code}</span>{/if}
+				{#if cdnName}
+					{lookup?.status_code ? '· ' : ''}{cdnName}{/if}
+			</span>
+		{/if}
 	{/snippet}
 
 	{#if groups.length === 0}
@@ -200,7 +206,7 @@
 						{@const note = noteFor(r)}
 						{@const href = isAddress(r) ? ipsHref(r.value) : null}
 						<div
-							class="group grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1 sm:grid-cols-[minmax(0,1fr)_16rem_auto]"
+							class="group grid min-h-8 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1 sm:grid-cols-[minmax(0,32rem)_minmax(0,1fr)_auto]"
 						>
 							<span class="font-mono text-xs leading-5 wrap-anywhere">{r.value}</span>
 							<span
@@ -225,7 +231,7 @@
 								{/if}
 							</span>
 							<span
-								class="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+								class="flex items-center gap-0.5 transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 							>
 								{#if href}
 									<Hint text="Open in {IPS.label}">
@@ -233,8 +239,8 @@
 											<Button
 												{...props}
 												variant="ghost"
-												size="icon"
-												class="size-7 text-muted-foreground sm:hidden"
+												size="icon-sm"
+												class="text-muted-foreground sm:hidden"
 												{href}
 												aria-label="Open {r.value} in {IPS.label}"
 											>

@@ -14,6 +14,8 @@ export class TargetRuns {
 	runs = new SvelteMap<string, ScanRead>();
 	trends = new SvelteMap<string, ScanTargetTrend>();
 	known = new SvelteSet<string>();
+	/** The last load failed: rows not yet known have no run data, not "no runs". */
+	failed = $state(false);
 	#seq = 0;
 
 	async load(projectId: string, targetIds: string[]) {
@@ -22,6 +24,7 @@ export class TargetRuns {
 			this.runs.clear();
 			this.trends.clear();
 			this.known.clear();
+			this.failed = false;
 			return;
 		}
 		const parts = chunks(targetIds);
@@ -33,7 +36,7 @@ export class TargetRuns {
 				Promise.all(parts.map((p) => scansApi.trends(projectId, p)))
 			]);
 		} catch {
-			if (mine === this.#seq) for (const id of targetIds) this.known.add(id);
+			if (mine === this.#seq) this.failed = true;
 			return;
 		}
 		if (mine !== this.#seq) return;
@@ -43,5 +46,6 @@ export class TargetRuns {
 		for (const t of trends.flat()) this.trends.set(t.target_id, t);
 		this.known.clear();
 		for (const id of targetIds) this.known.add(id);
+		this.failed = false;
 	}
 }

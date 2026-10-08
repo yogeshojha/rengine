@@ -35,6 +35,7 @@ function createAiStore() {
 	let isLoading = $state(false);
 	let isSaving = $state(false);
 	let hasFetched = $state(false);
+	let loadError = $state<string | null>(null);
 	const testing = new SvelteSet<string>();
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	const modelLists = new Map<string, { at: number; list: Promise<AiModelList> }>();
@@ -111,6 +112,10 @@ function createAiStore() {
 		get hasFetched() {
 			return hasFetched;
 		},
+		/** Why the settings did not load; the page shows it inline (no toast). */
+		get loadError() {
+			return loadError;
+		},
 
 		isTesting(id: string): boolean {
 			return testing.has(id);
@@ -133,8 +138,9 @@ function createAiStore() {
 				catalog = c;
 				connections = rows;
 				hasFetched = true;
+				loadError = null;
 			} catch (e) {
-				toast.error(failure(e, 'AI settings not loaded'));
+				loadError = failure(e, 'AI settings not loaded');
 			} finally {
 				isLoading = false;
 			}
@@ -261,6 +267,7 @@ function createAiStore() {
 			isLoading = false;
 			isSaving = false;
 			hasFetched = false;
+			loadError = null;
 			testing.clear();
 			modelLists.clear();
 		}

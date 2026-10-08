@@ -11,6 +11,7 @@
 	import TechIcon from '$lib/components/scans/results/tech-icon.svelte';
 	import RecordShell from '../record-shell.svelte';
 	import RecordGroup from '../record-group.svelte';
+	import { REVEAL_SM } from '$lib/components/scans/results/table/columns';
 	import { nameserverProvider, registrarIcon } from '$lib/config/dns-providers';
 	import { countryName } from '$lib/config/country-geo';
 	import type { IconComponent } from '$lib/config/icons';
@@ -38,12 +39,22 @@
 		status: TaskStatus;
 		error: string | null;
 		loading: boolean;
+		unloaded?: string | null;
 		refreshing: boolean;
 		onRefresh: () => void;
 	}
 
-	let { targetValue, targetType, record, status, error, loading, refreshing, onRefresh }: Props =
-		$props();
+	let {
+		targetValue,
+		targetType,
+		record,
+		status,
+		error,
+		loading,
+		unloaded = null,
+		refreshing,
+		onRefresh
+	}: Props = $props();
 
 	const ROLES: WhoisEntityRole[] = [
 		'registrant',
@@ -196,8 +207,17 @@
 	let descriptionLines = $derived(
 		(record?.parsed_data?.description ?? []).map((l) => l.trim()).filter(Boolean)
 	);
+	// EPP client* codes are set by the registrar, server* codes by the registry
+	function lockOwner(code: string): string {
+		if (/^client/i.test(code)) return ' (registrar)';
+		if (/^server/i.test(code)) return ' (registry)';
+		return '';
+	}
 	let statuses = $derived(
-		(record?.domain_status ?? []).map((code) => ({ code, ...describeDomainStatus(code) }))
+		(record?.domain_status ?? []).map((code) => {
+			const info = describeDomainStatus(code);
+			return { code, ...info, label: info.label + lockOwner(code) };
+		})
 	);
 	let nameservers = $derived(record?.nameservers ?? []);
 	let entities = $derived.by(() => {
@@ -228,18 +248,17 @@
 	queriedAt={record?.queried_at}
 	{refreshing}
 	{loading}
+	{unloaded}
 	empty={!record}
 	emptyText="No registration record for {targetValue}"
 	{onRefresh}
 >
 	{#snippet bar()}
 		<span class="text-sm">
-			<span class="font-medium">{title}</span>
-			<span class="text-muted-foreground">
-				· {record?.query_value || targetValue}{record?.whois_server
-					? ` · ${record.whois_server}`
-					: ''}
-			</span>
+			<span class="font-medium">{record?.query_value || targetValue}</span>
+			{#if record?.whois_server}
+				<span class="text-muted-foreground"> · {record.whois_server}</span>
+			{/if}
 		</span>
 	{/snippet}
 
@@ -263,7 +282,7 @@
 							</span>
 							{#if f.copy}
 								<span
-									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+									class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 								>
 									<CopyButton value={f.copy} />
 								</span>
@@ -312,7 +331,7 @@
 							</span>
 						{/if}
 						<span
-							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+							class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 						>
 							<CopyButton value={ns} />
 						</span>
@@ -339,7 +358,7 @@
 										{entity.email}
 									</code>
 									<span
-										class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+										class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 									>
 										<CopyButton value={entity.email} />
 									</span>
@@ -361,7 +380,7 @@
 		{/if}
 
 		{#if recordJson}
-			<Collapsible.Root bind:open={rawOpen} class="border-b">
+			<Collapsible.Root bind:open={rawOpen} class="border-t">
 				<Collapsible.Trigger
 					class="group flex w-full items-center gap-2 py-2.5 text-left text-sm text-muted-foreground hover:text-foreground"
 				>

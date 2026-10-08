@@ -14,11 +14,21 @@
 		status: TaskStatus;
 		error: string | null;
 		loading: boolean;
+		unloaded?: string | null;
 		refreshing: boolean;
 		onRefresh: () => void;
 	}
 
-	let { domain, report, status, error, loading, refreshing, onRefresh }: Props = $props();
+	let {
+		domain,
+		report,
+		status,
+		error,
+		loading,
+		unloaded = null,
+		refreshing,
+		onRefresh
+	}: Props = $props();
 </script>
 
 <RecordShell
@@ -28,6 +38,8 @@
 	queriedAt={report?.checked_at}
 	{refreshing}
 	{loading}
+	{unloaded}
+	plain
 	empty={!report || report.total === 0}
 	emptyText="No infostealer infections reported for {report?.domain ?? domain}"
 	{onRefresh}

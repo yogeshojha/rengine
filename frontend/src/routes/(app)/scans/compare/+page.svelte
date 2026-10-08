@@ -4,13 +4,15 @@
 	import { untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
-	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import GitCompareArrows from '@lucide/svelte/icons/git-compare-arrows';
 	import Link2 from '@lucide/svelte/icons/link-2';
 	import Play from '@lucide/svelte/icons/play';
 
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import EmptyState from '$lib/components/empty-state.svelte';
+	import BackLink from '$lib/components/back-link.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import CompareUnavailable from '$lib/components/scans/compare/compare-unavailable.svelte';
@@ -23,6 +25,7 @@
 	import ChangeSheet from '$lib/components/scans/compare/change-sheet.svelte';
 
 	import { compareApi } from '$lib/api/compare';
+	import { isTransient } from '$lib/api/client';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { seedKindFor } from '$lib/utilities/rechecks';
@@ -58,6 +61,8 @@
 	let runsError = $state<string | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	// the server failed, as opposed to refusing a pair that cannot be compared
+	let failed = $state(false);
 
 	let rows = $state<ChangeRow[]>([]);
 	let rowTotal = $state(0);
@@ -157,6 +162,7 @@
 		if (!projectId) return;
 		loading = true;
 		error = null;
+		failed = false;
 		try {
 			comparison = await compareApi.comparison(projectId, currentId, baselineId);
 			if (
@@ -168,6 +174,7 @@
 		} catch (e) {
 			comparison = null;
 			error = e instanceof Error ? e.message : 'Comparison not loaded.';
+			failed = isTransient(e);
 		} finally {
 			loading = false;
 		}
@@ -362,6 +369,11 @@
 			: null
 	);
 
+	function retry() {
+		void loadRuns();
+		void loadComparison().then(() => loadRows());
+	}
+
 	// ---------- effects ----------
 
 	$effect(() => {
@@ -395,6 +407,10 @@
 			<Skeleton class="h-24" />
 			<Skeleton class="h-64" />
 		</div>
+	{:else if failed}
+		<EmptyState icon={TriangleAlert} title="Comparison not loaded" description={error ?? undefined}>
+			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
+		</EmptyState>
 	{:else if error || !comparison}
 		<CompareUnavailable
 			reason={error ?? runsError ?? 'No run selected.'}
@@ -405,15 +421,7 @@
 	{:else}
 		<div class="-mx-6 flex flex-col">
 			<div class="flex flex-wrap items-center gap-2 px-6 pb-3">
-				<Button
-					variant="ghost"
-					size="sm"
-					href={ROUTES.scan(comparison.current.scan_id)}
-					class="-ml-2"
-				>
-					<ArrowLeft class="size-4" />
-					Back to run
-				</Button>
+				<BackLink href={ROUTES.scan(comparison.current.scan_id)} label="Back to run" class="mr-2" />
 				<span class="flex items-center gap-2 text-sm">
 					<GitCompareArrows class="size-4 text-muted-foreground" />
 					<span class="font-medium">{comparison.target_value}</span>

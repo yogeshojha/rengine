@@ -50,6 +50,7 @@
 	import CustomizePopover from '$lib/components/dashboard/customize-popover.svelte';
 	import DashboardSkeleton from '$lib/components/dashboard/dashboard-skeleton.svelte';
 	import HiddenTray from '$lib/components/dashboard/hidden-tray.svelte';
+	import LoadNotice from '$lib/components/load-notice.svelte';
 	import ScopeBar from '$lib/components/dashboard/scope-bar.svelte';
 	import DashboardAsk from '$lib/components/ask/dashboard-ask.svelte';
 	import {
@@ -101,6 +102,8 @@
 	let days = $derived(windowDays(win));
 	let extras = $derived(dashboardStore.extrasLoading);
 	let programs = $derived(dashboardStore.programs);
+	// the headline and scope row are still coming: hold their space
+	let headlinePending = $derived(overview ? !firstRun : !!activeProject && !dashboardStore.error);
 	let notLoaded = $derived(
 		dashboardStore.failedSlices.map((slice) => DASHBOARD_SLICE_LABELS[slice])
 	);
@@ -278,8 +281,12 @@
 						{/if}
 					</span>
 				</h1>
-			{:else if overview && !firstRun}
-				<Skeleton class="h-8 w-80 max-w-full" />
+			{:else if headlinePending}
+				<h1 class="sr-only">Dashboard</h1>
+				<div class="flex flex-col gap-1" aria-hidden="true">
+					<Skeleton class="h-7 w-[28rem] max-w-full" />
+					<Skeleton class="h-7 w-64 max-w-full" />
+				</div>
 			{:else}
 				<h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
 			{/if}
@@ -340,6 +347,10 @@
 			/>
 			<DashboardAsk {scope} />
 		</div>
+	{:else if headlinePending}
+		<div class="flex" aria-hidden="true">
+			<Skeleton class="h-8 w-28" />
+		</div>
 	{/if}
 
 	{#if !activeProject && projectsStore.hasFetched}
@@ -365,25 +376,18 @@
 			</Button>
 		</EmptyState>
 	{:else if firstRun}
-		<FirstRunPanel readiness={dashboardStore.readiness} />
+		<FirstRunPanel
+			readiness={dashboardStore.readiness}
+			readinessFailed={dashboardStore.readinessFailed}
+			onRetryReadiness={() => dashboardStore.retryReadiness()}
+		/>
 	{:else if overview}
 		{#if notLoaded.length}
-			<div
-				class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-dashed px-4 py-2.5 text-sm text-muted-foreground"
-			>
-				<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
-				<span>{notLoaded.join(', ')} not loaded.</span>
-				<Button
-					variant="outline"
-					size="sm"
-					class="ml-auto"
-					onclick={() => dashboardStore.refresh()}
-					disabled={dashboardStore.loading}
-				>
-					<RefreshCw class="size-4 {dashboardStore.loading ? 'animate-spin' : ''}" />
-					Retry
-				</Button>
-			</div>
+			<LoadNotice
+				sections={notLoaded}
+				busy={dashboardStore.loading}
+				onRetry={() => dashboardStore.refresh()}
+			/>
 		{/if}
 
 		<!-- estate -->

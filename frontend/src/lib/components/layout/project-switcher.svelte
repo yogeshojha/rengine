@@ -6,6 +6,7 @@
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { coerceInstanceMode, MODE_LABELS } from '$lib/config/capabilities';
@@ -20,6 +21,7 @@
 	let activeProject = $derived(projectsStore.activeProject);
 	let projects = $derived(projectsStore.projects);
 	let isLoading = $derived(projectsStore.isLoading);
+	let loadFailed = $derived(!!projectsStore.loadError && !projectsStore.hasFetched);
 	let modeLabel = $derived(MODE_LABELS[coerceInstanceMode(capabilitiesStore.mode)]);
 
 	let showAddModal = $state(false);
@@ -42,6 +44,22 @@
 				<div class="grid flex-1 gap-1.5 text-start">
 					<Skeleton class="h-3.5 w-24" />
 					<Skeleton class="h-3 w-16" />
+				</div>
+			</Sidebar.MenuButton>
+		{:else if loadFailed && !activeProject}
+			<Sidebar.MenuButton
+				size="lg"
+				tooltipContent="Projects not loaded · Retry"
+				onclick={() => projectsStore.fetchProjects()}
+			>
+				<div
+					class="flex aspect-square size-8 items-center justify-center rounded-lg border border-dashed"
+				>
+					<TriangleAlert class="size-4 text-warning" />
+				</div>
+				<div class="grid flex-1 text-start text-sm leading-tight">
+					<span class="truncate font-medium">Projects not loaded</span>
+					<span class="truncate text-xs text-muted-foreground">Retry</span>
 				</div>
 			</Sidebar.MenuButton>
 		{:else if !activeProject}

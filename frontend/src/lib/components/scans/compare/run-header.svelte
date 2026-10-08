@@ -49,11 +49,13 @@
 			{loading}
 			onPick={(id) => onPick(which, id)}
 		>
-			<span class="min-w-0 truncate text-base leading-6 font-semibold">{run.engine_name}</span>
+			<span class="min-w-0 truncate text-base leading-6 font-semibold tabular-nums">
+				{run.started_at ? formatDateTime(run.started_at) : 'Not started'}
+			</span>
 		</RunPicker>
 
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-			<span class="tabular-nums">{run.started_at ? formatDateTime(run.started_at) : ''}</span>
+			<span class="min-w-0 truncate" title={run.engine_name}>{run.engine_name}</span>
 			{#if run.duration_seconds != null}
 				<span class="opacity-40">·</span>
 				<span class="tabular-nums">{formatSeconds(run.duration_seconds)}</span>

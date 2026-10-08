@@ -46,7 +46,10 @@ function createTargetsStore() {
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let loadError = $state<string | null>(null);
 	let hasFetched = $state(false);
+	let summaryLoaded = $state(false);
+	let countsLoaded = $state(false);
 
 	let filters = $state<TargetFilters>({
 		searchQuery: '',
@@ -143,8 +146,20 @@ function createTargetsStore() {
 		get error() {
 			return error;
 		},
+		/** Why the list did not load; mutations report through `error`. */
+		get loadError() {
+			return loadError;
+		},
 		get hasFetched() {
 			return hasFetched;
+		},
+		/** The signal strip numbers are from the server, not the empty default. */
+		get summaryLoaded() {
+			return summaryLoaded;
+		},
+		/** The type tab counts are from the server, not the empty default. */
+		get countsLoaded() {
+			return countsLoaded;
 		},
 		get hasActiveFilters() {
 			return hasActiveFilters;
@@ -163,6 +178,9 @@ function createTargetsStore() {
 				organizations = [];
 				tags = [];
 				hasFetched = false;
+				summaryLoaded = false;
+				countsLoaded = false;
+				loadError = null;
 				if (filters.projectSlug !== undefined) pagination.currentPage = 1;
 			}
 
@@ -184,46 +202,54 @@ function createTargetsStore() {
 					organizationsSlug !== projectSlug ||
 					tagsSlug !== projectSlug;
 
-				const promises: Promise<unknown>[] = [
-					targetsApi.list({
-						...baseFilters,
-						signal: filters.signalFilter,
-						sort_by: filters.sortKey,
-						sort_dir: filters.sortDir,
-						page: pagination.currentPage,
-						size: pagination.pageSize
-					}),
+				// the list decides the page; the strip, tabs and facets may fail on their own
+				const extras = Promise.allSettled([
 					targetsApi.getStats(baseFilters),
-					targetsApi.getCounts(countFilters(projectSlug))
-				];
-
-				if (shouldFetchOrgsAndTags) {
-					promises.push(
-						organizationsApi.list({ project_slug: projectSlug }),
-						tagsApi.list({ project_slug: projectSlug })
-					);
-				}
-
-				const results = await Promise.all(promises);
+					targetsApi.getCounts(countFilters(projectSlug)),
+					shouldFetchOrgsAndTags
+						? organizationsApi.list({ project_slug: projectSlug })
+						: Promise.resolve(null),
+					shouldFetchOrgsAndTags
+						? tagsApi.list({ project_slug: projectSlug })
+						: Promise.resolve(null)
+				]);
+				const targetsResponse: PaginatedResponse<Target> = await targetsApi.list({
+					...baseFilters,
+					signal: filters.signalFilter,
+					sort_by: filters.sortKey,
+					sort_dir: filters.sortDir,
+					page: pagination.currentPage,
+					size: pagination.pageSize
+				});
+				const [stats, countsResult, orgsResult, tagsResult] = await extras;
 				if (my !== seq) return;
-				const targetsResponse = results[0] as PaginatedResponse<Target>;
 
 				targets = targetsResponse.items;
 				pagination.totalItems = targetsResponse.total;
 				pagination.totalPages = targetsResponse.pages;
-				signalSummary = results[1] as TargetSummary;
-				counts = results[2] as TargetCounts;
+				summaryLoaded = stats.status === 'fulfilled';
+				if (stats.status === 'fulfilled') signalSummary = stats.value;
+				countsLoaded = countsResult.status === 'fulfilled';
+				if (countsResult.status === 'fulfilled') counts = countsResult.value;
 
-				if (shouldFetchOrgsAndTags) {
-					organizations = results[3] as Organization[];
-					tags = results[4] as Tag[];
+				if (
+					shouldFetchOrgsAndTags &&
+					orgsResult.status === 'fulfilled' &&
+					tagsResult.status === 'fulfilled' &&
+					orgsResult.value &&
+					tagsResult.value
+				) {
+					organizations = orgsResult.value;
+					tags = tagsResult.value;
 					organizationsSlug = tagsSlug = projectSlug;
 				}
 
 				hasFetched = true;
+				loadError = null;
 			} catch (e) {
 				if (my !== seq) return;
 				error = e instanceof Error ? e.message : 'Targets not loaded';
+				loadError = error;
 			} finally {
 				if (my === seq) isLoading = false;
 			}
@@ -280,6 +306,7 @@ function createTargetsStore() {
 			if (!filters.projectSlug) return;
 			try {
 				signalSummary = await targetsApi.getStats(scopeFilters(filters.projectSlug));
+				summaryLoaded = true;
 			} catch {}
 		},
 
@@ -564,7 +591,10 @@ function createTargetsStore() {
 			};
 			signalSummary = { ...EMPTY_TARGET_SUMMARY };
 			error = null;
+			loadError = null;
 			hasFetched = false;
+			summaryLoaded = false;
+			countsLoaded = false;
 		}
 	};
 }

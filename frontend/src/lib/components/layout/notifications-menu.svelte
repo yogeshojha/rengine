@@ -6,6 +6,7 @@
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { mergeProps } from 'bits-ui';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -42,6 +43,7 @@
 	type InboxTab = 'unread' | 'all';
 
 	let popoverOpen = $state(false);
+	let openedByPointer = false;
 	let modalOpen = $state(false);
 	let tab = $state<InboxTab>('all');
 	let selectedFilter = $state<NotificationType | 'all'>('all');
@@ -206,7 +208,13 @@
 	<Popover.Trigger>
 		{#snippet child({ props })}
 			<Button
-				{...props}
+				{...mergeProps(
+					{
+						onpointerdown: () => (openedByPointer = true),
+						onkeydown: () => (openedByPointer = false)
+					},
+					props
+				)}
 				variant="ghost"
 				size="icon"
 				class="relative"
@@ -228,7 +236,9 @@
 	<Popover.Content
 		align="end"
 		sideOffset={8}
-		onOpenAutoFocus={(e) => e.preventDefault()}
+		onOpenAutoFocus={(e) => {
+			if (openedByPointer) e.preventDefault();
+		}}
 		class="w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0"
 	>
 		<div class="flex items-center justify-between gap-2 px-4 pt-3 pb-2">

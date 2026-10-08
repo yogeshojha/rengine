@@ -13,6 +13,7 @@ function createProjectsStore() {
 	let activeProject = $state<Project | null>(null);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let loadError = $state<string | null>(null);
 	let hasFetched = $state(false);
 
 	return {
@@ -28,6 +29,10 @@ function createProjectsStore() {
 		get error() {
 			return error;
 		},
+		/** Why the project list did not load; kept while a retry is in flight. */
+		get loadError() {
+			return loadError;
+		},
 		get hasFetched() {
 			return hasFetched;
 		},
@@ -41,6 +46,7 @@ function createProjectsStore() {
 			try {
 				projects = await projectsApi.list();
 				hasFetched = true;
+				loadError = null;
 
 				const storedSlug = getStoredActiveProjectSlug();
 
@@ -56,6 +62,7 @@ function createProjectsStore() {
 				}
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Projects not loaded';
+				loadError = error;
 			} finally {
 				isLoading = false;
 			}
@@ -95,6 +102,7 @@ function createProjectsStore() {
 			projects = [];
 			activeProject = null;
 			error = null;
+			loadError = null;
 			hasFetched = false;
 			if (typeof window !== 'undefined') {
 				localStorage.removeItem(STORAGE_KEYS.activeProjectSlug);

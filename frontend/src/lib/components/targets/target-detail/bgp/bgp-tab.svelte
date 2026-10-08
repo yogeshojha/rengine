@@ -6,7 +6,9 @@
 	import { toast } from 'svelte-sonner';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import * as InputGroup from '$lib/components/ui/input-group';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import { REVEAL_SM } from '$lib/components/scans/results/table/columns';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import RecordShell from '../record-shell.svelte';
@@ -30,6 +32,7 @@
 		status: TaskStatus;
 		error?: string | null;
 		loading: boolean;
+		unloaded?: string | null;
 		refreshing: boolean;
 		onRefresh: () => void;
 		onAddAsTarget?: (value: string) => void;
@@ -42,6 +45,7 @@
 		status,
 		error = null,
 		loading,
+		unloaded = null,
 		refreshing,
 		onRefresh,
 		onAddAsTarget
@@ -219,8 +223,8 @@
 			<Button
 				{...props}
 				variant="ghost"
-				size="icon"
-				class="size-7 shrink-0"
+				size="icon-sm"
+				class="shrink-0"
 				aria-label="Add {value} as target"
 				onclick={() => onAddAsTarget?.(value)}
 			>
@@ -237,15 +241,13 @@
 	queriedAt={bgp?.summary?.queried_at ?? null}
 	{refreshing}
 	{loading}
+	{unloaded}
 	empty={!hasData}
 	emptyText="No routing data"
 	{onRefresh}
 >
 	{#snippet bar()}
-		<span class="text-sm">
-			<span class="font-medium">Routing</span>
-			<span class="text-muted-foreground"> · {headline}</span>
-		</span>
+		<span class="text-sm font-medium">{headline}</span>
 	{/snippet}
 
 	<div class="flex flex-col">
@@ -264,7 +266,7 @@
 							</span>
 							{#if f.copy || (f.add && onAddAsTarget)}
 								<span
-									class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+									class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 								>
 									{#if f.copy}<CopyButton value={f.copy} />{/if}
 									{#if f.add && onAddAsTarget}{@render addButton(f.add)}{/if}
@@ -280,33 +282,32 @@
 		{#if prefixes.length}
 			<RecordGroup label="Prefixes" mono={false} sub="{prefixes.length.toLocaleString()} announced">
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2">
-					<div class="flex items-center gap-0.5">
+					<ToggleGroup.Root
+						type="single"
+						variant="outline"
+						value={prefixFamily}
+						onValueChange={(v) => v && (prefixFamily = v as Family)}
+						aria-label="Address family"
+					>
 						{#each FAMILIES as f (f)}
-							<button
-								type="button"
-								class="rounded-md px-2 py-1 text-sm {prefixFamily === f
-									? 'bg-muted font-medium'
-									: 'text-muted-foreground hover:text-foreground'}"
-								aria-pressed={prefixFamily === f}
-								onclick={() => (prefixFamily = f)}
-							>
+							<ToggleGroup.Item value={f} class="h-9 px-3 font-normal">
 								{familyLabel(f)}
-								<span class="ml-1 text-2xs tabular-nums">{familyCount(f).toLocaleString()}</span>
-							</button>
+								<span class="text-xs text-muted-foreground tabular-nums"
+									>{familyCount(f).toLocaleString()}</span
+								>
+							</ToggleGroup.Item>
 						{/each}
-					</div>
-					<div class="relative">
-						<Search
-							class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-						/>
-						<Input
+					</ToggleGroup.Root>
+					<InputGroup.Root class="w-44">
+						<InputGroup.Addon><Search /></InputGroup.Addon>
+						<InputGroup.Input
 							bind:value={prefixQuery}
 							placeholder="Find prefix"
 							aria-label="Find prefix"
-							class="h-8 w-44 pl-8 font-mono text-xs"
+							class="font-mono text-xs"
 						/>
-					</div>
-					<Button variant="outline" size="sm" class="ml-auto h-8 gap-1.5" onclick={copyPrefixes}>
+					</InputGroup.Root>
+					<Button variant="outline" class="ml-auto gap-1.5" onclick={copyPrefixes}>
 						{#if copiedPrefixes}
 							<Check class="size-3.5" /> Copied
 						{:else}
@@ -334,7 +335,7 @@
 								{p.last_seen ? formatShortDate(p.last_seen) : '—'}
 							</span>
 							<span
-								class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+								class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 							>
 								<CopyButton value={p.prefix} />
 								{#if onAddAsTarget}{@render addButton(p.prefix)}{/if}
@@ -361,17 +362,15 @@
 		{#if neighbours.length}
 			<RecordGroup label="Peers" mono={false} sub="{neighbours.length.toLocaleString()} neighbors">
 				<div class="flex items-center gap-3 py-2">
-					<div class="relative">
-						<Search
-							class="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
-						/>
-						<Input
+					<InputGroup.Root class="w-40">
+						<InputGroup.Addon><Search /></InputGroup.Addon>
+						<InputGroup.Input
 							bind:value={peerQuery}
 							placeholder="Find AS"
 							aria-label="Find AS number"
-							class="h-8 w-40 pl-8 font-mono text-xs"
+							class="font-mono text-xs"
 						/>
-					</div>
+					</InputGroup.Root>
 				</div>
 				<div class="grid grid-cols-1 gap-x-6 gap-y-4 py-2 md:grid-cols-3">
 					{#each peerGroups as g (g.rel)}
@@ -447,7 +446,7 @@
 							{r.origin_asn ? `AS${r.origin_asn}` : '—'}
 						</span>
 						<span
-							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+							class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 						>
 							<CopyButton value={r.related_prefix} />
 							{#if onAddAsTarget}{@render addButton(r.related_prefix)}{/if}
@@ -468,7 +467,7 @@
 						{#if a.rir}<span class="shrink-0 text-xs text-muted-foreground uppercase">{a.rir}</span
 							>{/if}
 						<span
-							class="flex h-4 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"
+							class="flex h-4 shrink-0 items-center transition-opacity {REVEAL_SM} sm:focus-within:opacity-100"
 						>
 							<CopyButton value={a.abuse_email} />
 						</span>

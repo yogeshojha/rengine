@@ -6,7 +6,8 @@
 
 	$effect(() => {
 		if (!auth.isLoading) {
-			if (auth.isAuthenticated) {
+			// unreachable: the app shell shows the server state with a retry, not the login form
+			if (auth.isAuthenticated || auth.unreachable) {
 				goto(ROUTES.dashboard, { replaceState: true });
 			} else {
 				goto(ROUTES.login, { replaceState: true });

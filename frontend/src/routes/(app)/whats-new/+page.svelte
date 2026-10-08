@@ -913,16 +913,20 @@
 	<h1 class="sr-only">{routeLabels['whats-new']}</h1>
 
 	<Card.Root class="gap-0 overflow-clip py-0">
-		<NewStrip
-			{feed}
-			kinds={visibleKinds}
-			period={stripPeriod}
-			active={signal}
-			from={dayFrom}
-			to={dayTo}
-			onSignal={(s) => (signal = s)}
-			onPick={pickDays}
-		/>
+		{#if !(error && !feed && tab !== NewTab.VISUAL)}
+			<NewStrip
+				{feed}
+				kinds={visibleKinds}
+				period={stripPeriod}
+				active={signal}
+				from={dayFrom}
+				to={dayTo}
+				onSignal={(s) => (signal = s)}
+				onPick={pickDays}
+				failed={!!error && !feed}
+				onRetry={() => load()}
+			/>
+		{/if}
 
 		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
 			<CountTabs
@@ -974,7 +978,7 @@
 					loading={catchingUp}
 					loadingLabel="Marking"
 					onclick={caughtUp}
-					disabled={!feed}
+					disabled={!feed || (feed.events === 0 && whatsNewStore.unseen === 0)}
 				>
 					<Check class="size-4" />
 					Caught up

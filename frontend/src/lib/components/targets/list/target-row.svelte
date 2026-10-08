@@ -53,6 +53,8 @@
 		run: ScanRead | undefined;
 		trend: ScanTargetTrend | undefined;
 		loaded: boolean;
+		/** Run data did not load for this row. */
+		failed?: boolean;
 		now: number;
 		index: number;
 		expanded: boolean;
@@ -83,6 +85,7 @@
 		run,
 		trend,
 		loaded,
+		failed = false,
 		now,
 		index,
 		expanded,
@@ -205,6 +208,8 @@
 								<span>Run {relativeTime(started)}</span>
 							{:else if loaded}
 								<span>Not scanned</span>
+							{:else if failed}
+								<span>—</span>
 							{:else}
 								<Skeleton class="h-3 w-16" />
 							{/if}
@@ -285,6 +290,8 @@
 					</Hint>
 				{:else if loaded}
 					<span class="text-xs leading-6 text-muted-foreground">Not scanned</span>
+				{:else if failed}
+					<span class="text-xs leading-6 text-muted-foreground" title="Runs not loaded">—</span>
 				{:else}
 					<Skeleton class="h-6 w-24 rounded-md" />
 					<Skeleton class="h-3 w-12" />
@@ -302,7 +309,7 @@
 						live={findingsLive}
 						{highlight}
 					/>
-				{:else if loaded}
+				{:else if loaded || failed}
 					<span class="text-xs text-muted-foreground">—</span>
 				{:else}
 					<Skeleton class="h-6 w-28 rounded-md" />
@@ -314,7 +321,7 @@
 			<div role="cell" class="{TCOL.assets} h-6 items-center">
 				{#if run}
 					<AssetsCell scan={run} />
-				{:else if !loaded}
+				{:else if !loaded && !failed}
 					<Skeleton class="h-6 w-40 rounded-md" />
 				{/if}
 			</div>
@@ -324,7 +331,7 @@
 			<div role="cell" class="{TCOL.change} h-6 items-center">
 				{#if run}
 					<ChangeCell {projectId} scan={run} onCompare={() => onCompare(run)} />
-				{:else if !loaded}
+				{:else if !loaded && !failed}
 					<Skeleton class="h-4 w-14" />
 				{/if}
 			</div>

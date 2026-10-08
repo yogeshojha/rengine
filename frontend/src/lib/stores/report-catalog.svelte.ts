@@ -1,15 +1,19 @@
 import { reportsApi } from '$lib/api/reports';
 import type { ReportCatalog, SectionCatalogEntry, ThemeSummary } from '$lib/types/report';
-import { toast } from 'svelte-sonner';
 
 function createReportCatalogStore() {
 	let catalog = $state<ReportCatalog | null>(null);
 	let isLoading = $state(false);
 	let hasFetched = $state(false);
+	let loadError = $state<string | null>(null);
 
 	return {
 		get catalog() {
 			return catalog;
+		},
+		/** Why the catalog did not load; shown inline where the catalog is used. */
+		get loadError() {
+			return loadError;
 		},
 		get sections(): SectionCatalogEntry[] {
 			return catalog?.sections ?? [];
@@ -39,8 +43,9 @@ function createReportCatalogStore() {
 			try {
 				catalog = await reportsApi.catalog();
 				hasFetched = true;
+				loadError = null;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Report catalog not loaded');
+				loadError = e instanceof Error ? e.message : 'Report catalog not loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -50,6 +55,7 @@ function createReportCatalogStore() {
 			catalog = null;
 			isLoading = false;
 			hasFetched = false;
+			loadError = null;
 		}
 	};
 }

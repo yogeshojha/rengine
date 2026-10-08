@@ -155,25 +155,24 @@
 		</InputGroup.Root>
 		<Hint text="Only assets that answered an HTTP request">
 			{#snippet child(props)}
-				<span {...props} class="inline-flex">
-					<Toggle
-						variant="outline"
-						size="lg"
-						pressed={live}
-						onPressedChange={(v) => {
-							live = v;
-							pageIndex = 0;
-						}}
-						class="font-normal"
-					>
-						Responding
-						{#if facets}
-							<span class="ml-1.5 text-xs text-muted-foreground tabular-nums">
-								{facets.live.toLocaleString()}
-							</span>
-						{/if}
-					</Toggle>
-				</span>
+				<Toggle
+					{...props}
+					variant="outline"
+					size="lg"
+					pressed={live}
+					onPressedChange={(v) => {
+						live = v;
+						pageIndex = 0;
+					}}
+					class="font-normal"
+				>
+					Responding
+					{#if facets}
+						<span class="ml-1.5 text-xs text-muted-foreground tabular-nums">
+							{facets.live.toLocaleString()}
+						</span>
+					{/if}
+				</Toggle>
 			{/snippet}
 		</Hint>
 		<SortMenu

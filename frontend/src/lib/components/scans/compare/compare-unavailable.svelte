@@ -56,10 +56,12 @@
 							class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 transition-colors last:border-b-0 hover:bg-accent/40"
 						>
 							<GitCompareArrows class="size-3.5 shrink-0 text-muted-foreground" />
-							<span class="text-sm font-medium">{run.engine_name}</span>
+							<span class="text-sm font-medium tabular-nums">
+								{run.started_at ? formatDateTime(run.started_at) : 'Not started'}
+							</span>
 							<span class="text-xs text-muted-foreground tabular-nums">
 								{[
-									run.started_at ? formatDateTime(run.started_at) : '',
+									run.engine_name,
 									run.duration_seconds != null ? formatSeconds(run.duration_seconds) : ''
 								]
 									.filter(Boolean)
@@ -75,10 +77,10 @@
 						<div
 							class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-5 py-3 opacity-60 last:border-b-0"
 						>
-							<span class="text-sm font-medium">{run.engine_name}</span>
-							<span class="text-xs text-muted-foreground tabular-nums">
-								{run.started_at ? formatDateTime(run.started_at) : ''}
+							<span class="text-sm font-medium tabular-nums">
+								{run.started_at ? formatDateTime(run.started_at) : 'Not started'}
 							</span>
+							<span class="text-xs text-muted-foreground">{run.engine_name}</span>
 							<span class="w-full text-xs text-muted-foreground">{run.reason}</span>
 						</div>
 					{/each}

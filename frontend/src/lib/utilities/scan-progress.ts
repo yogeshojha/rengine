@@ -72,6 +72,8 @@ export function stageProgress(
 	if (scan.status === 'pending') label = 'Queued';
 	else if (run?.stage) label = run.stage.title;
 	else if (total > 0 && done >= total) label = 'Publishing results';
+	// no stage plan (or between stages) on a running scan: it is past starting
+	else if (scan.status === 'running' && (total === 0 || done > 0)) label = 'Running';
 	else label = 'Starting';
 	return { done, total, percent, label, steps: stageSteps(run, planned) };
 }

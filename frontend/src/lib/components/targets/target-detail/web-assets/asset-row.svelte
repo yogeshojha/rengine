@@ -68,6 +68,7 @@
 		<div class="flex min-w-0 items-center gap-1.5">
 			<a
 				href={scanHref}
+				title={asset.name}
 				class="truncate font-mono text-sm {asset.current
 					? ''
 					: 'text-muted-foreground line-through decoration-muted-foreground/40'} hover:text-primary"
@@ -106,7 +107,9 @@
 			{/if}
 		</div>
 		{#if asset.cname}
-			<span class="truncate font-mono text-xs text-muted-foreground">→ {asset.cname}</span>
+			<span class="truncate font-mono text-xs text-muted-foreground" title={asset.cname}
+				>→ {asset.cname}</span
+			>
 		{/if}
 	</div>
 
@@ -132,6 +135,7 @@
 			class="hidden {grow('title')} {width(
 				'title'
 			)} truncate text-sm text-muted-foreground sm:block"
+			title={asset.title || undefined}
 		>
 			{#if asset.title}
 				<HighlightText text={asset.title} terms={[term]} />

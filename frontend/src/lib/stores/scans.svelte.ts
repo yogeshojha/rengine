@@ -76,11 +76,14 @@ function createScansStore() {
 	let scans = $state<ScanRead[]>([]);
 	let stats = $state<ScanStats | null>(null);
 	let daily = $state<ScanDaily | null>(null);
+	let statsFailed = $state(false);
+	let dailyFailed = $state(false);
 	let trends = $state<Record<string, ScanTargetTrend>>({});
 
 	let isLoading = $state(false);
 	let refreshing = $state(false);
 	let error = $state<string | null>(null);
+	let loadError = $state<string | null>(null);
 	let hasFetched = $state(false);
 
 	let filters = $state<ScanFilters>(defaultFilters());
@@ -154,11 +157,13 @@ function createScansStore() {
 			pagination.totalItems = res.total;
 			pagination.totalPages = res.pages;
 			error = null;
+			loadError = null;
 			hasFetched = true;
 			fetchTrends(projectId, res.items);
 		} catch (e) {
 			if (seq === loadSeq && !silent) {
 				error = e instanceof Error ? e.message : 'Scans not loaded';
+				loadError = error;
 			}
 		} finally {
 			if (seq === loadSeq) {
@@ -190,15 +195,23 @@ function createScansStore() {
 		scansApi
 			.stats(projectId, targetIds)
 			.then((s) => {
-				if (current()) stats = s;
+				if (!current()) return;
+				stats = s;
+				statsFailed = false;
 			})
-			.catch(() => {});
+			.catch(() => {
+				if (current()) statsFailed = true;
+			});
 		scansApi
 			.daily(projectId, HISTORY_DAYS, targetIds)
 			.then((d) => {
-				if (current()) daily = d;
+				if (!current()) return;
+				daily = d;
+				dailyFailed = false;
 			})
-			.catch(() => {});
+			.catch(() => {
+				if (current()) dailyFailed = true;
+			});
 	}
 
 	function reload() {
@@ -266,6 +279,13 @@ function createScansStore() {
 		get stats() {
 			return stats;
 		},
+		/** The last stats request failed; `stats` may still hold an older answer. */
+		get statsFailed() {
+			return statsFailed;
+		},
+		get dailyFailed() {
+			return dailyFailed;
+		},
 		get days() {
 			return daily?.days ?? [];
 		},
@@ -283,6 +303,13 @@ function createScansStore() {
 		},
 		get error() {
 			return error;
+		},
+		get hasFetched() {
+			return hasFetched;
+		},
+		/** Why the run list did not load; mutations report through `error`. */
+		get loadError() {
+			return loadError;
 		},
 		get filters() {
 			return filters;
@@ -309,8 +336,11 @@ function createScansStore() {
 				scans = [];
 				stats = null;
 				daily = null;
+				statsFailed = false;
+				dailyFailed = false;
 				trends = {};
 				hasFetched = false;
+				loadError = null;
 				if (view) applyView(view);
 				fetchAll(undefined, false);
 				fetchStats();
@@ -323,6 +353,12 @@ function createScansStore() {
 
 		refresh() {
 			fetchAll(pagination.currentPage, true);
+			fetchStats();
+		},
+
+		/** Load again after a failure, showing the loading state. */
+		retry() {
+			fetchAll(pagination.currentPage, false);
 			fetchStats();
 		},
 
@@ -495,6 +531,9 @@ function createScansStore() {
 			filters = defaultFilters();
 			pagination = { currentPage: 1, pageSize: DEFAULT_PAGE_SIZE, totalItems: 0, totalPages: 0 };
 			error = null;
+			loadError = null;
+			statsFailed = false;
+			dailyFailed = false;
 			hasFetched = false;
 		}
 	};

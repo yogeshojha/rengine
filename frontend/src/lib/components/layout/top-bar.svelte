@@ -9,6 +9,7 @@
 	import { activityFeed } from '$lib/stores/activity-feed.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import CommandSearch from '$lib/components/layout/command-search.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -22,6 +23,8 @@
 	interface BreadcrumbItem {
 		label: string;
 		href?: string;
+		/** The page has not named this segment yet. */
+		pending?: boolean;
 	}
 
 	let { breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItem[] } = $props();
@@ -52,15 +55,24 @@
 					{#if i > 0}
 						<Breadcrumb.Separator class="hidden @3xl/topbar:block" />
 					{/if}
-					<Breadcrumb.Item class={last ? 'min-w-0' : 'hidden min-w-0 @3xl/topbar:inline-flex'}>
-						{#if last}
-							<Breadcrumb.Page class="truncate font-medium">{crumb.label}</Breadcrumb.Page>
+					<Breadcrumb.Item class={last ? 'min-w-0' : 'hidden shrink-0 @3xl/topbar:inline-flex'}>
+						{#if crumb.pending}
+							<Skeleton class="h-4 w-20" aria-hidden="true" />
+							<span class="sr-only">{crumb.label}</span>
+						{:else if last}
+							<Breadcrumb.Page class="truncate font-medium" title={crumb.label}>
+								{crumb.label}
+							</Breadcrumb.Page>
 						{:else if crumb.href}
-							<Breadcrumb.Link href={safeHref(crumb.href)} class="max-w-48 truncate">
+							<Breadcrumb.Link
+								href={safeHref(crumb.href)}
+								class="max-w-48 truncate"
+								title={crumb.label}
+							>
 								{crumb.label}
 							</Breadcrumb.Link>
 						{:else}
-							<span class="max-w-48 truncate">{crumb.label}</span>
+							<span class="max-w-48 truncate" title={crumb.label}>{crumb.label}</span>
 						{/if}
 					</Breadcrumb.Item>
 				{/each}

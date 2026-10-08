@@ -10,6 +10,7 @@ function createNotificationChannelsStore() {
 	let channels = $state<NotificationChannelRead[]>([]);
 	let isLoading = $state(false);
 	let hasFetched = $state(false);
+	let loadError = $state<string | null>(null);
 
 	return {
 		get channels() {
@@ -18,6 +19,10 @@ function createNotificationChannelsStore() {
 		get hasFetched() {
 			return hasFetched;
 		},
+		/** Why the list did not load; panels show it inline (no toast). */
+		get loadError() {
+			return loadError;
+		},
 
 		async fetch() {
 			if (isLoading) return;
@@ -25,8 +30,9 @@ function createNotificationChannelsStore() {
 			try {
 				channels = await notificationChannelsApi.list();
 				hasFetched = true;
+				loadError = null;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Notification channels not loaded');
+				loadError = e instanceof Error ? e.message : 'Notification channels not loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -91,6 +97,7 @@ function createNotificationChannelsStore() {
 		clear() {
 			channels = [];
 			hasFetched = false;
+			loadError = null;
 		}
 	};
 }

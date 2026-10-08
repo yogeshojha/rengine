@@ -56,6 +56,7 @@
 	let admin = $derived(auth.user?.is_superuser ?? false);
 
 	let status = $state<EstateStatus | null>(null);
+	let statusError = $state<string | null>(null);
 	let starters = $state<EstateStarters | null>(null);
 	let startersLoading = $state(false);
 	let threads = $state<EstateThread[]>([]);
@@ -126,20 +127,16 @@
 	let filtered = $derived(thread?.scope.filtered ?? false);
 	let showLanding = $derived(!thread && !loadingThread && !notFound && !draft);
 
-	$effect(() => {
+	function loadStatus() {
+		statusError = null;
 		void estateApi
 			.status()
 			.then((s) => (status = s))
-			.catch(
-				() =>
-					(status = {
-						available: false,
-						off_reason: NO_RESPONSE,
-						off_code: null,
-						provider: null,
-						model: null
-					})
-			);
+			.catch((e) => (statusError = e instanceof Error ? e.message : NO_RESPONSE));
+	}
+
+	$effect(() => {
+		untrack(loadStatus);
 	});
 
 	$effect(() => {
@@ -566,6 +563,8 @@
 		{#if showLanding}
 			<AskLanding
 				{status}
+				{statusError}
+				onRetryStatus={loadStatus}
 				{starters}
 				{startersLoading}
 				recent={threads}
@@ -729,7 +728,9 @@
 					<div bind:this={endEl}></div>
 
 					<div class="sticky bottom-0 z-10 -mx-2 bg-background px-2 pt-3 pb-1">
-						{#if status && !available}
+						{#if statusError && !status}
+							<AskOff reason="AI status not loaded" detail={statusError} onRetry={loadStatus} />
+						{:else if status && !available}
 							<AskOff reason={status.off_reason ?? NO_RESPONSE} code={status.off_code} {admin} />
 						{:else}
 							<div class="ask-composer">

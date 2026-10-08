@@ -6,6 +6,7 @@ function createProxiesStore() {
 	let proxies = $state<ProxyRead[]>([]);
 	let isLoading = $state(false);
 	let hasFetched = $state(false);
+	let loadError = $state<string | null>(null);
 
 	return {
 		get proxies() {
@@ -17,6 +18,10 @@ function createProxiesStore() {
 		get hasFetched() {
 			return hasFetched;
 		},
+		/** Why the list did not load; panels show it inline (no toast). */
+		get loadError() {
+			return loadError;
+		},
 		get defaultId(): string | null {
 			return proxies.find((p) => p.is_default && p.is_active)?.id ?? null;
 		},
@@ -27,8 +32,9 @@ function createProxiesStore() {
 			try {
 				proxies = await proxiesApi.list();
 				hasFetched = true;
+				loadError = null;
 			} catch (e) {
-				toast.error(e instanceof Error ? e.message : 'Proxies not loaded');
+				loadError = e instanceof Error ? e.message : 'Proxies not loaded';
 			} finally {
 				isLoading = false;
 			}
@@ -101,6 +107,7 @@ function createProxiesStore() {
 		clear() {
 			proxies = [];
 			hasFetched = false;
+			loadError = null;
 		}
 	};
 }

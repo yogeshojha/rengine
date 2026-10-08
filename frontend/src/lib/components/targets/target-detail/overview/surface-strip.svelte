@@ -1,6 +1,5 @@
 <script lang="ts">
-	import Play from '@lucide/svelte/icons/play';
-	import { Button } from '$lib/components/ui/button';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
 	import { ROUTES } from '$lib/config/routes';
@@ -21,12 +20,13 @@
 		targetId: string;
 		summary: TargetSummaryRead | null;
 		loading: boolean;
+		/** The summary did not load; the page notice carries the Retry. */
+		failed?: boolean;
 		history: ScanRead[];
 		run: LiveRun | undefined;
-		onScan: () => void;
 	}
 
-	let { targetId, summary, loading, history, run, onScan }: Props = $props();
+	let { targetId, summary, loading, failed = false, history, run }: Props = $props();
 
 	const W = 120;
 	const H = 22;
@@ -221,14 +221,15 @@
 				</Hint>
 			{/each}
 		</div>
+	{:else if failed && !summary}
+		<div class="flex items-center gap-2 rounded-xl border border-dashed px-4 py-3">
+			<TriangleAlert class="size-4 shrink-0 text-warning" strokeWidth={1.5} />
+			<p class="text-sm text-muted-foreground">Summary not loaded</p>
+		</div>
 	{:else}
-		<div
-			class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3"
-		>
+		<!-- the page header carries the one "Start scan" -->
+		<div class="flex items-center gap-3 rounded-xl border border-dashed px-4 py-3">
 			<p class="text-sm text-muted-foreground">Not scanned</p>
-			<Button size="sm" class="gap-1.5" onclick={onScan}>
-				<Play class="size-3.5" /> Start scan
-			</Button>
 		</div>
 	{/if}
 </div>

@@ -52,7 +52,9 @@
 						? 'text-muted-foreground'
 						: 'font-medium text-info'}"
 				>
-					{solo.status === 'pending' ? SCAN_STATUS_LABEL.pending : (stage ?? 'Starting')}
+					{solo.status === 'pending'
+						? SCAN_STATUS_LABEL.pending
+						: (stage ?? SCAN_STATUS_LABEL[solo.status] ?? 'Starting')}
 				</span>
 			{:else if liveScans.hasLive}
 				<Spinner class="size-3 shrink-0 text-info" />

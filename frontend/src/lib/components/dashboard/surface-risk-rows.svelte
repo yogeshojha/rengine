@@ -83,7 +83,9 @@
 							{#if !r.live}<span class="block h-4 w-0.5 rounded-sm bg-border"></span>{/if}
 						</span>
 						<span class="flex min-w-0 flex-col items-center border-x px-2 text-center">
-							<span class="max-w-full truncate text-xs font-semibold">{r.target_value}</span>
+							<span class="max-w-full truncate text-xs font-semibold" title={r.target_value}
+								>{r.target_value}</span
+							>
 							{#if r.actionable || !settled}
 								<span
 									class="flex flex-wrap items-center justify-center gap-x-1 text-2xs text-muted-foreground"
@@ -136,6 +138,7 @@
 					<div class="flex items-baseline justify-between gap-2">
 						<a
 							href={ROUTES.target(r.target_id)}
+							title={r.target_value}
 							class="truncate text-sm font-semibold hover:text-primary">{r.target_value}</a
 						>
 						<span class="shrink-0 text-2xs text-muted-foreground">

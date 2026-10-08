@@ -52,6 +52,7 @@ function createDashboardStore() {
 	let overview = $state<DashboardOverview | null>(null);
 	let discovery = $state<DashboardDiscovery | null>(null);
 	let readiness = $state<DashboardReadiness | null>(null);
+	let readinessFailed = $state(false);
 	let tech = $state<Facet[] | null>(null);
 	let ipFacets = $state<IpFacetSet | null>(null);
 	let intel = $state<ThreatIntelStatus | null>(null);
@@ -105,11 +106,14 @@ function createDashboardStore() {
 	}
 
 	async function loadReadiness(mySeq: number) {
+		readinessFailed = false;
 		try {
 			const data = await dashboardApi.readiness();
 			if (mySeq === seq) readiness = data;
 		} catch {
-			if (mySeq === seq) readiness = null;
+			if (mySeq !== seq) return;
+			readiness = null;
+			readinessFailed = true;
 		}
 	}
 
@@ -214,6 +218,7 @@ function createDashboardStore() {
 		overview = null;
 		discovery = null;
 		readiness = null;
+		readinessFailed = false;
 		tech = null;
 		ipFacets = null;
 		intel = null;
@@ -246,6 +251,13 @@ function createDashboardStore() {
 		},
 		get readiness() {
 			return readiness;
+		},
+		get readinessFailed() {
+			return readinessFailed;
+		},
+
+		retryReadiness() {
+			void loadReadiness(seq);
 		},
 		get tech() {
 			return tech;

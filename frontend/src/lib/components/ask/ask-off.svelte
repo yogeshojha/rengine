@@ -2,6 +2,7 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import PowerOff from '@lucide/svelte/icons/power-off';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button';
 	import { AskOffCode } from '$lib/config/ask';
 	import { ROUTES } from '$lib/config/routes';
@@ -9,13 +10,22 @@
 	interface Props {
 		reason: string;
 		code?: string | null;
-		admin: boolean;
+		admin?: boolean;
+		/** Set when the AI status did not load: the card offers Retry instead of setup. */
+		onRetry?: () => void;
+		detail?: string | null;
 	}
 
-	let { reason, code = null, admin }: Props = $props();
+	let { reason, code = null, admin = false, onRetry, detail = null }: Props = $props();
 
 	let Icon = $derived(
-		code === AskOffCode.NO_KEY ? KeyRound : code === AskOffCode.FEATURE_OFF ? Ban : PowerOff
+		onRetry
+			? TriangleAlert
+			: code === AskOffCode.NO_KEY
+				? KeyRound
+				: code === AskOffCode.FEATURE_OFF
+					? Ban
+					: PowerOff
 	);
 </script>
 
@@ -27,11 +37,17 @@
 	</span>
 	<div class="flex min-w-0 flex-1 flex-col gap-0.5">
 		<span class="text-sm font-medium">{reason}</span>
-		{#if !admin}
+		{#if onRetry}
+			{#if detail}
+				<span class="text-xs text-muted-foreground">{detail}</span>
+			{/if}
+		{:else if !admin}
 			<span class="text-xs text-muted-foreground">An administrator sets up AI in Settings.</span>
 		{/if}
 	</div>
-	{#if admin}
+	{#if onRetry}
+		<Button variant="outline" size="sm" class="shrink-0" onclick={onRetry}>Retry</Button>
+	{:else if admin}
 		<Button href={ROUTES.ai('connection')} size="sm" class="shrink-0">Set up AI</Button>
 	{/if}
 </div>

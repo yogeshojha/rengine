@@ -22,11 +22,15 @@
 	import { SURFACE_ORDER } from '$lib/config/surface';
 	import { ROUTES } from '$lib/config/routes';
 	import { cn } from '$lib/utils';
+	import { page } from '$app/state';
 	import type { Note } from '$lib/types/note';
 
 	interface Props {
 		note: Note;
+		/** The asset and target the note is on. */
 		showAnchor?: boolean;
+		/** The target link; by default hidden on that target's own page. */
+		showTarget?: boolean;
 		checked?: boolean;
 		onCheck?: (id: string) => void;
 		onChanged?: () => void;
@@ -37,12 +41,15 @@
 	let {
 		note,
 		showAnchor = true,
+		showTarget,
 		checked = false,
 		onCheck,
 		onChanged,
 		onDirty,
 		class: className
 	}: Props = $props();
+
+	const SHOWN_TAGS = 3;
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let editing = $state(false);
@@ -52,6 +59,11 @@
 	let resolved = $derived(note.status === 'resolved');
 	let changeable = $derived(canChangeNote(note, auth.user));
 	let spec = $derived(SURFACE_ORDER.find((s) => s.key === note.dimension) ?? null);
+	let targetShown = $derived(
+		showAnchor && (showTarget ?? page.url.pathname !== ROUTES.target(note.target_id))
+	);
+	let shownTags = $derived(note.tags.slice(0, SHOWN_TAGS));
+	let moreTags = $derived(note.tags.slice(SHOWN_TAGS));
 	let bodyEl = $state<HTMLParagraphElement | null>(null);
 	let expanded = $state(false);
 	let clamped = $state(false);
@@ -157,7 +169,7 @@
 							<span>{spec.noun}</span>
 						{/if}
 					{/if}
-					{#if showAnchor}
+					{#if targetShown}
 						{@render dot()}
 						<a href={ROUTES.target(note.target_id)} class="hover:text-foreground">
 							{note.target_value}
@@ -172,14 +184,26 @@
 					{/if}
 				</div>
 				{#if note.tags.length}
-					<div class="flex max-w-[50%] flex-wrap justify-end gap-1">
-						{#each note.tags as tag (tag)}
+					<div class="flex max-w-[50%] min-w-0 flex-wrap justify-end gap-1">
+						{#each shownTags as tag (tag)}
 							<span
-								class="rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 text-muted-foreground"
+								class="max-w-32 truncate rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 text-muted-foreground"
+								title="#{tag}"
 							>
 								#{tag}
 							</span>
 						{/each}
+						{#if moreTags.length}
+							<Hint text={moreTags.map((t) => `#${t}`).join(' ')}>
+								{#snippet child(props)}
+									<span
+										{...props}
+										class="rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 text-muted-foreground tabular-nums"
+										>+{moreTags.length}</span
+									>
+								{/snippet}
+							</Hint>
+						{/if}
 					</div>
 				{/if}
 				<DropdownMenu.Root>
@@ -228,11 +252,11 @@
 			</div>
 			<div class="flex flex-col gap-0.5">
 				{#if note.title}
-					<h4 class="text-sm font-semibold wrap-anywhere">{note.title}</h4>
+					<h4 class="max-w-[100ch] text-sm font-semibold wrap-anywhere">{note.title}</h4>
 				{/if}
 				<p
 					bind:this={bodyEl}
-					class="text-sm whitespace-pre-wrap text-foreground/90 wrap-anywhere {expanded
+					class="max-w-[100ch] text-sm whitespace-pre-wrap text-foreground/90 wrap-anywhere {expanded
 						? ''
 						: 'line-clamp-4'}"
 				>

@@ -120,7 +120,10 @@
 		</div>
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<div class="flex flex-wrap items-center gap-2">
-				<h1 class="truncate font-mono text-2xl font-semibold tracking-tight">
+				<h1
+					class="min-w-0 truncate font-mono text-2xl font-semibold tracking-tight"
+					title={target.target_value}
+				>
 					{target.target_value}
 				</h1>
 				<Badge variant="outline" class="font-normal text-muted-foreground">
@@ -172,7 +175,7 @@
 		{#if live && onCancel}
 			<Button variant="outline" size="sm" class="gap-1.5" onclick={onCancel}>
 				<Ban class="size-3.5" />
-				Cancel
+				Cancel scan
 			</Button>
 		{:else}
 			<Button variant="outline" size="sm" class="gap-1.5" onclick={onReport}>

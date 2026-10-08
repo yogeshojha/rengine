@@ -278,6 +278,18 @@
 	let rows = $derived(targetsStore.targets);
 	let rowIds = $derived(rows.map((t) => t.id).join(','));
 	let liveCount = $derived(rows.filter((t) => liveScans.isTargetLive(t.id)).length);
+	let loadFailed = $derived(!!targetsStore.loadError && rows.length === 0);
+	// a project with no targets at all: the empty state is the whole page
+	let emptyProject = $derived(
+		targetsStore.hasFetched &&
+			!loadFailed &&
+			targetsStore.pagination.totalItems === 0 &&
+			!targetsStore.hasActiveFilters &&
+			targetsStore.filters.activeTab === 'all'
+	);
+	let showStrip = $derived(
+		!emptyProject && (targetsStore.hasFetched ? targetsStore.summaryLoaded : !loadFailed)
+	);
 
 	$effect(() => {
 		const t = setInterval(() => (now = Date.now()), 1000);
@@ -725,145 +737,157 @@
 	{/if}
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
-		<TargetsStrip
-			loading={!targetsStore.hasFetched}
-			summary={targetsStore.signalSummary}
-			live={liveCount}
-			active={targetsStore.filters.signalFilter}
-			onSignal={handleSignalSelect}
-		/>
-
-		<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
-			<CountTabs
-				tabs={TYPE_TABS}
-				value={targetsStore.filters.activeTab}
-				counts={targetsStore.counts as unknown as Record<string, number>}
-				onChange={handleTabChange}
+		{#if showStrip}
+			<TargetsStrip
+				loading={!targetsStore.hasFetched}
+				summary={targetsStore.signalSummary}
+				live={liveCount}
+				active={targetsStore.filters.signalFilter}
+				onSignal={handleSignalSelect}
 			/>
-			<div class="ml-auto flex items-center gap-2 py-1.5 pr-2">
-				{#if targetsStore.hasFetched && rows.length > 0}
-					<Button variant="outline" size="sm" onclick={handleScanAll}>
-						<Play class="size-4" /> Scan {rows.length}
-					</Button>
-				{/if}
-				<Button variant="outline" size="sm" onclick={() => (showImportModal = true)}>
-					<Upload class="size-4" /> Import
-				</Button>
-				<Button size="sm" onclick={() => (showAddModal = true)}>
-					<Plus class="size-4" /> Add target
-				</Button>
-			</div>
-		</div>
+		{/if}
 
-		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-			<div class="min-w-[min(100%,26rem)] flex-1">
-				<TargetFilters
-					searchQuery={targetsStore.filters.searchQuery}
-					onSearchChange={handleSearchChange}
-					organizations={organizationSummaries}
-					selectedOrganizations={targetsStore.filters.selectedOrganizations}
-					onOrganizationToggle={handleOrganizationToggle}
-					tags={tagSummaries}
-					selectedTags={targetsStore.filters.selectedTags}
-					onTagToggle={handleTagToggle}
+		{#if !emptyProject}
+			<div class="flex flex-wrap items-center justify-between gap-2 border-b px-2">
+				<CountTabs
+					tabs={TYPE_TABS}
+					value={targetsStore.filters.activeTab}
+					counts={targetsStore.hasFetched && targetsStore.countsLoaded
+						? (targetsStore.counts as unknown as Record<string, number>)
+						: null}
+					onChange={handleTabChange}
 				/>
+				<div class="ml-auto flex items-center gap-2 py-1.5 pr-2">
+					{#if targetsStore.hasFetched && rows.length > 0}
+						<Button variant="outline" size="sm" onclick={handleScanAll}>
+							<Play class="size-4" /> Scan {rows.length}
+						</Button>
+					{/if}
+					<Button variant="outline" size="sm" onclick={() => (showImportModal = true)}>
+						<Upload class="size-4" /> Import
+					</Button>
+					<Button size="sm" onclick={() => (showAddModal = true)}>
+						<Plus class="size-4" /> Add target
+					</Button>
+				</div>
 			</div>
-			<div class="ml-auto flex flex-wrap items-center gap-2">
-				<TargetViewsMenu currentQuery={targetsStore.toQueryString()} onApply={handleApplyView} />
-				<TargetViewControls
-					sortKey={targetsStore.filters.sortKey}
-					sortDir={targetsStore.filters.sortDir}
-					onSort={handleSort}
-					onExport={handleExport}
-					exportDisabled={rows.length === 0}
-				/>
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger>
-						{#snippet child({ props })}
-							<Button {...props} variant="outline" size="icon" aria-label="Columns and density">
-								<Columns3 class="size-4" />
+
+			<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+				<div class="min-w-[min(100%,26rem)] flex-1">
+					<TargetFilters
+						searchQuery={targetsStore.filters.searchQuery}
+						onSearchChange={handleSearchChange}
+						organizations={organizationSummaries}
+						selectedOrganizations={targetsStore.filters.selectedOrganizations}
+						onOrganizationToggle={handleOrganizationToggle}
+						tags={tagSummaries}
+						selectedTags={targetsStore.filters.selectedTags}
+						onTagToggle={handleTagToggle}
+					/>
+				</div>
+				<div class="ml-auto flex flex-wrap items-center gap-2">
+					<TargetViewsMenu currentQuery={targetsStore.toQueryString()} onApply={handleApplyView} />
+					<TargetViewControls
+						sortKey={targetsStore.filters.sortKey}
+						sortDir={targetsStore.filters.sortDir}
+						onSort={handleSort}
+						onExport={handleExport}
+						exportDisabled={rows.length === 0}
+					/>
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Button {...props} variant="outline" size="icon" aria-label="Columns and density">
+									<Columns3 class="size-4" />
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="w-64">
+							<DropdownMenu.Label>Columns</DropdownMenu.Label>
+							{#each TARGET_COLUMNS as c (c)}
+								<DropdownMenu.CheckboxItem
+									checked={targetPrefs.shows(c)}
+									onCheckedChange={() => targetPrefs.toggle(c)}
+									closeOnSelect={false}
+								>
+									{TARGET_COLUMN_LABELS[c]}
+									{#if targetPrefs.folded(c) && !FOLDED_INTO_TARGET.has(c)}
+										<span class="ms-auto text-2xs text-muted-foreground">Hidden at this width</span>
+									{/if}
+								</DropdownMenu.CheckboxItem>
+							{/each}
+							<DropdownMenu.Separator />
+							<DropdownMenu.Label>Density</DropdownMenu.Label>
+							<DropdownMenu.RadioGroup
+								value={targetPrefs.density}
+								onValueChange={(v) =>
+									(targetPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
+							>
+								<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
+								<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
+							</DropdownMenu.RadioGroup>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+					<Hint text="Refresh">
+						{#snippet child(props)}
+							<Button
+								{...props}
+								variant="outline"
+								size="icon"
+								aria-label="Refresh"
+								onclick={handleRefresh}
+								disabled={isRefreshing}
+							>
+								<RefreshCw class="size-4 {isRefreshing ? 'animate-spin' : ''}" />
 							</Button>
 						{/snippet}
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-64">
-						<DropdownMenu.Label>Columns</DropdownMenu.Label>
-						{#each TARGET_COLUMNS as c (c)}
-							<DropdownMenu.CheckboxItem
-								checked={targetPrefs.shows(c)}
-								onCheckedChange={() => targetPrefs.toggle(c)}
-								closeOnSelect={false}
+					</Hint>
+					<Hint text="Keyboard shortcuts">
+						{#snippet child(props)}
+							<Button
+								{...props}
+								variant="outline"
+								size="icon"
+								class="hidden sm:inline-flex"
+								aria-label="Keyboard shortcuts"
+								onclick={() => (shortcutsOpen = true)}
 							>
-								{TARGET_COLUMN_LABELS[c]}
-								{#if targetPrefs.folded(c) && !FOLDED_INTO_TARGET.has(c)}
-									<span class="ms-auto text-2xs text-muted-foreground">Hidden at this width</span>
-								{/if}
-							</DropdownMenu.CheckboxItem>
-						{/each}
-						<DropdownMenu.Separator />
-						<DropdownMenu.Label>Density</DropdownMenu.Label>
-						<DropdownMenu.RadioGroup
-							value={targetPrefs.density}
-							onValueChange={(v) =>
-								(targetPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
-						>
-							<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
-							<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
-						</DropdownMenu.RadioGroup>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-				<Hint text="Refresh">
-					{#snippet child(props)}
-						<Button
-							{...props}
-							variant="outline"
-							size="icon"
-							aria-label="Refresh"
-							onclick={handleRefresh}
-							disabled={isRefreshing}
-						>
-							<RefreshCw class="size-4 {isRefreshing ? 'animate-spin' : ''}" />
-						</Button>
-					{/snippet}
-				</Hint>
-				<Hint text="Keyboard shortcuts">
-					{#snippet child(props)}
-						<Button
-							{...props}
-							variant="outline"
-							size="icon"
-							class="hidden sm:inline-flex"
-							aria-label="Keyboard shortcuts"
-							onclick={() => (shortcutsOpen = true)}
-						>
-							<Keyboard class="size-4" />
-						</Button>
-					{/snippet}
-				</Hint>
+								<Keyboard class="size-4" />
+							</Button>
+						{/snippet}
+					</Hint>
+				</div>
 			</div>
-		</div>
 
-		<FilterChips
-			chips={activeChips}
-			onRemove={(chip) => chip.remove()}
-			onClear={handleClearFilters}
-		/>
+			<FilterChips
+				chips={activeChips}
+				onRemove={(chip) => chip.remove()}
+				onClear={handleClearFilters}
+			/>
+		{/if}
 
-		{#if !targetsStore.hasFetched || (targetsStore.isLoading && rows.length === 0)}
-			<TargetsSkeleton />
-		{:else if targetsStore.error && rows.length === 0}
+		{#if loadFailed}
 			<EmptyState
 				compact
 				icon={TriangleAlert}
 				title="Targets not loaded"
-				description={targetsStore.error}
+				description={targetsStore.loadError ?? undefined}
 				class="border-0 bg-transparent py-16"
 			>
-				<Button size="sm" variant="outline" onclick={() => targetsStore.reload()}>Retry</Button>
+				<Button
+					size="sm"
+					variant="outline"
+					disabled={targetsStore.isLoading}
+					onclick={() => targetsStore.reload()}>Retry</Button
+				>
 			</EmptyState>
+		{:else if !targetsStore.hasFetched || (targetsStore.isLoading && rows.length === 0)}
+			<TargetsSkeleton />
 		{:else if rows.length === 0}
 			<TargetEmptyState
 				hasFilters={targetsStore.hasActiveFilters}
-				onAddTarget={() => (showAddModal = true)}
+				onAddTarget={emptyProject ? () => (showAddModal = true) : undefined}
+				onImport={emptyProject ? () => (showImportModal = true) : undefined}
 				onClearFilters={handleClearFilters}
 			/>
 		{:else}
@@ -912,6 +936,7 @@
 						run={runs.runs.get(target.id)}
 						trend={runs.trends.get(target.id)}
 						loaded={runs.known.has(target.id)}
+						failed={runs.failed && !runs.known.has(target.id)}
 						{now}
 						index={i}
 						expanded={expanded.has(target.id)}
