@@ -392,6 +392,7 @@
 
 	/** Valid rows that repeat an earlier row or an existing target are not imported. */
 	function markSkipped(items: CheckedItem[]): TargetPreviewItem[] {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const seen = new Set<string>();
 		return items.map(({ key, existing, ...item }) => {
 			if (item.error) return item;

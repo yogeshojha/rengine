@@ -229,6 +229,7 @@
 
 	/** Open the sections that hold a value (or a problem); Authentication when none do. */
 	function sectionsFor(d: Draft): Record<ContextFormSection, boolean> {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const set = new Set<string>(
 			contextFacets(d)
 				.filter((f) => f.set)
