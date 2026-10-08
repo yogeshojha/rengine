@@ -25,9 +25,11 @@
 		onOpenChange: (open: boolean) => void;
 		onDismiss: (row: InterestRow) => void;
 		onOpenAssets: (row: InterestRow) => void;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
-	let { row, open, onOpenChange, onDismiss, onOpenAssets }: Props = $props();
+	let { row, open, onOpenChange, onDismiss, onOpenAssets, onCloseAutoFocus }: Props = $props();
 
 	let ordered = $derived(row ? [...row.signals].sort((a, b) => b.weight - a.weight) : []);
 	let contentEl = $state<HTMLElement | null>(null);
@@ -43,6 +45,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if row}
 			<Sheet.Header class={SHEET_HEAD}>

@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { REVEAL_SM, REVEAL, rowPadding } from '$lib/components/scans/results/table/columns';
+	import {
+		REVEAL_SM,
+		REVEAL,
+		rowPadding,
+		rowTone
+	} from '$lib/components/scans/results/table/columns';
 	import { toast } from 'svelte-sonner';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -76,7 +81,6 @@
 		checked: boolean;
 		onToggle: () => void;
 		onCheck: () => void;
-		onFocus: () => void;
 		onOpen: (v: VulnerabilityRead) => void;
 		onFilter: (token: string) => void;
 		onTab: (tab: ResultTab, filter: string) => void;
@@ -100,7 +104,6 @@
 		checked,
 		onToggle,
 		onCheck,
-		onFocus,
 		onOpen,
 		onFilter,
 		onTab,
@@ -138,19 +141,18 @@
 
 <div
 	class="group relative border-b border-border/60 transition-colors
-		{checked || selected ? 'bg-primary/5' : focused || expanded ? 'bg-muted/30' : ''}"
+		{checked || selected ? 'bg-primary/5' : expanded ? 'bg-muted/30' : ''}"
 	role="none"
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
-		class="flex cursor-pointer items-center gap-3 px-4 hover:bg-muted/30 {rowPadding(
+		class="flex cursor-pointer items-center gap-3 px-4 transition-colors {rowPadding(
 			compact ? 'compact' : 'cozy'
-		)}"
+		)} {rowTone(false, focused)}"
 		role="row"
 		tabindex="-1"
 		data-vuln-row-index={index}
 		onclick={onToggle}
-		onmouseenter={onFocus}
 	>
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
 		<div class="{FCOL.select} h-6" role="cell" onclick={stopProp}>

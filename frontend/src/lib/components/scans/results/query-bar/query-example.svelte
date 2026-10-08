@@ -35,14 +35,14 @@
 		{#if count != null}
 			<span
 				class="shrink-0 text-xs tabular-nums {empty
-					? 'text-muted-foreground/50'
+					? 'text-muted-foreground'
 					: 'text-muted-foreground group-hover:text-foreground'}">{label}</span
 			>
 		{/if}
 	</span>
 	<span
 		class="w-full truncate font-mono text-xs {empty
-			? 'text-muted-foreground/60'
-			: 'text-primary/80 group-hover:text-primary'}">{example.query}</span
+			? 'text-muted-foreground'
+			: 'text-primary group-hover:text-primary'}">{example.query}</span
 	>
 </button>

@@ -57,9 +57,7 @@
 		<TriangleAlert class="size-3.5 shrink-0" />
 		<span>Coverage not loaded · {error}</span>
 		{#if onRetry}
-			<Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={() => onRetry()}>
-				Retry
-			</Button>
+			<Button variant="outline" size="xs" onclick={() => onRetry()}>Retry</Button>
 		{/if}
 	{:else}
 		<Skeleton class="h-4 w-56 max-w-full" />

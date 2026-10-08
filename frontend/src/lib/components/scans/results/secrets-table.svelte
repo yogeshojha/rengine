@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { RowCursor } from './table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import { page as appPage } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -19,7 +22,7 @@
 	import ResultsPagination from './table/results-pagination.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import GroupList from './table/group-list.svelte';
-	import { readPref, selectAllState, writePref } from './table/columns';
+	import { inPopover, onControl, readPref, selectAllState, writePref } from './table/columns';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
 	import SecretListHeader from './secrets/secret-list-header.svelte';
@@ -116,6 +119,7 @@
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let facets = $state<SecretFacets>(EMPTY_FACETS);
 	let coverage = $state<SecretCoverage | null>(null);
 
@@ -196,9 +200,10 @@
 			totalCapped = result.total_capped;
 			errored = false;
 			if (!result.error && filter.q) queryBar?.remember(filter.q);
-		} catch {
+		} catch (e) {
 			if (mine !== reqId) return;
 			errored = true;
+			loadError = e instanceof Error ? e.message : null;
 			items = [];
 			total = 0;
 		} finally {
@@ -419,7 +424,31 @@
 			selected = await secretsApi.detail(projectId, scanId, row.id);
 		} catch {}
 	}
+
+	const rows = new RowCursor('data-secret-row-index');
+	let shortcutsOpen = $state(false);
+	const SHORTCUTS: Shortcut[] = [
+		['j / k', `Move between ${SEC.nounPlural}`],
+		['Enter', `Open the ${SEC.noun}`],
+		['/', 'Search'],
+		['Esc', 'Clear the highlight']
+	];
+
+	function onKey(e: KeyboardEvent) {
+		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
+		if (keyTaken(e.target) || drawerOpen || topLayer() || inPopover(e.target)) return;
+		if (e.key === '?') {
+			e.preventDefault();
+			shortcutsOpen = true;
+			return;
+		}
+		if (groupBy || loading || errored || !items.length) return;
+		if (e.key === 'Enter' && onControl(e.target, '[data-secret-row-index]')) return;
+		rows.keys(e, items.length, (i) => void openRow(items[i]));
+	}
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <div
 	class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2"
@@ -438,6 +467,7 @@
 		capped={totalCapped}
 		serverError={queryError}
 		onReady={(value) => (queryReady = value)}
+		{active}
 	/>
 </div>
 
@@ -501,6 +531,7 @@
 				{projectId}
 				{scanId}
 				{exportFilters}
+				onShortcuts={() => (shortcutsOpen = true)}
 			/>
 		</div>
 	</div>
@@ -523,6 +554,7 @@
 			<EmptyState
 				icon={TriangleAlert}
 				title="Secrets not loaded"
+				description={loadError ?? undefined}
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
@@ -556,10 +588,15 @@
 				onSelectAll={toggleSelectAll}
 				{onSort}
 			/>
-			<div class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}">
-				{#each items as row (row.id)}
+			<div
+				class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}"
+				{@attach rows.track}
+			>
+				{#each items as row, i (row.id)}
 					<SecretRow
 						{row}
+						index={i}
+						focused={rows.index === i}
 						{term}
 						selected={selected?.id === row.id}
 						checked={selection.has(row.id)}
@@ -613,10 +650,13 @@
 	onClear={() => selection.clear()}
 />
 
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
+
 <SecretDetailSheet
 	{scanId}
 	row={selected}
 	open={drawerOpen}
+	onCloseAutoFocus={rows.restore}
 	onOpenChange={(value) => {
 		drawerOpen = value;
 		if (!value) selected = null;

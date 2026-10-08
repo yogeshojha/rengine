@@ -157,7 +157,7 @@
 					<HighlightText text={node.name} {terms} />
 				</span>
 				{#if node.archive_only}
-					<span class="text-2xs text-muted-foreground/80 italic">archived</span>
+					<span class="text-2xs text-muted-foreground italic">archived</span>
 				{/if}
 				{#if hostNote}
 					<span class="text-2xs text-muted-foreground">{hostNote}</span>

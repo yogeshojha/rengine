@@ -70,6 +70,8 @@
 			connectorId: string,
 			kind: ActionKind
 		) => Promise<HandoffResult | null> | void;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
 	let {
@@ -87,7 +89,8 @@
 		onReveal,
 		connectors = [],
 		catalog = [],
-		onSend
+		onSend,
+		onCloseAutoFocus
 	}: Props = $props();
 
 	let detail = $state<EndpointDetail | null>(null);
@@ -165,6 +168,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if endpoint}
 			<Sheet.Header class={SHEET_HEAD}>

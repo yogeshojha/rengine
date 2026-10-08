@@ -46,6 +46,8 @@
 	import { MAX_HANDOFF, type ActionKind } from '$lib/config/connectors';
 	import RescanAction from './table/rescan-action.svelte';
 	import { RowSelection } from './table/selection.svelte';
+	import { RowCursor } from './table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import GroupList from './table/group-list.svelte';
 	import FilterChips from './table/filter-chips.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
@@ -179,6 +181,7 @@
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let facets = $state<SubdomainFacetSet>(EMPTY_FACETS);
 	let facetsLoaded = $state(false);
 	let hygiene = $state<HygieneSummary | null>(null);
@@ -197,8 +200,8 @@
 	let sheetFocus = $state<{ tab: string; pane?: string } | null>(null);
 	let structureHost = $state<string | null>(null);
 	let structureScanId = $state('');
-	let cursor = $state(-1);
-	let searchRef = $state<HTMLInputElement | null>(null);
+	const rows = new RowCursor('data-row-index');
+	let shortcutsOpen = $state(false);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
 	const selection = new RowSelection<SubdomainRead>();
@@ -373,12 +376,13 @@
 				if (hit) open(hit);
 				else openHost(name);
 			}
-		} catch {
+		} catch (e) {
 			if (my === reqId) {
 				items = [];
 				total = 0;
 				totalCapped = false;
 				errored = true;
+				loadError = e instanceof Error ? e.message : null;
 			}
 		} finally {
 			if (my === reqId) {
@@ -741,7 +745,7 @@
 		setQuery({ ...query, status: key === 'all' ? [] : [key] });
 	}
 	function statusCountClass(key: string, n: number): string {
-		if (n === 0) return 'text-muted-foreground/50';
+		if (n === 0) return 'text-muted-foreground';
 		if (key === '5xx') return 'text-destructive';
 		return 'text-muted-foreground';
 	}
@@ -828,7 +832,7 @@
 	async function rescanSelection() {
 		const picks = selection.rows().map(pickOf);
 		if (picks.length) return await rescan(selectionOf(picks));
-		const row = cursor >= 0 ? items[cursor] : null;
+		const row = rows.index >= 0 ? items[rows.index] : null;
 		if (row) await rescan(selectionOf([pickOf(row)]));
 	}
 
@@ -836,35 +840,32 @@
 		await rescan(querySelection());
 	}
 
-	function scrollCursor() {
-		document.querySelector(`[data-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
-	}
+	const SHORTCUTS: Shortcut[] = [
+		['j / k', `Move between ${WEB.nounPlural}, also in the open sheet`],
+		['Enter', `Open the ${WEB.noun}`],
+		['r', 'Rescan the checked or highlighted rows'],
+		['/', 'Search'],
+		['Esc', 'Clear the highlight']
+	];
+
+	$effect(() => {
+		if (drawerOpen) rows.follow(selectedIndex);
+	});
+
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const typing = keyTaken(e.target);
-		if (e.key === '/' && !typing) {
+		if (keyTaken(e.target) || drawerOpen || topLayer() || inPopover(e.target)) return;
+		if (e.key === '?') {
 			e.preventDefault();
-			searchRef?.focus();
+			shortcutsOpen = true;
 			return;
 		}
-		if (typing || drawerOpen || topLayer() || inPopover(e.target)) return;
 		if (view !== 'table' || !items.length) return;
 		if (e.key === 'Enter' && onControl(e.target, '[data-row-index]')) return;
-		if (e.key === 'j' || e.key === 'ArrowDown') {
-			e.preventDefault();
-			cursor = Math.min(cursor + 1, items.length - 1);
-			scrollCursor();
-		} else if (e.key === 'k' || e.key === 'ArrowUp') {
-			e.preventDefault();
-			cursor = Math.max(cursor - 1, 0);
-			scrollCursor();
-		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
-			open(items[cursor]);
-		} else if (e.key === 'r') {
+		if (rows.keys(e, items.length, (i) => open(items[i]))) return;
+		if (e.key === 'r') {
 			e.preventDefault();
 			rescanSelection();
-		} else if (e.key === 'Escape') {
-			cursor = -1;
 		}
 	}
 
@@ -891,7 +892,7 @@
 >
 	<QueryBar
 		bind:this={queryBar}
-		bind:ref={searchRef}
+		{active}
 		store={querySchema}
 		recentsKey={SURFACE[SurfaceDimension.WEB_ASSETS].recentsKey}
 		hint="status:>=500 not is:cdn"
@@ -1008,6 +1009,7 @@
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
+		onShortcuts={() => (shortcutsOpen = true)}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}
 	/>
@@ -1048,6 +1050,7 @@
 				<EmptyState
 					icon={TriangleAlert}
 					title="Web assets not loaded"
+					description={loadError ?? undefined}
 					class="rounded-none border-0 bg-transparent py-16"
 				>
 					<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
@@ -1119,7 +1122,10 @@
 					onSort={toggleSort}
 				/>
 				<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-					<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+					<div
+						class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}"
+						{@attach rows.track}
+					>
 						{#each items as s, i (s.id)}
 							<AssetRow
 								sub={s}
@@ -1129,7 +1135,7 @@
 								checked={selection.has(s.id)}
 								onCheck={toggleCheck}
 								selected={drawerOpen && selected?.id === s.id}
-								focused={cursor === i}
+								focused={rows.index === i}
 								pad={rowPad}
 								onOpen={open}
 								onHost={openHost}
@@ -1270,10 +1276,13 @@
 	{total}
 	capped={totalCapped}
 	onStep={step}
+	onCloseAutoFocus={rows.restore}
 	onFilter={applyDsl}
 	onPivot={openHost}
 	onOpenEndpoints={onTab ? (h) => onTab(EP.tab, exactToken('host', h)) : undefined}
 />
+
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
 
 <HostStructureDialog
 	host={structureHost}

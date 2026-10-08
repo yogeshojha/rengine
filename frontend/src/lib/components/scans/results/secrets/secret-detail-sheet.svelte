@@ -26,9 +26,11 @@
 		row: SecretDetail | null;
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
-	let { scanId, row, open, onOpenChange }: Props = $props();
+	let { scanId, row, open, onOpenChange, onCloseAutoFocus }: Props = $props();
 
 	const DT = 'text-2xs tracking-wide text-muted-foreground uppercase';
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -63,6 +65,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if row}
 			<Sheet.Header class={SHEET_HEAD}>

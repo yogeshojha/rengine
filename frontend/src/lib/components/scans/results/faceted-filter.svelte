@@ -8,14 +8,19 @@
 	import { cn } from '$lib/utils';
 	import type { Facet } from '$lib/utilities/scan-insights';
 
+	/** a facet option; leave out the count when the source has none */
+	type Option = Omit<Facet, 'count'> & { count?: number };
+
 	interface Props {
 		title: string;
-		options: Facet[];
+		options: Option[];
 		selected: string[];
 		onChange: (next: string[]) => void;
+		/** shown but not usable yet, e.g. while its options load */
+		disabled?: boolean;
 	}
 
-	let { title, options, selected, onChange }: Props = $props();
+	let { title, options, selected, onChange, disabled = false }: Props = $props();
 	let open = $state(false);
 
 	function toggle(value: string) {
@@ -29,6 +34,7 @@
 			<Button
 				{...props}
 				variant="outline"
+				{disabled}
 				class={selected.length ? 'border-primary/50 bg-primary/5' : ''}
 			>
 				<ListFilter class="h-4 w-4" />
@@ -59,9 +65,11 @@
 								<Check class="size-3" />
 							</div>
 							<span class="truncate">{option.label}</span>
-							<span class="ml-auto text-xs text-muted-foreground tabular-nums"
-								>{option.count.toLocaleString()}</span
-							>
+							{#if option.count != null}
+								<span class="ml-auto text-xs text-muted-foreground tabular-nums"
+									>{option.count.toLocaleString()}</span
+								>
+							{/if}
 						</Command.Item>
 					{/each}
 				</Command.Group>

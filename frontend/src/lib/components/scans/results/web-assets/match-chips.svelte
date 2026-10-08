@@ -97,7 +97,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="flex flex-wrap items-center gap-1" onclick={stopProp}>
-		<span class="text-2xs text-muted-foreground/70">matched in</span>
+		<span class="text-2xs text-muted-foreground">matched in</span>
 		{#each shown as match (match.field + match.term)}
 			{@const Icon = ICONS[match.field] ?? Hash}
 			<HoverCard.Root openDelay={120}>

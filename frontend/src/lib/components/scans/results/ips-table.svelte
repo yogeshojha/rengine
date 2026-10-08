@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { RowCursor } from './table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import { page as appPage } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
@@ -136,6 +138,7 @@
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let facets = $state<IpFacetSet>(EMPTY_IP_FACETS);
 	let facetsLoaded = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
@@ -147,8 +150,8 @@
 
 	let selected = $state<IpGroupRead | null>(null);
 	let drawerOpen = $state(false);
-	let cursor = $state(-1);
-	let searchRef = $state<HTMLInputElement | null>(null);
+	const rows = new RowCursor('data-ip-row-index');
+	let shortcutsOpen = $state(false);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
 	const checkedIps = new SvelteSet<string>();
@@ -243,12 +246,13 @@
 				if (hit) open(hit);
 				else openIp(ip);
 			}
-		} catch {
+		} catch (e) {
 			if (my === reqId) {
 				items = [];
 				total = 0;
 				totalCapped = false;
 				errored = true;
+				loadError = e instanceof Error ? e.message : null;
 			}
 		} finally {
 			if (my === reqId) {
@@ -516,32 +520,28 @@
 		syncUrl();
 		onTab?.(SVC.tab, filter);
 	}
-	function scrollCursor() {
-		document.querySelector(`[data-ip-row-index="${cursor}"]`)?.scrollIntoView({ block: 'nearest' });
-	}
+	const SHORTCUTS: Shortcut[] = [
+		['j / k', `Move between ${IP.nounPlural}, also in the open sheet`],
+		['Enter', `Open the ${IP.noun}`],
+		['/', 'Search'],
+		['Esc', 'Clear the highlight']
+	];
+
+	$effect(() => {
+		if (drawerOpen) rows.follow(selectedIndex);
+	});
+
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const typing = keyTaken(e.target);
-		if (e.key === '/' && !typing) {
+		if (keyTaken(e.target) || drawerOpen || topLayer() || inPopover(e.target)) return;
+		if (e.key === '?') {
 			e.preventDefault();
-			searchRef?.focus();
+			shortcutsOpen = true;
 			return;
 		}
-		if (typing || drawerOpen || topLayer() || inPopover(e.target) || !items.length) return;
+		if (!items.length) return;
 		if (e.key === 'Enter' && onControl(e.target, '[data-ip-row-index]')) return;
-		if (e.key === 'j' || e.key === 'ArrowDown') {
-			e.preventDefault();
-			cursor = Math.min(cursor + 1, items.length - 1);
-			scrollCursor();
-		} else if (e.key === 'k' || e.key === 'ArrowUp') {
-			e.preventDefault();
-			cursor = Math.max(cursor - 1, 0);
-			scrollCursor();
-		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
-			open(items[cursor]);
-		} else if (e.key === 'Escape') {
-			cursor = -1;
-		}
+		rows.keys(e, items.length, (i) => open(items[i]));
 	}
 
 	let rescanBusy = $state(false);
@@ -620,7 +620,7 @@
 >
 	<QueryBar
 		bind:this={queryBar}
-		bind:ref={searchRef}
+		{active}
 		store={ipQuerySchema}
 		recentsKey={IP.recentsKey}
 		hint="is:sensitive not cdn:yes"
@@ -671,6 +671,7 @@
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
+		onShortcuts={() => (shortcutsOpen = true)}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}
 	/>
@@ -704,6 +705,7 @@
 		<EmptyState
 			icon={TriangleAlert}
 			title="Addresses not loaded"
+			description={loadError ?? undefined}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
@@ -759,7 +761,10 @@
 			onSort={toggleSort}
 		/>
 		<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+			<div
+				class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}"
+				{@attach rows.track}
+			>
 				{#each items as g, i (g.ip)}
 					<IpRow
 						group={g}
@@ -769,7 +774,7 @@
 						checked={checkedIps.has(g.ip)}
 						onCheck={toggleCheck}
 						selected={drawerOpen && selected?.ip === g.ip}
-						focused={cursor === i}
+						focused={rows.index === i}
 						pad={rowPad}
 						onOpen={open}
 						onFilter={applyDsl}
@@ -833,6 +838,8 @@
 	{/snippet}
 </RowSelectionBar>
 
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
+
 <IpDetailSheet
 	group={selected}
 	open={drawerOpen}
@@ -841,6 +848,7 @@
 	pageOffset={pageIndex * pageSize}
 	{total}
 	onStep={step}
+	onCloseAutoFocus={rows.restore}
 	onFilter={applyDsl}
 	onHosts={showHosts}
 	onServices={showServices}

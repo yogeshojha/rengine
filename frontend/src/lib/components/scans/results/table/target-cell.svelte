@@ -33,9 +33,9 @@
 			{/snippet}
 		</Hint>
 		{#if rest > 0}
-			<span class="shrink-0 text-2xs text-muted-foreground/70">+{rest}</span>
+			<span class="shrink-0 text-2xs text-muted-foreground">+{rest}</span>
 		{/if}
 	</div>
 {:else}
-	<span class="text-xs text-muted-foreground/50">—</span>
+	<span class="text-xs text-muted-foreground">—</span>
 {/if}

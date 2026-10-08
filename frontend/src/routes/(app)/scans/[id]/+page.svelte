@@ -34,6 +34,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import PanelSkeleton from '$lib/components/skeleton/panel-skeleton.svelte';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
+	import type { TableColumn } from '$lib/components/scans/results/table/columns';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -173,6 +176,17 @@
 				resultTicks[INTEREST_TAB] = (resultTicks[INTEREST_TAB] ?? 0) + 1;
 		}
 	}
+
+	// the loading frame mirrors the tab strip and the active tab's table
+	const LOADING_TABS = ['w-16', 'w-24', 'w-24', 'w-20', 'w-20', 'w-28', 'w-28', 'w-20'];
+	const LOADING_LEAD: TableColumn[] = [
+		{ key: 'name', label: '', width: 'min-w-0 flex-1', grow: true }
+	];
+	const LOADING_COLUMNS: TableColumn[] = [
+		{ key: 'a', label: '', width: 'w-32' },
+		{ key: 'b', label: '', width: 'w-24' },
+		{ key: 'c', label: '', width: 'w-28' }
+	];
 
 	function resolveTab(v: string | null): ScanTab {
 		return v && (SCAN_TABS as readonly string[]).includes(v) ? (v as ScanTab) : 'overview';
@@ -827,12 +841,46 @@
 					<Skeleton class="size-8" />
 				</div>
 			</div>
-			<div class="flex gap-4 border-b border-border pb-2.5">
-				{#each Array(6) as _, i (i)}
-					<Skeleton class="h-4 w-20" />
+			<div class="-mx-6 flex border-b border-border px-6">
+				{#each LOADING_TABS as width, i (i)}
+					<div class="px-3 py-2.5"><Skeleton class="h-5 {width}" /></div>
 				{/each}
 			</div>
-			<Skeleton class="h-96 w-full rounded-xl" />
+			{#if activeTab === 'overview'}
+				<div class="flex flex-col gap-5">
+					<div class="rounded-xl border bg-card p-5">
+						<PanelSkeleton rows={2} stats meter />
+					</div>
+					{#each Array(2) as _, i (i)}
+						<div class="rounded-xl border bg-card p-5"><PanelSkeleton rows={3} /></div>
+					{/each}
+				</div>
+			{:else}
+				<div class="pt-2">
+					<div class="flex min-h-14 items-center gap-3 rounded-t-xl border bg-muted/30 px-4 py-2">
+						<Skeleton class="size-8 shrink-0 rounded-lg" />
+						<Skeleton class="h-4 w-full max-w-80" />
+					</div>
+					<div class="overflow-hidden rounded-b-xl border border-t-0 bg-card">
+						<div class="flex border-b px-2">
+							{#each LOADING_TABS.slice(0, 4) as width, i (i)}
+								<div class="px-3 py-2.5"><Skeleton class="h-5 {width}" /></div>
+							{/each}
+						</div>
+						<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+							<Skeleton class="h-9 w-24" />
+							<Skeleton class="h-9 w-24" />
+							<Skeleton class="h-9 w-28" />
+							<div class="ml-auto flex gap-2">
+								{#each Array(4) as _, i (i)}
+									<Skeleton class="size-9" />
+								{/each}
+							</div>
+						</div>
+						<TableSkeleton lead={LOADING_LEAD} columns={LOADING_COLUMNS} selectable />
+					</div>
+				</div>
+			{/if}
 		</div>
 	{:else if error}
 		<EmptyState icon={TriangleAlert} title="Scan not loaded" description={error}>
@@ -889,19 +937,18 @@
 					{#if scan.status === 'running'}
 						<Hint text={pauseNote}>
 							{#snippet child(props)}
-								<span {...props} class="inline-flex">
-									<LoadingButton
-										variant="outline"
-										size="sm"
-										class="gap-1.5"
-										loading={pausing}
-										loadingLabel="Pausing"
-										onclick={() => pause()}
-									>
-										<Pause class="size-3.5" />
-										Pause
-									</LoadingButton>
-								</span>
+								<LoadingButton
+									{...props}
+									variant="outline"
+									size="sm"
+									class="gap-1.5"
+									loading={pausing}
+									loadingLabel="Pausing"
+									onclick={() => pause()}
+								>
+									<Pause class="size-3.5" />
+									Pause
+								</LoadingButton>
 							{/snippet}
 						</Hint>
 					{/if}
@@ -1104,10 +1151,7 @@
 												<t.icon class="hidden size-3.5 2xl:block" />
 												{t.label}
 												{#if n != null}
-													<span
-														class="text-xs tabular-nums {n === 0
-															? 'text-muted-foreground/50'
-															: 'text-muted-foreground'}"
+													<span class="text-xs text-muted-foreground tabular-nums"
 														>{n.toLocaleString()}{t.key === 'software' && softwareCapped
 															? '+'
 															: ''}</span

@@ -237,7 +237,7 @@
 					{/snippet}
 				</Hint>
 				{#if ptr.length > 1}
-					<span class="shrink-0 text-muted-foreground/60">+{ptr.length - 1}</span>
+					<span class="shrink-0 text-muted-foreground">+{ptr.length - 1}</span>
 				{/if}
 			</div>
 		{/if}

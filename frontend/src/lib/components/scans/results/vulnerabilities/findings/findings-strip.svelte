@@ -2,6 +2,7 @@
 	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Hint from '$lib/components/hint.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { findingPrefs } from './prefs.svelte';
@@ -34,6 +35,9 @@
 		onKev: () => void;
 		onProven: () => void;
 		onHost: (host: string) => void;
+		/** the overview request failed: say so instead of loading forever */
+		failed?: boolean;
+		onRetry?: () => void;
 	}
 
 	let {
@@ -49,7 +53,9 @@
 		onNew,
 		onKev,
 		onProven,
-		onHost
+		onHost,
+		failed = false,
+		onRetry
 	}: Props = $props();
 
 	let hosts = $derived(overview?.top_hosts ?? []);
@@ -72,7 +78,7 @@
 		<span
 			class="font-mono text-2xl font-semibold tabular-nums underline-offset-4 {n
 				? tone
-				: 'text-muted-foreground/60'} {on ? 'underline decoration-2' : ''}"
+				: 'text-muted-foreground'} {on ? 'underline decoration-2' : ''}"
 		>
 			{n.toLocaleString()}
 		</span>
@@ -90,6 +96,16 @@
 		aria-label="{SEVERITY_LABELS[sev]}: {n}"
 		onclick={() => onSeverity(sev)}
 	/>
+{/snippet}
+
+{#snippet notLoaded()}
+	<span class="flex items-center gap-2 text-xs text-muted-foreground" role="status">
+		<TriangleAlert class="size-3.5 shrink-0 text-warning" />
+		Overview not loaded
+		{#if onRetry}
+			<Button variant="outline" size="xs" onclick={() => onRetry()}>Retry</Button>
+		{/if}
+	</span>
 {/snippet}
 
 {#if !findingPrefs.summary}
@@ -147,6 +163,8 @@
 					{@render sevChip(sev, true)}
 				{/each}
 			</span>
+		{:else if failed}
+			{@render notLoaded()}
 		{:else}
 			<Skeleton class="h-4 w-64" />
 		{/if}
@@ -178,7 +196,9 @@
 			{/snippet}
 		</Hint>
 		<div class="flex min-w-0 flex-col gap-4">
-			{#if !overview}
+			{#if !overview && failed}
+				{@render notLoaded()}
+			{:else if !overview}
 				<div class="flex gap-8">
 					{#each { length: 4 } as _, i (i)}
 						<div class="flex flex-col gap-1.5">
@@ -252,7 +272,9 @@
 					{/each}
 				</span>
 			</div>
-			{#if !overview}
+			{#if !overview && failed}
+				<span class="py-2 text-xs text-muted-foreground">Not loaded</span>
+			{:else if !overview}
 				{#each { length: 4 } as _, i (i)}
 					<Skeleton class="h-5 w-full" />
 				{/each}

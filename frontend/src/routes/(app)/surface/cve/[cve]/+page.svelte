@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Download from '@lucide/svelte/icons/download';
 	import Bug from '@lucide/svelte/icons/bug';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Flame from '@lucide/svelte/icons/flame';
@@ -30,13 +31,16 @@
 	import { nvdUrl } from '$lib/config/software';
 	import { formatShortDate, MS_PER_DAY, relativeTimeLong } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
-	import type { CveExposure } from '$lib/types/cve';
+	import { SEVERITY_ORDER } from '$lib/config/vulnerabilities';
+	import type { CveExposure, CveIndexRow } from '$lib/types/cve';
 
 	const DESCRIPTION_CLAMP = 280;
 
 	let cve = $derived(decodeURIComponent(page.params.cve ?? '').toUpperCase());
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let report = $state<CveExposure | null>(null);
+	/** what the findings reported, for a CVE the local feeds do not know */
+	let reported = $state<CveIndexRow | null>(null);
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
 	let showDescription = $state(false);
@@ -56,6 +60,8 @@
 		try {
 			const data = await cvesApi.exposure(id, wanted);
 			if (mine !== reqId) return;
+			reported = data.known ? null : await reportedBy(id, wanted);
+			if (mine !== reqId) return;
 			report = data;
 			loadError = null;
 		} catch (e) {
@@ -66,7 +72,25 @@
 		}
 	}
 
+	async function reportedBy(id: string, wanted: string): Promise<CveIndexRow | null> {
+		try {
+			const index = await cvesApi.index(id, { q: wanted, size: 5 });
+			return index.items.find((row) => row.cve === wanted) ?? null;
+		} catch {
+			return null;
+		}
+	}
+
 	let affected = $derived((report?.assets ?? 0) > 0);
+	let known = $derived(report?.known ?? true);
+	// the worst severity a check reported here, when the feeds have no score of their own
+	let locationSeverity = $derived(
+		SEVERITY_ORDER.find((sev) => report?.locations.some((loc) => loc.severity === sev)) ?? null
+	);
+	let severity = $derived(report?.severity ?? reported?.severity ?? locationSeverity);
+	let severityFromFindings = $derived(!report?.severity && !!severity);
+	let kev = $derived(!!report?.is_kev || (!known && !!reported?.is_kev));
+	let ransomware = $derived(!!report?.kev_ransomware || (!known && !!reported?.kev_ransomware));
 	let dwellDays = $derived.by(() => {
 		if (!report?.first_seen) return null;
 		const since = Date.now() - new Date(report.first_seen).getTime();
@@ -77,8 +101,10 @@
 	let shownDescription = $derived(
 		clamped ? `${description.slice(0, DESCRIPTION_CLAMP).trimEnd()}…` : description
 	);
-	let cvss = $derived(report?.cvss_score == null ? null : report.cvss_score.toFixed(1));
-	let epss = $derived(report?.epss_score == null ? null : epssLabel(report.epss_score));
+	let cvssScore = $derived(report?.cvss_score ?? (known ? null : (reported?.cvss_score ?? null)));
+	let cvss = $derived(cvssScore == null ? null : cvssScore.toFixed(1));
+	let epssScore = $derived(report?.epss_score ?? (known ? null : (reported?.epss_score ?? null)));
+	let epss = $derived(epssScore == null ? null : epssLabel(epssScore));
 	let percentile = $derived(
 		report?.epss_percentile == null ? null : Math.round(report.epss_percentile * 100)
 	);
@@ -110,7 +136,7 @@
 		<PageHeader title={report.cve} mono>
 			{#snippet titleAside()}
 				<CopyButton value={shown.cve} class="size-7" />
-				{#if shown.is_kev}
+				{#if kev}
 					<Hint text="On the CISA Known Exploited Vulnerabilities list">
 						{#snippet child(props)}
 							<span {...props} class="flex h-5 items-center">
@@ -121,7 +147,7 @@
 						{/snippet}
 					</Hint>
 				{/if}
-				{#if shown.kev_ransomware}
+				{#if ransomware}
 					<Badge variant="destructive" class="px-1.5 text-2xs font-normal">Ransomware</Badge>
 				{/if}
 			{/snippet}
@@ -138,8 +164,9 @@
 				</Button>
 			{/snippet}
 			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-				{#if report.severity}
-					<SeverityMark severity={report.severity} />
+				{#if severity}
+					<SeverityMark {severity} />
+					{#if severityFromFindings}<span>reported by findings</span>{/if}
 				{:else}
 					<span>Not scored by NVD</span>
 				{/if}
@@ -209,11 +236,9 @@
 					{:else}
 						<span class="text-lg leading-6 font-semibold">No asset carries this CVE</span>
 						<span class="text-xs text-muted-foreground">
-							{plural(report.software_scans, 'target', 'targets')} with software inference · {plural(
-								report.finding_scans,
-								'target',
-								'targets'
-							)} with checks
+							{#if report.corpus_ready}{plural(report.software_scans, 'target', 'targets')} with software
+								inference ·
+							{/if}{plural(report.finding_scans, 'target', 'targets')} with checks
 						</span>
 					{/if}
 				</div>
@@ -255,10 +280,24 @@
 				<Card.Root class="gap-0 overflow-hidden py-0">
 					<PanelHead title="Exploitation" />
 					<div class="flex flex-col gap-4 px-5 py-4">
-						<div class="flex items-center gap-3">
-							<ExploitMark score={report.exploit_score} size={44} />
-							<span class="text-sm font-medium">Rank {report.exploit_score} of 100</span>
-						</div>
+						{#if known}
+							<div class="flex items-center gap-3">
+								<ExploitMark score={report.exploit_score} size={44} />
+								<span class="text-sm font-medium">Rank {report.exploit_score} of 100</span>
+							</div>
+						{:else}
+							<div class="flex flex-col items-start gap-1.5">
+								<span class="text-sm font-medium">Unknown</span>
+								<span class="text-xs text-muted-foreground">
+									The threat-intel feeds are not downloaded, so this CVE has no exploitation rank.
+									Values below are what the findings reported.
+								</span>
+								<Button variant="outline" size="sm" href={ROUTES.arsenal('threat-intel')}>
+									<Download class="size-3.5" />
+									Download feeds in Arsenal
+								</Button>
+							</div>
+						{/if}
 						{#if report.intel_kinds.length}
 							<div class="flex flex-wrap gap-1">
 								{#each report.intel_kinds as kind (kind)}
@@ -278,7 +317,9 @@
 											</span>
 										{/if}
 									{:else}
-										<span class="text-xs text-muted-foreground">Not scored</span>
+										<span class="text-xs text-muted-foreground"
+											>{known ? 'Not scored' : 'Unknown'}</span
+										>
 									{/if}
 								</dd>
 							</div>
@@ -291,12 +332,14 @@
 							<div class="flex items-baseline justify-between gap-3 py-2">
 								<dt class="text-xs text-muted-foreground">CISA KEV</dt>
 								<dd class="text-right">
-									{#if report.is_kev}
+									{#if kev}
 										{#if report.kev_date_added}Added {formatShortDate(
 												report.kev_date_added
 											)}{:else}Listed{/if}
 									{:else}
-										<span class="text-xs text-muted-foreground">Not listed</span>
+										<span class="text-xs text-muted-foreground"
+											>{known ? 'Not listed' : 'Unknown'}</span
+										>
 									{/if}
 								</dd>
 							</div>

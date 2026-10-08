@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { RowCursor } from './table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { page as appPage } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
@@ -191,6 +193,7 @@
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let facets = $state<EndpointFacetSet>(EMPTY_ENDPOINT_FACETS);
 	let facetsLoaded = $state(false);
 	let accountLoaded = $state(false);
@@ -209,7 +212,7 @@
 	let hostsLoading = $state(false);
 	let hostsFailed = $state(false);
 	let hostsReq = 0;
-	let hostCursor = $state(-1);
+	const hostCursor = new RowCursor('data-host-row-index');
 	let pendingHost: 'first' | 'last' | null = null;
 	let brief = $state<HostBrief | null>(null);
 	let briefLoading = $state(false);
@@ -230,8 +233,8 @@
 
 	let selected = $state<Endpoint | null>(null);
 	let drawerOpen = $state(false);
-	let cursor = $state(-1);
-	let searchRef = $state<HTMLInputElement | null>(null);
+	const rowCursor = new RowCursor('data-endpoint-row-index');
+	let shortcutsOpen = $state(false);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
 
@@ -431,12 +434,13 @@
 				selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
 				pendingSelect = null;
 			}
-		} catch {
+		} catch (e) {
 			if (my === reqId) {
 				items = [];
 				total = 0;
 				totalCapped = false;
 				errored = true;
+				loadError = e instanceof Error ? e.message : null;
 			}
 		} finally {
 			if (my === reqId) {
@@ -993,7 +997,7 @@
 	function enterHost(host: string, chip?: FolderChip) {
 		openKeys = chip && chip.path !== '/' ? [`${host}${chip.path}`] : [];
 		view = 'hosts';
-		hostCursor = -1;
+		hostCursor.index = -1;
 		setQuery({
 			...query,
 			host,
@@ -1039,25 +1043,27 @@
 	let hostRoot = $derived(tree?.nodes[0] ?? null);
 	let hostStandIn = $derived(hostRoot ?? hostNode(query.host));
 
-	function scrollCursor() {
-		document
-			.querySelector(`[data-endpoint-row-index="${cursor}"]`)
-			?.scrollIntoView({ block: 'nearest' });
-	}
-	function scrollHostCursor() {
-		document
-			.querySelector(`[data-host-row-index="${hostCursor}"]`)
-			?.scrollIntoView({ block: 'nearest' });
-	}
+	const SHORTCUTS: Shortcut[] = [
+		['j / k', `Move between ${EP.nounPlural} or ${WEB.nounPlural}, also in the open sheet`],
+		['Enter', `Open the ${EP.noun}, or list a ${WEB.noun}'s ${EP.nounPlural}`],
+		['[ / ]', `Previous or next ${WEB.noun}`],
+		['Backspace', `Back to all ${WEB.nounPlural}`],
+		['/', 'Search'],
+		['Esc', 'Clear the highlight']
+	];
+
+	$effect(() => {
+		if (drawerOpen && isList) rowCursor.follow(selectedIndex);
+	});
+
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const typing = keyTaken(e.target);
-		if (e.key === '/' && !typing) {
+		if (keyTaken(e.target) || drawerOpen || topLayer() || inPopover(e.target)) return;
+		if (e.key === '?') {
 			e.preventDefault();
-			searchRef?.focus();
+			shortcutsOpen = true;
 			return;
 		}
-		if (typing || drawerOpen || topLayer() || inPopover(e.target)) return;
 		if (inHost) {
 			if (e.key === '[') {
 				e.preventDefault();
@@ -1076,42 +1082,18 @@
 			if (!rows.length) return;
 			const drill = e.key === 'Enter' || e.key === 'ArrowRight';
 			if (drill && onControl(e.target, '[data-host-row]')) return;
-			if (e.key === 'j' || e.key === 'ArrowDown') {
+			if (drill && hostCursor.index >= 0 && rows[hostCursor.index]) {
 				e.preventDefault();
-				hostCursor = Math.min(hostCursor + 1, rows.length - 1);
-				scrollHostCursor();
-			} else if (e.key === 'k' || e.key === 'ArrowUp') {
-				e.preventDefault();
-				hostCursor = Math.max(hostCursor - 1, 0);
-				scrollHostCursor();
-			} else if (
-				(e.key === 'Enter' || e.key === 'ArrowRight') &&
-				hostCursor >= 0 &&
-				rows[hostCursor]
-			) {
-				e.preventDefault();
-				enterHost(rows[hostCursor].name);
-			} else if (e.key === 'Escape') {
-				hostCursor = -1;
+				enterHost(rows[hostCursor.index].name);
+				return;
 			}
+			hostCursor.keys(e, rows.length, () => {});
 			return;
 		}
 		if (!isList || !items.length) return;
 		if (e.key === 'Enter' && onControl(e.target, '[data-endpoint-row-index] > [role=button]'))
 			return;
-		if (e.key === 'j' || e.key === 'ArrowDown') {
-			e.preventDefault();
-			cursor = Math.min(cursor + 1, items.length - 1);
-			scrollCursor();
-		} else if (e.key === 'k' || e.key === 'ArrowUp') {
-			e.preventDefault();
-			cursor = Math.max(cursor - 1, 0);
-			scrollCursor();
-		} else if (e.key === 'Enter' && cursor >= 0 && items[cursor]) {
-			open(items[cursor]);
-		} else if (e.key === 'Escape') {
-			cursor = -1;
-		}
+		rowCursor.keys(e, items.length, (i) => open(items[i]));
 	}
 
 	let barH = $state(0);
@@ -1127,7 +1109,7 @@
 >
 	<QueryBar
 		bind:this={queryBar}
-		bind:ref={searchRef}
+		{active}
 		store={endpointQuerySchema}
 		recentsKey={SURFACE[SurfaceDimension.ENDPOINTS].recentsKey}
 		hint={inHost ? 'path:/api or is:param' : 'is:param and is:live'}
@@ -1213,6 +1195,7 @@
 	<EmptyState
 		icon={TriangleAlert}
 		title="Endpoints not loaded"
+		description={loadError ?? undefined}
 		class="rounded-none border-0 bg-transparent py-16"
 	>
 		<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
@@ -1222,6 +1205,7 @@
 <Card.Root
 	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
 	{@attach trackWidth((w) => (tableWidth = w))}
+	{@attach hostCursor.track}
 >
 	<div class="border-b px-2">
 		<CountTabs
@@ -1307,6 +1291,7 @@
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
+		onShortcuts={() => (shortcutsOpen = true)}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}
 		{view}
@@ -1445,7 +1430,7 @@
 				{terms}
 				columns={shownColumns}
 				pad={rowPad}
-				cursor={hostCursor}
+				cursor={hostCursor.index}
 				sortKey={hostSort.key}
 				sortDir={hostSort.dir}
 				connectors={proxies}
@@ -1548,7 +1533,10 @@
 					onSort={toggleSort}
 				/>
 				<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-					<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+					<div
+						class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}"
+						{@attach rowCursor.track}
+					>
 						{#each items as e, i (e.id)}
 							<div data-endpoint-row-index={i}>
 								<EndpointRow
@@ -1556,7 +1544,7 @@
 									{terms}
 									columns={visible}
 									active={drawerOpen && selected?.id === e.id}
-									focused={cursor === i}
+									focused={rowCursor.index === i}
 									pad={rowPad}
 									checked={selection.has(e.id)}
 									onCheck={toggleCheck}
@@ -1588,6 +1576,8 @@
 	{/if}
 </Card.Root>
 
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
+
 <EndpointDetailSheet
 	endpoint={selected}
 	{projectId}
@@ -1598,6 +1588,7 @@
 	total={isList ? total : 0}
 	capped={isList && totalCapped}
 	onStep={step}
+	onCloseAutoFocus={rowCursor.restore}
 	onFilter={applyDsl}
 	onHost={onTab ? showHost : undefined}
 	onReveal={reveal}

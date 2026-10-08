@@ -51,6 +51,7 @@
 		goneCount?: number;
 		goneLens?: boolean;
 		onGoneLens?: (on: boolean) => void;
+		onShortcuts?: () => void;
 	}
 
 	let {
@@ -86,7 +87,8 @@
 		onGoneLens,
 		projectId = '',
 		scanId = '',
-		exportFilters = {}
+		exportFilters = {},
+		onShortcuts
 	}: Props = $props();
 
 	const NEW_TOKEN = 'is:new';
@@ -262,26 +264,24 @@
 		</ScrollArea>
 
 		{#if goneCount > 0 && onGoneLens}
-			<Hint text="Endpoints in the previous scan and not in this one">
-				{#snippet child(props)}
-					<span {...props} class="inline-flex">
-						<ToggleGroup.Root
-							type="single"
-							value={goneLens ? 'gone' : ''}
-							onValueChange={(v) => onGoneLens(v === 'gone')}
-							variant="outline"
-							aria-label="Gone since the previous scan"
-						>
-							<ToggleGroup.Item value="gone" class="h-9 gap-1.5 px-3 text-sm font-normal">
-								Gone
-								<span class="text-xs tabular-nums text-muted-foreground">
-									{goneCount.toLocaleString()}
-								</span>
-							</ToggleGroup.Item>
-						</ToggleGroup.Root>
-					</span>
-				{/snippet}
-			</Hint>
+			<ToggleGroup.Root
+				type="single"
+				value={goneLens ? 'gone' : ''}
+				onValueChange={(v) => onGoneLens(v === 'gone')}
+				variant="outline"
+				aria-label="Gone since the previous scan"
+			>
+				<Hint text="Endpoints in the previous scan and not in this one">
+					{#snippet child(props)}
+						<ToggleGroup.Item {...props} value="gone" class="h-9 gap-1.5 px-3 text-sm font-normal">
+							Gone
+							<span class="text-xs tabular-nums text-muted-foreground">
+								{goneCount.toLocaleString()}
+							</span>
+						</ToggleGroup.Item>
+					{/snippet}
+				</Hint>
+			</ToggleGroup.Root>
 		{/if}
 	</div>
 
@@ -296,12 +296,15 @@
 			{#each LENSES as lens (lens.value)}
 				<Hint text={lens.hint}>
 					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value={lens.value} class="h-9 gap-1.5 px-3" aria-label={lens.label}>
-								<lens.icon class="size-4" />
-								<span class="hidden text-sm font-normal 2xl:inline">{lens.label}</span>
-							</ToggleGroup.Item>
-						</span>
+						<ToggleGroup.Item
+							{...props}
+							value={lens.value}
+							class="h-9 gap-1.5 px-3"
+							aria-label={lens.label}
+						>
+							<lens.icon class="size-4" />
+							<span class="hidden text-sm font-normal 2xl:inline">{lens.label}</span>
+						</ToggleGroup.Item>
 					{/snippet}
 				</Hint>
 			{/each}
@@ -344,6 +347,7 @@
 			{scanId}
 			{exportFilters}
 			showGroupBy={view === 'list'}
+			{onShortcuts}
 		/>
 	</div>
 </div>

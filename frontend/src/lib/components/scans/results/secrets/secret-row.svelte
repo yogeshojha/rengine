@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { REVEAL_SM, REVEAL } from '$lib/components/scans/results/table/columns';
+	import { REVEAL_SM, REVEAL, rowTone } from '$lib/components/scans/results/table/columns';
 	import NewBadge from '$lib/components/new-badge.svelte';
 	import { excludeToken } from '$lib/utilities/scan-insights';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
@@ -27,6 +27,8 @@
 
 	interface Props {
 		row: SecretRead;
+		index: number;
+		focused?: boolean;
 		term?: string;
 		selected: boolean;
 		checked?: boolean;
@@ -38,6 +40,8 @@
 
 	let {
 		row,
+		index,
+		focused = false,
 		term = '',
 		selected,
 		checked = false,
@@ -62,9 +66,11 @@
 </script>
 
 <div
-	class="group flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors {selected
-		? 'bg-primary/5 hover:bg-primary/10'
-		: 'hover:bg-muted/30'}"
+	class="group flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors {rowTone(
+		selected,
+		focused
+	)}"
+	data-secret-row-index={index}
 	onclick={() => onOpen(row)}
 	onkeydown={(e) => {
 		if (e.key === 'Enter' || e.key === ' ') {

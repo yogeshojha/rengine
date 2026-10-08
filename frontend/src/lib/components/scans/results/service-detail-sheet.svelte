@@ -50,6 +50,8 @@
 		onFilter?: (dsl: string) => void;
 		onHosts?: (filter: string) => void;
 		onAddress?: (filter: string) => void;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
 	let {
@@ -62,7 +64,8 @@
 		onStep,
 		onFilter,
 		onHosts,
-		onAddress
+		onAddress,
+		onCloseAutoFocus
 	}: Props = $props();
 
 	const SVC = SURFACE[SurfaceDimension.SERVICES];
@@ -99,6 +102,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if s}
 			<Sheet.Header class={SHEET_HEAD}>

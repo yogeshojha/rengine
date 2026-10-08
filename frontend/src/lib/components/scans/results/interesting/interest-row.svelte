@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { REVEAL } from '$lib/components/scans/results/table/columns';
+	import { REVEAL, rowTone } from '$lib/components/scans/results/table/columns';
 	import NewBadge from '$lib/components/new-badge.svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Sparkle from '@lucide/svelte/icons/sparkle';
@@ -18,6 +18,8 @@
 	interface Props {
 		row: InterestRow;
 		rank: number;
+		index: number;
+		focused?: boolean;
 		checked?: boolean;
 		onCheck?: (row: InterestRow) => void;
 		onOpen: (row: InterestRow) => void;
@@ -25,7 +27,17 @@
 		onDismiss: (row: InterestRow) => void;
 	}
 
-	let { row, rank, checked = false, onCheck, onOpen, onKind, onDismiss }: Props = $props();
+	let {
+		row,
+		rank,
+		index,
+		focused = false,
+		checked = false,
+		onCheck,
+		onOpen,
+		onKind,
+		onDismiss
+	}: Props = $props();
 
 	const MAX_CHIPS = 4;
 	let lead = $derived(row.signals.find((s) => s.reason) ?? null);
@@ -35,9 +47,13 @@
 </script>
 
 <div
-	class="group flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-accent/40"
+	class="group flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors {rowTone(
+		checked,
+		focused
+	)}"
 	role="button"
 	tabindex={0}
+	data-interest-row-index={index}
 	onclick={() => onOpen(row)}
 	onkeydown={(e) => {
 		if (e.target !== e.currentTarget) return;

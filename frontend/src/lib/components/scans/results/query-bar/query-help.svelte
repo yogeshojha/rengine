@@ -212,7 +212,7 @@
 											<span class="flex min-w-0 flex-col items-start gap-1">
 												{@render key(`${field.name}:`)}
 												{#if field.aliases.length}
-													<span class="truncate font-mono text-2xs text-muted-foreground/70"
+													<span class="truncate font-mono text-2xs text-muted-foreground"
 														>{field.aliases.join(', ')}</span
 													>
 												{/if}
@@ -220,7 +220,7 @@
 											<span class="flex min-w-0 flex-col gap-1">
 												<span class="text-xs text-foreground">{field.description}</span>
 												<span
-													class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs text-muted-foreground/80"
+													class="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-2xs text-muted-foreground"
 												>
 													<Badge
 														variant="outline"

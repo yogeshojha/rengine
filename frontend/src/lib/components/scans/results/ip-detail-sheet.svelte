@@ -34,6 +34,8 @@
 		onFilter?: (dsl: string) => void;
 		onHosts?: (filter: string) => void;
 		onServices?: (filter: string) => void;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
 	let {
@@ -46,7 +48,8 @@
 		onStep,
 		onFilter,
 		onHosts,
-		onServices
+		onServices,
+		onCloseAutoFocus
 	}: Props = $props();
 
 	const IPS = SURFACE[SurfaceDimension.IPS];
@@ -88,6 +91,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if group}
 			<Sheet.Header class={SHEET_HEAD}>

@@ -31,6 +31,7 @@
 		exportFilters?: Record<string, unknown>;
 		groupBy: string;
 		onGroupBy: (key: string) => void;
+		onShortcuts?: () => void;
 	}
 
 	let {
@@ -54,7 +55,8 @@
 		onGroupBy,
 		projectId = '',
 		scanId = '',
-		exportFilters = {}
+		exportFilters = {},
+		onShortcuts
 	}: Props = $props();
 
 	const NEW_TOKEN = 'is:new';
@@ -172,6 +174,7 @@
 			{projectId}
 			{scanId}
 			{exportFilters}
+			{onShortcuts}
 		/>
 	</div>
 </div>

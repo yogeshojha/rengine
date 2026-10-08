@@ -226,17 +226,15 @@
 							: ''}"
 					>
 						{#snippet child(props)}
-							<span {...props} class="inline-flex">
-								<ToggleGroup.Item value={k.key} class="h-9 gap-1.5 px-3 font-normal">
-									<span
-										class="size-2 rounded-full"
-										style="background:{kindColor(k.key, mode.current === 'dark')}"
-										aria-hidden="true"
-									></span>
-									{k.label}
-									<span class="text-muted-foreground tabular-nums">{byKind.shown[k.key] ?? 0}</span>
-								</ToggleGroup.Item>
-							</span>
+							<ToggleGroup.Item {...props} value={k.key} class="h-9 gap-1.5 px-3 font-normal">
+								<span
+									class="size-2 rounded-full"
+									style="background:{kindColor(k.key, mode.current === 'dark')}"
+									aria-hidden="true"
+								></span>
+								{k.label}
+								<span class="text-muted-foreground tabular-nums">{byKind.shown[k.key] ?? 0}</span>
+							</ToggleGroup.Item>
 						{/snippet}
 					</Hint>
 				{/each}
@@ -255,22 +253,18 @@
 			>
 				<Hint text="Identities on half or more of the web assets that carry one">
 					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value="common" class="h-9 px-3 font-normal"
-								>Hide common</ToggleGroup.Item
-							>
-						</span>
+						<ToggleGroup.Item {...props} value="common" class="h-9 px-3 font-normal"
+							>Hide common</ToggleGroup.Item
+						>
 					{/snippet}
 				</Hint>
 				<Hint
 					text="Identities a CDN, platform or certificate authority carries for every tenant, and pages the server wrote"
 				>
 					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<ToggleGroup.Item value="platform" class="h-9 px-3 font-normal"
-								>Hide provider</ToggleGroup.Item
-							>
-						</span>
+						<ToggleGroup.Item {...props} value="platform" class="h-9 px-3 font-normal"
+							>Hide provider</ToggleGroup.Item
+						>
 					{/snippet}
 				</Hint>
 			</ToggleGroup.Root>

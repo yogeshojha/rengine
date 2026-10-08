@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { RowCursor } from './table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 	import { page as appPage } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
@@ -29,7 +32,9 @@
 		withTarget,
 		writePref,
 		fitColumns,
-		trackWidth
+		trackWidth,
+		inPopover,
+		onControl
 	} from './table/columns';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
@@ -125,6 +130,7 @@
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let facets = $state<SoftwareFacets>(EMPTY_FACETS);
 	let coverage = $state<SoftwareCoverage | null>(null);
 
@@ -242,9 +248,10 @@
 			totalCapped = result.total_capped;
 			errored = false;
 			if (!result.error && filter.q) queryBar?.remember(filter.q);
-		} catch {
+		} catch (e) {
 			if (mine !== reqId) return;
 			errored = true;
+			loadError = e instanceof Error ? e.message : null;
 			items = [];
 			total = 0;
 		} finally {
@@ -422,9 +429,33 @@
 		drawerOpen = true;
 	}
 
+	const rows = new RowCursor('data-software-row-index');
+	let shortcutsOpen = $state(false);
+	const SHORTCUTS: Shortcut[] = [
+		['j / k', `Move between ${SW.nounPlural}`],
+		['Enter', `Open the ${SW.noun}`],
+		['/', 'Search'],
+		['Esc', 'Clear the highlight']
+	];
+
+	function onKey(e: KeyboardEvent) {
+		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
+		if (keyTaken(e.target) || drawerOpen || topLayer() || inPopover(e.target)) return;
+		if (e.key === '?') {
+			e.preventDefault();
+			shortcutsOpen = true;
+			return;
+		}
+		if (loading || errored || !items.length) return;
+		if (e.key === 'Enter' && onControl(e.target, '[data-software-row-index]')) return;
+		rows.keys(e, items.length, (i) => openRow(items[i]));
+	}
+
 	let barH = $state(0);
 	let scrollRef = $state<HTMLElement | null>(null);
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <div
 	class="z-20 bg-background md:sticky md:top-[var(--scan-tabs-h,0px)] md:pt-2"
@@ -443,6 +474,7 @@
 		capped={totalCapped}
 		serverError={queryError}
 		onReady={(value) => (queryReady = value)}
+		{active}
 	/>
 </div>
 
@@ -537,6 +569,7 @@
 				{projectId}
 				{scanId}
 				{exportFilters}
+				onShortcuts={() => (shortcutsOpen = true)}
 			/>
 		</div>
 	</div>
@@ -556,6 +589,7 @@
 		<EmptyState
 			icon={TriangleAlert}
 			title="Software CVEs not loaded"
+			description={loadError ?? undefined}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button variant="outline" size="sm" onclick={() => void runSearch()}>Retry</Button>
@@ -594,10 +628,15 @@
 		/>
 		<ScrollArea orientation="horizontal" class="min-h-0" bind:ref={scrollRef}>
 			<div class="min-w-max">
-				<div class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}">
-					{#each items as row (row.id)}
+				<div
+					class="divide-y divide-border/50 transition-opacity {refreshing ? 'opacity-60' : ''}"
+					{@attach rows.track}
+				>
+					{#each items as row, i (row.id)}
 						<SoftwareRow
 							{row}
+							index={i}
+							focused={rows.index === i}
 							{term}
 							columns={shownColumns}
 							selected={selected?.id === row.id}
@@ -664,9 +703,12 @@
 	onClear={() => selection.clear()}
 />
 
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
+
 <SoftwareDetailSheet
 	row={selected}
 	open={drawerOpen}
+	onCloseAutoFocus={rows.restore}
 	onOpenChange={(value) => {
 		drawerOpen = value;
 		if (!value) selected = null;

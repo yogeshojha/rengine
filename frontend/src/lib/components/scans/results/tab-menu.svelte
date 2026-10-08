@@ -2,6 +2,7 @@
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { scanTabs } from '$lib/stores/scan-tabs.svelte';
 	import { PINNED_SCAN_TABS, type ScanTab, type ScanTabSpec } from '$lib/config/scan-tabs';
 
@@ -25,19 +26,26 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger>
-		{#snippet child({ props })}
-			<Button
-				{...props}
-				variant="ghost"
-				size="icon-sm"
-				class="shrink-0 text-muted-foreground"
-				aria-label="Show or hide tabs"
-			>
-				<Ellipsis class="size-4" />
-			</Button>
-		{/snippet}
-	</DropdownMenu.Trigger>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props: tip })}
+				<DropdownMenu.Trigger {...tip}>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon-sm"
+							class="shrink-0 text-muted-foreground"
+							aria-label="Show or hide tabs"
+						>
+							<Ellipsis class="size-4" />
+						</Button>
+					{/snippet}
+				</DropdownMenu.Trigger>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content>Show or hide tabs</Tooltip.Content>
+	</Tooltip.Root>
 	<DropdownMenu.Content align="end" class="w-60">
 		<DropdownMenu.Label>Tabs</DropdownMenu.Label>
 		<DropdownMenu.Separator />

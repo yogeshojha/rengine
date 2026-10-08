@@ -169,7 +169,7 @@
 									>{entry.item.hint}</Badge
 								>
 							{:else}
-								<span class="shrink-0 text-2xs text-muted-foreground/70 tabular-nums"
+								<span class="shrink-0 text-2xs text-muted-foreground tabular-nums"
 									>{entry.item.hint}</span
 								>
 							{/if}

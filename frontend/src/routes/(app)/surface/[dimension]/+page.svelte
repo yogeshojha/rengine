@@ -3,7 +3,11 @@
 	import { page } from '$app/state';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { untrack } from 'svelte';
+	import Radar from '@lucide/svelte/icons/radar';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -26,6 +30,7 @@
 		type ResultTab
 	} from '$lib/config/surface';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
+	import type { TableColumn } from '$lib/components/scans/results/table/columns';
 
 	let spec = $derived(SURFACE_ORDER.find((s) => s.tab === page.params.dimension) ?? null);
 	const FINDINGS_KEYS = new Set<string>(FINDINGS_TABS.map((t) => t.key));
@@ -34,6 +39,11 @@
 	);
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let coverage = $derived(spec ? surfaceStore.coverage(spec.key) : null);
+	// nothing scanned yet: one empty state instead of a toolbar of zeroes
+	let unscanned = $derived(coverage !== null && coverage.targets_covered === 0);
+	let things = $derived(
+		spec?.key === SurfaceDimension.IPS ? 'IP addresses' : (spec?.nounPlural ?? '')
+	);
 
 	let visit = $state(0);
 	afterNavigate(({ type, from, to }) => {
@@ -56,6 +66,20 @@
 		void goto(ROUTES.surface(tab, filter ? { [target.queryParam]: filter } : undefined));
 	}
 
+	const LOADING_LEAD: TableColumn[] = [
+		{ key: 'name', label: '', width: 'min-w-0 flex-1', grow: true }
+	];
+	const LOADING_COLUMNS: TableColumn[] = [
+		{ key: 'a', label: '', width: 'w-32' },
+		{ key: 'b', label: '', width: 'w-24' },
+		{ key: 'c', label: '', width: 'w-28' }
+	];
+
+	function retry() {
+		visit += 1;
+		if (projectId) void surfaceStore.load(projectId, true);
+	}
+
 	function afterLaunch() {
 		launchOpen = false;
 		if (projectId) void surfaceStore.load(projectId, true);
@@ -76,39 +100,76 @@
 			<PageHeader title={spec.label} />
 		{/if}
 
-		<div class="overflow-hidden rounded-xl border bg-card">
-			<ScopeStrip
-				{coverage}
-				error={surfaceStore.error}
-				onRetry={() => {
-					if (projectId) void surfaceStore.load(projectId, true);
-				}}
-				onScanUncovered={(ids) => {
-					launchIds = ids;
-					launchOpen = true;
-				}}
-			/>
-		</div>
+		{#if !coverage && surfaceStore.error}
+			<EmptyState
+				icon={TriangleAlert}
+				title="{spec.label} not loaded"
+				description={surfaceStore.error}
+			>
+				<Button variant="outline" size="sm" onclick={retry}>Retry</Button>
+			</EmptyState>
+		{:else if !coverage}
+			<div class="flex flex-col gap-6" aria-busy="true">
+				<div class="rounded-xl border bg-card px-4 py-2">
+					<Skeleton class="h-4 w-56 max-w-full" />
+				</div>
+				<div class="overflow-hidden rounded-xl border bg-card">
+					<div class="flex min-h-14 items-center gap-3 border-b bg-muted/30 px-4 py-2">
+						<Skeleton class="size-8 shrink-0 rounded-lg" />
+						<Skeleton class="h-4 w-full max-w-80" />
+					</div>
+					<TableSkeleton lead={LOADING_LEAD} columns={LOADING_COLUMNS} selectable />
+				</div>
+			</div>
+		{:else if unscanned}
+			<EmptyState
+				icon={spec.icon}
+				title="No {things} yet"
+				description="{things.charAt(0).toUpperCase()}{things.slice(1)} appear after a scan."
+			>
+				<Button
+					size="sm"
+					onclick={() => {
+						launchIds = coverage?.uncovered.map((t) => t.target_id) ?? [];
+						launchOpen = true;
+					}}
+				>
+					<Radar class="size-3.5" />
+					Start scan
+				</Button>
+			</EmptyState>
+		{:else}
+			<div class="overflow-hidden rounded-xl border bg-card">
+				<ScopeStrip
+					{coverage}
+					error={surfaceStore.error}
+					onScanUncovered={(ids) => {
+						launchIds = ids;
+						launchOpen = true;
+					}}
+				/>
+			</div>
 
-		<div>
-			{#key `${projectId}:${spec.key}:${visit}`}
-				{#if spec.key === SurfaceDimension.WEB_ASSETS}
-					<WebAssetsTable scanId="" projectWide {projectId} onTab={openTab} />
-				{:else if spec.key === SurfaceDimension.ENDPOINTS}
-					<EndpointsTable scanId="" projectWide {projectId} onTab={openTab} />
-				{:else if spec.key === SurfaceDimension.SERVICES}
-					<ServicesTable scanId="" projectWide {projectId} onTab={openTab} />
-				{:else if spec.key === SurfaceDimension.IPS}
-					<IpsTable scanId="" projectWide {projectId} onTab={openTab} />
-				{:else if spec.key === SurfaceDimension.VULNERABILITIES}
-					<VulnerabilitiesTable scanId="" projectWide onTab={openTab} />
-				{:else if spec.key === SurfaceDimension.SECRETS}
-					<SecretsTable scanId="" projectWide {projectId} />
-				{:else}
-					<SoftwareTable scanId="" projectWide {projectId} />
-				{/if}
-			{/key}
-		</div>
+			<div>
+				{#key `${projectId}:${spec.key}:${visit}`}
+					{#if spec.key === SurfaceDimension.WEB_ASSETS}
+						<WebAssetsTable scanId="" projectWide {projectId} onTab={openTab} />
+					{:else if spec.key === SurfaceDimension.ENDPOINTS}
+						<EndpointsTable scanId="" projectWide {projectId} onTab={openTab} />
+					{:else if spec.key === SurfaceDimension.SERVICES}
+						<ServicesTable scanId="" projectWide {projectId} onTab={openTab} />
+					{:else if spec.key === SurfaceDimension.IPS}
+						<IpsTable scanId="" projectWide {projectId} onTab={openTab} />
+					{:else if spec.key === SurfaceDimension.VULNERABILITIES}
+						<VulnerabilitiesTable scanId="" projectWide onTab={openTab} />
+					{:else if spec.key === SurfaceDimension.SECRETS}
+						<SecretsTable scanId="" projectWide {projectId} />
+					{:else}
+						<SoftwareTable scanId="" projectWide {projectId} />
+					{/if}
+				{/key}
+			</div>
+		{/if}
 	</div>
 
 	<LaunchDialog bind:open={launchOpen} targetIds={launchIds} onClose={afterLaunch} />

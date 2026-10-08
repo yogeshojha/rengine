@@ -130,6 +130,8 @@
 		onPivot?: (name: string) => void;
 		onOpenEndpoints?: (host: string) => void;
 		focus?: { tab: string; pane?: string } | null;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
 	let {
@@ -147,7 +149,8 @@
 		onFilter,
 		onPivot,
 		onOpenEndpoints,
-		focus = null
+		focus = null,
+		onCloseAutoFocus
 	}: Props = $props();
 
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -373,6 +376,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if sub}
 			<Sheet.Header class={SHEET_HEAD}>

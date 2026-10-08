@@ -33,9 +33,11 @@
 		row: SoftwareCve | null;
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
+		/** where focus goes when the sheet closes; the table hands it to its cursor row */
+		onCloseAutoFocus?: (e: Event) => void;
 	}
 
-	let { row, open, onOpenChange }: Props = $props();
+	let { row, open, onOpenChange, onCloseAutoFocus }: Props = $props();
 
 	const DT = 'text-2xs tracking-wide text-muted-foreground uppercase';
 	const SOFTWARE = SURFACE[SurfaceDimension.SOFTWARE];
@@ -54,6 +56,7 @@
 			e.preventDefault();
 			contentEl?.focus();
 		}}
+		{onCloseAutoFocus}
 	>
 		{#if row}
 			<Sheet.Header class={SHEET_HEAD}>

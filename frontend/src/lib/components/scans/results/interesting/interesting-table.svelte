@@ -1,4 +1,9 @@
 <script lang="ts">
+	import { RowCursor } from '../table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
+	import { Kbd } from '$lib/components/ui/kbd';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import { goto } from '$app/navigation';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { onDestroy, untrack } from 'svelte';
@@ -13,10 +18,11 @@
 	import Copy from '@lucide/svelte/icons/copy';
 	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import type { SortOption, TableColumn } from '../table/columns';
+	import { inPopover, onControl, type SortOption, type TableColumn } from '../table/columns';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import SortMenu from '../table/sort-menu.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
@@ -106,10 +112,11 @@
 		{ key: ALL, label: 'All' },
 		...(interestCatalog.catalog?.bands ?? []).map((b) => ({ key: b.key, label: b.label }))
 	]);
-	let bandCounts = $derived({
-		[ALL]: summary ? Object.values(summary.bands).reduce((a, b) => a + b, 0) : 0,
-		...(summary?.bands ?? {})
-	});
+	let bandCounts = $derived(
+		summary
+			? { [ALL]: Object.values(summary.bands).reduce((a, b) => a + b, 0), ...summary.bands }
+			: null
+	);
 	let activeKinds = $derived(
 		(interestCatalog.catalog?.kinds ?? []).filter((k) => (summary?.kinds?.[k.key] ?? 0) > 0)
 	);
@@ -276,12 +283,43 @@
 		if (retry !== null) clearTimeout(retry);
 	});
 
+	const rows = new RowCursor('data-interest-row-index');
+	let searchRef = $state<HTMLInputElement | null>(null);
+	let shortcutsOpen = $state(false);
+	const SHORTCUTS: Shortcut[] = [
+		['j / k', `Move between ${WEB.nounPlural}`],
+		['Enter', 'Open the exposure'],
+		['/', 'Filter by hostname'],
+		['Esc', 'Clear the highlight']
+	];
+
+	function onKey(e: KeyboardEvent) {
+		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
+		if (keyTaken(e.target) || selected || topLayer() || inPopover(e.target)) return;
+		if (e.key === '/') {
+			e.preventDefault();
+			searchRef?.focus();
+			return;
+		}
+		if (e.key === '?') {
+			e.preventDefault();
+			shortcutsOpen = true;
+			return;
+		}
+		const list = data?.rows ?? [];
+		if (!list.length || error) return;
+		if (e.key === 'Enter' && onControl(e.target, '[data-interest-row-index]')) return;
+		rows.keys(e, list.length, (i) => (selected = list[i]));
+	}
+
 	function openInAssets(row: InterestRow): void {
 		const filter = exactToken('host', row.host);
 		if (onTab) onTab(WEB.tab, filter);
 		else void goto(ROUTES.surface(WEB.tab, { [WEB.queryParam]: filter }));
 	}
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <div class="flex flex-col gap-4">
 	<Card.Root class="gap-0 overflow-hidden py-0">
@@ -331,9 +369,38 @@
 						{/snippet}
 					</Hint>
 				{/if}
-				<Button variant="ghost" size="icon-sm" onclick={() => run()} aria-label="Refresh">
-					<RefreshCw class="size-3.5 {loading ? 'animate-spin' : ''}" />
-				</Button>
+				<Hint text="Refresh">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon-sm"
+							onclick={() => run()}
+							aria-label="Refresh"
+						>
+							<RefreshCw class="size-3.5 {loading ? 'animate-spin' : ''}" />
+						</Button>
+					{/snippet}
+				</Hint>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon-sm"
+								aria-label="Keyboard shortcuts"
+								aria-keyshortcuts="?"
+								onclick={() => (shortcutsOpen = true)}
+							>
+								<Keyboard class="size-3.5" />
+							</Button>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content class="flex items-center gap-1.5"
+						>Keyboard shortcuts <Kbd>?</Kbd></Tooltip.Content
+					>
+				</Tooltip.Root>
 			</div>
 		</div>
 
@@ -353,6 +420,7 @@
 			<InputGroup.Root class="w-auto min-w-56 flex-1">
 				<InputGroup.Addon><Search /></InputGroup.Addon>
 				<InputGroup.Input
+					bind:ref={searchRef}
 					bind:value={q}
 					placeholder="Filter by hostname"
 					aria-label="Filter by hostname"
@@ -436,10 +504,12 @@
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else}
-			<div class="divide-y">
+			<div class="divide-y" {@attach rows.track}>
 				{#each data.rows as row, i (row.subdomain_id)}
 					<InterestRowItem
 						{row}
+						index={i}
+						focused={rows.index === i}
 						rank={(page - 1) * PAGE_SIZE + i + 1}
 						checked={picked.has(row.subdomain_id)}
 						onCheck={toggleCheck}
@@ -495,9 +565,12 @@
 	</Button>
 </SelectionActionBar>
 
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
+
 <InterestDetailSheet
 	row={selected}
 	open={selected !== null}
+	onCloseAutoFocus={rows.restore}
 	onOpenChange={(v) => {
 		if (!v) selected = null;
 	}}

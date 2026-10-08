@@ -19,6 +19,7 @@
 	import QueryHelp from './query-help.svelte';
 	import FindingsDialog from './findings-dialog.svelte';
 	import { buildSuggestions, type Suggestion } from './suggest';
+	import { keyTaken, topLayer } from '$lib/utilities/layers';
 
 	interface Props {
 		store: QuerySchemaStore;
@@ -39,6 +40,8 @@
 		placeholder?: string;
 		countNoun?: string;
 		countNounPlural?: string;
+		/** answers the "/" shortcut; a bar in a hidden tab never does */
+		active?: boolean;
 	}
 
 	let {
@@ -59,7 +62,8 @@
 		ref = $bindable(null),
 		placeholder = 'Search, or filter with',
 		countNoun,
-		countNounPlural
+		countNounPlural,
+		active = true
 	}: Props = $props();
 
 	const uid = $props.id();
@@ -71,7 +75,7 @@
 	let dismissed = $state(false);
 	let helpOpen = $state(false);
 	let findingsOpen = $state(false);
-	let active = $state(-1);
+	let highlight = $state(-1);
 	let caret = $state(0);
 	let anchor = $state<HTMLElement | null>(null);
 	let overlay = $state<HTMLElement | null>(null);
@@ -139,7 +143,7 @@
 
 	$effect(() => {
 		void suggestions;
-		active = -1;
+		highlight = -1;
 	});
 
 	function readRecents(): string[] {
@@ -212,6 +216,14 @@
 		onSubmit?.();
 	}
 
+	function focusShortcut(event: KeyboardEvent) {
+		if (event.key !== '/' || !active || event.defaultPrevented) return;
+		if (event.metaKey || event.ctrlKey || event.altKey) return;
+		if (keyTaken(event.target) || topLayer() || !anchor?.getClientRects().length) return;
+		event.preventDefault();
+		ref?.focus();
+	}
+
 	function onKeydown(event: KeyboardEvent) {
 		if (event.key === 'Escape') {
 			if (open) {
@@ -230,7 +242,7 @@
 		const listing = open && !showStarters && suggestions.length > 0;
 		if (event.key === 'Enter') {
 			event.preventDefault();
-			if (listing && active >= 0 && suggestions[active]) pick(suggestions[active]);
+			if (listing && highlight >= 0 && suggestions[highlight]) pick(suggestions[highlight]);
 			else submit();
 			return;
 		}
@@ -240,16 +252,18 @@
 		}
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
-			active = (active + 1) % suggestions.length;
+			highlight = (highlight + 1) % suggestions.length;
 		} else if (event.key === 'ArrowUp') {
 			event.preventDefault();
-			active = active <= 0 ? suggestions.length - 1 : active - 1;
+			highlight = highlight <= 0 ? suggestions.length - 1 : highlight - 1;
 		} else if (event.key === 'Tab') {
 			event.preventDefault();
-			pick(suggestions[Math.max(active, 0)]);
+			pick(suggestions[Math.max(highlight, 0)]);
 		}
 	}
 </script>
+
+<svelte:window onkeydown={focusShortcut} />
 
 <div bind:this={anchor} class="@container/query overflow-hidden rounded-t-xl border bg-card">
 	<div
@@ -282,7 +296,7 @@
 				{:else}
 					<span class="font-sans text-muted-foreground"
 						>{placeholder}
-						<span class="font-mono text-muted-foreground/80">{hint}</span></span
+						<span class="font-mono text-muted-foreground">{hint}</span></span
 					>
 				{/if}
 			</div>
@@ -293,8 +307,8 @@
 				role="combobox"
 				aria-expanded={open}
 				aria-controls="query-suggestions"
-				aria-activedescendant={open && !showStarters && active >= 0
-					? `query-option-${active}`
+				aria-activedescendant={open && !showStarters && highlight >= 0
+					? `query-option-${highlight}`
 					: undefined}
 				aria-label="Search {nounPlural}"
 				aria-invalid={hasError}
@@ -418,7 +432,7 @@
 			{noun}
 			{nounPlural}
 			{suggestions}
-			{active}
+			active={highlight}
 			{recents}
 			examples={starters.slice(0, EXAMPLE_LIMIT)}
 			{counted}
@@ -428,7 +442,7 @@
 			onPick={pick}
 			onQuery={setQuery}
 			onForget={(query) => writeRecents(recents.filter((r) => r !== query))}
-			onHover={(index) => (active = index)}
+			onHover={(index) => (highlight = index)}
 			onHelp={openHelp}
 		/>
 	</Popover.Content>

@@ -395,7 +395,7 @@
 							{/snippet}
 						</Hint>
 						{#if s.web_count > 1}
-							<span class="shrink-0 text-xs text-muted-foreground/60">+{s.web_count - 1}</span>
+							<span class="shrink-0 text-xs text-muted-foreground">+{s.web_count - 1}</span>
 						{/if}
 					</div>
 				{:else}

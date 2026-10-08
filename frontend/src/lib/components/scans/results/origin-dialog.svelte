@@ -53,7 +53,9 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+	<Dialog.Content
+		class="max-h-[85vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+	>
 		{#if f}
 			<Dialog.Header class="border-b px-6 py-4 pr-8">
 				<div class="flex items-center gap-2">
@@ -69,7 +71,7 @@
 				</Dialog.Description>
 			</Dialog.Header>
 
-			<ScrollArea class="min-h-0 flex-1">
+			<ScrollArea class="min-h-0">
 				<div class="flex flex-col gap-6 px-6 py-5">
 					<div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-[1fr_auto_1fr]">
 						{@render side(

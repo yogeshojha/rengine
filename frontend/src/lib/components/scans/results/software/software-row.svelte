@@ -40,6 +40,8 @@
 
 	interface Props {
 		row: SoftwareCve;
+		index: number;
+		focused?: boolean;
 		term?: string;
 		columns: TableColumn[];
 		selected: boolean;
@@ -53,6 +55,8 @@
 
 	let {
 		row,
+		index,
+		focused = false,
 		term = '',
 		columns,
 		selected,
@@ -88,9 +92,10 @@
 <div
 	role="button"
 	tabindex="0"
+	data-software-row-index={index}
 	class="group relative flex w-full cursor-pointer items-stretch gap-3 pr-0 pl-4 text-left text-sm transition-colors {rowTone(
 		selected,
-		false
+		focused
 	)}"
 	onclick={() => onOpen(row)}
 	onkeydown={(e) => {
@@ -212,7 +217,7 @@
 		</div>
 	{/each}
 
-	<div class="{ACTIONS_PIN} {pinTone(selected, false)}">
+	<div class="{ACTIONS_PIN} {pinTone(selected, focused)}">
 		<div class={ACTIONS_BODY}>
 			<Hint text="Hide all {row.name}">
 				{#snippet child(props)}

@@ -3,10 +3,12 @@
 	import Layers from '@lucide/svelte/icons/layers';
 	import X from '@lucide/svelte/icons/x';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { ButtonGroup } from '$lib/components/ui/button-group';
 	import { Button } from '$lib/components/ui/button';
+	import { Kbd } from '$lib/components/ui/kbd';
 	import ExportMenu from '../export-menu.svelte';
 	import TripwireButton from '$lib/components/tripwires/tripwire-button.svelte';
 	import SortMenu from './sort-menu.svelte';
@@ -37,6 +39,8 @@
 		showGroupBy?: boolean;
 		showColumns?: boolean;
 		columnsLocked?: boolean;
+		/** opens the table's keyboard shortcuts */
+		onShortcuts?: () => void;
 	}
 
 	let {
@@ -61,7 +65,8 @@
 		exportFilters = {},
 		showGroupBy = true,
 		showColumns = true,
-		columnsLocked = false
+		columnsLocked = false,
+		onShortcuts
 	}: Props = $props();
 
 	// a single scan covers one target, so grouping by target says nothing
@@ -181,12 +186,41 @@
 	scanId={scanId || null}
 	query={typeof exportFilters.q === 'string' ? exportFilters.q : ''}
 />
-<Button
-	variant="outline"
-	size="icon"
-	aria-label="Refresh"
-	onclick={() => onRefresh()}
-	disabled={refreshing}
->
-	<RefreshCw class="h-4 w-4 {refreshing ? 'animate-spin' : ''}" />
-</Button>
+<Tooltip.Root>
+	<Tooltip.Trigger>
+		{#snippet child({ props })}
+			<Button
+				{...props}
+				variant="outline"
+				size="icon"
+				aria-label="Refresh"
+				onclick={() => onRefresh()}
+				disabled={refreshing}
+			>
+				<RefreshCw class="h-4 w-4 {refreshing ? 'animate-spin' : ''}" />
+			</Button>
+		{/snippet}
+	</Tooltip.Trigger>
+	<Tooltip.Content>Refresh</Tooltip.Content>
+</Tooltip.Root>
+{#if onShortcuts}
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
+				<Button
+					{...props}
+					variant="outline"
+					size="icon"
+					aria-label="Keyboard shortcuts"
+					aria-keyshortcuts="?"
+					onclick={() => onShortcuts()}
+				>
+					<Keyboard class="h-4 w-4" />
+				</Button>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content class="flex items-center gap-1.5"
+			>Keyboard shortcuts <Kbd>?</Kbd></Tooltip.Content
+		>
+	</Tooltip.Root>
+{/if}

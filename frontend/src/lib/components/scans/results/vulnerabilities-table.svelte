@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { RowCursor } from './table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import { page as appPage } from '$app/state';
 	import { onDestroy, untrack } from 'svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
@@ -18,17 +20,14 @@
 	import X from '@lucide/svelte/icons/x';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
-	import Keyboard from '@lucide/svelte/icons/keyboard';
 
 	import * as Card from '$lib/components/ui/card';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Kbd } from '$lib/components/ui/kbd';
-	import Hint from '$lib/components/hint.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -185,9 +184,12 @@
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let errored = $state(false);
+	let loadError = $state<string | null>(null);
 	let facets = $state<VulnFacetSet>(EMPTY_VULN_FACETS);
 	let facetsLoaded = $state(false);
+	let facetsFailed = $state(false);
 	let overview = $state<ScanVulnerabilities | null>(null);
+	let overviewFailed = $state(false);
 	const expanded = new SvelteSet<string>();
 	let shortcutsOpen = $state(false);
 	let leadSet = $state<QueryLeads | null>(null);
@@ -208,8 +210,7 @@
 
 	let selected = $state<VulnerabilityRead | null>(null);
 	let drawerOpen = $state(false);
-	let cursor = $state(-1);
-	let searchRef = $state<HTMLInputElement | null>(null);
+	const rowCursor = new RowCursor('data-vuln-row-index');
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
 	let bulkBusy = $state(false);
@@ -358,13 +359,14 @@
 			}
 			errored = false;
 			if (!queryError && filter.q) queryBar?.remember(filter.q);
-		} catch {
+		} catch (e) {
 			if (my === reqId) {
 				items = [];
 				issues = [];
 				total = 0;
 				totalCapped = false;
 				errored = true;
+				loadError = e instanceof Error ? e.message : null;
 			}
 		} finally {
 			if (my === reqId) {
@@ -430,7 +432,9 @@
 			facets = await vulnerabilitiesApi.facets(projectId, scanId);
 			onScanTotal?.(facets.severity.reduce((n, f) => n + f.count, 0));
 			facetsLoaded = true;
+			facetsFailed = false;
 		} catch {
+			facetsFailed = true;
 			if (!facetsLoaded) facets = EMPTY_VULN_FACETS;
 		}
 	}
@@ -439,8 +443,10 @@
 		if (!ready) return;
 		try {
 			overview = await vulnerabilitiesApi.overview(projectId, scanId);
+			overviewFailed = false;
 		} catch {
 			overview = null;
+			overviewFailed = true;
 		}
 	}
 
@@ -655,7 +661,7 @@
 		view = next;
 		checkedIds.clear();
 		collapse();
-		cursor = -1;
+		rowCursor.index = -1;
 		pageIndex = 0;
 		sort = { ...DEFAULT_SORT };
 	}
@@ -907,28 +913,21 @@
 		setTimeout(reload, FILED_RECHECK_MS);
 	}
 
-	function scrollCursor() {
-		document
-			.querySelector(`[data-vuln-row-index="${cursor}"]`)
-			?.scrollIntoView({ block: 'nearest' });
-	}
+	$effect(() => {
+		if (drawerOpen && !isIssues) rowCursor.follow(selectedIndex);
+	});
 	const TRIAGE_KEYS: Record<string, string> = Object.fromEntries(
 		Object.entries(VULN_STATE_KEYS).map(([state, key]) => [key, state])
 	);
 
 	function onKey(e: KeyboardEvent) {
 		if (!active || e.metaKey || e.ctrlKey || e.altKey) return;
-		const typing = keyTaken(e.target);
-		if (e.key === '/' && !typing) {
-			e.preventDefault();
-			searchRef?.focus();
-			return;
-		}
-		if (typing || inPopover(e.target)) return;
+		if (keyTaken(e.target) || inPopover(e.target)) return;
 		const top = topLayer();
 		if (top && !(drawerOpen && top.getAttribute('data-slot') === 'sheet-content')) return;
 		const nav = e.key === 'Enter' || e.key === 'ArrowRight' || e.key === 'ArrowLeft';
 		if (nav && onControl(e.target, '[data-vuln-row-index]')) return;
+		const cursor = rowCursor.index;
 		const state = TRIAGE_KEYS[e.key];
 		const target = drawerOpen ? selected : isIssues ? null : (items[cursor] ?? null);
 		if (state && target) {
@@ -943,10 +942,14 @@
 			return;
 		}
 		if (e.key === '?' && !drawerOpen) {
+			e.preventDefault();
 			shortcutsOpen = true;
 			return;
 		}
 		if (drawerOpen || !rowCount) return;
+		// the Esc that closed a sheet or dialog is not also a collapse
+		if (e.key === 'Escape' && e.target instanceof Element && e.target.closest('[role=dialog]'))
+			return;
 		const row = !isIssues ? items[cursor] : null;
 		if (row && (e.key === 'e' || e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
 			e.preventDefault();
@@ -960,25 +963,15 @@
 			findingBriefTabs.set(row.id, BRIEF_TABS[Number(e.key) - 1]);
 			return;
 		}
-		if (e.key === 'j' || e.key === 'ArrowDown') {
-			e.preventDefault();
-			cursor = Math.min(cursor + 1, rowCount - 1);
-			scrollCursor();
-		} else if (e.key === 'k' || e.key === 'ArrowUp') {
-			e.preventDefault();
-			cursor = Math.max(cursor - 1, 0);
-			scrollCursor();
-		} else if (e.key === 'Enter' && cursor >= 0) {
-			if (isIssues && issues[cursor]) toggleIssue(issues[cursor]);
-			else if (!isIssues && items[cursor]) open(items[cursor]);
-		} else if (e.key === 'Escape') {
-			if (row && expanded.has(row.id)) {
-				expanded.delete(row.id);
-				return;
-			}
-			cursor = -1;
-			if (isIssues) collapse();
+		if (e.key === 'Escape' && row && expanded.has(row.id)) {
+			expanded.delete(row.id);
+			return;
 		}
+		const handled = rowCursor.keys(e, rowCount, (i) => {
+			if (isIssues && issues[i]) toggleIssue(issues[i]);
+			else if (!isIssues && items[i]) open(items[i]);
+		});
+		if (handled && e.key === 'Escape' && isIssues) collapse();
 	}
 
 	let rescanBusy = $state(false);
@@ -1071,9 +1064,9 @@
 			await run({ dimension: SurfaceDimension.VULNERABILITIES, picks }, [v.template_id]);
 	}
 
-	const SHORTCUTS: [string, string][] = [
+	const SHORTCUTS: Shortcut[] = [
 		['j / k', 'Move between findings'],
-		['e', 'Expand or collapse the row'],
+		['e / → / ←', 'Expand or collapse the row'],
 		['1 to 5', 'Switch row tab'],
 		['Enter', 'Open finding'],
 		['x', 'Select finding'],
@@ -1142,6 +1135,8 @@
 <div class="mb-3">
 	<FindingsStrip
 		{overview}
+		failed={overviewFailed}
+		onRetry={() => void loadOverview()}
 		counts={severityCounts}
 		unit={isIssues ? 'Checks' : 'Findings'}
 		severities={query.severities}
@@ -1163,7 +1158,7 @@
 >
 	<QueryBar
 		bind:this={queryBar}
-		bind:ref={searchRef}
+		{active}
 		store={vulnQuerySchema}
 		recentsKey={SURFACE[SurfaceDimension.VULNERABILITIES].recentsKey}
 		hint="severity:critical and not is:cdn"
@@ -1196,20 +1191,6 @@
 				onChange={setReviewTab}
 			/>
 		</div>
-		<Hint text="Keyboard shortcuts">
-			{#snippet child(props)}
-				<Button
-					{...props}
-					variant="ghost"
-					size="icon"
-					class="hidden size-7 sm:inline-flex"
-					aria-label="Keyboard shortcuts"
-					onclick={() => (shortcutsOpen = true)}
-				>
-					<Keyboard class="size-4" />
-				</Button>
-			{/snippet}
-		</Hint>
 		<ToggleGroup.Root
 			type="single"
 			value={view}
@@ -1229,11 +1210,16 @@
 
 	{#if overview}
 		<CoverageStrip vulns={overview} {projectWide} />
+	{:else if !overviewFailed}
+		<div class="flex items-center border-b bg-muted/10 px-4 py-2" aria-hidden="true">
+			<Skeleton class="h-4 w-72 max-w-full" />
+		</div>
 	{/if}
 
 	<FilterBar
 		{query}
 		{facets}
+		facetsLoaded={facetsLoaded || facetsFailed}
 		onQuery={setQuery}
 		dimensions={vulnQuerySchema.schema.group_dimensions}
 		columns={isIssues ? ISSUE_COLUMNS : findingColumns}
@@ -1251,6 +1237,7 @@
 		{scanId}
 		{exportFilters}
 		onRefresh={refresh}
+		onShortcuts={() => (shortcutsOpen = true)}
 		{groupBy}
 		onGroupBy={(key) => (groupBy = key)}
 	/>
@@ -1289,6 +1276,7 @@
 		<EmptyState
 			icon={TriangleAlert}
 			title="Findings not loaded"
+			description={loadError ?? undefined}
 			class="rounded-none border-0 bg-transparent py-16"
 		>
 			<Button size="sm" variant="outline" onclick={() => refresh()}>Retry</Button>
@@ -1358,7 +1346,10 @@
 			onSort={toggleSort}
 		/>
 		<ScrollArea orientation="horizontal" bind:ref={scrollRef}>
-			<div class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}">
+			<div
+				class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}"
+				{@attach rowCursor.track}
+			>
 				{#each issues as issue, i (issue.template_id)}
 					<div>
 						<IssueRow
@@ -1369,7 +1360,7 @@
 							checked={checkedIds.has(issue.template_id)}
 							onCheck={toggleCheck}
 							expanded={expandedId === issue.template_id}
-							focused={cursor === i}
+							focused={rowCursor.index === i}
 							pad={rowPad}
 							onToggle={toggleIssue}
 							onFilter={applyDsl}
@@ -1445,7 +1436,11 @@
 					<div class={FCOL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 				</div>
 			</div>
-			<div class="transition-opacity {loading ? 'opacity-60' : ''}" role="rowgroup">
+			<div
+				class="transition-opacity {loading ? 'opacity-60' : ''}"
+				role="rowgroup"
+				{@attach rowCursor.track}
+			>
 				{#each items as v, i (v.id)}
 					<FindingRow
 						{v}
@@ -1456,12 +1451,11 @@
 						{term}
 						compact={density === 'compact'}
 						expanded={expanded.has(v.id)}
-						focused={cursor === i}
+						focused={rowCursor.index === i}
 						selected={drawerOpen && selected?.id === v.id}
 						checked={checkedIds.has(v.id)}
 						onToggle={() => toggleExpand(v.id)}
 						onCheck={() => toggleCheck(v.id)}
-						onFocus={() => (cursor = i)}
 						onOpen={open}
 						onFilter={applyDsl}
 						onTab={(tab, filter) => {
@@ -1496,17 +1490,7 @@
 	{/if}
 </Card.Root>
 
-<Dialog.Root bind:open={shortcutsOpen}>
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header><Dialog.Title>Keyboard shortcuts</Dialog.Title></Dialog.Header>
-		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-			{#each SHORTCUTS as [k, label] (k)}
-				<dt><Kbd>{k}</Kbd></dt>
-				<dd class="text-muted-foreground">{label}</dd>
-			{/each}
-		</dl>
-	</Dialog.Content>
-</Dialog.Root>
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
 
 <VulnerabilityDetailSheet
 	vuln={selected}
@@ -1519,6 +1503,7 @@
 	total={sheetTotal}
 	capped={!isIssues && totalCapped}
 	onStep={step}
+	onCloseAutoFocus={rowCursor.restore}
 	onFilter={applyDsl}
 	onHost={showHost}
 	onLocation={showLocation}

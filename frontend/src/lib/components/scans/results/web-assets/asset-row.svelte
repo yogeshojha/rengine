@@ -370,9 +370,8 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						{#snippet child({ props })}
-							<span
-								class="flex h-5 shrink-0 items-center text-2xs text-muted-foreground/70"
-								{...props}>No DNS answer</span
+							<span class="flex h-5 shrink-0 items-center text-2xs text-muted-foreground" {...props}
+								>No DNS answer</span
 							>
 						{/snippet}
 					</Tooltip.Trigger>
@@ -768,7 +767,7 @@
 					{/snippet}
 				</Hint>
 				{#if s.discovered_at}
-					<div class="text-2xs text-muted-foreground/70">{formatShortDate(s.discovered_at)}</div>
+					<div class="text-2xs text-muted-foreground">{formatShortDate(s.discovered_at)}</div>
 				{/if}
 			{:else if col.key === 'screenshot'}
 				{#if s.screenshot_path}
@@ -808,17 +807,22 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="{ACTIONS_BODY} {pin}" onclick={stopProp}>
 			{#if s.http_url}
-				<Button
-					variant="ghost"
-					size="icon"
-					class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
-					href={externalHref(s.http_url)}
-					target="_blank"
-					rel="noreferrer noopener"
-					aria-label="Open {s.name} in browser"
-				>
-					<ExternalLink class="h-4 w-4" />
-				</Button>
+				<Hint text="Open in browser">
+					{#snippet child(props)}
+						<Button
+							{...props}
+							variant="ghost"
+							size="icon"
+							class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
+							href={externalHref(s.http_url)}
+							target="_blank"
+							rel="noreferrer noopener"
+							aria-label="Open {s.name} in browser"
+						>
+							<ExternalLink class="h-4 w-4" />
+						</Button>
+					{/snippet}
+				</Hint>
 			{/if}
 			<Hint text="Hide all {s.name}">
 				{#snippet child(props)}

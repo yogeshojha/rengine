@@ -33,9 +33,15 @@ export const ACTIONS_PIN = 'sticky right-0 z-10 ml-auto shrink-0 self-stretch bg
 export const ACTIONS_BODY =
 	'flex h-full w-8 items-center justify-end gap-0.5 transition-colors sm:w-[5.75rem]';
 
+/** Keyboard focus on a row draws the cursor bar, not the base outline. */
+const ROW_FOCUS = 'outline-hidden focus-visible:shadow-[inset_2px_0_0_0_var(--ring)]';
+
 export function rowTone(active: boolean, focused: boolean): string {
-	if (active) return 'bg-primary/5 hover:bg-primary/10';
-	return focused ? 'bg-muted/40 shadow-[inset_2px_0_0_0_var(--primary)]' : 'hover:bg-muted/30';
+	if (active) return `bg-primary/5 hover:bg-primary/10 ${ROW_FOCUS}`;
+	const tone = focused
+		? 'bg-muted/40 shadow-[inset_2px_0_0_0_var(--primary)]'
+		: 'hover:bg-muted/30';
+	return `${tone} focus-visible:bg-muted/40 ${ROW_FOCUS}`;
 }
 
 export function columnCell(col: TableColumn): string {

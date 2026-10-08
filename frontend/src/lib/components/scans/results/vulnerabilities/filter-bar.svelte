@@ -14,6 +14,8 @@
 	interface Props {
 		query: VulnQuery;
 		facets: VulnFacetSet;
+		/** until the facets load, the pickers hold their place disabled */
+		facetsLoaded?: boolean;
 		onQuery: (q: VulnQuery) => void;
 		dimensions: QueryGroupSpec[];
 		columns: TableColumn[];
@@ -33,11 +35,13 @@
 		groupBy: string;
 		onGroupBy: (key: string) => void;
 		columnsLocked?: boolean;
+		onShortcuts?: () => void;
 	}
 
 	let {
 		query,
 		facets,
+		facetsLoaded = true,
 		onQuery,
 		dimensions,
 		columns,
@@ -56,7 +60,8 @@
 		columnsLocked = false,
 		projectId = '',
 		scanId = '',
-		exportFilters = {}
+		exportFilters = {},
+		onShortcuts
 	}: Props = $props();
 
 	const NEW_TOKEN = 'is:new';
@@ -114,28 +119,31 @@
 
 <div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
 	<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
-		{#if facets.template.length}
+		{#if facets.template.length || !facetsLoaded}
 			<FacetedFilter
 				title="Check"
 				options={options(facets.template)}
 				selected={query.templates}
 				onChange={(v) => setList('templates', v)}
+				disabled={!facetsLoaded}
 			/>
 		{/if}
-		{#if facets.tag.length}
+		{#if facets.tag.length || !facetsLoaded}
 			<FacetedFilter
 				title="Category"
 				options={options(facets.tag)}
 				selected={query.tags}
 				onChange={(v) => setList('tags', v)}
+				disabled={!facetsLoaded}
 			/>
 		{/if}
-		{#if facets.host.length}
+		{#if facets.host.length || !facetsLoaded}
 			<FacetedFilter
 				title="Web asset"
 				options={options(facets.host)}
 				selected={query.hosts}
 				onChange={(v) => setList('hosts', v)}
+				disabled={!facetsLoaded}
 			/>
 		{/if}
 		{#if facets.protocol.length > 1}
@@ -196,6 +204,7 @@
 			{scanId}
 			{exportFilters}
 			{columnsLocked}
+			{onShortcuts}
 		/>
 	</div>
 </div>

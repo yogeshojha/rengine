@@ -46,12 +46,14 @@
 </script>
 
 <Dialog.Root {open} {onOpenChange}>
-	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+	<Dialog.Content
+		class="max-h-[85vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Matched queries</Dialog.Title>
 		</Dialog.Header>
 
-		<ScrollArea class="min-h-0 flex-1">
+		<ScrollArea class="min-h-0">
 			<div class="flex flex-col gap-5 px-6 py-5">
 				{#if sections.length === 0}
 					<EmptyState
