@@ -42,7 +42,9 @@
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { reportsApi } from '$lib/api/reports';
-	import { REPORT_TABS, routeLabels, type ReportTab } from '$lib/config/routes';
+	import { REPORT_TABS, ROUTES, routeLabels, type ReportTab } from '$lib/config/routes';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import LoadNotice from '$lib/components/load-notice.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { ReportTemplate } from '$lib/types/report';
 
@@ -207,7 +209,33 @@
 			formats: template.formats,
 			clone_of: template.id
 		});
-		if (created) toast.success(`Template ${created.name} created`);
+		if (created) {
+			toast.success(`Template ${created.name} created`);
+			void goto(ROUTES.reportTemplate(created.id));
+		}
+	}
+
+	let creatingTemplate = $state(false);
+	let catalogRetrying = $state(false);
+
+	async function retryCatalog() {
+		catalogRetrying = true;
+		await reportCatalog.fetch(true);
+		catalogRetrying = false;
+	}
+
+	async function newTemplate() {
+		if (!projectId || creatingTemplate) return;
+		creatingTemplate = true;
+		const sections = (reportCatalog.catalog?.sections ?? [])
+			.filter((s) => s.default_enabled)
+			.map((s) => ({ section: s.name, enabled: true, title: '', config: {} }));
+		const created = await reportsStore.createTemplate(projectId, {
+			name: 'Untitled template',
+			sections
+		});
+		creatingTemplate = false;
+		if (created) void goto(ROUTES.reportTemplate(created.id));
 	}
 
 	const deleteDescription = $derived(
@@ -329,7 +357,19 @@
 				</Tabs.List>
 			</ScrollArea>
 
-			{#if activeTab === 'themes' || activeTab === 'typefaces'}
+			{#if activeTab === 'templates'}
+				<LoadingButton
+					variant="outline"
+					size="sm"
+					loading={creatingTemplate}
+					loadingLabel="Creating"
+					disabled={!projectId || !reportCatalog.catalog}
+					onclick={newTemplate}
+				>
+					<PlusIcon class="size-3.5" />
+					New template
+				</LoadingButton>
+			{:else if activeTab === 'themes' || activeTab === 'typefaces'}
 				<Hint text={isAdmin ? null : 'Editable by administrators'}>
 					{#snippet child(props)}
 						<span {...props} class="inline-flex">
@@ -348,6 +388,10 @@
 				</Hint>
 			{/if}
 		</div>
+
+		{#if reportCatalog.loadError && (activeTab === 'templates' || activeTab === 'themes' || activeTab === 'typefaces')}
+			<LoadNotice sections={['Report catalog']} busy={catalogRetrying} onRetry={retryCatalog} />
+		{/if}
 
 		<Tabs.Content value="reports">
 			<Card.Root class="gap-0 overflow-hidden py-0">
@@ -398,8 +442,22 @@
 					<EmptyState
 						icon={FileTextIcon}
 						title={filtered ? 'No matching reports' : 'No reports'}
+						description={filtered ? undefined : 'Generate a report on a scan or a target.'}
 						class="rounded-none border-0 bg-transparent py-16"
 					>
+						{#if !filtered}
+							<Button
+								size="sm"
+								onclick={() => {
+									generateTemplate = '';
+									generateOpen = true;
+								}}
+								disabled={!projectId}
+							>
+								<PlusIcon class="size-4" />
+								Generate report
+							</Button>
+						{/if}
 						{#if search.trim()}
 							<Button variant="outline" size="sm" onclick={() => (search = '')}>
 								Clear search

@@ -66,16 +66,15 @@
 			<p class="text-2xs font-semibold tracking-wide text-muted-foreground uppercase">Recent</p>
 			<Hint text="Runs are kept for seven days">
 				{#snippet child(props)}
-					<span {...props} class="inline-flex">
-						<Button
-							variant="ghost"
-							size="sm"
-							class="h-5 px-1.5 text-2xs text-muted-foreground"
-							onclick={() => (confirming = true)}
-						>
-							Clear
-						</Button>
-					</span>
+					<Button
+						{...props}
+						variant="ghost"
+						size="sm"
+						class="h-5 px-1.5 text-2xs text-muted-foreground"
+						onclick={() => (confirming = true)}
+					>
+						Clear
+					</Button>
 				{/snippet}
 			</Hint>
 		</div>

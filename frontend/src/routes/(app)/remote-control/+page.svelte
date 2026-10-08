@@ -7,6 +7,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import CountTabs from '$lib/components/count-tabs.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import ConnectPanel from '$lib/components/remote-control/connect-panel.svelte';
 	import BotHeader from '$lib/components/remote-control/bot-header.svelte';
@@ -97,7 +98,7 @@
 
 	$effect(() => {
 		const current = view;
-		if (!browser) return;
+		if (!browser || !status?.configured) return;
 		const params = untrack(() => new URLSearchParams(page.url.searchParams));
 		if (current === views[0]) params.delete('view');
 		else params.set('view', current);
@@ -122,8 +123,11 @@
 
 <svelte:head><title>{pageTitle(routeLabels['remote-control'])}</title></svelte:head>
 
-<div class="flex flex-col gap-4">
-	<h1 class="sr-only">{routeLabels['remote-control']}</h1>
+<div class="flex flex-col gap-6">
+	<PageHeader
+		title={routeLabels['remote-control']}
+		description="Run reNgine from a {status?.label ?? 'Telegram'} chat"
+	/>
 
 	{#if !status}
 		<Card.Root class="gap-0 overflow-hidden py-0">
@@ -141,7 +145,7 @@
 			</div>
 		</Card.Root>
 	{:else}
-		<Card.Root class="gap-0 overflow-hidden py-0">
+		<Card.Root class="gap-0 overflow-hidden py-0 {status.configured ? '' : 'w-full max-w-xl'}">
 			{#if !status.configured}
 				<ConnectPanel {channel} label={status.label} {canAdmin} />
 			{:else}

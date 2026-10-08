@@ -161,7 +161,7 @@
 		isRefreshing = true;
 		try {
 			await scanContextsStore.fetchContexts(project.id);
-			if (scanContextsStore.error) toast.error(scanContextsStore.error);
+			if (scanContextsStore.error && loaded) toast.error(scanContextsStore.error);
 		} finally {
 			isRefreshing = false;
 		}

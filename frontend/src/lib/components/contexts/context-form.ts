@@ -52,30 +52,54 @@ export function ipError(v: string): string | null {
 	return null;
 }
 
-export function validateDraft(
-	draft: ScanContextCreate
-): { message: string; section: ContextFormSection } | null {
-	if (!draft.name.trim()) return { message: 'Name is required', section: 'identity' };
-	const badPatterns = draft.excluded_subdomains.filter((v) => patternError(v) !== null).length;
+type DraftIssue = { message: string; section: ContextFormSection };
+
+function invalidCount(values: string[], check: (v: string) => string | null): number {
+	return values.filter((v) => check(v) !== null).length;
+}
+
+/** Every problem in the draft, in form order. */
+export function draftIssues(draft: ScanContextCreate): DraftIssue[] {
+	const issues: DraftIssue[] = [];
+	if (!draft.name.trim()) issues.push({ message: 'Name is required', section: 'identity' });
+	const badPatterns = invalidCount(draft.excluded_subdomains, patternError);
 	if (badPatterns > 0)
-		return {
+		issues.push({
 			message: `${badPatterns} invalid pattern${badPatterns === 1 ? '' : 's'} in Scope`,
 			section: 'scope'
-		};
-	const badPaths = draft.excluded_paths.filter((p) => pathError(p) !== null).length;
+		});
+	const badPaths = invalidCount(draft.excluded_paths, pathError);
 	if (badPaths > 0)
-		return {
+		issues.push({
 			message: `${badPaths} invalid path${badPaths === 1 ? '' : 's'} in Scope`,
 			section: 'scope'
-		};
-	const badIps = draft.excluded_ips.filter((ip) => ipError(ip) !== null).length;
+		});
+	const badIps = invalidCount(draft.excluded_ips, ipError);
 	if (badIps > 0)
-		return { message: `${badIps} invalid IP${badIps === 1 ? '' : 's'} in Scope`, section: 'scope' };
+		issues.push({
+			message: `${badIps} invalid IP${badIps === 1 ? '' : 's'} in Scope`,
+			section: 'scope'
+		});
 	const badHeader = draft.extra_headers.some((h) => !h.name.trim() && h.value.trim());
-	if (badHeader) return { message: 'A header in Authentication has no name', section: 'auth' };
+	if (badHeader)
+		issues.push({ message: 'A header in Authentication has no name', section: 'auth' });
 	if (draft.auth_type === 'api_key' && !draft.auth?.api_key_name?.trim())
-		return { message: 'API key authentication requires a key name', section: 'auth' };
-	return null;
+		issues.push({ message: 'API key authentication requires a key name', section: 'auth' });
+	return issues;
+}
+
+export function validateDraft(draft: ScanContextCreate): DraftIssue | null {
+	return draftIssues(draft)[0] ?? null;
+}
+
+/** The draft without scope values that fail validation, for previews. */
+export function validScope<T extends ScanContextCreate>(draft: T): T {
+	return {
+		...draft,
+		excluded_subdomains: draft.excluded_subdomains.filter((v) => patternError(v) === null),
+		excluded_paths: draft.excluded_paths.filter((v) => pathError(v) === null),
+		excluded_ips: draft.excluded_ips.filter((v) => ipError(v) === null)
+	};
 }
 
 export function markTouchedSecrets(auth: AuthConfig, touched: SvelteSet<string>): void {

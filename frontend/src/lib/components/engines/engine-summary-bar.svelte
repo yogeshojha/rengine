@@ -19,6 +19,8 @@
 		stages: StageCatalogEntry[];
 		isLoading: boolean;
 		error: string | null;
+		/** Stage counts on the same basis as the preset and engine cards. */
+		counts?: { active: number; total: number } | null;
 		onTargetTypeChange: (value: string) => void;
 	}
 
@@ -30,6 +32,7 @@
 		stages,
 		isLoading,
 		error,
+		counts = null,
 		onTargetTypeChange
 	}: Props = $props();
 
@@ -77,8 +80,8 @@
 		<Skeleton class="h-3 w-48" />
 	{:else}
 		<span class="stat">
-			<strong>{running.length}</strong>
-			<span class="dim">of {tools.length} stages run</span>
+			<strong>{counts?.active ?? running.length}</strong>
+			<span class="dim">of {counts?.total ?? tools.length} stages on</span>
 		</span>
 
 		<FootprintMeter {footprint} {requestsPerSecond} />

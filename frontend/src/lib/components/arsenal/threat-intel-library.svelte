@@ -12,7 +12,7 @@
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { FEED_STATUS_DOT, FEED_STATUS_TONE } from '$lib/config/threat-intel';
+	import { FEED_STATUS_DOT, FEED_STATUS_TONE, FeedStatus } from '$lib/config/threat-intel';
 	import { threatIntelApi } from '$lib/api/threat-intel';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { auth } from '$lib/stores/auth.svelte';
@@ -25,6 +25,7 @@
 	const COLUMNS = 'md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_7.5rem_minmax(0,0.8fr)_6rem_8.5rem]';
 
 	let status = $state<ThreatIntelStatus | null>(null);
+	let loadError = $state<string | null>(null);
 	let loading = $state(true);
 	let syncing = $state(false);
 	let fetchedProjectId = $state<string | null>(null);
@@ -42,6 +43,7 @@
 			.at(-1) ?? null
 	);
 	let autoSync = $derived(status?.auto_sync ?? true);
+	let neverSynced = $derived(feeds.length > 0 && feeds.every((f) => f.status === FeedStatus.EMPTY));
 
 	function version(feed: ThreatFeedRead): string {
 		const v = feed.version?.replace('model_version:', '').split(',')[0] ?? '';
@@ -58,8 +60,10 @@
 		try {
 			status = await threatIntelApi.status(id ?? undefined);
 			fetchedProjectId = id;
-		} catch {
+			loadError = null;
+		} catch (e) {
 			status = null;
+			loadError = e instanceof Error ? e.message : 'Request failed.';
 		} finally {
 			loading = false;
 		}
@@ -144,7 +148,7 @@
 	<EmptyState
 		icon={TriangleAlert}
 		title="Threat intel not loaded"
-		description="The API did not respond. Check that the api service is running."
+		description={loadError ?? undefined}
 	>
 		<Button
 			variant="outline"
@@ -180,7 +184,7 @@
 							<LoadingButton
 								loading={syncing || !!status?.syncing}
 								loadingLabel="Syncing"
-								variant="outline"
+								variant={neverSynced ? 'default' : 'outline'}
 								size="sm"
 								disabled={!isAdmin}
 								onclick={sync}
@@ -193,6 +197,13 @@
 				</Hint>
 			</Card.Action>
 		</Card.Header>
+
+		{#if neverSynced}
+			<p class="border-b bg-info/5 px-4 py-2.5 text-xs text-muted-foreground">
+				No feed is downloaded yet. Sync the feeds to add exploit, ransomware and EPSS signals to
+				findings.
+			</p>
+		{/if}
 
 		<div
 			class="hidden gap-4 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase md:grid {COLUMNS}"

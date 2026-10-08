@@ -16,6 +16,7 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
 	import { SCHEDULE_STATUS_LABELS, type ScanScheduleRead } from '$lib/types/scan-schedule';
+	import { describeCron } from './cron';
 
 	interface Props {
 		schedule: ScanScheduleRead;
@@ -38,6 +39,10 @@
 	}: Props = $props();
 
 	let isPaused = $derived(schedule.status === 'paused');
+	let cadence = $derived(
+		(schedule.schedule_type === 'cron' && describeCron(schedule.cron_expression)) ||
+			schedule.cadence
+	);
 	let isCompleted = $derived(schedule.status === 'completed');
 
 	function formatNext(iso: string | null): string {
@@ -116,7 +121,7 @@
 
 	<div class="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
 		<CalendarClock class="h-3.5 w-3.5 shrink-0" />
-		<span class="truncate">{schedule.cadence}</span>
+		<span class="truncate" title={schedule.cadence}>{cadence}</span>
 		<span class="text-muted-foreground/40">·</span>
 		<span class="shrink-0">{schedule.timezone}</span>
 		{#if schedule.timezone_stale}

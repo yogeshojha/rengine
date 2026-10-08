@@ -4,6 +4,12 @@ import type { TargetChip } from './launch-state.svelte';
 export const INVALID_TARGET_MESSAGE = 'Unrecognised target';
 export const TARGET_FORMATS = 'Enter a domain, IP address, CIDR range, URL or ASN.';
 
+/** `Unrecognised target "x". Enter a domain, …` for one or more rejected values. */
+export function invalidTargetMessage(values: string[]): string {
+	const quoted = values.map((v) => `"${v}"`).join(', ');
+	return `${INVALID_TARGET_MESSAGE}${values.length === 1 ? '' : 's'} ${quoted}. ${TARGET_FORMATS}`;
+}
+
 export function splitTargetInput(raw: string): string[] {
 	return [
 		...new Set(

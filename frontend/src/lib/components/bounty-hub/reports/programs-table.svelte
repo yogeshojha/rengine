@@ -130,9 +130,9 @@
 							rel={p.in_hub ? undefined : 'noopener noreferrer'}
 							class="block truncate text-sm font-medium hover:text-primary">{p.name}</a
 						>
-						<div class="flex items-center gap-1.5 text-2xs text-muted-foreground">
-							<span class="font-mono">@{p.handle}</span>
-							{#if !p.in_hub}<span>Not in Bounty Hub</span>{/if}
+						<div class="flex min-w-0 items-center gap-1.5 text-2xs text-muted-foreground">
+							<span class="min-w-0 truncate font-mono" title="@{p.handle}">@{p.handle}</span>
+							{#if !p.in_hub}<span class="shrink-0 whitespace-nowrap">Not in Bounty Hub</span>{/if}
 						</div>
 					</div>
 					<div role="cell" class="{PCOL.outcome} flex flex-col gap-1">

@@ -12,6 +12,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
+	import LoadNotice from '$lib/components/load-notice.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import ThemePreview from './theme-preview.svelte';
@@ -96,6 +97,7 @@
 	const aiAvailable = $derived(reportCatalog.aiAvailable);
 	const preview = $derived(reportCatalog.themes.find((t) => t.slug === theme));
 	const groups = $derived(reportCatalog.catalog?.groups ?? []);
+	const sectionCount = $derived(plan.enabledContentCount + plan.furniture.length);
 	const promoted = $derived(
 		plan.content.filter((s) => plan.enabled(s.name) && plan.launchFields(s.name).length)
 	);
@@ -243,6 +245,14 @@
 			});
 	});
 
+	let catalogRetrying = $state(false);
+
+	async function retryCatalog() {
+		catalogRetrying = true;
+		await reportCatalog.fetch(true);
+		catalogRetrying = false;
+	}
+
 	const STATS: [string, 'sections' | 'findings' | 'assets' | 'pages_estimated'][] = [
 		['Sections', 'sections'],
 		['Findings', 'findings'],
@@ -319,7 +329,9 @@
 {/snippet}
 
 <Dialog.Root bind:open={() => open, requestOpen}>
-	<Dialog.Content class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+	<Dialog.Content
+		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-4xl"
+	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Generate report</Dialog.Title>
 			{#if subject}
@@ -330,9 +342,18 @@
 			{/if}
 		</Dialog.Header>
 
-		<div class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_16rem]">
-			<ScrollArea class="min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(90vh-13rem)]">
+		<div
+			class="grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_16rem]"
+		>
+			<ScrollArea class="min-h-0">
 				<div class="flex flex-col gap-4 px-6 py-5">
+					{#if reportCatalog.loadError}
+						<LoadNotice
+							sections={['Sections and themes']}
+							busy={catalogRetrying}
+							onRetry={retryCatalog}
+						/>
+					{/if}
 					{#if !fixed}
 						<FormField label="Report on">
 							{#snippet children({ id })}
@@ -454,9 +475,9 @@
 						<div class="flex flex-wrap items-baseline justify-between gap-x-3 border-b pb-1.5">
 							<span class="text-sm font-medium">Contents</span>
 							<span class="text-xs text-muted-foreground">
-								{plan.enabledContentCount}
-								{plan.enabledContentCount === 1 ? 'section' : 'sections'}{#if plan.furniture.length}
-									&nbsp;· cover, contents and reference sections included{/if}
+								{sectionCount}
+								{sectionCount === 1 ? 'section' : 'sections'}{#if plan.furniture.length}
+									&nbsp;· includes cover, contents and reference{/if}
 							</span>
 						</div>
 
@@ -610,7 +631,7 @@
 				</div>
 			</ScrollArea>
 
-			<aside class="hidden border-l bg-muted/25 md:block">
+			<aside class="hidden overflow-y-auto border-l bg-muted/25 md:block">
 				<div class="space-y-4 px-5 py-5">
 					{#if preview}
 						<ThemePreview theme={preview} variant="cover" class="shadow-sm" />
@@ -631,7 +652,7 @@
 			{@render estimateBlock('')}
 		</div>
 
-		<Dialog.Footer class="justify-between border-t px-6 py-4 sm:justify-between">
+		<Dialog.Footer class="justify-between border-t bg-card px-6 py-4 sm:justify-between">
 			<Button
 				variant="ghost"
 				class="text-muted-foreground"

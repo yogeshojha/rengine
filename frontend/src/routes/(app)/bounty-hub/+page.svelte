@@ -17,6 +17,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import FilterBar from '$lib/components/bounty-hub/filter-bar.svelte';
@@ -213,7 +214,6 @@
 			statusError = null;
 		} catch (error) {
 			statusError = error instanceof Error ? error.message : 'Bounty Hub status not loaded';
-			toast.error(statusError);
 		}
 	}
 
@@ -239,7 +239,6 @@
 		} catch (error) {
 			if (seq !== programsSeq) return;
 			programsError = error instanceof Error ? error.message : 'Programs not loaded';
-			toast.error(programsError);
 			programs = [];
 			total = 0;
 		} finally {
@@ -558,12 +557,23 @@
 								Retry
 							</Button>
 						</EmptyState>
+					{:else if programs.length === 0 && total === 0 && status?.programs === 0}
+						<EmptyState
+							icon={TargetIcon}
+							title="No programs"
+							description="Programs appear after a platform sync."
+							compact
+							class="rounded-none border-0 bg-transparent py-16"
+						>
+							<LoadingButton size="sm" loading={syncing} loadingLabel="Refreshing" onclick={sync}>
+								<RefreshCwIcon class="size-4" />
+								Refresh all platforms
+							</LoadingButton>
+						</EmptyState>
 					{:else if programs.length === 0}
 						<EmptyState
 							icon={TargetIcon}
-							title={total === 0 && status?.programs === 0
-								? 'No programs'
-								: 'No programs match these filters'}
+							title="No programs match these filters"
 							compact
 							class="rounded-none border-0 bg-transparent py-16"
 						/>
@@ -603,9 +613,21 @@
 			</EmptyState>
 		</Card.Root>
 	{:else}
-		<Card.Root class="gap-0 overflow-hidden py-0">
-			<RowSkeleton />
-		</Card.Root>
+		<div class="flex flex-col gap-4" aria-busy="true">
+			<div class="flex gap-6 border-b px-3 py-3">
+				{#each ['w-20', 'w-20', 'w-16'] as w, i (i)}
+					<Skeleton class="h-4 {w}" />
+				{/each}
+			</div>
+			<Card.Root class="gap-0 overflow-hidden py-0">
+				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
+					<Skeleton class="h-9 min-w-[240px] flex-1" />
+					<Skeleton class="h-9 w-28" />
+					<Skeleton class="h-9 w-28" />
+				</div>
+				<RowSkeleton />
+			</Card.Root>
+		</div>
 	{/if}
 </div>
 

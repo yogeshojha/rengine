@@ -207,7 +207,11 @@
 	/>
 
 	{#if !ready && connectors.error}
-		<EmptyState icon={TriangleAlertIcon} title={connectors.error}>
+		<EmptyState
+			icon={TriangleAlertIcon}
+			title="{routeLabels.connectors} not loaded"
+			description={connectors.error}
+		>
 			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
 		</EmptyState>
 	{:else if !ready}

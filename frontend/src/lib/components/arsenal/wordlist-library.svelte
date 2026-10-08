@@ -10,6 +10,7 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Label } from '$lib/components/ui/label';
 	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
@@ -131,7 +132,7 @@
 	);
 </script>
 
-<div class="space-y-6">
+<div class="max-w-5xl space-y-6">
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		<Card.Header class="border-b px-4 py-5">
 			<Card.Title>Wordlists</Card.Title>
@@ -139,8 +140,11 @@
 				<Card.Description>Updated {relativeTime(lastChanged)}</Card.Description>
 			{/if}
 			<Card.Action class="flex flex-wrap items-center justify-end gap-2">
+				<Label for="wordlist-upload-kind" class="text-xs font-normal text-muted-foreground">
+					Upload as
+				</Label>
 				<Select.Root type="single" bind:value={uploadKind} disabled={!isAdmin}>
-					<Select.Trigger size="sm" class="w-[190px]" aria-label="Wordlist kind">
+					<Select.Trigger id="wordlist-upload-kind" size="sm" class="w-[190px]">
 						{WORDLIST_KIND_LABELS[uploadKind]}
 					</Select.Trigger>
 					<Select.Content>
@@ -188,12 +192,16 @@
 				>
 					<ToggleGroup.Item value={ALL} class="h-9 gap-1.5 px-3 text-sm font-normal">
 						All
-						<span class="text-muted-foreground tabular-nums">{store.wordlists.length}</span>
+						{#if store.hasFetched}
+							<span class="text-muted-foreground tabular-nums">{store.wordlists.length}</span>
+						{/if}
 					</ToggleGroup.Item>
 					{#each WORDLIST_KINDS as kind (kind)}
 						<ToggleGroup.Item value={kind} class="h-9 gap-1.5 px-3 text-sm font-normal">
 							{WORDLIST_KIND_LABELS[kind]}
-							<span class="text-muted-foreground tabular-nums">{counts[kind]}</span>
+							{#if store.hasFetched}
+								<span class="text-muted-foreground tabular-nums">{counts[kind]}</span>
+							{/if}
 						</ToggleGroup.Item>
 					{/each}
 				</ToggleGroup.Root>
@@ -203,7 +211,7 @@
 				<EmptyState
 					icon={TriangleAlert}
 					title="Wordlists not loaded"
-					description="The API did not respond. Check that the api service is running."
+					description={store.error ?? undefined}
 					class="rounded-none border-0 bg-transparent py-16"
 				>
 					<Button variant="outline" size="sm" onclick={() => store.fetch()}>Retry</Button>
@@ -255,7 +263,7 @@
 							</Hint>
 						</div>
 
-						<div class="shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
+						<div class="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
 							<div class="text-sm text-foreground">{item.words.toLocaleString()} words</div>
 							<div>{formatBytes(item.bytes)}</div>
 							<div>{relativeTime(item.updated_at)}</div>
@@ -275,27 +283,38 @@
 									</Button>
 								{/snippet}
 							</Hint>
-							<Hint
-								text={item.origin === WordlistOrigin.BUILTIN
-									? 'Default wordlists are read-only'
-									: isAdmin
-										? 'Delete'
-										: 'Editable by administrators'}
-							>
-								{#snippet child(props)}
-									<span {...props} class="inline-flex">
+							{#if item.origin !== WordlistOrigin.BUILTIN && isAdmin}
+								<Hint text="Delete">
+									{#snippet child(props)}
 										<Button
+											{...props}
 											variant="ghost"
 											size="icon-sm"
 											aria-label="Delete {item.name}"
-											disabled={item.origin === WordlistOrigin.BUILTIN || !isAdmin}
 											onclick={() => (removing = item)}
 										>
 											<Trash2 class="size-4" />
 										</Button>
-									</span>
-								{/snippet}
-							</Hint>
+									{/snippet}
+								</Hint>
+							{:else if item.origin !== WordlistOrigin.BUILTIN}
+								<Hint text="Editable by administrators">
+									{#snippet child(props)}
+										<span {...props} class="inline-flex">
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												aria-label="Delete {item.name}"
+												disabled
+											>
+												<Trash2 class="size-4" />
+											</Button>
+										</span>
+									{/snippet}
+								</Hint>
+							{:else}
+								<span class="size-8" aria-hidden="true"></span>
+							{/if}
 						</div>
 					</div>
 				{/each}

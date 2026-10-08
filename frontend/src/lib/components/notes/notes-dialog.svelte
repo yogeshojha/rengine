@@ -4,7 +4,6 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { Separator } from '$lib/components/ui/separator';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -85,29 +84,28 @@
 
 <Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : guard.close())}>
 	<Dialog.Content
-		class="flex max-h-[85vh] flex-col gap-4 sm:max-w-xl"
+		class="grid max-h-[85vh] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-xl"
 		onOpenAutoFocus={(e) => {
 			e.preventDefault();
 			requestAnimationFrame(() => composer?.focus());
 		}}
 		onkeydown={holdSheetKeys}
 	>
-		<Dialog.Header class="min-w-0 pr-6">
+		<Dialog.Header class="min-w-0 border-b py-4 pr-12 pl-6">
 			<Dialog.Title>Notes</Dialog.Title>
 			{#if label}
 				<Dialog.Description class="truncate font-mono text-xs">{label}</Dialog.Description>
 			{/if}
 		</Dialog.Header>
 
-		<div class="shrink-0">
+		<div class="shrink-0 px-6 py-4">
 			{#key assetKey}
 				<NoteComposer bind:this={composer} {anchor} autofocus />
 			{/key}
 		</div>
 
 		{#if showThread}
-			<div class="flex min-h-0 flex-col">
-				<Separator />
+			<div class="flex min-h-0 flex-col border-t">
 				{#if error}
 					<EmptyState
 						compact
@@ -119,7 +117,7 @@
 						<Button variant="outline" size="sm" onclick={() => void load()}>Retry</Button>
 					</EmptyState>
 				{:else if !loaded}
-					<div class="flex flex-col gap-5 pt-4" aria-busy="true">
+					<div class="flex flex-col gap-5 px-6 py-4" aria-busy="true">
 						{#each Array(2) as _, i (i)}
 							<div class="flex flex-col gap-2">
 								<Skeleton class="h-3 w-32" />
@@ -128,9 +126,7 @@
 						{/each}
 					</div>
 				{:else}
-					<ScrollArea
-						class="-mx-6 -mb-3 min-h-0 [&_[data-slot=scroll-area-viewport]]:max-h-[min(28rem,calc(85vh-20rem))]"
-					>
+					<ScrollArea class="min-h-0 flex-1">
 						<div class="divide-y px-6">
 							{#each items as note (note.id)}
 								<NoteCard

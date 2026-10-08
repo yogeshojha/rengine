@@ -7,10 +7,14 @@
 		items: string[];
 		onChange: (items: string[]) => void;
 		placeholder?: string;
+		/** Names each row for assistive tech, numbered. */
+		label?: string;
 		validate?: (v: string) => string | null;
 	}
 
-	let { items, onChange, placeholder = '', validate }: Props = $props();
+	let { items, onChange, placeholder = '', label, validate }: Props = $props();
+
+	const uid = $props.id();
 
 	let rows = $derived(items.length === 0 ? [''] : [...items, '']);
 
@@ -43,11 +47,15 @@
 
 <div class="space-y-2">
 	{#each rows as row, i (i)}
+		{@const error = errorFor(row)}
 		<div class="space-y-1.5">
 			<div class="flex items-center gap-2">
 				<Input
 					value={row}
 					{placeholder}
+					aria-label={label ? `${label} ${i + 1}` : undefined}
+					aria-invalid={error ? true : undefined}
+					aria-describedby={error ? `${uid}-error-${i}` : undefined}
 					class="h-9 flex-1 font-mono text-xs"
 					oninput={(e) => updateRow(i, e.currentTarget.value)}
 					onkeydown={(e) => onKeydown(e, i)}
@@ -63,8 +71,8 @@
 					<X class="h-4 w-4" />
 				</Button>
 			</div>
-			{#if errorFor(row)}
-				<p class="text-sm text-destructive" role="alert">{errorFor(row)}</p>
+			{#if error}
+				<p id="{uid}-error-{i}" class="text-sm text-destructive" role="alert">{error}</p>
 			{/if}
 		</div>
 	{/each}

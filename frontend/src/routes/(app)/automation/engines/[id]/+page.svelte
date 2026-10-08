@@ -34,6 +34,7 @@
 
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
 	import EngineSummaryBar from '$lib/components/engines/engine-summary-bar.svelte';
+	import { summarize } from '$lib/utilities/engine-summary';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import StageRow from '$lib/components/engines/stage-row.svelte';
 	import YamlPane from '$lib/components/yaml-editor.svelte';
@@ -133,6 +134,11 @@
 	const issues = $derived<YamlIssue[]>(doc ? validate(yamlSource, doc, catalog) : []);
 	const errorCount = $derived(issues.filter((i) => i.severity === 'error').length);
 	const parsed = $derived(doc && !doc.errors.length ? draftFromDoc(doc) : null);
+	const stageCounts = $derived.by(() => {
+		if (!parsed || !catalogStages.length) return null;
+		const summary = summarize(parsed.stages ?? {}, catalogStages, parsed.intensity);
+		return { active: summary.activeStages, total: summary.totalStages };
+	});
 
 	const draft = $derived.by<ScanEngine | null>(() => {
 		if (!engine || !parsed) return null;
@@ -660,6 +666,9 @@
 								{#each group.capabilities as stage (stage.name)}
 									{@render stageRow(stage, false)}
 								{/each}
+								{#if group.active.length}
+									<h3 class="supporting text-2xs">Supporting</h3>
+								{/if}
 								{#each group.active as stage (stage.name)}
 									{@render stageRow(stage, true)}
 								{/each}
@@ -856,6 +865,7 @@
 			stages={catalogStages}
 			isLoading={previewLoading}
 			error={previewError}
+			counts={stageCounts}
 			onTargetTypeChange={setLensTargetType}
 		/>
 
@@ -1095,6 +1105,15 @@
 		border-radius: 0.7rem;
 		background: var(--card);
 		overflow: hidden;
+	}
+	.supporting {
+		padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3.5) calc(var(--spacing) * 1.5);
+		border-bottom: 1px solid var(--border);
+		background: color-mix(in oklch, var(--muted) 30%, transparent);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.025em;
+		color: var(--muted-foreground);
 	}
 	.automatic {
 		padding: 8px 14px 9px 32px;

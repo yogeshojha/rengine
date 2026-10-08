@@ -14,6 +14,9 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import LoadingButton from '$lib/components/loading-button.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
+	import PowerIcon from '@lucide/svelte/icons/power';
 	import AgentsTable from '$lib/components/agents/agents-table.svelte';
 	import ConnectSheet from '$lib/components/agents/connect-sheet.svelte';
 	import HistorySheet from '$lib/components/agents/history-sheet.svelte';
@@ -101,13 +104,9 @@
 <svelte:head><title>{pageTitle(routeLabels.agents)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<div class="flex flex-wrap items-end justify-between gap-3">
-		<div class="min-w-0">
-			<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.agents}</h1>
-			<p class="mt-1 text-sm text-muted-foreground">MCP clients with access to this instance</p>
-		</div>
-		{#if status && canAdmin}
-			<div class="flex flex-wrap items-center gap-2">
+	<PageHeader title={routeLabels.agents} description="MCP clients with access to this instance">
+		{#snippet actions()}
+			{#if status && canAdmin}
 				<span
 					class="inline-flex h-8 min-w-0 items-center gap-2 rounded-md border pr-1 pl-3 text-sm"
 				>
@@ -131,19 +130,21 @@
 					<SettingsIcon class="size-4" />
 					Settings
 				</Button>
-				<Hint text={atLimit ? `Limit of ${MAX_TOKENS} agents reached.` : ''}>
-					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<Button size="sm" disabled={atLimit} onclick={() => openConnect(null)}>
-								<PlusIcon class="size-4" />
-								Connect an agent
-							</Button>
-						</span>
-					{/snippet}
-				</Hint>
-			</div>
-		{/if}
-	</div>
+				{#if tokens.length}
+					<Hint text={atLimit ? `Limit of ${MAX_TOKENS} agents reached.` : ''}>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<Button size="sm" disabled={atLimit} onclick={() => openConnect(null)}>
+									<PlusIcon class="size-4" />
+									Connect an agent
+								</Button>
+							</span>
+						{/snippet}
+					</Hint>
+				{/if}
+			{/if}
+		{/snippet}
+	</PageHeader>
 
 	{#if !canAdmin}
 		<EmptyState icon={BotIcon} title="Agents are managed by administrators" />
@@ -153,6 +154,21 @@
 				<TableSkeleton lead={AGENT_SKELETON} rows={3} actions={false} />
 			</div>
 		</Card.Root>
+	{:else if !tokens.length && !running}
+		<EmptyState
+			icon={PowerIcon}
+			title="MCP server stopped"
+			description="Start the server so agents can connect."
+		>
+			<LoadingButton
+				size="sm"
+				loading={mcp.isSaving}
+				loadingLabel="Starting"
+				onclick={() => mcp.setRunning(true)}
+			>
+				Start server
+			</LoadingButton>
+		</EmptyState>
 	{:else if !tokens.length}
 		<EmptyState icon={BotIcon} title="No agents">
 			<Button size="sm" onclick={() => openConnect(null)}>
@@ -161,6 +177,24 @@
 			</Button>
 		</EmptyState>
 	{:else}
+		{#if !running}
+			<div
+				class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-sm"
+			>
+				<span class="flex items-center gap-2">
+					<PowerIcon class="size-4 shrink-0 text-warning" />
+					MCP server stopped. Agents cannot connect.
+				</span>
+				<LoadingButton
+					size="sm"
+					loading={mcp.isSaving}
+					loadingLabel="Starting"
+					onclick={() => mcp.setRunning(true)}
+				>
+					Start server
+				</LoadingButton>
+			</div>
+		{/if}
 		<Card.Root class="gap-0 overflow-hidden py-0">
 			<AgentsTable
 				{tokens}

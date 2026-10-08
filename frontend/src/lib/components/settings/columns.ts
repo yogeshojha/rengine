@@ -1,3 +1,5 @@
+import type { TableColumn } from '$lib/components/scans/results/table/columns';
+
 export const KEY_COL = {
 	provider: 'min-w-0 flex-1',
 	key: 'hidden w-[190px] shrink-0 @2xl/keys:block',
@@ -67,3 +69,35 @@ export const BODY_ROW =
 
 export const GROUP_ROW =
 	'border-b border-border/60 bg-muted/10 px-4 pt-3 pb-1.5 text-2xs font-semibold tracking-wide text-muted-foreground uppercase';
+
+export const KEY_SKELETON: TableColumn[] = [
+	{ key: 'provider', label: 'Provider', width: KEY_COL.provider },
+	{ key: 'key', label: 'Key', width: KEY_COL.key },
+	{ key: 'status', label: 'Status', width: KEY_COL.status },
+	{ key: 'tested', label: 'Last tested', width: KEY_COL.tested },
+	{ key: 'actions', label: '', width: KEY_COL.actions }
+];
+
+export const PROXY_SKELETON: TableColumn[] = [
+	{ key: 'proxy', label: 'Proxy', width: PROXY_COL.proxy },
+	{ key: 'endpoint', label: 'Endpoint', width: PROXY_COL.endpoint },
+	{ key: 'contexts', label: 'Contexts', width: PROXY_COL.contexts },
+	{ key: 'status', label: 'Status', width: PROXY_COL.status },
+	{ key: 'actions', label: '', width: PROXY_COL.actions }
+];
+
+export const CHANNEL_SKELETON: TableColumn[] = [
+	{ key: 'channel', label: 'Channel', width: CHANNEL_COL.channel },
+	{ key: 'events', label: 'Events', width: CHANNEL_COL.events },
+	{ key: 'level', label: 'Minimum level', width: CHANNEL_COL.level },
+	{ key: 'delivery', label: 'Last delivery', width: CHANNEL_COL.delivery },
+	{ key: 'actions', label: '', width: CHANNEL_COL.actions }
+];
+
+export const USER_SKELETON: TableColumn[] = [
+	{ key: 'user', label: 'User', width: USER_COL.user },
+	{ key: 'role', label: 'Role', width: USER_COL.role },
+	{ key: 'twoFactor', label: 'Two-factor', width: USER_COL.twoFactor },
+	{ key: 'created', label: 'Added', width: USER_COL.created },
+	{ key: 'actions', label: '', width: USER_COL.actions }
+];

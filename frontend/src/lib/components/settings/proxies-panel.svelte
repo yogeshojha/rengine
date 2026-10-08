@@ -14,7 +14,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -35,7 +35,7 @@
 		type ProxyRead
 	} from '$lib/types/proxy';
 	import CheckStatus from './check-status.svelte';
-	import { BODY_ROW, HEAD_ROW, PROXY_COL } from './columns';
+	import { BODY_ROW, HEAD_ROW, PROXY_COL, PROXY_SKELETON } from './columns';
 	import { checkState, type CheckState } from './status';
 
 	type Scheme = (typeof PROXY_SCHEMES)[number];
@@ -236,10 +236,10 @@
 {#if !isAdmin}
 	<EmptyState compact icon={RouteIcon} title="Proxies are managed by administrators" />
 {:else if loading}
-	<Card.Root class="gap-3 p-4">
-		<Skeleton class="h-8 w-full" />
-		<Skeleton class="h-10 w-full" />
-		<Skeleton class="h-10 w-full" />
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/proxies w-full">
+			<TableSkeleton lead={PROXY_SKELETON} rows={3} actions={false} />
+		</div>
 	</Card.Root>
 {:else if loadFailed}
 	<EmptyState compact icon={TriangleAlertIcon} title="Proxies not loaded">
@@ -249,7 +249,11 @@
 		</Button>
 	</EmptyState>
 {:else if proxies.length === 0}
-	<EmptyState icon={RouteIcon} title="No proxies">
+	<EmptyState
+		icon={RouteIcon}
+		title="No proxies"
+		description="Route scan traffic through an HTTP or SOCKS proxy. A scan context picks the proxy it uses."
+	>
 		<Button size="sm" onclick={() => openDialog(null)}>
 			<PlusIcon class="size-4" />
 			Add proxy

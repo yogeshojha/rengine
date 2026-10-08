@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
 	import { auth } from '$lib/stores/auth.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
@@ -32,6 +32,8 @@
 
 	let setupOpen = $state(false);
 	let setupPassword = $state('');
+	let setupError = $state('');
+	let setupPasswordInput = $state<HTMLInputElement | null>(null);
 	let setupSecret = $state('');
 	let setupQr = $state('');
 	let setupCode = $state('');
@@ -103,6 +105,7 @@
 	async function handleStartSetup() {
 		if (!setupPassword) return;
 		isSettingUp = true;
+		setupError = '';
 		try {
 			const res = await twoFactorApi.setup(setupPassword);
 			setupPassword = '';
@@ -113,9 +116,14 @@
 			backupCodesSaved = false;
 			setupOpen = true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Two-factor setup not started');
+			setupError = error instanceof Error ? error.message : 'Two-factor setup not started';
 		} finally {
 			isSettingUp = false;
+		}
+		if (setupError) {
+			await tick();
+			setupPasswordInput?.focus();
+			setupPasswordInput?.select();
 		}
 	}
 
@@ -404,7 +412,7 @@
 					handleStartSetup();
 				}}
 			>
-				<FormField label="Current password">
+				<FormField label="Current password" error={setupError || undefined}>
 					{#snippet children({ id })}
 						<Input
 							{id}
@@ -412,7 +420,10 @@
 							autocomplete="current-password"
 							class="max-w-72"
 							disabled={isSettingUp}
+							aria-invalid={setupError ? true : undefined}
+							bind:ref={setupPasswordInput}
 							bind:value={setupPassword}
+							oninput={() => (setupError = '')}
 						/>
 					{/snippet}
 				</FormField>

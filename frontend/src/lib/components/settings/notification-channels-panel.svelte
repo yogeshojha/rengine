@@ -23,7 +23,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -56,7 +56,7 @@
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { externalHref } from '$lib/utilities/links';
 	import CheckStatus from './check-status.svelte';
-	import { BODY_ROW, CHANNEL_COL, HEAD_ROW } from './columns';
+	import { BODY_ROW, CHANNEL_COL, HEAD_ROW, CHANNEL_SKELETON } from './columns';
 	import type { CheckState } from './status';
 
 	let loading = $state(true);
@@ -372,10 +372,10 @@
 {#if !isAdmin}
 	<EmptyState compact icon={BellIcon} title="Notifications are managed by administrators" />
 {:else if loading}
-	<Card.Root class="gap-3 p-4">
-		<Skeleton class="h-8 w-full" />
-		<Skeleton class="h-10 w-full" />
-		<Skeleton class="h-10 w-full" />
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/channels w-full">
+			<TableSkeleton lead={CHANNEL_SKELETON} rows={3} actions={false} />
+		</div>
 	</Card.Root>
 {:else if loadFailed}
 	<EmptyState compact icon={TriangleAlertIcon} title="Notification channels not loaded">

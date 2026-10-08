@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import Check from '@lucide/svelte/icons/check';
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
@@ -121,6 +121,7 @@
 	let facetsFor = $state('');
 	let nameError = $state('');
 	let initial = $state('');
+	let body = $state<HTMLElement | null>(null);
 
 	let catalog = $derived(tripwiresStore.catalog);
 	let isEdit = $derived(tripwire !== null);
@@ -258,20 +259,37 @@
 		if (on && stages.length === 0) stages = defaultStages(dimension);
 	}
 
+	/** Focus the step's first field: the query on If, the checked choice on When. */
+	function focusStep() {
+		const root = body;
+		if (!root) return;
+		const field =
+			root.querySelector<HTMLElement>('[data-step-focus] input') ??
+			root.querySelector<HTMLElement>(
+				'[role="radio"][data-state="checked"], input:not([type="hidden"]):not(:disabled), button:not(:disabled)'
+			);
+		field?.focus({ preventScroll: true });
+	}
+
+	function show(index: number) {
+		step = index;
+		void tick().then(focusStep);
+	}
+
 	function goTo(index: number) {
 		if (index > reached) return;
-		step = index;
+		show(index);
 	}
 
 	function next() {
 		if (!stepReady[step]) return;
 		if (step === STEPS.length - 2 && !name.trim()) name = defaultTripwireName(spec, query);
-		step = Math.min(step + 1, STEPS.length - 1);
+		show(Math.min(step + 1, STEPS.length - 1));
 		reached = Math.max(reached, step);
 	}
 
 	function back() {
-		step = Math.max(step - 1, 0);
+		show(Math.max(step - 1, 0));
 	}
 
 	function actions(): TripwireAction[] {
@@ -330,9 +348,12 @@
 	}
 >
 	<Dialog.Content
-		class="flex max-h-[min(90vh,800px)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
 		onkeydown={onKeydown}
-		onOpenAutoFocus={(e) => e.preventDefault()}
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			void tick().then(focusStep);
+		}}
 	>
 		<Dialog.Header class="gap-4 border-b py-4 pr-12 pl-6">
 			<div class="flex items-start justify-between gap-4">
@@ -387,7 +408,7 @@
 			/>
 		</Dialog.Header>
 
-		<ScrollArea class="min-h-0 flex-1">
+		<ScrollArea class="min-h-0" bind:viewportRef={body}>
 			<div class="flex flex-col gap-5 px-6 py-5">
 				{#if step === 0}
 					<FormField label="Timing">
@@ -440,7 +461,7 @@
 						</FormField>
 						<FormField label="Query">
 							{#snippet children({ id: _id })}
-								<div class="[&>div]:rounded-xl">
+								<div class="[&>div]:rounded-xl" data-step-focus>
 									<QueryBar
 										store={queryStore}
 										recentsKey={spec.recentsKey}
@@ -536,9 +557,9 @@
 			</div>
 		</ScrollArea>
 
-		<div class="flex items-center gap-2 border-t px-6 py-4">
+		<div class="flex items-center gap-2 border-t bg-card px-6 py-4">
 			{#if step > 0}
-				<Button variant="ghost" size="sm" onclick={back}>
+				<Button variant="ghost" onclick={back}>
 					<ChevronLeft class="size-4" />
 					Back
 				</Button>
@@ -546,19 +567,11 @@
 			<div class="min-w-0 flex-1 truncate text-xs text-muted-foreground" aria-live="polite">
 				{blocker ?? ''}
 			</div>
-			<Button variant="outline" size="sm" disabled={saving} onclick={() => guard.close()}>
-				Cancel
-			</Button>
+			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
 			{#if step < STEPS.length - 1}
-				<Button size="sm" disabled={!stepReady[step]} onclick={next}>Continue</Button>
+				<Button disabled={!stepReady[step]} onclick={next}>Continue</Button>
 			{:else}
-				<LoadingButton
-					size="sm"
-					loading={saving}
-					loadingLabel="Saving"
-					disabled={!canSave}
-					onclick={save}
-				>
+				<LoadingButton loading={saving} loadingLabel="Saving" disabled={!canSave} onclick={save}>
 					{isEdit ? 'Save' : 'Create tripwire'}
 				</LoadingButton>
 			{/if}

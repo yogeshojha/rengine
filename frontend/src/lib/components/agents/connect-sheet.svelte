@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as Select from '$lib/components/ui/select';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
@@ -8,7 +9,6 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import CodeBlock from '$lib/components/code-block.svelte';
-	import SectionHead from '$lib/components/section-head.svelte';
 	import LadderPick from '$lib/components/access/ladder-pick.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { mcp } from '$lib/stores/mcp.svelte';
@@ -53,6 +53,8 @@
 	let shownClient = $state('');
 
 	const allowed = $derived(ceilingKeys(status));
+	const defaultClient = $derived(status.clients[0]?.key ?? '');
+	const clientsId = $props.id();
 	const projects = $derived(projectsStore.projects ?? []);
 	const projectLabel = $derived(
 		projectId === SELECT_NONE
@@ -86,14 +88,22 @@
 			);
 		}
 		return (
-			!!client ||
-			!!name.trim() ||
+			client !== defaultClient ||
+			name.trim() !== defaultClient.replaceAll('_', '-') ||
 			projectId !== SELECT_NONE ||
 			level !== DEFAULT_LEVEL ||
 			expiry !== DEFAULT_EXPIRY
 		);
 	});
 	const guard = new DiscardGuard(() => dirty, close);
+
+	$effect(() => {
+		if (!open || editing || created) return;
+		const first = defaultClient;
+		untrack(() => {
+			if (!client && !named && first) pickClient(first);
+		});
+	});
 
 	$effect(() => {
 		if (!open) return;
@@ -263,8 +273,12 @@
 				<div class="flex flex-col divide-y px-5">
 					{#if !editing}
 						<section class="flex flex-col gap-2.5 py-5">
-							<SectionHead title="Client" />
-							<div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+							<p id="{clientsId}-label" class="text-sm leading-none font-medium">Client</p>
+							<div
+								class="grid grid-cols-2 gap-1.5 sm:grid-cols-3"
+								role="group"
+								aria-labelledby="{clientsId}-label"
+							>
 								{#each status.clients as c (c.key)}
 									<button
 										type="button"
@@ -290,7 +304,7 @@
 										{id}
 										bind:value={name}
 										oninput={() => (named = true)}
-										placeholder="claude-code"
+										placeholder="Agent name"
 										maxlength={80}
 									/>
 								{/snippet}
@@ -353,7 +367,10 @@
 			{/if}
 		</ScrollArea>
 
-		<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
+		<Sheet.Footer class="flex-row items-center justify-end gap-2 border-t px-5 py-3">
+			{#if !created && !editing && !name.trim()}
+				<span class="mr-auto text-xs text-muted-foreground">Name is required.</span>
+			{/if}
 			{#if created}
 				<Button size="sm" onclick={close}>Done</Button>
 			{:else}

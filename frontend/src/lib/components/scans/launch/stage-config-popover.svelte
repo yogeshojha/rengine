@@ -55,7 +55,10 @@
 			</button>
 		{/snippet}
 	</Popover.Trigger>
-	<Popover.Content class="w-[28rem] max-w-[calc(100vw-2rem)] p-3" align="start">
+	<Popover.Content
+		class="max-h-(--bits-popover-content-available-height) w-[28rem] max-w-[calc(100vw-2rem)] overflow-y-auto p-3"
+		align="start"
+	>
 		<div class="mb-2 flex items-start justify-between gap-3">
 			<div class="min-w-0">
 				<p class="text-sm font-medium">{stage.title}</p>

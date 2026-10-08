@@ -51,19 +51,6 @@
 	data-selected={isSelected}
 >
 	<div class="flex items-start gap-3 px-4 pt-4">
-		{#if onSelect}
-			<div
-				class="relative z-10 flex h-5 items-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[on=true]:opacity-100 [@media(hover:none)]:opacity-100"
-				data-on={isSelected}
-			>
-				<Checkbox
-					checked={isSelected}
-					onCheckedChange={() => onSelect()}
-					aria-label="Select {context.name}"
-				/>
-			</div>
-		{/if}
-
 		<div class="min-w-0 flex-1">
 			<div class="flex flex-wrap items-center gap-2">
 				<button
@@ -83,6 +70,18 @@
 		</div>
 
 		<div class="relative z-10 -mt-1 -mr-2 flex items-center">
+			{#if onSelect}
+				<div
+					class="flex size-7 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 data-[on=true]:opacity-100 [@media(hover:none)]:opacity-100"
+					data-on={isSelected}
+				>
+					<Checkbox
+						checked={isSelected}
+						onCheckedChange={() => onSelect?.()}
+						aria-label="Select {context.name}"
+					/>
+				</div>
+			{/if}
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}

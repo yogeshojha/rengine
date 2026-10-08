@@ -8,13 +8,7 @@
 	import { targetsApi } from '$lib/api/targets';
 	import type { Target } from '$lib/types/target';
 	import { targetTypeLabel } from '$lib/types/scan-engine';
-	import {
-		chipFor,
-		INVALID_TARGET_MESSAGE,
-		resolveTargetValue,
-		splitTargetInput,
-		TARGET_FORMATS
-	} from './targets';
+	import { chipFor, invalidTargetMessage, resolveTargetValue, splitTargetInput } from './targets';
 	import type { TargetChip } from './launch-state.svelte';
 
 	interface Props {
@@ -108,9 +102,7 @@
 		}
 		query = rejected.join(' ');
 		dismissed = true;
-		error = rejected.length
-			? `${INVALID_TARGET_MESSAGE}: ${rejected.join(', ')}. ${TARGET_FORMATS}`
-			: null;
+		error = rejected.length ? invalidTargetMessage(rejected) : null;
 	}
 
 	function onKeydown(e: KeyboardEvent) {

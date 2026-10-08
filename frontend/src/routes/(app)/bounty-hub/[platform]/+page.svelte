@@ -28,6 +28,7 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import CountTabs from '$lib/components/count-tabs.svelte';
+	import PanelHead from '$lib/components/panel-head.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
@@ -526,21 +527,32 @@
 						</Hint>
 					{/if}
 				</div>
-				<Hint text={isAdmin ? 'Refresh reports' : 'Refreshed by administrators'}>
-					{#snippet child(props)}
-						<span {...props} class="inline-flex">
+				{#if isAdmin}
+					<Hint text="Refresh reports">
+						{#snippet child(props)}
 							<Button
+								{...props}
 								variant="outline"
 								size="icon-sm"
 								aria-label="Refresh reports"
-								disabled={refreshing || !isAdmin}
+								disabled={refreshing}
 								onclick={() => refresh()}
 							>
 								<RefreshCw class="size-4 {refreshing ? 'animate-spin' : ''}" />
 							</Button>
-						</span>
-					{/snippet}
-				</Hint>
+						{/snippet}
+					</Hint>
+				{:else}
+					<Hint text="Refreshed by administrators">
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<Button variant="outline" size="icon-sm" aria-label="Refresh reports" disabled>
+									<RefreshCw class="size-4" />
+								</Button>
+							</span>
+						{/snippet}
+					</Hint>
+				{/if}
 			</div>
 
 			{#if summary?.error}
@@ -641,10 +653,10 @@
 						onChange={(k) => setParam('tab', k === ALL_TAB ? null : k)}
 					/>
 				{:else}
-					<CountTabs
-						tabs={[{ key: 'programs', label: 'Programs' }]}
-						value="programs"
-						counts={{ programs: programs.length }}
+					<PanelHead
+						title="Programs"
+						class="border-b-0 px-3 py-2.5"
+						description={`${programs.length.toLocaleString()} ${programs.length === 1 ? 'program' : 'programs'}`}
 					/>
 				{/if}
 				<ToggleGroup.Root

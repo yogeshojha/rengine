@@ -1,6 +1,9 @@
 <script lang="ts">
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
+	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -46,6 +49,9 @@
 	];
 
 	let view = $state<'pipeline' | 'yaml'>('pipeline');
+	let pipelineOpen = $state(false);
+	let selectAllEl = $state<HTMLButtonElement | null>(null);
+	let clearEl = $state<HTMLButtonElement | null>(null);
 
 	let engines = $derived(scanEnginesStore.engines);
 	let usable = $derived(engines.filter((e) => !launchLocked(e, auth.user)));
@@ -81,6 +87,19 @@
 		if (!value) return;
 		const next = value as Intensity;
 		launch.intensity = next === launch.baseIntensity ? null : next;
+	}
+
+	/** The pressed button disables itself, so hand focus to the other one. */
+	async function selectAll() {
+		launch.selectAll();
+		await tick();
+		if (selectAllEl?.disabled) clearEl?.focus();
+	}
+
+	async function clearAll() {
+		launch.clearAll();
+		await tick();
+		if (clearEl?.disabled) selectAllEl?.focus();
 	}
 
 	function createEngine() {
@@ -170,27 +189,37 @@
 				{#if launch.engine.description}
 					<p class="text-xs text-muted-foreground">{launch.engine.description}</p>
 				{/if}
-				<Tabs.Root bind:value={view} class="gap-2">
-					<Tabs.List class="h-8">
-						<Tabs.Trigger value="pipeline" class="px-3 text-xs">Pipeline</Tabs.Trigger>
-						<Tabs.Trigger value="yaml" class="px-3 text-xs">YAML Config</Tabs.Trigger>
-					</Tabs.List>
-					<Tabs.Content value="pipeline">
-						<div class="h-80 overflow-hidden rounded-md border bg-card">
-							<EffectPanel
-								{phases}
-								stages={launch.catalog.stages}
-								isLoading={phasesLoading}
-								error={null}
-							/>
-						</div>
-					</Tabs.Content>
-					<Tabs.Content value="yaml">
-						<div class="h-80 overflow-hidden rounded-md border bg-card">
-							<YamlPane value={yaml} readonly chrome={false} />
-						</div>
-					</Tabs.Content>
-				</Tabs.Root>
+				<Collapsible.Root bind:open={pipelineOpen} class="flex flex-col gap-2">
+					<Collapsible.Trigger
+						class="-ml-2 inline-flex h-7 w-fit items-center gap-1 rounded-md px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+					>
+						Pipeline
+						<ChevronRight class="size-3.5 transition-transform {pipelineOpen ? 'rotate-90' : ''}" />
+					</Collapsible.Trigger>
+					<Collapsible.Content>
+						<Tabs.Root bind:value={view} class="gap-2">
+							<Tabs.List class="h-8">
+								<Tabs.Trigger value="pipeline" class="px-3 text-xs">Stages</Tabs.Trigger>
+								<Tabs.Trigger value="yaml" class="px-3 text-xs">YAML config</Tabs.Trigger>
+							</Tabs.List>
+							<Tabs.Content value="pipeline">
+								<div class="overflow-hidden rounded-md border bg-card">
+									<EffectPanel
+										{phases}
+										stages={launch.catalog.stages}
+										isLoading={phasesLoading}
+										error={null}
+									/>
+								</div>
+							</Tabs.Content>
+							<Tabs.Content value="yaml">
+								<div class="h-80 overflow-hidden rounded-md border bg-card">
+									<YamlPane value={yaml} readonly chrome={false} />
+								</div>
+							</Tabs.Content>
+						</Tabs.Root>
+					</Collapsible.Content>
+				</Collapsible.Root>
 			{/if}
 		{/if}
 	{:else}
@@ -198,19 +227,21 @@
 			<p class="text-xs text-muted-foreground">Dependent stages are included automatically.</p>
 			<div class="flex shrink-0 items-center gap-1">
 				<Button
+					bind:ref={selectAllEl}
 					variant="ghost"
-					size="sm"
-					class="h-6 px-2 text-xs text-muted-foreground"
-					onclick={() => launch.selectAll()}
+					size="xs"
+					class="text-muted-foreground"
+					onclick={selectAll}
 					disabled={disabled || allSelected}
 				>
 					Select all
 				</Button>
 				<Button
+					bind:ref={clearEl}
 					variant="ghost"
-					size="sm"
-					class="h-6 px-2 text-xs text-muted-foreground"
-					onclick={() => launch.clearAll()}
+					size="xs"
+					class="text-muted-foreground"
+					onclick={clearAll}
 					disabled={disabled || noneSelected}
 				>
 					Clear selection

@@ -24,6 +24,8 @@
 	import StepFinish from '$lib/components/onboarding/step-finish.svelte';
 	import StepCelebration from '$lib/components/onboarding/step-celebration.svelte';
 	import ServerCogIcon from '@lucide/svelte/icons/server-cog';
+	import ServerOffIcon from '@lucide/svelte/icons/server-off';
+	import EmptyState from '$lib/components/empty-state.svelte';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import CompassIcon from '@lucide/svelte/icons/compass';
 	import PlugIcon from '@lucide/svelte/icons/plug';
@@ -156,7 +158,7 @@
 	$effect(() => {
 		if (auth.isLoading) return;
 		if (!auth.isAuthenticated) {
-			goto(ROUTES.login);
+			if (!auth.unreachable) goto(ROUTES.login);
 			return;
 		}
 		untrack(guard);
@@ -210,7 +212,18 @@
 
 <svelte:head><title>{pageTitle(STEPS[currentIndex]?.title ?? 'Setup')}</title></svelte:head>
 
-{#if loadFailed}
+{#if auth.unreachable}
+	<div class="flex min-h-svh items-center justify-center bg-background p-6">
+		<EmptyState
+			icon={ServerOffIcon}
+			title="Server not reachable"
+			description={auth.unreachable}
+			class="w-full max-w-lg"
+		>
+			<Button size="sm" variant="outline" onclick={() => auth.checkAuth([])}>Retry</Button>
+		</EmptyState>
+	</div>
+{:else if loadFailed}
 	<div class="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
 		<p class="text-sm text-muted-foreground">
 			The API did not respond. Check that the api service is running.

@@ -143,7 +143,7 @@
 <div
 	bind:this={boxEl}
 	class={cn(
-		'flex min-h-7 cursor-text flex-wrap items-center gap-1 rounded-md px-1 py-0.5 transition-colors focus-within:bg-muted/50 hover:bg-muted/50',
+		'flex min-h-7 cursor-text flex-wrap items-center gap-1 rounded-md px-1 py-0.5 transition-[color,background-color,box-shadow] hover:bg-muted/50 has-[input:focus-visible]:bg-muted/50 has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/70',
 		disabled && 'pointer-events-none opacity-50',
 		className
 	)}
@@ -156,7 +156,7 @@
 			#{tag}
 			<button
 				type="button"
-				class="rounded-sm p-0.5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+				class="rounded-sm p-0.5 text-muted-foreground outline-none hover:bg-foreground/10 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70"
 				aria-label="Remove tag {tag}"
 				{disabled}
 				onclick={(e) => {

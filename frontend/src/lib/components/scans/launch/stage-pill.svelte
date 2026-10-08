@@ -39,9 +39,9 @@
 	class="inline-flex h-7 items-stretch rounded-md border text-sm transition-colors {unsatisfied
 		? 'border-dashed border-warning/60 bg-warning/5 text-foreground'
 		: state === 'on'
-			? 'border-border bg-muted text-foreground'
+			? 'border-primary/50 bg-primary/10 text-foreground'
 			: state === 'implied'
-				? 'border-dashed border-border bg-muted/60 text-muted-foreground'
+				? 'border-dashed border-primary/40 bg-primary/5 text-foreground'
 				: state === 'blocked'
 					? 'border-border/60 text-muted-foreground/60'
 					: 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground'}"
@@ -62,7 +62,7 @@
 				{#if unsatisfied}
 					<CircleSlash class="size-3 shrink-0 text-warning" />
 				{:else if state === 'on'}
-					<Check class="size-3 shrink-0" />
+					<Check class="size-3 shrink-0 text-primary" />
 				{:else if state === 'implied'}
 					<Link class="size-3 shrink-0" />
 				{:else if state === 'blocked'}

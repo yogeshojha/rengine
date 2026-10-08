@@ -15,7 +15,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
@@ -27,7 +27,7 @@
 	import { ROLE_LABELS, roleLabel } from '$lib/config/users';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
-	import { BODY_ROW, HEAD_ROW, USER_COL } from './columns';
+	import { BODY_ROW, HEAD_ROW, USER_COL, USER_SKELETON } from './columns';
 
 	const ADMIN = 'admin';
 	const MEMBER = 'member';
@@ -149,10 +149,10 @@
 {#if !isAdmin}
 	<EmptyState compact icon={UsersIcon} title="Users are managed by administrators" />
 {:else if loading}
-	<Card.Root class="gap-3 p-4">
-		<Skeleton class="h-8 w-full" />
-		<Skeleton class="h-10 w-full" />
-		<Skeleton class="h-10 w-full" />
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/users w-full">
+			<TableSkeleton lead={USER_SKELETON} rows={3} actions={false} />
+		</div>
 	</Card.Root>
 {:else if loadError}
 	<EmptyState compact icon={TriangleAlertIcon} title="Users not loaded" description={loadError}>

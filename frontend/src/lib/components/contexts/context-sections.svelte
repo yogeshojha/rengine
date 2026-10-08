@@ -5,6 +5,7 @@
 	import Info from '@lucide/svelte/icons/info';
 	import Check from '@lucide/svelte/icons/check';
 	import Minus from '@lucide/svelte/icons/minus';
+	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Button } from '$lib/components/ui/button';
@@ -17,7 +18,7 @@
 	import ScopeSection from './scope-section.svelte';
 	import RuntimeSection from './runtime-section.svelte';
 	import ProxySection from './proxy-section.svelte';
-	import { markTouchedSecrets, type ContextFormSection } from './context-form';
+	import { draftIssues, markTouchedSecrets, type ContextFormSection } from './context-form';
 	import { contextFacets } from './context-summary';
 	import type { ScanContextCreate, AuthConfig, AuthHeader } from '$lib/types/scan-context';
 
@@ -47,6 +48,12 @@
 			: null
 	);
 	const facets = $derived(contextFacets(draft, proxyName));
+	const issues = $derived(draftIssues(draft).filter((i) => i.section !== 'identity'));
+
+	function issueOf(key: ContextFormSection): string | null {
+		const found = issues.filter((i) => i.section === key).map((i) => i.message);
+		return found.length ? found.join(' · ') : null;
+	}
 
 	function facetOf(key: ContextFormSection): { set: boolean; value: string } {
 		if (key === 'identity') {
@@ -76,10 +83,13 @@
 
 {#snippet section(key: ContextFormSection, content: Snippet, info?: Snippet)}
 	{@const facet = facetOf(key)}
+	{@const issue = issueOf(key)}
 	<Collapsible.Root bind:open={open[key]} class="section" data-set={facet.set}>
 		<div class="head">
 			<span class="mark" aria-hidden="true">
-				{#if facet.set}
+				{#if issue}
+					<CircleAlert size={13} class="text-destructive" />
+				{:else if facet.set}
 					<Check size={13} class="text-primary" />
 				{:else}
 					<Minus size={13} class="opacity-60" />
@@ -95,7 +105,11 @@
 						<span class="subtitle">{META[key].subtitle}</span>
 					{/if}
 				</span>
-				<span class="value" class:muted={!facet.set}>{facet.value}</span>
+				{#if issue}
+					<span class="value invalid">{issue}</span>
+				{:else}
+					<span class="value" class:muted={!facet.set}>{facet.value}</span>
+				{/if}
 				<ChevronRight size={14} class="chev" />
 			</Collapsible.Trigger>
 			{#if info}
@@ -259,9 +273,11 @@
 	.subtitle {
 		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
-		white-space: nowrap;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 	.value {
 		flex: 1;
@@ -276,6 +292,9 @@
 	}
 	.value.muted {
 		color: var(--muted-foreground);
+	}
+	.value.invalid {
+		color: var(--destructive);
 	}
 	:global(.section .disclose .chev) {
 		flex-shrink: 0;

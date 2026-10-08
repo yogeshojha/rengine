@@ -14,6 +14,7 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import TripwiresTable from '$lib/components/tripwires/tripwires-table.svelte';
 	import TripwireWizard, {
@@ -245,11 +246,20 @@
 	{/if}
 
 	{#if tripwiresStore.error && !tripwiresStore.isLoading && tripwires.length === 0}
-		<EmptyState icon={TriangleAlert} title={tripwiresStore.error}>
+		<EmptyState
+			icon={TriangleAlert}
+			title="Tripwires not loaded"
+			description={tripwiresStore.error}
+		>
 			<Button size="sm" variant="outline" onclick={retry}>Retry</Button>
 		</EmptyState>
 	{:else if tripwires.length === 0 && (tripwiresStore.isLoading || tripwiresStore.fetchedProjectId !== projectId)}
-		<Card.Root class="gap-0 overflow-hidden py-0">
+		<Card.Root class="gap-0 overflow-hidden py-0" aria-busy="true">
+			<div class="flex gap-6 border-b px-5 py-3.5">
+				{#each ['w-12', 'w-16', 'w-16'] as w, i (i)}
+					<Skeleton class="h-4 {w}" />
+				{/each}
+			</div>
 			<RowSkeleton rows={5} />
 		</Card.Root>
 	{:else if tripwires.length === 0}

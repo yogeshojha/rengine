@@ -18,11 +18,9 @@
 
 <Hint text="Toolbox · {IS_MAC ? '⌘⇧K' : 'Ctrl+Shift+K'}">
 	{#snippet child(hintProps)}
-		<span {...hintProps} class="inline-flex">
-			<Button variant="ghost" size="icon" onclick={() => (open = true)}>
-				<TOOLBOX_ICON class="h-4 w-4" />
-				<span class="sr-only">Toolbox</span>
-			</Button>
-		</span>
+		<Button {...hintProps} variant="ghost" size="icon" onclick={() => (open = true)}>
+			<TOOLBOX_ICON class="h-4 w-4" />
+			<span class="sr-only">Toolbox</span>
+		</Button>
 	{/snippet}
 </Hint>

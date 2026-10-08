@@ -125,7 +125,7 @@
 	</Dialog.Description>
 </Dialog.Header>
 
-<ScrollArea class="h-[60vh]">
+<ScrollArea class="min-h-0">
 	<div class="flex flex-col gap-4 px-6 py-5">
 		<div class="flex flex-col gap-1.5">
 			<Label for="ctx-name">Name</Label>
@@ -148,7 +148,7 @@
 	</div>
 </ScrollArea>
 
-<div class="flex items-center justify-end gap-2 border-t px-6 py-4">
+<div class="flex items-center justify-end gap-2 border-t bg-card px-6 py-4">
 	{#if validation}
 		<span class="mr-auto text-xs text-muted-foreground">{validation.message}</span>
 	{/if}

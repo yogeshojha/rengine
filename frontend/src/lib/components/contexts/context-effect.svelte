@@ -23,7 +23,7 @@
 	import { MASK } from '$lib/constants';
 	import type { AuthConfig, HttpProtocol, ScanContextCreate } from '$lib/types/scan-context';
 	import type { PreviewTool } from '$lib/types/scan';
-	import { secretFieldFor } from './context-form';
+	import { secretFieldFor, validScope } from './context-form';
 	import { HTTP_PROTOCOL_LABELS } from './context-summary';
 
 	interface Props {
@@ -70,7 +70,7 @@
 		const secret = secretFieldFor(d.auth_type);
 		if (secret && !auth[secret]) auth[secret] = MASK;
 		return {
-			...d,
+			...validScope(d),
 			name: d.name.trim() || 'Untitled context',
 			auth,
 			extra_headers: d.extra_headers.filter((h) => h.name.trim())

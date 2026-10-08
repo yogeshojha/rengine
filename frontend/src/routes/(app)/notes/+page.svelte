@@ -401,6 +401,7 @@
 			<EmptyState
 				icon={StickyNote}
 				title={filtered ? 'No notes match' : 'No notes'}
+				description={filtered ? undefined : 'Add notes from a target, scan or result.'}
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				{#if filtered}

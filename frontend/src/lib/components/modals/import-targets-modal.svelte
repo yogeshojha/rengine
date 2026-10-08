@@ -364,17 +364,42 @@
 		};
 	}
 
-	async function validateChunk(chunk: TargetImportItem[]): Promise<TargetPreviewItem[]> {
+	type CheckedItem = TargetPreviewItem & { key: string; existing: boolean };
+
+	async function validateChunk(chunk: TargetImportItem[]): Promise<CheckedItem[]> {
+		const projectSlug = projectsStore.activeProject?.slug;
 		try {
-			const results = await targetsApi.validateBatch(chunk.map((item) => item.target_value));
+			const results = await targetsApi.validateBatch(
+				chunk.map((item) => item.target_value),
+				projectSlug
+			);
 			return chunk.map((item, i) => ({
 				...withApplied(item),
+				key: (results[i].target_value || item.target_value).trim().toLowerCase(),
+				existing: Boolean(results[i].target_id),
 				target_type: results[i].valid ? results[i].target_type : null,
 				error: results[i].valid ? undefined : results[i].error || 'Invalid target'
 			}));
 		} catch {
-			return chunk.map((item) => ({ ...withApplied(item), error: 'Target not validated' }));
+			return chunk.map((item) => ({
+				...withApplied(item),
+				key: item.target_value.trim().toLowerCase(),
+				existing: false,
+				error: 'Target not validated'
+			}));
 		}
+	}
+
+	/** Valid rows that repeat an earlier row or an existing target are not imported. */
+	function markSkipped(items: CheckedItem[]): TargetPreviewItem[] {
+		const seen = new Set<string>();
+		return items.map(({ key, existing, ...item }) => {
+			if (item.error) return item;
+			if (existing) return { ...item, error: 'Already a target' };
+			if (seen.has(key)) return { ...item, error: 'Duplicate' };
+			seen.add(key);
+			return item;
+		});
 	}
 
 	async function handlePreview() {
@@ -390,14 +415,14 @@
 			}
 
 			validateTotal = items.length;
-			const validated: TargetPreviewItem[] = [];
+			const validated: CheckedItem[] = [];
 
 			for (let i = 0; i < items.length; i += MAX_TARGETS_IMPORT) {
 				validated.push(...(await validateChunk(items.slice(i, i + MAX_TARGETS_IMPORT))));
 				validateDone = validated.length;
 			}
 
-			previewItems = validated;
+			previewItems = markSkipped(validated);
 			mode = 'preview';
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Input not processed');
@@ -563,7 +588,7 @@
 	}
 >
 	<Dialog.Content
-		class="grid max-h-[85vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
+		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
 		onInteractOutside={(e) => {
 			if (busy) e.preventDefault();
 		}}
@@ -725,7 +750,7 @@ https://app.example.com"
 		{#if isProcessing && validateTotal > 0}
 			<Progress value={validatePct} class="h-1 rounded-none" />
 		{/if}
-		<Dialog.Footer class="border-t px-6 py-4 sm:items-center sm:justify-between">
+		<Dialog.Footer class="border-t bg-card px-6 py-4 sm:items-center sm:justify-between">
 			{#if mode === 'input'}
 				<LoadingButton
 					variant="outline"

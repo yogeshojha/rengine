@@ -20,6 +20,7 @@
 		<StringListField
 			items={context.excluded_subdomains}
 			placeholder="admin"
+			label="Excluded subdomain pattern"
 			validate={patternError}
 			onChange={(items) => onChange({ excluded_subdomains: items })}
 		/>
@@ -35,6 +36,7 @@
 		<StringListField
 			items={context.excluded_paths}
 			placeholder="/admin"
+			label="Excluded path"
 			validate={pathError}
 			onChange={(items) => onChange({ excluded_paths: items })}
 		/>
@@ -48,6 +50,7 @@
 		<StringListField
 			items={context.excluded_ips}
 			placeholder="10.0.0.0/8"
+			label="Excluded IP or CIDR"
 			validate={ipError}
 			onChange={(items) => onChange({ excluded_ips: items })}
 		/>
@@ -58,6 +61,7 @@
 		<StringListField
 			items={context.included_subdomains}
 			placeholder="api.example.com"
+			label="Included subdomain"
 			onChange={(items) => onChange({ included_subdomains: items })}
 		/>
 		<p class="text-sm text-muted-foreground">An empty list scans every discovered subdomain.</p>

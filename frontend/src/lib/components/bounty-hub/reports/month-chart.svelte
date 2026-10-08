@@ -140,22 +140,20 @@
 			</div>
 		{/if}
 	</div>
-	<div
-		class="flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-2xs text-muted-foreground"
-	>
+	<div class="flex justify-between gap-3 font-mono text-2xs text-muted-foreground">
 		<span>{months.length ? monthLabel(months[0].month) : ''}</span>
-		<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
-			{#each REPORT_STAGE_ORDER as stage (stage)}
-				<span class="flex items-center gap-1">
-					<span class="size-1.5 rounded-full" style="background: {REPORT_STAGE_FILL[stage]}"></span>
-					{bountyVocabulary.stageLabel(stage)}
-				</span>
-			{/each}
-			<span class="flex items-center gap-1">
-				<span class="h-[3px] w-2 rounded-full bg-series"></span>
-				Paid
-			</span>
-		</span>
 		<span>{months.length ? monthLabel(months[months.length - 1].month) : ''}</span>
+	</div>
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted-foreground">
+		{#each REPORT_STAGE_ORDER as stage (stage)}
+			<span class="flex items-center gap-1">
+				<span class="size-1.5 rounded-full" style="background: {REPORT_STAGE_FILL[stage]}"></span>
+				{bountyVocabulary.stageLabel(stage)}
+			</span>
+		{/each}
+		<span class="flex items-center gap-1">
+			<span class="h-[3px] w-2 rounded-full bg-series"></span>
+			Paid
+		</span>
 	</div>
 </div>

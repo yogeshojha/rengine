@@ -46,6 +46,8 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SELECT_NONE } from '$lib/constants';
 	import type { Target } from '$lib/types/target';
+	import { mostRecentEngine } from '$lib/utilities/launch-plan';
+	import { cronError } from './cron';
 
 	interface Props {
 		open: boolean;
@@ -109,11 +111,22 @@
 		if (scheduleType === 'one_off') return !!onceLocal;
 		if (scheduleType === 'interval') return Number(intervalEvery) >= 1;
 		if (scheduleType === 'daily_at') return /^([01]\d|2[0-3]):[0-5]\d$/.test(dailyTime);
-		if (scheduleType === 'cron') return cronExpr.trim().split(/\s+/).length >= 5;
+		if (scheduleType === 'cron') return cronProblem === null;
 		return false;
 	});
-	let canSave = $derived(
-		!!name.trim() && targetIds.length > 0 && !!engineId && timingValid && !saving
+	let cronProblem = $derived(cronError(cronExpr));
+	let blockReason = $derived.by((): string | null => {
+		if (!name.trim()) return 'Name is required.';
+		if (targetIds.length === 0) return 'Add at least one target.';
+		if (!engineId) return 'Select a scan engine.';
+		if (scheduleType === 'cron' && cronProblem) return 'The cron expression is not valid.';
+		if (scheduleType === 'one_off' && !onceLocal) return 'Pick a date and time.';
+		if (!timingValid) return 'The schedule is not valid.';
+		return null;
+	});
+	let canSave = $derived(blockReason === null && !saving);
+	let usableEngines = $derived(
+		scanEnginesStore.engines.filter((engine) => !launchLocked(engine, auth.user))
 	);
 
 	function toLocalInput(iso: string, tz: string): string {
@@ -191,6 +204,26 @@
 				scanContextsStore.fetchContexts(project.id);
 			if (!instanceSettingsStore.hasFetched) instanceSettingsStore.fetch();
 			loadTargets(project.slug);
+		});
+	});
+
+	let enginePreset = false;
+	$effect(() => {
+		if (!open) {
+			enginePreset = false;
+			return;
+		}
+		const projectId = projectsStore.activeProject?.id;
+		if (isEdit || enginePreset || !enginesReady) return;
+		if (scanEnginesStore.fetchedProjectId !== projectId) return;
+		const recent = mostRecentEngine(usableEngines);
+		enginePreset = true;
+		untrack(() => {
+			if (engineId || !recent || !initial) return;
+			engineId = recent.id;
+			const base = JSON.parse(initial);
+			base[2] = recent.id;
+			initial = JSON.stringify(base);
 		});
 	});
 
@@ -282,15 +315,15 @@
 		}
 	}
 >
-	<Dialog.Content class="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+	<Dialog.Content
+		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-xl"
+	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{isEdit ? 'Edit schedule' : 'New schedule'}</Dialog.Title>
 			<Dialog.Description>Each target runs as its own scan on this schedule.</Dialog.Description>
 		</Dialog.Header>
 
-		<ScrollArea
-			class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
-		>
+		<ScrollArea class="min-h-0">
 			<div class="space-y-4 px-6 py-5">
 				<FormField label="Name" required>
 					{#snippet children({ id })}
@@ -437,9 +470,16 @@
 							<FormField
 								label="Cron expression"
 								description="Standard 5-field cron: minute, hour, day of month, month, day of week."
+								error={cronExpr.trim() && cronProblem ? cronProblem : undefined}
 							>
 								{#snippet children({ id })}
-									<Input {id} bind:value={cronExpr} placeholder="0 0 * * *" class="font-mono" />
+									<Input
+										{id}
+										bind:value={cronExpr}
+										placeholder="0 0 * * *"
+										class="font-mono"
+										aria-invalid={cronExpr.trim() && cronProblem ? true : undefined}
+									/>
 								{/snippet}
 							</FormField>
 						</Tabs.Content>
@@ -465,7 +505,12 @@
 			</div>
 		</ScrollArea>
 
-		<Dialog.Footer class="border-t px-6 py-4">
+		<Dialog.Footer class="border-t bg-card px-6 py-4 sm:items-center">
+			{#if blockReason}
+				<span class="text-xs text-muted-foreground sm:mr-auto" aria-live="polite">
+					{blockReason}
+				</span>
+			{/if}
 			<Button variant="outline" onclick={() => guard.close()} disabled={saving}>Cancel</Button>
 			<LoadingButton
 				onclick={handleSave}

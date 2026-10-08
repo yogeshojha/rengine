@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
-	import { onMount, untrack } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
@@ -47,7 +47,12 @@
 	import ContextSections from '$lib/components/contexts/context-sections.svelte';
 	import ContextEffect from '$lib/components/contexts/context-effect.svelte';
 	import ContextFacets from '$lib/components/contexts/context-facets.svelte';
-	import { validateDraft, buildContextPayload } from '$lib/components/contexts/context-form';
+	import {
+		validateDraft,
+		buildContextPayload,
+		draftIssues
+	} from '$lib/components/contexts/context-form';
+	import { contextFacets } from '$lib/components/contexts/context-summary';
 	import type { ContextFormSection } from '$lib/components/contexts/context-form';
 	import { contextTemplate, templateDraft } from '$lib/components/contexts/context-templates';
 
@@ -102,7 +107,10 @@
 	let isValid = $derived(validationIssue === null);
 	let hasName = $derived(Boolean(draft?.name.trim()));
 	let attemptedSave = $state(false);
-	const showIssue = $derived(Boolean(validationIssue) && (attemptedSave || !isNew));
+	const saveDisabled = $derived(
+		(!isNew && !hasUnsavedChanges) || !hasName || (!isValid && attemptedSave)
+	);
+	const showIssue = $derived(Boolean(validationIssue) && (attemptedSave || !isNew || !hasName));
 
 	let open = $state<Record<ContextFormSection, boolean>>({
 		identity: false,
@@ -219,6 +227,33 @@
 		if (template) open = { ...open, auth: template.focus === 'auth', [template.focus]: true };
 	}
 
+	/** Open the sections that hold a value (or a problem); Authentication when none do. */
+	function sectionsFor(d: Draft): Record<ContextFormSection, boolean> {
+		const set = new Set<string>(
+			contextFacets(d)
+				.filter((f) => f.set)
+				.map((f) => (f.key === 'headers' ? 'auth' : f.key))
+		);
+		for (const issue of draftIssues(d)) if (issue.section !== 'identity') set.add(issue.section);
+		if (set.size === 0) set.add('auth');
+		if (d.description?.trim()) set.add('identity');
+		return {
+			identity: set.has('identity'),
+			auth: set.has('auth'),
+			rate: set.has('rate'),
+			scope: set.has('scope'),
+			runtime: set.has('runtime'),
+			proxy: set.has('proxy')
+		};
+	}
+
+	let openedFor = '';
+	function openSectionsOnce(id: string, d: Draft) {
+		if (openedFor === id) return;
+		openedFor = id;
+		open = sectionsFor(d);
+	}
+
 	function readToDraft(ctx: ScanContextRead): Draft {
 		return {
 			name: ctx.name,
@@ -251,6 +286,7 @@
 				draft = JSON.parse(JSON.stringify(readToDraft(cached)));
 				baseline = JSON.stringify(draft);
 				seedKey++;
+				openSectionsOnce(id, draft!);
 			}
 			const fresh = await scanContextsApi.get(id, projectId);
 			loaded = fresh;
@@ -258,6 +294,7 @@
 				draft = JSON.parse(JSON.stringify(readToDraft(fresh)));
 				baseline = JSON.stringify(draft);
 				seedKey++;
+				openSectionsOnce(id, draft!);
 			}
 		} catch (e) {
 			loadError = e instanceof Error ? e.message : 'Context not loaded';
@@ -280,9 +317,14 @@
 		if (!draft || isSaving) return;
 		if (validationIssue) {
 			attemptedSave = true;
-			if (validationIssue.section === 'identity') nameInputEl?.focus();
-			else open[validationIssue.section] = true;
 			toast.error(validationIssue.message);
+			if (validationIssue.section === 'identity') {
+				nameInputEl?.focus();
+				return;
+			}
+			open[validationIssue.section] = true;
+			await tick();
+			document.querySelector<HTMLElement>('.ctx-editor .form [aria-invalid="true"]')?.focus();
 			return;
 		}
 		const project = projectsStore.activeProject;
@@ -515,7 +557,7 @@
 							Run
 						</Button>
 					{/if}
-					<Hint text={validationIssue?.message}>
+					<Hint text={saveDisabled ? validationIssue?.message : null}>
 						{#snippet child(props)}
 							<span {...props} class="inline-flex">
 								<LoadingButton
@@ -524,9 +566,7 @@
 									class="h-8 gap-1.5 text-xs {isNew ? '' : 'rounded-l-none border-l-0'}"
 									loading={isSaving}
 									loadingLabel="Saving"
-									disabled={(!isNew && !hasUnsavedChanges) ||
-										!hasName ||
-										(!isValid && attemptedSave)}
+									disabled={saveDisabled}
 									onclick={handleSave}
 								>
 									{#if isNew || hasUnsavedChanges}

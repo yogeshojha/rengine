@@ -18,6 +18,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
@@ -34,7 +35,7 @@
 	import type { APIKeyRead, ProviderInfo } from '$lib/types/api-key';
 	import { ProviderGroup } from '$lib/config/api-keys';
 	import CheckStatus from './check-status.svelte';
-	import { BODY_ROW, GROUP_ROW, HEAD_ROW, KEY_COL } from './columns';
+	import { BODY_ROW, GROUP_ROW, HEAD_ROW, KEY_COL, KEY_SKELETON } from './columns';
 	import { checkState, type CheckState } from './status';
 
 	const GROUP_ORDER = Object.values(ProviderGroup);
@@ -234,11 +235,10 @@
 {#if !isAdmin}
 	<EmptyState compact icon={KeyRoundIcon} title="API keys are managed by administrators" />
 {:else if loading}
-	<Card.Root class="gap-3 p-4">
-		<Skeleton class="h-8 w-full" />
-		<Skeleton class="h-10 w-full" />
-		<Skeleton class="h-10 w-full" />
-		<Skeleton class="h-10 w-full" />
+	<Card.Root class="gap-0 overflow-hidden py-0">
+		<div class="@container/keys w-full">
+			<TableSkeleton lead={KEY_SKELETON} rows={4} actions={false} />
+		</div>
 	</Card.Root>
 {:else if loadError}
 	<EmptyState compact icon={TriangleAlertIcon} title="API keys not loaded" description={loadError}>

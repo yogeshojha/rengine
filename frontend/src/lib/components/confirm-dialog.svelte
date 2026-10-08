@@ -31,10 +31,18 @@
 		onConfirm,
 		children
 	}: Props = $props();
+
+	let cancelEl = $state<HTMLButtonElement | null>(null);
 </script>
 
 <AlertDialog.Root bind:open={() => open, (next) => onOpenChange(next)}>
-	<AlertDialog.Content escapeKeydownBehavior={loading ? 'ignore' : 'close'}>
+	<AlertDialog.Content
+		escapeKeydownBehavior={loading ? 'ignore' : 'close'}
+		onOpenAutoFocus={(e) => {
+			e.preventDefault();
+			cancelEl?.focus();
+		}}
+	>
 		<AlertDialog.Header>
 			<div class="flex items-center gap-3">
 				{#if destructive}
@@ -56,7 +64,7 @@
 		</AlertDialog.Header>
 		{@render children?.()}
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={loading}>{cancelLabel}</AlertDialog.Cancel>
+			<AlertDialog.Cancel bind:ref={cancelEl} disabled={loading}>{cancelLabel}</AlertDialog.Cancel>
 			<LoadingButton
 				variant={destructive ? 'destructive' : 'default'}
 				onclick={onConfirm}

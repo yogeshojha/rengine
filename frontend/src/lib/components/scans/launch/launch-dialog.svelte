@@ -35,7 +35,7 @@
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { runDescription, runStarted, stagesForDimension } from '$lib/utilities/rechecks';
 	import { LaunchState, type RescanSeed } from './launch-state.svelte';
-	import { chipFor, INVALID_TARGET_MESSAGE, resolveTargetValue, TARGET_FORMATS } from './targets';
+	import { chipFor, invalidTargetMessage, resolveTargetValue } from './targets';
 	import TargetPicker from './target-picker.svelte';
 	import PlanPicker from './plan-picker.svelte';
 	import LaunchSummary from './launch-summary.svelte';
@@ -112,6 +112,11 @@
 		}
 		const n = runPreview?.asset_count ?? launch.rescan.assets.length;
 		return `Rescan ${n.toLocaleString()} ${n === 1 ? 'asset' : 'assets'}`;
+	});
+	let suggestedEngineName = $derived.by(() => {
+		if (launch.mode !== 'quick') return preview?.engine_name ?? '';
+		const n = launch.runningStages.length;
+		return `Custom scan · ${n} ${n === 1 ? 'stage' : 'stages'}`;
 	});
 	let canSaveEngine = $derived(
 		!launch.rescan && launch.mode === 'quick' && !!launch.catalog && launch.runningStages.length > 0
@@ -352,7 +357,7 @@
 			for (const value of values) {
 				const chip = await resolveTargetValue(value, projectSlug);
 				if (chip) launch.addTarget(chip);
-				else toast.error(`${INVALID_TARGET_MESSAGE}: ${value}. ${TARGET_FORMATS}`);
+				else toast.error(invalidTargetMessage([value]));
 			}
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Targets not loaded');
@@ -433,7 +438,7 @@
 	}
 >
 	<Dialog.Content
-		class="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-2xl"
 		onkeydown={handleKeydown}
 	>
 		{#if view === 'launch'}
@@ -446,9 +451,7 @@
 				</Dialog.Description>
 			</Dialog.Header>
 
-			<ScrollArea
-				class="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]]:max-h-[calc(90vh-10rem)]"
-			>
+			<ScrollArea class="min-h-0">
 				<div class="flex flex-col gap-4 px-6 py-5">
 					{#if launch.rescan}
 						<RescanScope
@@ -477,18 +480,18 @@
 						</div>
 					{/if}
 
+					<LaunchContextField
+						{launch}
+						disabled={launching}
+						onNewContext={() => (view = 'newContext')}
+					/>
+
 					<PlanPicker
 						{launch}
 						phases={enginePipeline}
 						phasesLoading={previewLoading || enginePhasesLoading}
 						disabled={launching}
 						onClose={close}
-					/>
-
-					<LaunchContextField
-						{launch}
-						disabled={launching}
-						onNewContext={() => (view = 'newContext')}
 					/>
 
 					{#if launch.vulnerabilitiesOn}
@@ -514,7 +517,7 @@
 				</div>
 			</ScrollArea>
 
-			<div class="flex flex-wrap items-center gap-2 border-t px-6 py-4 sm:flex-nowrap">
+			<div class="flex flex-wrap items-center gap-2 border-t bg-card px-6 py-4 sm:flex-nowrap">
 				{#if canSaveEngine}
 					<Button
 						variant="ghost"
@@ -579,7 +582,7 @@
 <SaveEngineDialog
 	bind:open={saveOpen}
 	{launch}
-	suggestedName={preview?.engine_name ?? ''}
+	suggestedName={suggestedEngineName}
 	onSaved={(engine) => {
 		launch.applyEngine(engine.id);
 		toast.success(`Engine "${engine.name}" saved`);

@@ -292,7 +292,11 @@
 			<Button variant="outline" size="sm" onclick={handleRefresh}>Retry</Button>
 		</EmptyState>
 	{:else if !loaded}
-		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+		<div class="flex flex-wrap items-center gap-2" aria-hidden="true">
+			<Skeleton class="h-9 w-full sm:max-w-xs" />
+			<Skeleton class="h-9 w-[170px]" />
+		</div>
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">
 			{#each Array(3) as _, i (i)}
 				<div class="flex flex-col gap-3 rounded-xl border border-border p-4">
 					<Skeleton class="h-[18px] w-40" />

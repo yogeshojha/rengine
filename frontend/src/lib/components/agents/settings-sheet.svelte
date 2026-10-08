@@ -68,7 +68,11 @@
 										>{` · ${uptime(status.started_at)}`}</span
 									>{/if}
 							</span>
-							<span class="text-xs text-muted-foreground"> Stopping disconnects every agent. </span>
+							{#if status.enabled}
+								<span class="text-xs text-muted-foreground">Stopping disconnects every agent.</span>
+							{:else}
+								<span class="text-xs text-muted-foreground">Agents cannot connect.</span>
+							{/if}
 						</div>
 						{#if status.enabled}
 							<Button

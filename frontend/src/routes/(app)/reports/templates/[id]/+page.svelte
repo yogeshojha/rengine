@@ -5,7 +5,6 @@
 	import { beforeNavigate, goto } from '$app/navigation';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -13,6 +12,15 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import InfoIcon from '@lucide/svelte/icons/info';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Kbd from '$lib/components/ui/kbd/index.js';
+	import * as Popover from '$lib/components/ui/popover/index.js';
+	import BackLink from '$lib/components/back-link.svelte';
+	import LoadNotice from '$lib/components/load-notice.svelte';
+	import PageHeader from '$lib/components/page-header.svelte';
+	import { MOD_KEY } from '$lib/utils';
 	import PlayIcon from '@lucide/svelte/icons/play';
 	import FileX from '@lucide/svelte/icons/file-x';
 	import ListOrderedIcon from '@lucide/svelte/icons/list-ordered';
@@ -65,6 +73,7 @@
 	let duplicating = $state(false);
 	let generateOpen = $state(false);
 	let leaveTo = $state<string | null>(null);
+	let renameOpen = $state(false);
 	let allowNav = false;
 
 	beforeNavigate((nav) => {
@@ -82,8 +91,17 @@
 			if (!dirty || saving) return;
 			e.preventDefault();
 		}
+		function onKeydown(e: KeyboardEvent) {
+			if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 's') return;
+			e.preventDefault();
+			if (canSave) void save();
+		}
 		window.addEventListener('beforeunload', onBeforeUnload);
-		return () => window.removeEventListener('beforeunload', onBeforeUnload);
+		window.addEventListener('keydown', onKeydown);
+		return () => {
+			window.removeEventListener('beforeunload', onBeforeUnload);
+			window.removeEventListener('keydown', onKeydown);
+		};
 	});
 
 	$effect(() => {
@@ -152,8 +170,26 @@
 		)
 	);
 
+	const canSave = $derived(
+		Boolean(template && !template.is_builtin && dirty && formats.length && name.trim() && !saving)
+	);
+
+	let catalogRetrying = $state(false);
+
+	async function retryCatalog() {
+		catalogRetrying = true;
+		await reportCatalog.fetch(true);
+		catalogRetrying = false;
+	}
+
+	function closeRenameOnEnter(e: KeyboardEvent) {
+		if (e.key !== 'Enter') return;
+		e.preventDefault();
+		renameOpen = false;
+	}
+
 	async function save() {
-		if (!template || !style || !branding || !narrative || !formats.length) return;
+		if (!template || !style || !branding || !narrative || !canSave) return;
 		saving = true;
 		const ok = await reportsStore.saveTemplate(projectId, template.id, {
 			name,
@@ -172,20 +208,17 @@
 	}
 
 	async function saveAsCopy() {
-		if (!template || !style || !branding || !narrative) return;
+		if (!template) return;
 		duplicating = true;
 		const created = await reportsStore.createTemplate(projectId, {
-			name: `${name} copy`,
-			description,
-			title,
-			subtitle,
+			name: `${template.name} copy`,
+			description: template.description,
+			title: template.title,
+			subtitle: template.subtitle,
 			scope: template.scope,
-			sections,
-			theme: style.theme,
-			style,
-			branding,
-			narrative,
-			formats
+			theme: template.theme,
+			formats: template.formats,
+			clone_of: template.id
 		});
 		duplicating = false;
 		if (created) {
@@ -225,52 +258,112 @@
 		<Skeleton class="h-64 w-full" />
 	</div>
 {:else if style && branding && narrative}
-	<div class="space-y-5">
-		<div class="flex flex-wrap items-end justify-between gap-3">
-			<div class="min-w-0 space-y-1">
-				<Button
-					variant="ghost"
-					size="sm"
-					class="-ml-2 h-7 text-xs"
-					href={ROUTES.reports('templates')}
-				>
-					<ArrowLeftIcon class="size-3" />
-					Templates
-				</Button>
-				<div class="flex flex-wrap items-center gap-2">
-					<h1 class="text-2xl font-semibold tracking-tight">{name}</h1>
+	<div class="flex flex-col gap-6">
+		<div
+			class="sticky top-0 z-20 -mx-6 -mt-6 flex flex-col gap-3 border-b bg-background px-6 pt-4 pb-4"
+		>
+			<BackLink href={ROUTES.reports('templates')} label="Templates" />
+			<PageHeader title={name.trim() || 'Untitled template'} description={description || undefined}>
+				{#snippet titleAside()}
 					{#if template.is_builtin}<Badge variant="outline">Default</Badge>{/if}
-				</div>
-				<p class="text-sm text-muted-foreground">{description}</p>
-			</div>
-			<div class="flex flex-wrap items-center gap-2">
-				<Button variant="outline" size="sm" onclick={() => (generateOpen = true)}>
-					<PlayIcon class="size-3.5" />
-					Generate report
-				</Button>
-				{#if template.is_builtin}
-					<LoadingButton
-						size="sm"
-						loading={duplicating}
-						loadingLabel="Duplicating"
-						onclick={saveAsCopy}>Duplicate template</LoadingButton
-					>
-				{:else}
-					<LoadingButton
-						size="sm"
-						loading={saving}
-						loadingLabel="Saving"
-						disabled={!dirty || !formats.length}
-						onclick={save}>Save</LoadingButton
-					>
-				{/if}
-			</div>
+					{#if dirty}
+						<span class="size-2 rounded-full bg-primary" role="status" title="Unsaved changes">
+							<span class="sr-only">Unsaved changes</span>
+						</span>
+					{/if}
+					{#if !template.is_builtin}
+						<Popover.Root bind:open={renameOpen}>
+							<Popover.Trigger>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="ghost"
+										size="icon-sm"
+										class="text-muted-foreground"
+										aria-label="Rename template"
+									>
+										<PencilIcon class="size-4" />
+									</Button>
+								{/snippet}
+							</Popover.Trigger>
+							<Popover.Content align="start" class="flex w-80 flex-col gap-4">
+								<FormField
+									label="Template name"
+									error={name.trim() ? undefined : 'Name is required'}
+								>
+									{#snippet children({ id })}
+										<Input
+											{id}
+											bind:value={name}
+											class="h-9"
+											aria-invalid={name.trim() ? undefined : true}
+											onkeydown={closeRenameOnEnter}
+										/>
+									{/snippet}
+								</FormField>
+								<FormField label="Description">
+									{#snippet children({ id })}
+										<Input
+											{id}
+											bind:value={description}
+											class="h-9"
+											onkeydown={closeRenameOnEnter}
+										/>
+									{/snippet}
+								</FormField>
+							</Popover.Content>
+						</Popover.Root>
+					{/if}
+				{/snippet}
+				{#snippet actions()}
+					<Button variant="outline" size="sm" onclick={() => (generateOpen = true)}>
+						<PlayIcon class="size-3.5" />
+						Generate report
+					</Button>
+					{#if !template.is_builtin}
+						<LoadingButton
+							size="sm"
+							loading={saving}
+							loadingLabel="Saving"
+							disabled={!canSave}
+							onclick={save}
+						>
+							Save
+							<Kbd.Group class="ml-0.5 hidden sm:inline-flex">
+								<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground"
+									>{MOD_KEY}</Kbd.Root
+								>
+								<Kbd.Root class="bg-primary-foreground/15 text-primary-foreground">S</Kbd.Root>
+							</Kbd.Group>
+						</LoadingButton>
+					{/if}
+				{/snippet}
+			</PageHeader>
 		</div>
 
 		{#if template.is_builtin}
-			<Card.Root class="border-dashed py-3">
-				<div class="px-4 text-sm text-muted-foreground">Default templates are read-only.</div>
-			</Card.Root>
+			<Alert.Root>
+				<InfoIcon />
+				<Alert.Title>Default templates are read-only</Alert.Title>
+				<Alert.Description>
+					<p>Duplicate it to change its sections, look, branding or narrative.</p>
+					<LoadingButton
+						size="sm"
+						class="mt-2"
+						loading={duplicating}
+						loadingLabel="Duplicating"
+						onclick={saveAsCopy}>Duplicate to edit</LoadingButton
+					>
+				</Alert.Description>
+			</Alert.Root>
+		{/if}
+
+		{#if reportCatalog.loadError}
+			<LoadNotice
+				sections={['Section and theme catalog']}
+				busy={catalogRetrying}
+				onRetry={retryCatalog}
+			/>
 		{/if}
 
 		<Tabs.Root value="sections">
@@ -299,11 +392,7 @@
 				</Tabs.List>
 			</ScrollArea>
 
-			<div
-				class="mt-6"
-				class:pointer-events-none={template.is_builtin}
-				class:opacity-70={template.is_builtin}
-			>
+			<div class="mt-6" inert={template.is_builtin}>
 				<Tabs.Content value="sections"><SectionList bind:sections /></Tabs.Content>
 				<Tabs.Content value="look"><LookPanel bind:style /></Tabs.Content>
 				<Tabs.Content value="branding"><BrandingPanel bind:branding /></Tabs.Content>

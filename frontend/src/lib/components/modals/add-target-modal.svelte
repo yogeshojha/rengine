@@ -52,6 +52,7 @@
 		valid: boolean;
 		target_type: TargetType | null;
 		error: string | null;
+		existing?: { id: string; value: string } | null;
 	} | null>(null);
 	let isSubmitting = $state(false);
 
@@ -92,8 +93,17 @@
 		isValidating = true;
 		validateTimeout = setTimeout(async () => {
 			try {
-				const result = await targetsApi.validate({ target_value: value });
-				if (seq === validateSeq) validationResult = result;
+				const projectSlug = projectsStore.activeProject?.slug;
+				const [result] = await targetsApi.validateBatch([value], projectSlug);
+				if (seq !== validateSeq) return;
+				validationResult = result.target_id
+					? {
+							valid: false,
+							target_type: result.target_type,
+							error: 'Already a target in this project.',
+							existing: { id: result.target_id, value: result.target_value || value.trim() }
+						}
+					: result;
 			} catch {
 				if (seq === validateSeq)
 					validationResult = { valid: false, target_type: null, error: 'Target not validated' };
@@ -174,6 +184,7 @@
 
 			if (!result) {
 				toast.error(targetsStore.error || 'Target not added');
+				validateValue(targetValue);
 				return;
 			}
 
@@ -316,7 +327,7 @@
 			e.preventDefault();
 			targetInput?.focus();
 		}}
-		class="grid max-h-[85vh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-lg"
+		class="grid h-[min(90vh,52rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-lg"
 	>
 		<button
 			type="button"
@@ -338,14 +349,18 @@
 			<ScrollArea class="min-h-0">
 				<div class="space-y-4 px-6 py-5">
 					<div class="space-y-3">
-						<Label for="target-value"
-							>Target value<span class="ms-0.5 text-destructive" aria-hidden="true">*</span></Label
-						>
+						<Label for="target-value">
+							<span
+								>Target value<span class="ms-0.5 text-destructive" aria-hidden="true">*</span></span
+							>
+						</Label>
 						<div class="relative">
 							<Input
 								id="target-value"
 								type="text"
 								aria-required="true"
+								aria-invalid={validationResult && !validationResult.valid ? true : undefined}
+								aria-describedby={validationResult?.error ? 'target-value-error' : undefined}
 								bind:ref={targetInput}
 								placeholder="example.com, 192.168.1.0/24, AS12345"
 								value={targetValue}
@@ -373,7 +388,19 @@
 										{formatTargetType(validationResult.target_type)}
 									</Badge>
 								{:else if validationResult.error}
-									<span role="alert" class="text-destructive">{validationResult.error}</span>
+									<span id="target-value-error" role="alert" class="text-destructive">
+										{validationResult.error}
+										{#if validationResult.existing}
+											<a
+												href={ROUTES.target(validationResult.existing.id)}
+												class="font-medium underline underline-offset-2 hover:text-destructive/80"
+												onclick={() => {
+													resetForm();
+													open = false;
+												}}>Open {validationResult.existing.value}</a
+											>
+										{/if}
+									</span>
 								{/if}
 							</div>
 						{/if}
@@ -439,7 +466,7 @@
 				disabled={isSubmitting}
 			/>
 
-			<div class="flex flex-wrap items-center justify-end gap-2 border-t px-6 py-4">
+			<div class="flex flex-wrap items-center justify-end gap-2 border-t bg-card px-6 py-4">
 				<Button
 					type="button"
 					variant="ghost"

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Switch } from '$lib/components/ui/switch';
-	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -98,25 +97,7 @@
 	data-support={support}
 >
 	<div class="head">
-		{#if support}
-			{#if alwaysOn}
-				<Hint text="Always on">
-					{#snippet child(props)}
-						<span {...props} class="inline-flex">
-							<Checkbox checked disabled aria-label="{stage.title} is always on" />
-						</span>
-					{/snippet}
-				</Hint>
-			{:else}
-				<Checkbox
-					checked={enabled}
-					onCheckedChange={(v) => onChange('enabled', Boolean(v))}
-					aria-label="Enable {stage.title}"
-				/>
-			{/if}
-		{:else}
-			<span class="node" data-state={nodeState} aria-hidden="true"></span>
-		{/if}
+		<span class="node" data-state={nodeState} aria-hidden="true"></span>
 
 		<Collapsible.Trigger class="disclose" aria-label="{open ? 'Collapse' : 'Expand'} {stage.title}">
 			<ChevronRight size={14} class="chev" />
@@ -135,7 +116,7 @@
 			{/if}
 		</Collapsible.Trigger>
 
-		<div class="meta">
+		<div class="info">
 			{#if blockedByIntensity}
 				<Badge variant="outline" class="tag">Skipped at passive</Badge>
 			{:else if !applicable && lensTargetType}
@@ -151,9 +132,11 @@
 					{/each}
 				</span>
 			{:else if enabled && summary}
-				<span class="summary">{summary}</span>
+				<span class="summary" title={summary}>{summary}</span>
 			{/if}
+		</div>
 
+		<div class="meta">
 			{#if !stage.touches_target}
 				<Tooltip.Root>
 					<Tooltip.Trigger>
@@ -178,22 +161,20 @@
 				</Tooltip.Root>
 			{/if}
 
-			{#if !support}
-				{#if alwaysOn}
-					<Hint text="Always on">
-						{#snippet child(props)}
-							<span {...props} class="inline-flex">
-								<Switch checked disabled aria-label="{stage.title} is always on" />
-							</span>
-						{/snippet}
-					</Hint>
-				{:else}
-					<Switch
-						checked={enabled}
-						onCheckedChange={(v) => onChange('enabled', v)}
-						aria-label="Enable {stage.title}"
-					/>
-				{/if}
+			{#if alwaysOn}
+				<Hint text="Always on">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Switch checked disabled aria-label="{stage.title} is always on" />
+						</span>
+					{/snippet}
+				</Hint>
+			{:else}
+				<Switch
+					checked={enabled}
+					onCheckedChange={(v) => onChange('enabled', v)}
+					aria-label="Enable {stage.title}"
+				/>
 			{/if}
 		</div>
 	</div>
@@ -337,8 +318,7 @@
 		display: flex;
 		align-items: center;
 		gap: calc(var(--spacing) * 1.5);
-		flex: 1;
-		min-width: 0;
+		flex: 1 0 auto;
 		padding: calc(var(--spacing) * 3) calc(var(--spacing) * 1) calc(var(--spacing) * 3) 0;
 		background: none;
 		border: none;
@@ -374,6 +354,14 @@
 		flex-shrink: 0;
 	}
 
+	.info {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		flex: 0 1 auto;
+		min-width: 0;
+		overflow: hidden;
+	}
 	.meta {
 		display: flex;
 		align-items: center;
@@ -381,6 +369,7 @@
 		flex-shrink: 0;
 	}
 	.summary {
+		min-width: 0;
 		font-size: var(--text-2xs);
 		color: var(--muted-foreground);
 		white-space: nowrap;
@@ -389,7 +378,7 @@
 		max-width: 260px;
 		font-variant-numeric: tabular-nums;
 	}
-	.meta :global(.tag) {
+	.info :global(.tag) {
 		font-size: var(--text-2xs);
 		font-weight: 400;
 		padding: 1px calc(var(--spacing) * 1.5);

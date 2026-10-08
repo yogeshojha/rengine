@@ -2,7 +2,7 @@
 	import { tick } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
+	import FormField from '$lib/components/form-field.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
@@ -79,37 +79,43 @@
 		}
 	}
 >
-	<Dialog.Content class="sm:max-w-md" onkeydown={(e) => e.key === 'Enter' && e.stopPropagation()}>
-		<Dialog.Header>
+	<Dialog.Content
+		class="gap-0 p-0 sm:max-w-md"
+		onkeydown={(e) => e.key === 'Enter' && e.stopPropagation()}
+	>
+		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Save as scan engine</Dialog.Title>
 			<Dialog.Description>Saves the selected stages and their settings.</Dialog.Description>
 		</Dialog.Header>
-		<div class="flex flex-col gap-4 py-1">
-			<div class="flex flex-col gap-1.5">
-				<Label for="save-engine-name">Name</Label>
-				<Input
-					id="save-engine-name"
-					bind:ref={nameEl}
-					bind:value={name}
-					autocomplete="off"
-					onkeydown={(e) => e.key === 'Enter' && save()}
-				/>
-			</div>
-			<div class="flex flex-col gap-1.5">
-				<Label for="save-engine-description">Description</Label>
-				<Input
-					id="save-engine-description"
-					bind:value={description}
-					placeholder="Optional"
-					autocomplete="off"
-					onkeydown={(e) => e.key === 'Enter' && save()}
-				/>
-			</div>
-			{#if error}
-				<p role="alert" class="text-xs text-destructive">{error}</p>
-			{/if}
+		<div class="flex flex-col gap-4 px-6 py-5">
+			<FormField label="Name" required error={error ?? undefined}>
+				{#snippet children({ id })}
+					<Input
+						{id}
+						bind:ref={nameEl}
+						bind:value={name}
+						autocomplete="off"
+						aria-invalid={error ? true : undefined}
+						onkeydown={(e) => e.key === 'Enter' && save()}
+					/>
+				{/snippet}
+			</FormField>
+			<FormField label="Description">
+				{#snippet children({ id })}
+					<Input
+						{id}
+						bind:value={description}
+						placeholder="Optional"
+						autocomplete="off"
+						onkeydown={(e) => e.key === 'Enter' && save()}
+					/>
+				{/snippet}
+			</FormField>
 		</div>
-		<Dialog.Footer>
+		<Dialog.Footer class="border-t px-6 py-4 sm:items-center">
+			{#if !name.trim()}
+				<span class="text-xs text-muted-foreground sm:mr-auto">Name is required.</span>
+			{/if}
 			<Button variant="outline" onclick={() => guard.close()} disabled={saving}>Cancel</Button>
 			<LoadingButton loading={saving} loadingLabel="Saving" disabled={!name.trim()} onclick={save}
 				>Save</LoadingButton

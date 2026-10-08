@@ -14,7 +14,7 @@
 	const meta = $derived(CHANNEL_META[channel]);
 </script>
 
-<section class="flex max-w-xl flex-col gap-5 px-5 py-8">
+<section class="flex flex-col gap-5 px-5 py-6">
 	<div>
 		<h2 class="text-base font-semibold">Connect a {label} bot</h2>
 		{#if !canAdmin}
@@ -44,8 +44,7 @@
 					class="grid size-5 shrink-0 place-items-center rounded-full border font-mono text-2xs text-muted-foreground"
 					>2</span
 				>
-				<div class="flex min-w-0 flex-1 flex-col gap-2">
-					<span class="leading-5">Paste the token.</span>
+				<div class="min-w-0 flex-1 pt-0.5">
 					<TokenForm {channel} action="Connect" />
 				</div>
 			</li>

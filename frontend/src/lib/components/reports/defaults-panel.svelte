@@ -9,6 +9,7 @@
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import LoadNotice from '$lib/components/load-notice.svelte';
 	import BrandingPanel from '$lib/components/reports/builder/branding-panel.svelte';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { reportsApi } from '$lib/api/reports';
@@ -118,6 +119,14 @@
 			saving = false;
 		}
 	}
+
+	let catalogRetrying = $state(false);
+
+	async function retryCatalog() {
+		catalogRetrying = true;
+		await reportCatalog.fetch(true);
+		catalogRetrying = false;
+	}
 </script>
 
 {#if loading}
@@ -128,6 +137,9 @@
 	</EmptyState>
 {:else if branding}
 	<div class="space-y-5">
+		{#if reportCatalog.loadError}
+			<LoadNotice sections={['Themes']} busy={catalogRetrying} onRetry={retryCatalog} />
+		{/if}
 		<Card.Root class="gap-0 overflow-hidden py-0">
 			<PanelHead title="Theme" description="Applied when a template sets none">
 				{#if !isAdmin}Read-only{/if}
