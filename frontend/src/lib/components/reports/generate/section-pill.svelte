@@ -25,7 +25,7 @@
 				{...props}
 				type="button"
 				aria-pressed={on}
-				class="inline-flex items-center gap-1.5 rounded-md px-2.5 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 {on
+				class="inline-flex items-center gap-1.5 rounded-md px-2.5 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70 {on
 					? 'font-medium'
 					: ''}"
 				onclick={onToggle}

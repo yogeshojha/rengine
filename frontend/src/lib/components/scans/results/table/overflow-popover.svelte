@@ -70,7 +70,7 @@
 							{#if onSelect}
 								<button
 									type="button"
-									class="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 {mono
+									class="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/70 {mono
 										? 'font-mono'
 										: ''}"
 									onclick={() => pick(entry)}

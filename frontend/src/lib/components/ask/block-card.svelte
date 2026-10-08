@@ -291,7 +291,7 @@
 						spellcheck="false"
 						autocomplete="off"
 						aria-label="Query"
-						class="h-8 min-w-0 flex-1 rounded-md border bg-background px-2.5 font-mono text-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+						class="h-8 min-w-0 flex-1 rounded-md border bg-background px-2.5 font-mono text-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/70"
 					/>
 					<Button
 						size="sm"

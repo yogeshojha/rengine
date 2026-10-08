@@ -168,7 +168,7 @@
 				<div
 					{...props}
 					bind:this={boxEl}
-					class="flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 {error
+					class="flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1 text-sm shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/70 {error
 						? 'border-destructive'
 						: ''}"
 					onclick={() => inputEl?.focus()}

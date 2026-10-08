@@ -51,7 +51,7 @@
 	--secondary: oklch(0.97 0.006 265);
 	--secondary-foreground: oklch(0.205 0.014 265);
 	--muted: oklch(0.97 0.006 265);
-	--muted-foreground: oklch(0.556 0.018 265);
+	--muted-foreground: oklch(0.53 0.018 265);
 	--accent: oklch(0.955 0.014 265);
 	--accent-foreground: oklch(0.205 0.014 265);
 	--destructive: oklch(0.55 0.22 25);
@@ -99,7 +99,7 @@
 	--info-foreground: oklch(0.985 0 0);
 	--border: oklch(0.922 0.01 265);
 	--input: oklch(0.922 0.01 265);
-	--ring: oklch(0.55 0.14 264);
+	--ring: oklch(0.5 0.16 264);
 	--series: oklch(0.45 0.02 265);
 	--chart-1: oklch(0.6 0.12 215);
 	--chart-2: oklch(0.55 0.16 150);
@@ -113,7 +113,7 @@
 	--sidebar-accent: oklch(0.955 0.014 265);
 	--sidebar-accent-foreground: oklch(0.205 0.014 265);
 	--sidebar-border: oklch(0.922 0.01 265);
-	--sidebar-ring: oklch(0.55 0.14 264);
+	--sidebar-ring: oklch(0.5 0.16 264);
 	--font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 	--font-mono:
 		'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
@@ -190,7 +190,7 @@
 	--info-foreground: oklch(0.205 0 0);
 	--border: oklch(0.32 0.012 265);
 	--input: oklch(0.36 0.014 265);
-	--ring: oklch(0.65 0.14 264);
+	--ring: oklch(0.7 0.15 264);
 	--series: oklch(0.75 0.02 265);
 	--chart-1: oklch(0.66 0.11 215);
 	--chart-2: oklch(0.6 0.16 150);
@@ -204,7 +204,7 @@
 	--sidebar-accent: oklch(0.269 0.012 265);
 	--sidebar-accent-foreground: oklch(0.985 0.003 265);
 	--sidebar-border: oklch(0.32 0.012 265);
-	--sidebar-ring: oklch(0.65 0.14 264);
+	--sidebar-ring: oklch(0.7 0.15 264);
 }
 
 @theme {
@@ -294,7 +294,24 @@
 @layer base {
 	* {
 		border-color: var(--border);
-		outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
+		outline-color: var(--ring);
+	}
+
+	/* elements without their own focus style (links, clickable rows) still show a 3:1 ring */
+	:focus-visible {
+		outline: 2px solid var(--ring);
+		outline-offset: 2px;
+	}
+
+	[role='button']:focus-visible,
+	[role='row']:focus-visible {
+		outline-offset: -2px;
+	}
+
+	/* Tailwind v4 leaves buttons at cursor: default */
+	button:not(:disabled),
+	[role='button']:not([aria-disabled='true']) {
+		cursor: pointer;
 	}
 
 	body {

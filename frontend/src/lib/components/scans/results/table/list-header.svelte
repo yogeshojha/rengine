@@ -63,7 +63,7 @@
 	{#if col.sort}
 		<button
 			type="button"
-			class="flex items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 {sortKey ===
+			class="flex items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70 {sortKey ===
 			col.sort
 				? 'text-foreground'
 				: ''}"

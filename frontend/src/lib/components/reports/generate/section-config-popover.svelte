@@ -26,7 +26,7 @@
 			<button
 				{...props}
 				type="button"
-				class="inline-flex items-center gap-1 rounded-r-md px-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+				class="inline-flex items-center gap-1 rounded-r-md px-2 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70"
 				aria-label="Settings for {section.title}"
 			>
 				<SlidersHorizontal class="size-3" />

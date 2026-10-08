@@ -496,7 +496,7 @@
 							{#each PROVIDERS as p (p.provider)}
 								{@const PIcon = p.icon}
 								<Label
-									class="group/provider flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-normal text-muted-foreground transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 hover:bg-muted/60 hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+									class="group/provider flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm font-normal text-muted-foreground transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/70 hover:bg-muted/60 hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
 									data-active={formProvider === p.provider}
 								>
 									<RadioGroup.Item value={p.provider} class="sr-only" disabled={saving} />

@@ -88,7 +88,7 @@
 	<div
 		bind:this={el}
 		tabindex="0"
-		class="relative flex h-14 cursor-crosshair touch-none items-end gap-[2px] rounded-sm outline-none select-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+		class="relative flex h-14 cursor-crosshair touch-none items-end gap-[2px] rounded-sm outline-none select-none focus-visible:ring-[3px] focus-visible:ring-ring/70"
 		onpointerdown={(e) => {
 			const i = indexAt(e.clientX);
 			drag = { a: i, b: i };

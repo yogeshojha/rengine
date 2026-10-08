@@ -150,7 +150,7 @@
 						{#each TAG_COLORS as color (color)}
 							<button
 								type="button"
-								class="h-6 w-6 rounded-full border-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 {selectedColor ===
+								class="h-6 w-6 rounded-full border-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70 {selectedColor ===
 								color
 									? 'border-foreground'
 									: 'border-transparent'}"

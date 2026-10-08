@@ -90,7 +90,7 @@
 									<button
 										{...props}
 										type="button"
-										class="min-w-0 flex-1 truncate py-1.5 text-left font-mono text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+										class="min-w-0 flex-1 truncate py-1.5 text-left font-mono text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70"
 										onclick={() => onQuery(recent)}
 									>
 										{recent}
@@ -99,7 +99,7 @@
 							</Hint>
 							<button
 								type="button"
-								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								class="shrink-0 rounded-sm p-1 text-muted-foreground/50 opacity-0 group-hover/recent:opacity-100 hover:text-foreground focus-visible:opacity-100 [@media(hover:none)]:opacity-100 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70"
 								aria-label="Remove {recent} from recent searches"
 								onclick={() => onForget(recent)}
 							>
@@ -120,7 +120,7 @@
 					{#if counted}
 						<button
 							type="button"
-							class="mx-1 mt-1.5 mb-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+							class="mx-1 mt-1.5 mb-1 flex items-center justify-center gap-1.5 rounded-md border border-dashed border-border/70 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70"
 							onclick={onShowAll}
 						>
 							{moreCount > 0

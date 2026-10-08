@@ -57,7 +57,7 @@
 		type="button"
 		class={cn(
 			classes,
-			'transition-shadow outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+			'transition-shadow outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70',
 			pressed && 'ring-2 ring-current/50'
 		)}
 		aria-pressed={pressed}

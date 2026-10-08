@@ -52,7 +52,7 @@
 				{...props}
 				type="button"
 				aria-pressed={pressed}
-				class="inline-flex items-center gap-1.5 rounded-md px-2.5 font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed {state ===
+				class="inline-flex items-center gap-1.5 rounded-md px-2.5 font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/70 disabled:cursor-not-allowed {state ===
 				'off'
 					? 'font-normal'
 					: ''}"

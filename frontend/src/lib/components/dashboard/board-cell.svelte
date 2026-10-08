@@ -176,7 +176,7 @@
 					{#if col.count}
 						<a
 							href={col.href}
-							class="w-fit rounded-sm px-1 text-xs text-muted-foreground hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+							class="w-fit rounded-sm px-1 text-xs text-muted-foreground hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70 focus-visible:outline-none"
 						>
 							View {col.count.toLocaleString()} findings
 						</a>

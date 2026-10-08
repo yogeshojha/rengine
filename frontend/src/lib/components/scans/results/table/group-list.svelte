@@ -203,7 +203,7 @@
 			{@const id = identify(dimension, group)}
 			<button
 				type="button"
-				class="group flex flex-col gap-3 rounded-lg border bg-card p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+				class="group flex flex-col gap-3 rounded-lg border bg-card p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring/70 focus-visible:outline-none"
 				aria-label="{group.label}, {group.count} {nounPlural}, filter to this group"
 				onclick={() => onPick(group.query)}
 			>

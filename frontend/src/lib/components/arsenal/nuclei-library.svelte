@@ -528,7 +528,7 @@
 					{#if stats.callback > 0}
 						<button
 							type="button"
-							class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted"
+							class="-mx-2 -my-1 flex flex-col rounded-md px-2 py-1 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring/70 aria-pressed:bg-muted"
 							aria-pressed={onlyCallback}
 							onclick={() => (onlyCallback = !onlyCallback)}
 						>
