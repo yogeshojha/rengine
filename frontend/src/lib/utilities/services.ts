@@ -170,10 +170,10 @@ export function serviceQueryChips(q: ServiceQuery, facets: ServiceFacetSet): Ser
 	};
 	list('classes', (v) => SERVICE_CLASS_LABELS[v] ?? v);
 	list('port', (v) => `Port ${v}`);
-	list('service', (v) => facets.service.find((f) => f.value === v)?.label ?? v);
-	list('source', (v) => facets.source.find((f) => f.value === v)?.label ?? v);
+	list('service', (v) => `Service ${facets.service.find((f) => f.value === v)?.label ?? v}`);
+	list('source', (v) => `Source ${facets.source.find((f) => f.value === v)?.label ?? v}`);
 	list('asn', (v) => facets.asn.find((f) => f.value === v)?.label ?? `AS${v}`);
-	list('country', (v) => v);
+	list('country', (v) => `Country ${v}`);
 	if (q.cdn !== 'any')
 		chips.push({
 			id: 'cdn',

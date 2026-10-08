@@ -124,7 +124,7 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 				remove: (x) => ({ ...x, [key]: x[key].filter((o) => o !== v) })
 			});
 	};
-	list('tech', (v) => v);
+	list('tech', (v) => `Tech ${v}`);
 	list('service', (v) => `Service ${v}`);
 	list('cert', (v) => CERT_CHIP[v] ?? v);
 	list('hygiene', (v) => checkLabel(v));

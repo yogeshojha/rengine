@@ -121,7 +121,7 @@ export function ipQueryChips(q: IpQuery, facets: IpFacetSet): IpFilterChip[] {
 			});
 	};
 	list('asn', (v) => facets.asn.find((f) => f.value === v)?.label ?? `AS${v}`);
-	list('country', (v) => v);
+	list('country', (v) => `Country ${v}`);
 	list('port', (v) => `Port ${v}`);
 	list('service', (v) => `Service ${v}`);
 	if (q.cdn !== 'any')

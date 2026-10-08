@@ -338,11 +338,14 @@
 			<ScrollArea class="min-h-0">
 				<div class="space-y-4 px-6 py-5">
 					<div class="space-y-3">
-						<Label for="target-value">Target value <span class="text-destructive">*</span></Label>
+						<Label for="target-value"
+							>Target value<span class="ms-0.5 text-destructive" aria-hidden="true">*</span></Label
+						>
 						<div class="relative">
 							<Input
 								id="target-value"
 								type="text"
+								aria-required="true"
 								bind:ref={targetInput}
 								placeholder="example.com, 192.168.1.0/24, AS12345"
 								value={targetValue}
