@@ -298,7 +298,7 @@ def validate_embedded_image(value: str, field: str) -> str:
 
 
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#c10007",
+    "critical": "#ba3e3c",
     "high": "#ff6900",
     "medium": "#ffb900",
     "low": "#0084d1",
@@ -309,7 +309,7 @@ DEFAULT_SEVERITY_COLORS: dict[str, str] = {
 # the same ramp restepped for dark paper: the UI's dark inks, since one value draws both the
 # mark and its label there
 DARK_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#ff6467",
+    "critical": "#eb827b",
     "high": "#ff8904",
     "medium": "#ffd230",
     "low": "#00bcff",

@@ -54,17 +54,18 @@
 	--muted-foreground: oklch(0.53 0.018 265);
 	--accent: oklch(0.955 0.014 265);
 	--accent-foreground: oklch(0.205 0.014 265);
-	--destructive: oklch(0.55 0.22 25);
+	--destructive: oklch(0.54 0.16 25);
 	--destructive-foreground: oklch(1 0 0);
 	--success: oklch(0.52 0.12 150);
 	--success-foreground: oklch(0.985 0 0);
 	--warning: oklch(0.5 0.12 90);
 	--warning-foreground: oklch(0.985 0 0);
-	/* severity, mirrors shared/definitions/reports.py. Tailwind steps: red-700, orange-500,
-	   amber-400, sky-600, neutral-500; washes the 100 steps; inks 700 (amber 800, neutral 600) */
-	--sev-critical: #c10007;
-	--sev-critical-wash: #ffe2e2;
-	--sev-critical-ink: #c10007;
+	/* severity, mirrors shared/definitions/reports.py. Tailwind steps: orange-500, amber-400,
+	   sky-600, neutral-500; washes the 100 steps; inks 700 (amber 800, neutral 600). Critical is
+	   the destructive red, calmer than Tailwind's: oklch(0.54 0.16 25), ink 0.5 0.15, wash 0.95 0.025 */
+	--sev-critical: #ba3e3c;
+	--sev-critical-wash: #ffe8e6;
+	--sev-critical-ink: #a83634;
 	--sev-high: #ff6900;
 	--sev-high-wash: #ffedd4;
 	--sev-high-ink: #ca3500;
@@ -146,17 +147,18 @@
 	--muted-foreground: oklch(0.708 0.018 265);
 	--accent: oklch(0.371 0.016 265);
 	--accent-foreground: oklch(0.985 0.003 265);
-	--destructive: oklch(0.7 0.19 25);
+	--destructive: oklch(0.7 0.14 25);
 	--destructive-foreground: oklch(0.985 0 0);
 	--success: oklch(0.72 0.13 150);
 	--success-foreground: oklch(0.205 0 0);
 	--warning: oklch(0.82 0.14 90);
 	--warning-foreground: oklch(0.205 0 0);
-	/* severity, dark paper. Tailwind steps: red-500, orange-400, amber-300, sky-400, neutral-500;
-	   inks the 400 steps; washes the ink at 12% over whatever surface holds the chip */
-	--sev-critical: #fb2c36;
+	/* severity, dark paper. Tailwind steps: orange-400, amber-300, sky-400, neutral-500; inks the
+	   400 steps; washes the ink at 12% over whatever surface holds the chip. Critical is
+	   oklch(0.62 0.16 25), ink 0.72 0.13 */
+	--sev-critical: #d55753;
 	--sev-critical-wash: color-mix(in oklab, var(--sev-critical-ink) 12%, transparent);
-	--sev-critical-ink: #ff6467;
+	--sev-critical-ink: #eb827b;
 	--sev-high: #ff8904;
 	--sev-high-wash: color-mix(in oklab, var(--sev-high-ink) 12%, transparent);
 	--sev-high-ink: #ff8904;
