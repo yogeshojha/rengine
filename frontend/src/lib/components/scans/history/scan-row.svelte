@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { REVEAL_SM, rowPadding } from '$lib/components/scans/results/table/columns';
+	import { REVEAL_SM, rowPadding, rowTone } from '$lib/components/scans/results/table/columns';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
@@ -33,6 +33,8 @@
 		trend?: ScanTargetTrend;
 		now: number;
 		expanded: boolean;
+		/** Position among the visible rows, for the keyboard cursor. */
+		index: number;
 		focused: boolean;
 		selected: boolean;
 		nested?: boolean;
@@ -58,6 +60,7 @@
 		trend,
 		now,
 		expanded,
+		index,
 		focused,
 		selected,
 		nested = false,
@@ -96,9 +99,10 @@
 	<div
 		class="flex cursor-pointer items-center gap-3 px-4 {rowPadding(
 			compact ? 'compact' : 'cozy'
-		)} hover:bg-muted/30 {focused ? 'bg-muted/40' : ''} {nested ? 'pl-10' : ''}"
+		)} transition-colors {rowTone(false, focused)} {nested ? 'pl-10' : ''}"
 		role="row"
 		tabindex="-1"
+		data-scan-row-index={index}
 		onclick={onOpen}
 	>
 		<!-- svelte-ignore a11y_interactive_supports_focus -->

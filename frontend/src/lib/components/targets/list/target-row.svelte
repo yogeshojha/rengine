@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { REVEAL_SM, rowPadding } from '$lib/components/scans/results/table/columns';
+	import { REVEAL_SM, rowPadding, rowTone } from '$lib/components/scans/results/table/columns';
 	import { goto } from '$app/navigation';
 	import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -63,7 +63,6 @@
 		scanning: boolean;
 		onToggle: () => void;
 		onSelect: () => void;
-		onFocus: () => void;
 		onScan: () => void;
 		onSchedule: () => void;
 		onHistory: () => void;
@@ -94,7 +93,6 @@
 		scanning,
 		onToggle,
 		onSelect,
-		onFocus,
 		onScan,
 		onSchedule,
 		onHistory,
@@ -142,18 +140,18 @@
 <div
 	id="target-row-{target.id}"
 	class="group relative border-b border-border/60 transition-colors
-		{selected ? 'bg-primary/5' : focused || expanded ? 'bg-muted/30' : ''}"
+		{selected ? 'bg-primary/5' : expanded ? 'bg-muted/30' : ''}"
 >
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
-		class="flex cursor-pointer items-center gap-3 px-4 hover:bg-muted/30 {rowPadding(
-			compact ? 'compact' : 'cozy'
-		)}"
+		class="flex cursor-pointer items-center gap-3 px-4 transition-colors {rowTone(
+			false,
+			focused
+		)} {rowPadding(compact ? 'compact' : 'cozy')}"
 		role="row"
 		tabindex="-1"
 		data-target-row-index={index}
 		onclick={onToggle}
-		onmouseenter={onFocus}
 	>
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
 		<div role="cell" class="{TCOL.select} h-6" onclick={stopProp}>

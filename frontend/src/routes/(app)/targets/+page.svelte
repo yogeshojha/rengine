@@ -30,6 +30,8 @@
 	import CompareSheet from '$lib/components/scans/history/compare-sheet.svelte';
 	import TargetsStrip from '$lib/components/targets/list/targets-strip.svelte';
 	import TargetRow from '$lib/components/targets/list/target-row.svelte';
+	import { RowCursor } from '$lib/components/scans/results/table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import { TargetRuns } from '$lib/components/targets/list/target-runs.svelte';
 	import { FOLDED_INTO_TARGET, TCOL } from '$lib/components/targets/list/columns';
 	import {
@@ -40,9 +42,7 @@
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
 	import { TargetType, formatTargetTypePlural, type EnrichmentKind } from '$lib/types/target';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Kbd } from '$lib/components/ui/kbd';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import Columns3 from '@lucide/svelte/icons/columns-3';
@@ -271,7 +271,7 @@
 	const runs = new TargetRuns();
 	const expanded = new SvelteSet<string>();
 	let now = $state(Date.now());
-	let focusId = $state<string | null>(null);
+	const cursor = new RowCursor('data-target-row-index');
 	let compare = $state<{ current: string; baseline: string | null } | null>(null);
 	let shortcutsOpen = $state(false);
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
@@ -342,24 +342,17 @@
 			(e.target as HTMLElement | null)?.closest('a,button,[role=button],[role=option]')
 		)
 			return;
-		const idx = rows.findIndex((t) => t.id === focusId);
-		const focused = idx >= 0 ? rows[idx] : null;
-		const move = (d: number) => {
-			const next = rows[Math.max(0, Math.min(rows.length - 1, (idx < 0 ? -1 : idx) + d))];
-			if (!next) return;
-			focusId = next.id;
-			document.getElementById(`target-row-${next.id}`)?.scrollIntoView({ block: 'nearest' });
-		};
+		const focused = rows[cursor.index] ?? null;
 		switch (e.key) {
 			case 'j':
 			case 'ArrowDown':
 				e.preventDefault();
-				move(1);
+				cursor.move(1, rows.length);
 				break;
 			case 'k':
 			case 'ArrowUp':
 				e.preventDefault();
-				move(-1);
+				cursor.move(-1, rows.length);
 				break;
 			case 'o':
 				if (focused) toggleExpand(focused.id);
@@ -383,7 +376,7 @@
 		}
 	}
 
-	const SHORTCUTS: [string, string][] = [
+	const SHORTCUTS: Shortcut[] = [
 		['j / k', 'Move between targets'],
 		['o', 'Expand or collapse the row'],
 		['Enter', 'Open target'],
@@ -896,6 +889,7 @@
 				role="table"
 				aria-label="Targets"
 				bind:clientWidth={targetPrefs.width}
+				{@attach cursor.track}
 			>
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -940,12 +934,11 @@
 						{now}
 						index={i}
 						expanded={expanded.has(target.id)}
-						focused={focusId === target.id}
+						focused={cursor.index === i}
 						selected={selectedTargetIds.has(target.id)}
 						scanning={liveScans.isTargetLive(target.id)}
 						onToggle={() => toggleExpand(target.id)}
 						onSelect={() => handleTargetSelect(target.id)}
-						onFocus={() => (focusId = target.id)}
 						onScan={() => handleScan(target)}
 						onSchedule={() => handleSchedule(target)}
 						onHistory={() => handleOpenScanHistory(target)}
@@ -996,17 +989,7 @@
 	onClose={() => (compare = null)}
 />
 
-<Dialog.Root bind:open={shortcutsOpen}>
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header><Dialog.Title>Keyboard shortcuts</Dialog.Title></Dialog.Header>
-		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-			{#each SHORTCUTS as [k, label] (k)}
-				<dt><Kbd>{k}</Kbd></dt>
-				<dd class="text-muted-foreground">{label}</dd>
-			{/each}
-		</dl>
-	</Dialog.Content>
-</Dialog.Root>
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
 
 <AddTargetModal bind:open={showAddModal} initialValue={prefillValue} />
 <ImportTargetsModal bind:open={showImportModal} />

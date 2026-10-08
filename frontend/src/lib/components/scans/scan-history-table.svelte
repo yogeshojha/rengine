@@ -22,7 +22,6 @@
 	import type { TableColumn } from '$lib/components/scans/results/table/columns';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Kbd } from '$lib/components/ui/kbd';
@@ -56,6 +55,8 @@
 	import ScanStatusTabs from './scan-status-tabs.svelte';
 	import ScanBulkActionBar from './scan-bulk-action-bar.svelte';
 	import ScanRow from './history/scan-row.svelte';
+	import { RowCursor } from './results/table/row-cursor.svelte';
+	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import HistoryChart from './history/history-chart.svelte';
 	import CompareSheet from './history/compare-sheet.svelte';
 	import { COL } from './history/columns';
@@ -109,7 +110,7 @@
 
 	let expanded = new SvelteSet<string>();
 	let earlier = $state<Record<string, ScanRead[] | 'loading'>>({});
-	let focusId = $state<string | null>(null);
+	const cursor = new RowCursor('data-scan-row-index');
 	const selected = new SvelteSet<string>();
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
@@ -307,8 +308,8 @@
 			return;
 		}
 		expanded.add(scanId);
-		focusId = scanId;
 		await tick();
+		cursor.follow(visible.findIndex((v) => v.scan.id === scanId));
 		document
 			.getElementById(`scan-row-${scanId}`)
 			?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -431,24 +432,17 @@
 		}
 		if (typing(e) || document.querySelector('[role=dialog],[role=menu]')) return;
 		if (OWN_KEYS.has(e.key) && interactive(e)) return;
-		const idx = visible.findIndex((v) => v.scan.id === focusId);
-		const focused = idx >= 0 ? visible[idx].scan : null;
-		const move = (d: number) => {
-			const next = visible[Math.max(0, Math.min(visible.length - 1, (idx < 0 ? -1 : idx) + d))];
-			if (!next) return;
-			focusId = next.scan.id;
-			document.getElementById(`scan-row-${focusId}`)?.scrollIntoView({ block: 'nearest' });
-		};
+		const focused = visible[cursor.index]?.scan ?? null;
 		switch (e.key) {
 			case 'j':
 			case 'ArrowDown':
 				e.preventDefault();
-				move(1);
+				cursor.move(1, visible.length);
 				break;
 			case 'k':
 			case 'ArrowUp':
 				e.preventDefault();
-				move(-1);
+				cursor.move(-1, visible.length);
 				break;
 			case 'o':
 				if (focused) toggleExpand(focused.id);
@@ -479,7 +473,7 @@
 		}
 	}
 
-	const SHORTCUTS: [string, string][] = [
+	const SHORTCUTS: Shortcut[] = [
 		['j / k', 'Move between runs'],
 		['o', 'Expand or collapse the run brief'],
 		['1 to 4', 'Switch brief tab'],
@@ -880,7 +874,7 @@
 		</Empty.Root>
 	{:else}
 		<div class="@container/scans overflow-x-auto">
-			<div class="w-full min-w-[720px]" role="table" aria-label="Scans">
+			<div class="w-full min-w-[720px]" role="table" aria-label="Scans" {@attach cursor.track}>
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
 					role="row"
@@ -911,8 +905,9 @@
 					{@render sortHead('Started', 'started', COL.started, true)}
 					<div class={COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 				</div>
-				{#each visible as v (v.scan.id)}
+				{#each visible as v, i (v.scan.id)}
 					<ScanRow
+						index={i}
 						{projectId}
 						scan={v.scan}
 						showTarget={!targetId}
@@ -920,7 +915,7 @@
 						{now}
 						nested={v.nested}
 						expanded={expanded.has(v.scan.id)}
-						focused={focusId === v.scan.id}
+						focused={cursor.index === i}
 						selected={selected.has(v.scan.id)}
 						earlierOpen={!!earlier[v.scan.id]}
 						onEarlier={latest && !v.nested ? () => toggleEarlier(v.scan) : undefined}
@@ -972,17 +967,7 @@
 	onClose={() => (compare = null)}
 />
 
-<Dialog.Root bind:open={shortcutsOpen}>
-	<Dialog.Content class="sm:max-w-md">
-		<Dialog.Header><Dialog.Title>Keyboard shortcuts</Dialog.Title></Dialog.Header>
-		<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-			{#each SHORTCUTS as [k, label] (k)}
-				<dt><Kbd>{k}</Kbd></dt>
-				<dd class="text-muted-foreground">{label}</dd>
-			{/each}
-		</dl>
-	</Dialog.Content>
-</Dialog.Root>
+<ShortcutsDialog bind:open={shortcutsOpen} shortcuts={SHORTCUTS} />
 
 <ConfirmDialog
 	open={!!cancelTarget}
