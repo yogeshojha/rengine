@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { afterNavigate, goto, onNavigate } from '$app/navigation';
+	import { afterNavigate, beforeNavigate, goto, onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { onboardingStore } from '$lib/stores/onboarding.svelte';
@@ -24,6 +24,7 @@
 	import ProxySendConfirm from '$lib/components/scans/results/endpoints/proxy-send-confirm.svelte';
 	import { crumbHref, getRouteLabel, PROJECT_PARAM, ROUTES, UUID_REGEX } from '$lib/config/routes';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
+	import { previousPage } from '$lib/stores/previous-page.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
 	import { navTrail, useSidebarNav } from '$lib/components/layout/sidebar-nav.svelte';
 
@@ -164,7 +165,7 @@
 		return () => clearTimeout(timer);
 	});
 
-	let breadcrumbs = $derived.by(() => {
+	let breadcrumbs = $derived.by((): Crumb[] => {
 		const path = page.url.pathname;
 		const segments = path.split('/').filter(Boolean);
 
@@ -200,6 +201,18 @@
 				.filter((crumb): crumb is Crumb => crumb !== null)
 		];
 		return crumbs.filter((crumb, i) => i === 0 || crumb.label !== crumbs[i - 1].label);
+	});
+
+	// back links return to the page a page was opened from, named by its last crumb; Back and
+	// Forward keep the first answer
+	beforeNavigate(({ from, to, type }) => {
+		if (!from || !to || type === 'popstate' || from.url.pathname === to.url.pathname) return;
+		const here = breadcrumbs.at(-1);
+		if (!here || here.pending) return;
+		previousPage.record(to.url.pathname, {
+			label: here.label,
+			href: from.url.pathname + from.url.search
+		});
 	});
 </script>
 

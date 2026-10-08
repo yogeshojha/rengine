@@ -4,6 +4,7 @@
 	import { SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import BackLink from '$lib/components/back-link.svelte';
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Globe from '@lucide/svelte/icons/globe';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -62,7 +63,7 @@
 	import SecretsTable from '$lib/components/scans/results/secrets-table.svelte';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { historyIndex, markEntry, writeSearch } from '$lib/utilities/url-history.svelte';
+	import { writeSearch } from '$lib/utilities/url-history.svelte';
 	import {
 		durationLabel,
 		isLiveStatus,
@@ -561,9 +562,6 @@
 		return `${end} · took ${durationLabel(scan, now)}`;
 	});
 
-	let entryIndex = markEntry();
-	let canStepBack = $derived(historyIndex() > entryIndex);
-
 	let lastScanId = page.params.id ?? '';
 	$effect(() => {
 		void page.url;
@@ -573,7 +571,6 @@
 			const changed = Boolean(id) && id !== lastScanId;
 			if (changed) {
 				lastScanId = id;
-				entryIndex = markEntry();
 				resultTicks = {};
 				history = [];
 				historyLoaded = false;
@@ -805,26 +802,12 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="flex w-full flex-col gap-6">
-	{#if canStepBack}
-		<button
-			type="button"
-			class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-			onclick={() => window.history.back()}
-		>
-			<ArrowLeft class="size-3.5" />
-			Back
-		</button>
-	{:else}
-		<a
-			href={focused && scan?.parent_scan_id ? ROUTES.scan(scan.parent_scan_id) : targetHref}
-			class="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-		>
-			<ArrowLeft class="size-3.5" />
-			{focused && scan?.parent_scan_id
-				? 'Parent run'
-				: (scan?.execution_config.target_value ?? routeLabels.scans)}
-		</a>
-	{/if}
+	<BackLink
+		href={focused && scan?.parent_scan_id ? ROUTES.scan(scan.parent_scan_id) : targetHref}
+		label={focused && scan?.parent_scan_id
+			? 'Parent run'
+			: (scan?.execution_config.target_value ?? routeLabels.scans)}
+	/>
 
 	{#if loading && !scan}
 		<div class="flex flex-col gap-6" aria-busy="true">
