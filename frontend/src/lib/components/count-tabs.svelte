@@ -26,8 +26,7 @@
 		'flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent';
 
 	function tone(key: string, n: number): string {
-		if (countClass) return countClass(key, n);
-		return n === 0 ? 'text-muted-foreground/50' : 'text-muted-foreground';
+		return countClass?.(key, n) ?? 'text-muted-foreground';
 	}
 </script>
 

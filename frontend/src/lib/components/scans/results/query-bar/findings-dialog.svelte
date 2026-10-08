@@ -47,7 +47,7 @@
 
 <Dialog.Root {open} {onOpenChange}>
 	<Dialog.Content
-		class="max-h-[85vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+		class="max-h-[85vh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
 	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Matched queries</Dialog.Title>

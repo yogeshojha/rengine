@@ -200,6 +200,8 @@ export interface TargetPreviewItem {
 	organizations?: string[];
 	display_name?: string | null;
 	error?: string;
+	/** Why a valid row is left out of the import: it repeats an earlier row or a target. */
+	skipped?: string;
 }
 
 export interface EnrichmentRefreshResponse {

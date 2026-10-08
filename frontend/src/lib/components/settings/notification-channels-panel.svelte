@@ -470,7 +470,7 @@
 	bind:open={() => dialogOpen, (next) => (next ? (dialogOpen = true) : !saving && guard.close())}
 >
 	<Dialog.Content
-		class="grid max-h-[85vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 {editingId
+		class="grid max-h-[85vh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 {editingId
 			? 'sm:max-w-xl'
 			: 'sm:max-w-3xl'}"
 	>

@@ -348,7 +348,7 @@
 	}
 >
 	<Dialog.Content
-		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+		class="grid h-[min(90vh,52rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-3xl"
 		onkeydown={onKeydown}
 		onOpenAutoFocus={(e) => {
 			e.preventDefault();

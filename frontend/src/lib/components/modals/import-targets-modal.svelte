@@ -395,8 +395,8 @@
 		const seen = new Set<string>();
 		return items.map(({ key, existing, ...item }) => {
 			if (item.error) return item;
-			if (existing) return { ...item, error: 'Already a target' };
-			if (seen.has(key)) return { ...item, error: 'Duplicate' };
+			if (existing) return { ...item, skipped: 'Already a target' };
+			if (seen.has(key)) return { ...item, skipped: 'Duplicate' };
 			seen.add(key);
 			return item;
 		});
@@ -454,8 +454,7 @@
 		isImporting = true;
 
 		try {
-			const validItems = previewItems.filter((item) => !item.error);
-			await executeImport(validItems);
+			await executeImport(readyItems);
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Targets not imported');
 			isImporting = false;
@@ -573,9 +572,8 @@
 			(activeTab === 'csv' && csvFile !== null)
 	);
 
-	let canImport = $derived(
-		mode === 'preview' && previewItems.length > 0 && previewItems.some((item) => !item.error)
-	);
+	let readyItems = $derived(previewItems.filter((item) => !item.error && !item.skipped));
+	let canImport = $derived(mode === 'preview' && readyItems.length > 0);
 </script>
 
 <Dialog.Root
@@ -588,7 +586,7 @@
 	}
 >
 	<Dialog.Content
-		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
+		class="grid h-[min(90vh,52rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
 		onInteractOutside={(e) => {
 			if (busy) e.preventDefault();
 		}}
@@ -787,7 +785,7 @@ https://app.example.com"
 					disabled={!canImport || scanPending}
 				>
 					{scanArmed ? 'Import & scan' : 'Import'}
-					{previewItems.filter((item) => !item.error).length}
+					{readyItems.length}
 				</LoadingButton>
 			{:else}
 				<Button variant="outline" onclick={handleImportMore} disabled={isImporting}>

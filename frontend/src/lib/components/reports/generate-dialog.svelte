@@ -330,7 +330,7 @@
 
 <Dialog.Root bind:open={() => open, requestOpen}>
 	<Dialog.Content
-		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-4xl"
+		class="grid h-[min(90vh,52rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-0 overflow-hidden p-0 sm:max-w-4xl"
 	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Generate report</Dialog.Title>

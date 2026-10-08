@@ -135,7 +135,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Content
-		class="grid max-h-[85vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
+		class="grid max-h-[85vh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
 	>
 		<Dialog.Header class="border-b px-6 py-4 text-left">
 			<Dialog.Title class="flex items-center gap-2">

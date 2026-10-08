@@ -316,7 +316,7 @@
 	}
 >
 	<Dialog.Content
-		class="grid h-[min(90vh,52rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-xl"
+		class="grid h-[min(90vh,52rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-xl"
 	>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>{isEdit ? 'Edit schedule' : 'New schedule'}</Dialog.Title>

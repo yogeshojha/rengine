@@ -644,12 +644,7 @@
 						{tabs}
 						value={filters.tab}
 						{counts}
-						countClass={(k, n) =>
-							n === 0
-								? 'text-muted-foreground/50'
-								: k === 'open'
-									? 'text-info'
-									: 'text-muted-foreground'}
+						countClass={(k, n) => (n > 0 && k === 'open' ? 'text-info' : 'text-muted-foreground')}
 						onChange={(k) => setParam('tab', k === ALL_TAB ? null : k)}
 					/>
 				{:else}
