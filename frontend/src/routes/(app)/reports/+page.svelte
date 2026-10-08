@@ -311,10 +311,10 @@
 			}
 		}
 	>
-		<div class="flex flex-wrap items-center justify-between gap-3">
-			<ScrollArea orientation="horizontal" class="w-full max-w-full sm:w-fit">
-				<Tabs.List class="w-max min-w-full">
-					<Tabs.Trigger value="reports" class="gap-1.5">
+		<div class="flex flex-wrap items-center justify-between gap-3 border-b">
+			<ScrollArea orientation="horizontal" class="w-full max-w-full self-end sm:w-fit">
+				<Tabs.List variant="line" class="h-10 w-max min-w-full justify-start">
+					<Tabs.Trigger value="reports" class="flex-none px-3">
 						<FileTextIcon class="size-4" />
 						Reports
 						{#if reportsStore.reports.length && !stale}
@@ -323,7 +323,7 @@
 							>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="templates" class="gap-1.5">
+					<Tabs.Trigger value="templates" class="flex-none px-3">
 						<LayoutTemplateIcon class="size-4" />
 						Templates
 						{#if reportsStore.templates.length}
@@ -332,7 +332,7 @@
 							>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="themes" class="gap-1.5">
+					<Tabs.Trigger value="themes" class="flex-none px-3">
 						<PaletteIcon class="size-4" />
 						Themes
 						{#if reportCatalog.themes.length}
@@ -341,7 +341,7 @@
 							>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="typefaces" class="gap-1.5">
+					<Tabs.Trigger value="typefaces" class="flex-none px-3">
 						<TypeIcon class="size-4" />
 						Typefaces
 						{#if reportCatalog.catalog?.fonts.length}
@@ -350,7 +350,7 @@
 							>
 						{/if}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="branding" class="gap-1.5">
+					<Tabs.Trigger value="branding" class="flex-none px-3">
 						<StampIcon class="size-4" />
 						Branding
 					</Tabs.Trigger>

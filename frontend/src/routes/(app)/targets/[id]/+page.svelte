@@ -1023,20 +1023,14 @@
 						class="min-w-0 flex-1 mask-r-from-[calc(100%-1.5rem)]"
 						scrollbarXClasses="h-1"
 					>
-						<Tabs.List
-							class="h-auto w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0"
-						>
+						<Tabs.List variant="line" class="h-10 w-max min-w-full justify-start">
 							{#each tabs as key, i (key)}
 								{@const t = TAB_DEFS[key]}
 								{@const n = tabCounts[key]}
 								<Tooltip.Root>
 									<Tooltip.Trigger>
 										{#snippet child({ props })}
-											<Tabs.Trigger
-												{...props}
-												value={key}
-												class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
-											>
+											<Tabs.Trigger {...props} value={key} class="flex-none px-3">
 												<t.icon class="size-3.5" />
 												{t.label}
 												{#if n != null}

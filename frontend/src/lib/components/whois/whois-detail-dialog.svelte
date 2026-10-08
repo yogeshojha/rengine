@@ -13,7 +13,6 @@
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { toast } from 'svelte-sonner';
 	import WhoisOverviewTab from './whois-overview-tab.svelte';
@@ -246,25 +245,23 @@
 			</div>
 
 			<Tabs.Root bind:value={activeTab} class="flex min-h-0 flex-1 flex-col">
-				<div class="shrink-0 px-6 pt-3">
+				<div class="shrink-0 border-b px-6 pt-3">
 					<ScrollArea orientation="horizontal" class="w-full">
-						<Tabs.List class="w-max min-w-full">
-							<Tabs.Trigger value="overview" class="flex-1">Overview</Tabs.Trigger>
+						<Tabs.List variant="line" class="w-max justify-start">
+							<Tabs.Trigger value="overview" class="flex-none px-3">Overview</Tabs.Trigger>
 							{#if hasEntities}
-								<Tabs.Trigger value="entities" class="flex-1">Entities</Tabs.Trigger>
+								<Tabs.Trigger value="entities" class="flex-none px-3">Entities</Tabs.Trigger>
 							{/if}
-							<Tabs.Trigger value="related" class="flex-1 gap-1.5">
+							<Tabs.Trigger value="related" class="flex-none px-3">
 								Related
 								{#if !isLoadingCorrelations && relatedCount > 0}
-									<Badge variant="secondary" class="text-2xs h-5 min-w-5 px-1.5 ml-1">
-										{relatedCount}
-									</Badge>
+									<span class="text-xs text-muted-foreground tabular-nums">{relatedCount}</span>
 								{:else if isLoadingCorrelations}
-									<Spinner class="h-3 w-3 text-muted-foreground ml-1" />
+									<Spinner class="size-3 text-muted-foreground" />
 								{/if}
 							</Tabs.Trigger>
 							{#if showDiscoveriesTab}
-								<Tabs.Trigger value="discoveries" class="flex-1 gap-1.5">Discoveries</Tabs.Trigger>
+								<Tabs.Trigger value="discoveries" class="flex-none px-3">Discoveries</Tabs.Trigger>
 							{/if}
 						</Tabs.List>
 					</ScrollArea>

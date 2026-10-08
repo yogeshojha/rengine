@@ -47,9 +47,9 @@
 
 <div class="flex flex-col gap-3">
 	<Tabs.Root bind:value={group}>
-		<Tabs.List>
+		<Tabs.List variant="line">
 			{#each GROUPS as { key, label } (key)}
-				<Tabs.Trigger value={key} class="px-3">
+				<Tabs.Trigger value={key} class="flex-none px-3">
 					{label}
 					<span class="text-xs tabular-nums text-muted-foreground">
 						{counts[key].toLocaleString()}

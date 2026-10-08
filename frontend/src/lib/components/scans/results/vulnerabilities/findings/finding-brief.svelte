@@ -66,18 +66,14 @@
 	class="gap-2"
 >
 	<ScrollArea orientation="horizontal" class="max-w-full">
-		<Tabs.List class="h-8">
+		<Tabs.List variant="line" class="h-8">
 			{#each BRIEF_TABS as t, i (t)}
-				<Tabs.Trigger value={t} class="gap-1.5 px-3 text-xs">
+				<Tabs.Trigger value={t} class="flex-none px-3 text-xs">
 					{BRIEF_TAB_LABELS[t]}
 					{#if t === 'host' && hostTotal > 1}
-						<span class="font-mono text-2xs text-muted-foreground tabular-nums"
-							>{hostTotal - 1}</span
-						>
+						<span class="text-xs text-muted-foreground tabular-nums">{hostTotal - 1}</span>
 					{:else if t === 'check' && v.host_count > 1}
-						<span class="font-mono text-2xs text-muted-foreground tabular-nums"
-							>{v.host_count - 1}</span
-						>
+						<span class="text-xs text-muted-foreground tabular-nums">{v.host_count - 1}</span>
 					{/if}
 					<Kbd class="hidden sm:inline-flex">{i + 1}</Kbd>
 				</Tabs.Trigger>

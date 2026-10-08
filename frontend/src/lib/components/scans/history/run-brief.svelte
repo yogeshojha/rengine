@@ -32,9 +32,9 @@
 	onValueChange={(v) => runBriefTabs.set(scan.id, v as BriefTab)}
 	class="gap-2"
 >
-	<Tabs.List class="h-8">
+	<Tabs.List variant="line" class="h-8">
 		{#each BRIEF_TABS as t, i (t)}
-			<Tabs.Trigger value={t} class="gap-1.5 px-3 text-xs">
+			<Tabs.Trigger value={t} class="flex-none px-3 text-xs">
 				{BRIEF_TAB_LABELS[t]}
 				<Kbd class="hidden sm:inline-flex">{i + 1}</Kbd>
 			</Tabs.Trigger>

@@ -2,7 +2,6 @@
 	import BadgeCheck from '@lucide/svelte/icons/badge-check';
 	import BadgeX from '@lucide/svelte/icons/badge-x';
 	import BadgeMinus from '@lucide/svelte/icons/badge-minus';
-	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import type { TargetImportResult } from '$lib/types/target';
 
@@ -21,27 +20,24 @@
 	let duplicateResults = $derived(results.filter((r) => !r.success && r.duplicate));
 
 	let availableTabs = $derived.by(() => {
-		const tabs: { value: string; label: string; count: number; color: string }[] = [];
+		const tabs: { value: string; label: string; count: number }[] = [];
 		if (successResults.length > 0)
 			tabs.push({
 				value: 'imported',
 				label: 'Imported',
-				count: successResults.length,
-				color: 'bg-foreground'
+				count: successResults.length
 			});
 		if (failedResults.length > 0)
 			tabs.push({
 				value: 'failed',
 				label: 'Failed',
-				count: failedResults.length,
-				color: 'bg-destructive'
+				count: failedResults.length
 			});
 		if (duplicateResults.length > 0)
 			tabs.push({
 				value: 'duplicates',
-				label: 'Duplicates',
-				count: duplicateResults.length,
-				color: 'bg-warning'
+				label: 'Skipped',
+				count: duplicateResults.length
 			});
 		return tabs;
 	});
@@ -87,10 +83,10 @@
 			<div class="text-xs text-muted-foreground">Imported</div>
 		</div>
 		<div class="rounded-lg border bg-card p-3 space-y-1">
-			<div class="text-2xl font-semibold tabular-nums text-warning">
+			<div class="text-2xl font-semibold tabular-nums text-muted-foreground">
 				{skipped_duplicates}
 			</div>
-			<div class="text-xs text-muted-foreground">Duplicates</div>
+			<div class="text-xs text-muted-foreground">Skipped</div>
 		</div>
 		<div class="rounded-lg border bg-card p-3 space-y-1">
 			<div class="text-2xl font-semibold tabular-nums text-destructive">
@@ -101,59 +97,53 @@
 	</div>
 
 	{#if availableTabs.length > 0}
-		<div class="space-y-3">
+		<div class="flex flex-col gap-3">
 			<Tabs.Root
 				value={activeTab}
 				onValueChange={(v) => {
 					userSelectedTab = v;
 				}}
-				class="w-full"
 			>
-				<Tabs.List class="h-8 w-auto inline-flex">
+				<Tabs.List variant="line">
 					{#each availableTabs as tab (tab.value)}
-						<Tabs.Trigger value={tab.value} class="text-xs h-7 px-3">
-							<div class="flex items-center gap-1.5">
-								<div class="h-1.5 w-1.5 rounded-full {tab.color}"></div>
-								{tab.label}
-								<span class="font-mono text-2xs text-muted-foreground tabular-nums">
-									{tab.count}
-								</span>
-							</div>
+						<Tabs.Trigger value={tab.value} class="flex-none px-3">
+							{tab.label}
+							<span class="text-xs text-muted-foreground tabular-nums">
+								{tab.count.toLocaleString()}
+							</span>
 						</Tabs.Trigger>
 					{/each}
 				</Tabs.List>
 			</Tabs.Root>
 
-			<ScrollArea class="h-[200px] rounded-md border">
-				<div class="divide-y">
-					{#each activeItems as result, i (`${result.target_value}:${i}`)}
-						<div
-							class="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-accent/50 transition-colors"
-						>
-							<div class="flex items-center gap-2 min-w-0 flex-1">
-								{#if activeTab === 'imported'}
-									<BadgeCheck class="h-3.5 w-3.5 text-foreground flex-shrink-0" />
-								{:else if activeTab === 'failed'}
-									<BadgeX class="h-3.5 w-3.5 text-destructive flex-shrink-0" />
-								{:else}
-									<BadgeMinus class="h-3.5 w-3.5 text-warning flex-shrink-0" />
-								{/if}
-								<code class="text-xs font-mono truncate">{result.target_value}</code>
-							</div>
-
-							{#if result.error && activeTab !== 'imported'}
-								<span
-									class="text-xs flex-shrink-0 max-w-[200px] truncate {activeTab === 'failed'
-										? 'text-destructive'
-										: 'text-muted-foreground'}"
-								>
-									{friendlyError(result.error)}
-								</span>
+			<ul class="divide-y rounded-md border">
+				{#each activeItems as result, i (`${result.target_value}:${i}`)}
+					<li class="flex items-center justify-between gap-3 px-4 py-2.5">
+						<div class="flex min-w-0 flex-1 items-center gap-2">
+							{#if activeTab === 'imported'}
+								<BadgeCheck class="size-3.5 shrink-0 text-foreground" />
+							{:else if activeTab === 'failed'}
+								<BadgeX class="size-3.5 shrink-0 text-destructive" />
+							{:else}
+								<BadgeMinus class="size-3.5 shrink-0 text-muted-foreground" />
 							{/if}
+							<code class="truncate font-mono text-xs" title={result.target_value}
+								>{result.target_value}</code
+							>
 						</div>
-					{/each}
-				</div>
-			</ScrollArea>
+
+						{#if result.error && activeTab !== 'imported'}
+							<span
+								class="max-w-[200px] shrink-0 truncate text-xs {activeTab === 'failed'
+									? 'text-destructive'
+									: 'text-muted-foreground'}"
+							>
+								{friendlyError(result.error)}
+							</span>
+						{/if}
+					</li>
+				{/each}
+			</ul>
 		</div>
 	{/if}
 </div>

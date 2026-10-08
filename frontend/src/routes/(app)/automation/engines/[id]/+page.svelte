@@ -690,12 +690,9 @@
 	<section class="side">
 		<Tabs.Root value={sideTab} onValueChange={setSideTab} class="side-tabs">
 			<div class="side-head">
-				<Tabs.List class="h-9 gap-0 rounded-none bg-transparent p-0">
+				<Tabs.List variant="line">
 					{#each SIDE_TABS as tab (tab.key)}
-						<Tabs.Trigger
-							value={tab.key}
-							class="h-9 flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
-						>
+						<Tabs.Trigger value={tab.key} class="flex-none px-3 text-xs">
 							<tab.icon size={13} />
 							<span class={tab.key === 'yaml' ? 'font-mono' : ''}>{tab.label}</span>
 							{#if tab.key === 'yaml' && hasUnsavedChanges}

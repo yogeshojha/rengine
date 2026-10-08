@@ -22,9 +22,6 @@
 
 	let { tabs, value, counts = null, capped = null, countClass, onChange }: Props = $props();
 
-	const TRIGGER =
-		'flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent';
-
 	function tone(key: string, n: number): string {
 		return countClass?.(key, n) ?? 'text-muted-foreground';
 	}
@@ -42,18 +39,18 @@
 	{/if}
 {/snippet}
 
-<Tabs.Root {value} onValueChange={(v) => v && onChange?.(v)} class="min-w-0 max-w-full">
+<Tabs.Root {value} onValueChange={(v) => v && onChange?.(v)} class="min-w-0 max-w-full self-end">
 	<ScrollArea.Root orientation="horizontal" class="w-full">
-		<Tabs.List class="-mb-px h-auto w-full justify-start gap-0 rounded-none bg-transparent p-0">
+		<Tabs.List variant="line" class="h-10 w-full justify-start">
 			{#each tabs as tab (tab.key)}
 				{#if tab.href}
-					<Tabs.Trigger value={tab.key} class={TRIGGER}>
+					<Tabs.Trigger value={tab.key} class="flex-none px-3">
 						{#snippet child({ props }: { props: Record<string, unknown> })}
 							<a {...props} href={safeHref(tab.href)}>{@render body(tab)}</a>
 						{/snippet}
 					</Tabs.Trigger>
 				{:else}
-					<Tabs.Trigger value={tab.key} class={TRIGGER}>{@render body(tab)}</Tabs.Trigger>
+					<Tabs.Trigger value={tab.key} class="flex-none px-3">{@render body(tab)}</Tabs.Trigger>
 				{/if}
 			{/each}
 		</Tabs.List>

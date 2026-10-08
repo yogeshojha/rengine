@@ -44,19 +44,19 @@
 <div class="flex w-full max-w-5xl flex-col gap-6">
 	<PageHeader title={routeLabels.settings} description="Instance-wide configuration" />
 
-	<div class="flex flex-wrap items-center justify-between gap-3">
+	<div class="flex flex-wrap items-center justify-between gap-3 border-b">
 		<Tabs.Root
 			value={active}
 			onValueChange={(v) => {
 				if (v && v !== active) goto(ROUTES.settings(v as SettingsSection));
 			}}
-			class="min-w-0"
+			class="min-w-0 self-end"
 		>
 			<ScrollArea orientation="horizontal" class="w-full sm:w-fit">
-				<Tabs.List>
+				<Tabs.List variant="line" class="h-10 w-max justify-start">
 					{#each sections as section (section)}
 						{@const Icon = ICONS[section]}
-						<Tabs.Trigger value={section} class="gap-1.5">
+						<Tabs.Trigger value={section} class="flex-none px-3">
 							<Icon class="size-4" />
 							{routeLabels[section]}
 						</Tabs.Trigger>

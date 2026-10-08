@@ -8,7 +8,7 @@
 		aiQuery,
 		aiServiceLabel
 	} from '$lib/config/ai-services';
-	import { SHEET_ROW_TIGHT, SHEET_DT, SHEET_HEAD, sheetStep } from './sheet';
+	import { SHEET_ROW_TIGHT, SHEET_DT, SHEET_HEAD, SHEET_ASK_TAB, sheetStep } from './sheet';
 	import SheetTop from './sheet-top.svelte';
 	import SheetBar from './sheet-bar.svelte';
 	import Globe from '@lucide/svelte/icons/globe';
@@ -481,14 +481,12 @@
 
 			<Tabs.Root bind:value={tab} class="flex min-h-0 flex-1 flex-col gap-0">
 				<ScrollArea orientation="horizontal" class="shrink-0 border-b border-border">
-					<Tabs.List
-						class="h-auto w-max min-w-full justify-start gap-0 rounded-none bg-transparent p-0 px-2"
-					>
+					<Tabs.List variant="line" class="w-max min-w-full justify-start px-2">
 						{@render tabTrigger('overview', 'Overview', null)}
 						<Tabs.Trigger
 							value="ask"
 							bind:ref={() => tabRefs.ask ?? null, (el) => (tabRefs.ask = el)}
-							class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-primary shadow-none hover:text-primary data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+							class="flex-none px-3 text-xs {SHEET_ASK_TAB}"
 						>
 							<Sparkles class="size-3.5" />
 							Ask
@@ -1365,7 +1363,7 @@
 	<Tabs.Trigger
 		{value}
 		bind:ref={() => tabRefs[value] ?? null, (el) => (tabRefs[value] = el)}
-		class="flex-none gap-1.5 rounded-none border-0 border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent"
+		class="flex-none px-3 text-xs"
 	>
 		{label}
 		{#if count != null}<span class="text-muted-foreground tabular-nums"

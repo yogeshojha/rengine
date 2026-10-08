@@ -6,6 +6,9 @@ export const SHEET_ROW_TIGHT = 'grid grid-cols-[7.5rem_minmax(0,1fr)] items-star
 export const SHEET_DT = 'pt-0.5 text-xs text-muted-foreground';
 // pt-2.5 centres the first row on the close button
 export const SHEET_HEAD = 'gap-2 border-b px-5 pt-2.5 pb-4';
+// the Ask tab reads as an action: primary whether or not it is open
+export const SHEET_ASK_TAB =
+	'text-primary hover:text-primary data-[state=active]:text-primary dark:text-primary dark:hover:text-primary dark:data-[state=active]:text-primary';
 
 export interface SheetAction {
 	label: string;

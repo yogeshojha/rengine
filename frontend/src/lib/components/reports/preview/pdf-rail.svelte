@@ -46,9 +46,9 @@
 <div class="hidden w-[9.5rem] shrink-0 flex-col border-r sm:flex">
 	{#if outline.length}
 		<Tabs.Root bind:value={tab} class="min-h-0 flex-1 gap-0">
-			<Tabs.List class="h-8 w-full rounded-none border-b bg-transparent p-0">
-				<Tabs.Trigger value="pages" class="h-8 rounded-none text-xs">Pages</Tabs.Trigger>
-				<Tabs.Trigger value="contents" class="h-8 rounded-none text-xs">Contents</Tabs.Trigger>
+			<Tabs.List variant="line" class="w-full border-b">
+				<Tabs.Trigger value="pages" class="text-xs">Pages</Tabs.Trigger>
+				<Tabs.Trigger value="contents" class="text-xs">Contents</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="pages" class="min-h-0 flex-1">
 				{@render thumbnails()}

@@ -84,15 +84,17 @@
 			if (v) activeTab = v as ExposureTab;
 		}}
 	>
-		<Tabs.List class="w-full sm:w-fit">
-			{#each EXPOSURE_TABS as tab (tab)}
-				{@const Icon = TAB_META[tab].icon}
-				<Tabs.Trigger value={tab} class="gap-1.5">
-					<Icon class="size-4" />
-					{TAB_META[tab].label}
-				</Tabs.Trigger>
-			{/each}
-		</Tabs.List>
+		<div class="border-b">
+			<Tabs.List variant="line" class="h-10 justify-start">
+				{#each EXPOSURE_TABS as tab (tab)}
+					{@const Icon = TAB_META[tab].icon}
+					<Tabs.Trigger value={tab} class="flex-none px-3">
+						<Icon class="size-4" />
+						{TAB_META[tab].label}
+					</Tabs.Trigger>
+				{/each}
+			</Tabs.List>
+		</div>
 
 		<Tabs.Content value="exposures" class="space-y-4">
 			{#if projectsStore.activeProject}

@@ -367,25 +367,25 @@
 		{/if}
 
 		<Tabs.Root value="sections">
-			<ScrollArea orientation="horizontal" class="w-full max-w-full sm:w-fit">
-				<Tabs.List>
-					<Tabs.Trigger value="sections" class="gap-1.5">
+			<ScrollArea orientation="horizontal" class="w-full max-w-full border-b">
+				<Tabs.List variant="line" class="h-10 w-max justify-start">
+					<Tabs.Trigger value="sections" class="flex-none px-3">
 						<ListOrderedIcon class="size-4" />
 						Sections
 					</Tabs.Trigger>
-					<Tabs.Trigger value="look" class="gap-1.5">
+					<Tabs.Trigger value="look" class="flex-none px-3">
 						<PaletteIcon class="size-4" />
 						Look
 					</Tabs.Trigger>
-					<Tabs.Trigger value="branding" class="gap-1.5">
+					<Tabs.Trigger value="branding" class="flex-none px-3">
 						<StampIcon class="size-4" />
 						Branding
 					</Tabs.Trigger>
-					<Tabs.Trigger value="narrative" class="gap-1.5">
+					<Tabs.Trigger value="narrative" class="flex-none px-3">
 						<PenLineIcon class="size-4" />
 						Narrative
 					</Tabs.Trigger>
-					<Tabs.Trigger value="document" class="gap-1.5">
+					<Tabs.Trigger value="document" class="flex-none px-3">
 						<FileTextIcon class="size-4" />
 						Document
 					</Tabs.Trigger>
