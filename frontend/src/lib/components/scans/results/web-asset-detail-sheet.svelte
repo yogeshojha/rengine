@@ -197,7 +197,10 @@
 	let hostAssets = $derived(corr?.services ?? []);
 	let aiAssets = $derived(hostAssets.filter((a) => !!a.ai_service));
 	let ports = $derived(corr?.ports ?? []);
-	let ipMetas = $derived(corr?.ip_metas ?? []);
+	// project-wide correlation repeats an address once per scan that saw it
+	let ipMetas = $derived([
+		...new Map((corr?.ip_metas ?? []).map((m) => [m.ip, m] as const)).values()
+	]);
 	let related = $derived(corr?.related ?? []);
 	let relatedHosts = $derived(new Set(related.flatMap((r) => r.hosts)).size);
 
