@@ -22,6 +22,8 @@
 
 	let { title, options, selected, onChange, disabled = false }: Props = $props();
 	let open = $state(false);
+	// nothing to pick: an empty list would read as a search that found nothing
+	let inert = $derived(disabled || (options.length === 0 && selected.length === 0));
 
 	function toggle(value: string) {
 		onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
@@ -34,7 +36,7 @@
 			<Button
 				{...props}
 				variant="outline"
-				{disabled}
+				disabled={inert}
 				class={selected.length ? 'border-primary/50 bg-primary/5' : ''}
 			>
 				<ListFilter class="h-4 w-4" />
