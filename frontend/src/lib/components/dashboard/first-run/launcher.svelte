@@ -13,7 +13,7 @@
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { scanEnginesStore } from '$lib/stores/scan-engines.svelte';
 	import { scansStore } from '$lib/stores/scans.svelte';
-	import { INVALID_TARGET_MESSAGE, TARGET_FORMATS } from '$lib/components/scans/launch/targets';
+	import { invalidTargetMessage } from '$lib/components/scans/launch/targets';
 	import {
 		decodeSelection,
 		defaultSelection,
@@ -70,7 +70,7 @@
 		try {
 			const check = await targetsApi.validate({ target_value: raw });
 			if (!check.valid || !check.target_type) {
-				problem = `${INVALID_TARGET_MESSAGE}: ${raw}. ${TARGET_FORMATS}`;
+				problem = invalidTargetMessage([raw]);
 				return;
 			}
 			const scans = await scansStore.launchScans(pid, {
