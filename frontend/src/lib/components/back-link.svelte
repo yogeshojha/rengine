@@ -2,6 +2,7 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { page } from '$app/state';
 	import { previousPage } from '$lib/stores/previous-page.svelte';
+	import { safeHref } from '$lib/utilities/links';
 	import { cn } from '$lib/utils';
 
 	interface Props {
@@ -14,15 +15,17 @@
 	let { href, label, class: className }: Props = $props();
 
 	let previous = $derived(previousPage.of(page.url.pathname));
+	// read back from session storage, so it passes the link guard like any stored link
+	let back = $derived(safeHref(previous?.href));
 </script>
 
 <a
-	href={previous?.href ?? href}
+	href={back ?? href}
 	class={cn(
 		'inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground',
 		className
 	)}
 >
 	<ArrowLeft class="size-3.5" />
-	{previous?.label ?? label}
+	{back && previous ? previous.label : label}
 </a>
