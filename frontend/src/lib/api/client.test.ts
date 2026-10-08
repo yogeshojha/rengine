@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ApiError, isTransient, retryTransient } from './client';
+import { ApiError, extractErrorMessage, isTransient, retryTransient } from './client';
 
 const noWait = async () => {};
 
@@ -54,5 +54,23 @@ describe('retryTransient', () => {
 		).rejects.toBe(busy);
 		expect(call.calls).toBe(3);
 		expect(waited).toEqual([5, 10]);
+	});
+});
+
+describe('extractErrorMessage', () => {
+	const field = (msg: string) => ({ loc: ['query', 'tag_ids', 0], msg, type: 'uuid_parsing' });
+
+	it('names one or two failing fields in full', () => {
+		expect(extractErrorMessage([field('Value error, Bad port')], 422)).toBe('Bad port');
+		expect(extractErrorMessage([field('A'), field('B'), field('A')], 422)).toBe('A; B');
+	});
+
+	it('lets the first of many stand for the rest', () => {
+		const detail = ['A', 'B', 'C', 'D'].map(field);
+		expect(extractErrorMessage(detail, 422)).toBe('A (and 3 more)');
+	});
+
+	it('falls back to the status', () => {
+		expect(extractErrorMessage(undefined, 500)).toBe('Request failed with status 500');
 	});
 });

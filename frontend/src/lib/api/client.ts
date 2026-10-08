@@ -96,14 +96,22 @@ async function responseError(response: Response): Promise<ApiError> {
 	return new ApiError(extractErrorMessage(errorData?.detail, response.status), response.status);
 }
 
-function extractErrorMessage(detail: unknown, status: number): string {
+/** A validation error lists every failing field; past two, the first stands for the rest. */
+export function extractErrorMessage(detail: unknown, status: number): string {
 	if (typeof detail === 'string' && detail.trim()) return detail;
 	if (Array.isArray(detail)) {
-		const msgs = detail
-			.map((d) =>
-				d && typeof d === 'object' && 'msg' in d ? String(d.msg).replace(/^Value error, /, '') : ''
+		const msgs = [
+			...new Set(
+				detail
+					.map((d) =>
+						d && typeof d === 'object' && 'msg' in d
+							? String(d.msg).replace(/^Value error, /, '')
+							: ''
+					)
+					.filter(Boolean)
 			)
-			.filter(Boolean);
+		];
+		if (msgs.length > 2) return `${msgs[0]} (and ${msgs.length - 1} more)`;
 		if (msgs.length) return msgs.join('; ');
 	}
 	return `Request failed with status ${status}`;

@@ -73,7 +73,7 @@
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import TargetViewsMenu from '$lib/components/targets/target-views-menu.svelte';
-	import { ROUTES, routeLabels } from '$lib/config/routes';
+	import { ROUTES, routeLabels, UUID_REGEX } from '$lib/config/routes';
 
 	let urlReady = $state(false);
 
@@ -83,6 +83,8 @@
 			return Number.isFinite(parsed) ? parsed : undefined;
 		};
 		const list = (key: string) => (whole || params.has(key) ? params.getAll(key) : undefined);
+		// a stale or hand-edited link drops what isn't an id instead of failing the whole list
+		const ids = (key: string) => list(key)?.filter((v) => UUID_REGEX.test(v));
 		const size = n(params.get('size'));
 		return {
 			search: params.get('q') ?? undefined,
@@ -91,8 +93,8 @@
 				whole || params.has('signal') ? (params.get('signal') as SignalFilter) || null : undefined,
 			sortKey: (params.get('sort') as SortKey) || undefined,
 			sortDir: (params.get('dir') as SortDir) || undefined,
-			selectedOrganizations: list('org'),
-			selectedTags: list('tag'),
+			selectedOrganizations: ids('org'),
+			selectedTags: ids('tag'),
 			page: n(params.get('page')),
 			pageSize: size !== undefined && size >= 1 && size <= 100 ? size : undefined
 		};
