@@ -165,7 +165,7 @@ export const MAX_EXPLOIT_SCORE = 100;
 
 export function exploitTone(score: number): string {
 	if (score >= 80) return 'var(--destructive)';
-	if (score >= 50) return 'var(--sev-high)';
+	if (score >= 50) return 'var(--sev-high-ink)';
 	if (score >= 20) return 'var(--warning)';
 	return 'var(--muted-foreground)';
 }

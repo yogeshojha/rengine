@@ -298,22 +298,23 @@ def validate_embedded_image(value: str, field: str) -> str:
 
 
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#d40924",
-    "high": "#e96500",
-    "medium": "#d6ab1b",
-    "low": "#0098b7",
-    "info": "#a0b1b6",
-    "unknown": "#a0b1b6",
+    "critical": "#c10007",
+    "high": "#ff6900",
+    "medium": "#ffb900",
+    "low": "#0084d1",
+    "info": "#737373",
+    "unknown": "#737373",
 }
 
-# the same ramp restepped for dark paper
+# the same ramp restepped for dark paper: the UI's dark inks, since one value draws both the
+# mark and its label there
 DARK_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#ff645f",
-    "high": "#f98942",
-    "medium": "#eec651",
-    "low": "#26b7d3",
-    "info": "#85969a",
-    "unknown": "#85969a",
+    "critical": "#ff6467",
+    "high": "#ff8904",
+    "medium": "#ffd230",
+    "low": "#00bcff",
+    "info": "#a1a1a1",
+    "unknown": "#a1a1a1",
 }
 
 # the categorical scale the UI draws with, mirrors frontend/src/app.css --chart-1..5

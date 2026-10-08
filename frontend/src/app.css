@@ -60,22 +60,23 @@
 	--success-foreground: oklch(0.985 0 0);
 	--warning: oklch(0.5 0.12 90);
 	--warning-foreground: oklch(0.985 0 0);
-	/* severity, mirrors shared/definitions/reports.py */
-	--sev-critical: #d40924;
-	--sev-critical-wash: #ffebe8;
-	--sev-critical-ink: #940015;
-	--sev-high: #e96500;
-	--sev-high-wash: #ffebda;
-	--sev-high-ink: #923900;
-	--sev-medium: #d6ab1b;
-	--sev-medium-wash: #fff5d7;
-	--sev-medium-ink: #765900;
-	--sev-low: #0098b7;
-	--sev-low-wash: #e4f6fa;
-	--sev-low-ink: #006278;
-	--sev-info: #a0b1b6;
-	--sev-info-wash: #eef3f4;
-	--sev-info-ink: #49585c;
+	/* severity, mirrors shared/definitions/reports.py. Tailwind steps: red-700, orange-500,
+	   amber-400, sky-600, neutral-500; washes the 100 steps; inks 700 (amber 800, neutral 600) */
+	--sev-critical: #c10007;
+	--sev-critical-wash: #ffe2e2;
+	--sev-critical-ink: #c10007;
+	--sev-high: #ff6900;
+	--sev-high-wash: #ffedd4;
+	--sev-high-ink: #ca3500;
+	--sev-medium: #ffb900;
+	--sev-medium-wash: #fef3c6;
+	--sev-medium-ink: #973c00;
+	--sev-low: #0084d1;
+	--sev-low-wash: #dff2fe;
+	--sev-low-ink: #0069a8;
+	--sev-info: #737373;
+	--sev-info-wash: #f5f5f5;
+	--sev-info-ink: #525252;
 
 	/* code, a reserved syntax ramp */
 	--code-surface: oklch(0.982 0.004 265);
@@ -151,22 +152,23 @@
 	--success-foreground: oklch(0.205 0 0);
 	--warning: oklch(0.82 0.14 90);
 	--warning-foreground: oklch(0.205 0 0);
-	/* severity, dark paper */
-	--sev-critical: #ff645f;
-	--sev-critical-wash: #3b1c1a;
-	--sev-critical-ink: #ff645f;
-	--sev-high: #f98942;
-	--sev-high-wash: #362014;
-	--sev-high-ink: #f98942;
-	--sev-medium: #eec651;
-	--sev-medium-wash: #312810;
-	--sev-medium-ink: #eec651;
-	--sev-low: #26b7d3;
-	--sev-low-wash: #11282d;
-	--sev-low-ink: #26b7d3;
-	--sev-info: #6f7f83;
-	--sev-info-wash: #1d2021;
-	--sev-info-ink: #85969a;
+	/* severity, dark paper. Tailwind steps: red-500, orange-400, amber-300, sky-400, neutral-500;
+	   inks the 400 steps; washes the ink at 12% over whatever surface holds the chip */
+	--sev-critical: #fb2c36;
+	--sev-critical-wash: color-mix(in oklab, var(--sev-critical-ink) 12%, transparent);
+	--sev-critical-ink: #ff6467;
+	--sev-high: #ff8904;
+	--sev-high-wash: color-mix(in oklab, var(--sev-high-ink) 12%, transparent);
+	--sev-high-ink: #ff8904;
+	--sev-medium: #ffd230;
+	--sev-medium-wash: color-mix(in oklab, var(--sev-medium-ink) 12%, transparent);
+	--sev-medium-ink: #ffd230;
+	--sev-low: #00bcff;
+	--sev-low-wash: color-mix(in oklab, var(--sev-low-ink) 12%, transparent);
+	--sev-low-ink: #00bcff;
+	--sev-info: #737373;
+	--sev-info-wash: color-mix(in oklab, var(--sev-info-ink) 12%, transparent);
+	--sev-info-ink: #a1a1a1;
 
 	/* code, dark well */
 	--code-surface: oklch(0.19 0.012 265);
