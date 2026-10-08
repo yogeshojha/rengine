@@ -99,7 +99,7 @@ def unrecognised_target(value: str) -> str:
     """Wording for a target value the scanner will not take."""
     shown = (value or "").strip()[:_MAX_ECHO]
     return _refusal(normalize_target_value(shown), shown) or (
-        f"Unrecognised target: {shown}. {TARGET_FORMAT_HINT}"
+        f'Unrecognised target "{shown}". {TARGET_FORMAT_HINT}'
     )
 
 

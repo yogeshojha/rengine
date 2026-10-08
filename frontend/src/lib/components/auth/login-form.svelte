@@ -4,7 +4,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
-	import { FieldGroup, Field, FieldLabel } from '$lib/components/ui/field/index.js';
+	import { FieldGroup, Field, FieldLabel, FieldError } from '$lib/components/ui/field/index.js';
 	import OtpInput from '$lib/components/onboarding/otp-input.svelte';
 
 	import { onMount } from 'svelte';
@@ -25,6 +25,7 @@
 	let username = $state('');
 	let password = $state('');
 	let error = $state('');
+	let missing = $state<{ username?: boolean; password?: boolean }>({});
 	let isLoading = $state(false);
 	let showPassword = $state(false);
 	let capsLock = $state(false);
@@ -58,6 +59,12 @@
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		error = '';
+		// inline, like every other form, instead of the browser's required bubble
+		missing = { username: !username.trim(), password: !password };
+		if (missing.username || missing.password) {
+			(missing.username ? usernameEl : passwordEl)?.focus();
+			return;
+		}
 		isLoading = true;
 
 		const result = await auth.login(username, password);
@@ -195,7 +202,7 @@
 				{/if}
 			</Card.Header>
 			<Card.Content>
-				<form onsubmit={handleSubmit}>
+				<form novalidate onsubmit={handleSubmit}>
 					<FieldGroup>
 						<Field>
 							<FieldLabel for="username">Username</FieldLabel>
@@ -208,9 +215,15 @@
 								autocorrect="off"
 								spellcheck={false}
 								required
+								aria-invalid={missing.username || undefined}
+								aria-describedby={missing.username ? 'username-error' : undefined}
 								bind:ref={usernameEl}
 								bind:value={username}
+								oninput={() => (missing.username = false)}
 							/>
+							{#if missing.username}
+								<FieldError id="username-error">Enter your username</FieldError>
+							{/if}
 						</Field>
 						<Field>
 							<FieldLabel for="password">Password</FieldLabel>
@@ -224,6 +237,9 @@
 									bind:value={password}
 									class="pr-10"
 									required
+									aria-invalid={missing.password || undefined}
+									aria-describedby={missing.password ? 'password-error' : undefined}
+									oninput={() => (missing.password = false)}
 									onkeydown={readCapsLock}
 									onkeyup={readCapsLock}
 									onblur={() => (capsLock = false)}
@@ -241,6 +257,9 @@
 									{/if}
 								</button>
 							</div>
+							{#if missing.password}
+								<FieldError id="password-error">Enter your password</FieldError>
+							{/if}
 							{#if capsLock}
 								<p class="text-xs text-warning" role="status">Caps Lock is on</p>
 							{/if}
