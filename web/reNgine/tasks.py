@@ -1681,7 +1681,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	cmd += ' -fr' if follow_redirect else ''
 	cmd += ' -ac' if auto_calibration else ''
 	cmd += f' -mc {mc}' if mc else ''
-	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	formatted_headers = ' '.join(f' -H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
 
@@ -1879,7 +1879,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		cmd_map['katana'] += f' -c {threads}'
 	if custom_headers:
 		# gau, waybackurls does not support custom headers
-		formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+		formatted_headers = ' '.join(f' -H "{header}"' for header in custom_headers)
 		cmd_map['gospider'] += formatted_headers
 		cmd_map['hakrawler'] += ';;'.join(header for header in custom_headers)
 		cmd_map['katana'] += formatted_headers
@@ -2481,7 +2481,7 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	cmd = 'nuclei -j'
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
-	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	formatted_headers = ' '.join(f' -H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
 	cmd += f' -l {input_path}'
@@ -2577,7 +2577,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -b {blind_xss_server}' if blind_xss_server else ''
 	cmd += f' --delay {delay}' if delay else ''
 	cmd += f' --timeout {timeout}' if timeout else ''
-	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	formatted_headers = ' '.join(f' -H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
 	cmd += f' --user-agent {user_agent}' if user_agent else ''
@@ -2703,7 +2703,7 @@ def crlfuzz_scan(self, urls=[], ctx={}, description=None):
 	cmd = 'crlfuzz -s'
 	cmd += f' -l {input_path}'
 	cmd += f' -x {proxy}' if proxy else ''
-	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	formatted_headers = ' '.join(f' -H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
 	cmd += f' -o {output_path}'
@@ -2904,7 +2904,7 @@ def http_crawl(
 	cmd += f' -cl -ct -rt -location -td -websocket -cname -asn -cdn -probe -random-agent'
 	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
-	formatted_headers = ' '.join(f'-H "{header}"' for header in custom_headers)
+	formatted_headers = ' '.join(f' -H "{header}"' for header in custom_headers)
 	if formatted_headers:
 		cmd += formatted_headers
 	cmd += f' -json'
