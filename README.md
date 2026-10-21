@@ -163,6 +163,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 * Identification of related domains and related TLDs for targets
 * Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain, etc.
 * You can now use local LLMs for Attack surface identification and vulnerability description (NEW: reNgine 2.1.0)
+* Named [OrcaRouter](https://www.orcarouter.ai) provider for GPT-powered reports and attack suggestions, with a live model catalog and server-side keys
 * BountyHub, a central hub to manage your hackerone targets
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
@@ -184,6 +185,44 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 <p align="center">
 You can also find the deep dive video on how to use and install reNgine from here <a href="https://www.youtube.com/watch?v=C6BFBxLmZIA">reNgine Deep Dive by HailBytes</a>
 </p>
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## AI providers
+
+reNgine generates vulnerability reports and attack suggestions with the provider
+you select in **Settings → LLM Toolkit**. Three providers are supported:
+
+* **OpenAI** – set an OpenAI API key in the API Vault.
+* **Ollama** – run models locally (default).
+* **[OrcaRouter](https://www.orcarouter.ai)** – a named, first-class provider.
+  OrcaRouter is an OpenAI-compatible AI gateway that routes many providers
+  behind one endpoint. Put an `sk-orca-...` key in **API Vault → OrcaRouter**
+  and pick a model from the dropdown; the list is read live from the OrcaRouter
+  model catalog, so it always reflects the models your key can actually call.
+
+  | Setting | Value |
+  | --- | --- |
+  | Provider | OrcaRouter |
+  | API base URL | `https://api.orcarouter.ai/v1` |
+  | Authentication origin | `https://www.orcarouter.ai` |
+  | API key prefix | `sk-orca-` |
+  | Recommended model | OrcaCyber Zero (`orcacyber-zero`) for authorized security teams |
+  | Fallback model | `orcarouter/fusion` |
+
+  The API key is stored server-side and is only ever shown masked. Requests go
+  from your reNgine instance directly to OrcaRouter with that key.
+
+  OrcaCyber Zero is the recommended default for authorized security work. It is
+  available to verified business workspaces, so the dropdown falls back to a
+  generally available model such as `orcarouter/fusion` until your workspace is
+  verified. If a stored model disappears from the catalog, reNgine clears the
+  stale selection and asks you to choose again instead of silently calling a
+  model that no longer exists.
+
+  It also runs gateway-level, zero-trust security for AI agents on the same
+  endpoint — screening every prompt/response and governing every tool call on a
+  default-deny basis, with no application code changes.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 

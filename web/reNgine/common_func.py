@@ -1035,6 +1035,17 @@ def get_open_ai_key():
 	return openai_key[0] if openai_key else None
 
 
+def get_orcarouter_api_key():
+	"""Return the OrcaRouter API key from the vault or the environment.
+
+	Stored keys take precedence; ``ORCAROUTER_API_KEY`` lets an operator
+	configure the deployment without persisting the secret in the database.
+	"""
+	from orcarouter.client import resolve_api_key
+	record = OrcaRouterAPIKey.objects.first()
+	return resolve_api_key(record.key if record else '')
+
+
 def get_netlas_key():
 	netlas_key = NetlasAPIKey.objects.all()
 	return netlas_key[0] if netlas_key else None

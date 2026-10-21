@@ -454,6 +454,26 @@ FOUR_OH_FOUR_URL = '/404/'
 
 
 ###############################################################################
+# ORCAROUTER PROVIDER DEFINITIONS
+###############################################################################
+# OrcaRouter is an OpenAI-compatible AI gateway. It is registered as a named
+# provider with its own origins, credential and model catalog. Inference and
+# model discovery live on the API origin; authentication lives on the auth
+# origin. Public defaults are overridable with ORCA_API_BASE_URL /
+# ORCA_AUTH_BASE_URL / ORCA_BASE_URL (see orcarouter/config.py).
+ORCAROUTER_PROVIDER = 'orcarouter'
+ORCAROUTER_PROVIDER_NAME = 'OrcaRouter'
+ORCAROUTER_API_BASE_URL = 'https://api.orcarouter.ai/v1'
+ORCAROUTER_AUTH_BASE_URL = 'https://www.orcarouter.ai'
+ORCAROUTER_HOME_URL = 'https://www.orcarouter.ai'
+ORCAROUTER_LOGO_URL = 'https://www.orcarouter.ai/orca-logo-classic.png'
+ORCAROUTER_CONSOLE_KEYS_URL = 'https://www.orcarouter.ai/console/api-keys'
+ORCAROUTER_KEY_PREFIX = 'sk-orca-'
+ORCAROUTER_DEFAULT_MODEL = 'orcacyber-zero'
+ORCAROUTER_FALLBACK_MODEL = 'orcarouter/fusion'
+
+
+###############################################################################
 # OLLAMA DEFINITIONS
 ###############################################################################
 OLLAMA_INSTANCE = 'http://ollama:11434'
