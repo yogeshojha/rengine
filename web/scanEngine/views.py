@@ -13,6 +13,17 @@ from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
 from reNgine.tasks import (run_command, send_discord_message, send_slack_message,send_lark_message, send_telegram_message)
+from reNgine.definitions import (
+    ORCAROUTER_API_BASE_URL,
+    ORCAROUTER_CONSOLE_KEYS_URL,
+    ORCAROUTER_DEFAULT_MODEL,
+    ORCAROUTER_FALLBACK_MODEL,
+    ORCAROUTER_HOME_URL,
+    ORCAROUTER_KEY_PREFIX,
+    ORCAROUTER_LOGO_URL,
+)
+from orcarouter.catalog import fetch_chat_catalog, pick_default_orcarouter_model, reconcile_selection
+from orcarouter.client import mask_key
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *
@@ -466,23 +477,26 @@ def tool_arsenal_section(request, slug):
 def llm_toolkit_section(request, slug):
     context = {}
     list_all_models_url = f'{OLLAMA_INSTANCE}/api/tags'
-    response = requests.get(list_all_models_url)
+    try:
+        response = requests.get(list_all_models_url, timeout=5)
+    except Exception:
+        response = None
     all_models = []
     selected_model = None
     all_models = DEFAULT_GPT_MODELS.copy()
-    if response.status_code == 200:
+    if response is not None and response.status_code == 200:
         models = response.json()
         ollama_models = models.get('models')
         date_format = "%Y-%m-%dT%H:%M:%S"
         for model in ollama_models:
-           all_models.append({**model, 
+           all_models.append({**model,
                 'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format),
                 'is_local': True,
             })
     # find selected model name from db
-    selected_model = OllamaSettings.objects.first()
-    if selected_model:
-        selected_model = {'selected_model': selected_model.selected_model}
+    selected_settings = OllamaSettings.objects.first()
+    if selected_settings:
+        selected_model = {'selected_model': selected_settings.selected_model}
     else:
         # use gpt3.5-turbo as default
         selected_model = {'selected_model': 'gpt-3.5-turbo'}
@@ -490,9 +504,37 @@ def llm_toolkit_section(request, slug):
         if model['name'] == selected_model['selected_model']:
             model['selected'] = True
     context['installed_models'] = all_models
+
+    # OrcaRouter provider: the dropdown is built from the real catalog served
+    # by GET /v1/models. The API key stays server-side; the browser only
+    # receives minimal model metadata.
+    orcarouter_key = get_orcarouter_api_key()
+    orcarouter_models = fetch_chat_catalog(orcarouter_key)
+    orcarouter_selected, cleared = reconcile_selection(
+        selected_model['selected_model'] if selected_settings and selected_settings.use_orcarouter else '',
+        orcarouter_models.models,
+    )
+    # A suggestion is shown but not persisted: only an explicit PUT stores a
+    # model, so the UI never implies a selection the backend does not have.
+    orcarouter_suggested = pick_default_orcarouter_model(orcarouter_models.models)
+    context['orcarouter_models'] = orcarouter_models.models
+    context['orcarouter_catalog'] = orcarouter_models
+    context['orcarouter_selected'] = orcarouter_selected
+    context['orcarouter_suggested'] = orcarouter_suggested
+    context['orcarouter_selection_cleared'] = cleared
+    context['orcarouter_secret_set'] = bool(orcarouter_key)
+    context['orcarouter_key_masked'] = mask_key(orcarouter_key)
+    context['orcarouter_enabled'] = bool(
+        selected_settings and selected_settings.use_orcarouter)
+    context['orcarouter_default_model'] = ORCAROUTER_DEFAULT_MODEL
+    context['orcarouter_fallback_model'] = ORCAROUTER_FALLBACK_MODEL
+    context['orcarouter_home_url'] = ORCAROUTER_HOME_URL
+    context['orcarouter_logo_url'] = ORCAROUTER_LOGO_URL
+
     # show error message for openai key, if any gpt is selected
     openai_key = get_open_ai_key()
-    if not openai_key and 'gpt' in selected_model['selected_model']:
+    if not openai_key and 'gpt' in selected_model['selected_model'] \
+            and not context['orcarouter_enabled']:
         context['openai_key_error'] = True
     return render(request, 'scanEngine/settings/llm_toolkit.html', context)
 
@@ -540,9 +582,32 @@ def api_vault(request, slug):
                 hackerone_api_key.save()
             else:
                 HackerOneAPIKey.objects.create(
-                    username=username_hackerone, 
+                    username=username_hackerone,
                     key=key_hackerone
                 )
+
+        # OrcaRouter provider credential. Supports update and explicit clear.
+        key_orcarouter = (request.POST.get('key_orcarouter') or '').strip()
+        clear_orcarouter = request.POST.get('clear_orcarouter')
+        if clear_orcarouter:
+            OrcaRouterAPIKey.objects.all().delete()
+            messages.add_message(
+                request, messages.INFO, 'OrcaRouter API Key cleared.')
+        elif key_orcarouter:
+            if not key_orcarouter.startswith(ORCAROUTER_KEY_PREFIX):
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    f'OrcaRouter API keys start with {ORCAROUTER_KEY_PREFIX}.')
+            else:
+                orcarouter_key = OrcaRouterAPIKey.objects.first()
+                if orcarouter_key:
+                    orcarouter_key.key = key_orcarouter
+                    orcarouter_key.save()
+                else:
+                    OrcaRouterAPIKey.objects.create(key=key_orcarouter)
+                messages.add_message(
+                    request, messages.INFO, 'OrcaRouter API Key updated.')
 
     openai_key = OpenAiAPIKey.objects.first()
     netlas_key = NetlasAPIKey.objects.first()
@@ -560,7 +625,20 @@ def api_vault(request, slug):
     context['chaos_key'] = chaos_key
     context['hackerone_key'] = hackerone_key
     context['hackerone_username'] = hackerone_username
-    
+
+    # The OrcaRouter key is never sent back to the browser. Only its presence
+    # and a masked preview are exposed.
+    orcarouter_key = OrcaRouterAPIKey.objects.first()
+    context['orcarouter_secret_set'] = bool(orcarouter_key)
+    context['orcarouter_key_masked'] = mask_key(
+        orcarouter_key.key) if orcarouter_key else ''
+    context['orcarouter_key_prefix'] = ORCAROUTER_KEY_PREFIX
+    context['orcarouter_default_model'] = ORCAROUTER_DEFAULT_MODEL
+    context['orcarouter_api_base_url'] = ORCAROUTER_API_BASE_URL
+    context['orcarouter_console_keys_url'] = ORCAROUTER_CONSOLE_KEYS_URL
+    context['orcarouter_home_url'] = ORCAROUTER_HOME_URL
+    context['orcarouter_logo_url'] = ORCAROUTER_LOGO_URL
+
     return render(request, 'scanEngine/settings/api.html', context)
 
 

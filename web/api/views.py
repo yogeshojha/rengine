@@ -24,9 +24,11 @@ from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.database_utils import *
-from reNgine.definitions import ABORTED_TASK
+from reNgine.definitions import ABORTED_TASK, ORCAROUTER_PROVIDER
 from reNgine.tasks import *
 from reNgine.llm import *
+from orcarouter.catalog import fetch_chat_catalog, model_ids, pick_default_orcarouter_model
+from orcarouter.client import mask_key
 from reNgine.utilities import is_safe_path
 from scanEngine.models import *
 from startScan.models import *
@@ -401,7 +403,8 @@ class OllamaManager(APIView):
 			OllamaSettings.objects.update_or_create(
 				defaults={
 					'selected_model': model_name,
-					'use_ollama': use_ollama
+					'use_ollama': use_ollama,
+					'use_orcarouter': False,
 				},
 				id=1
 			)
@@ -409,6 +412,87 @@ class OllamaManager(APIView):
 		except Exception as e:
 			response['error'] = str(e)
 		return Response(response)
+
+
+class OrcaRouterProvider(APIView):
+	"""Server-side surface for the named OrcaRouter provider.
+
+	``GET`` returns the live model catalog filtered for the requested
+	capability. The API key stays on the server; the response carries only
+	minimal model metadata. ``PUT`` persists the selected OrcaRouter model
+	after validating it against the same catalog, so a stale or hand-written
+	value can never be stored.
+	"""
+
+	permission_classes = [HasPermission]
+	permission_required = PERM_MODIFY_SYSTEM_CONFIGURATIONS
+
+	def _catalog(self, capability):
+		return fetch_chat_catalog(get_orcarouter_api_key(), capability)
+
+	def get(self, request):
+		capability = request.query_params.get('capability', 'chat')
+		if capability != 'chat':
+			return Response({
+				'status': False,
+				'error': 'Unsupported capability for this entry point.',
+			})
+		catalog = self._catalog(capability)
+		settings = OllamaSettings.objects.first()
+		selected = settings.selected_model if settings else ''
+		stored_key = OrcaRouterAPIKey.objects.first()
+		response = {
+			'status': True,
+			'models': catalog.models,
+			'source': catalog.source,
+			'degraded': catalog.degraded,
+			'error': catalog.error,
+			'capability': catalog.capability,
+			'secret_set': bool(stored_key),
+			'key_masked': mask_key(stored_key.key) if stored_key else '',
+			'selected': selected if selected in model_ids(catalog.models) else '',
+			'default_model': pick_default_orcarouter_model(catalog.models),
+		}
+		return Response(response)
+
+	def put(self, request):
+		model_name = request.query_params.get('model', '').strip()
+		catalog = self._catalog('chat')
+		if not model_name:
+			return Response({'status': False, 'error': 'Missing model.'})
+		if model_name not in model_ids(catalog.models):
+			return Response({
+				'status': False,
+				'error': 'Selected model is not available in the OrcaRouter catalog.',
+				'models': catalog.models,
+			})
+		try:
+			OllamaSettings.objects.update_or_create(
+				defaults={
+					'selected_model': model_name,
+					'use_ollama': False,
+					'use_orcarouter': True,
+				},
+				id=1
+			)
+		except Exception as e:
+			return Response({'status': False, 'error': str(e)})
+		return Response({
+			'status': True,
+			'selected_model': model_name,
+			'provider': ORCAROUTER_PROVIDER,
+		})
+
+	def delete(self, request):
+		"""Disable the OrcaRouter provider without touching other providers."""
+		try:
+			OllamaSettings.objects.update_or_create(
+				defaults={'use_orcarouter': False},
+				id=1
+			)
+		except Exception as e:
+			return Response({'status': False, 'error': str(e)})
+		return Response({'status': True, 'provider': ORCAROUTER_PROVIDER, 'enabled': False})
 
 
 class GPTAttackSuggestion(APIView):

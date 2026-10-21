@@ -32,9 +32,31 @@ class OllamaSettings(models.Model):
 	id = models.AutoField(primary_key=True)
 	selected_model = models.CharField(max_length=500)
 	use_ollama = models.BooleanField(default=True)
+	# When True, both LLM entry points route through the named OrcaRouter
+	# provider instead of OpenAI or the local Ollama instance.
+	use_orcarouter = models.BooleanField(default=False)
 
 	def __str__(self):
 		return self.selected_model
+
+
+class OrcaRouterAPIKey(models.Model):
+	"""API key for the named OrcaRouter provider.
+
+	Kept in its own table so the credential has an independent lifecycle from
+	the OpenAI key. The key is never echoed back to the browser; views render
+	only ``masked_key``.
+	"""
+	id = models.AutoField(primary_key=True)
+	key = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.masked_key
+
+	@property
+	def masked_key(self):
+		from orcarouter.client import mask_key
+		return mask_key(self.key)
 
 
 class NetlasAPIKey(models.Model):

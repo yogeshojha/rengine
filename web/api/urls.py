@@ -185,6 +185,10 @@ urlpatterns = [
         OllamaManager.as_view(),
         name='ollama_manager'),
     path(
+        'tool/orcarouter/',
+        OrcaRouterProvider.as_view(),
+        name='orcarouter_provider'),
+    path(
         'rengine/update/',
         RengineUpdateCheck.as_view(),
         name='check_rengine_update'),

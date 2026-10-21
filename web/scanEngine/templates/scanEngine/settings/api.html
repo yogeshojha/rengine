@@ -26,6 +26,48 @@ API Vault
           {% csrf_token %}
           <div class="col-12">
             <div class="p-sm-3">
+              <div class="mb-3" id="orcarouter-provider">
+                <label for="key_orcarouter" class="form-label d-flex align-items-center">
+                  <img src="{{orcarouter_logo_url}}" alt="OrcaRouter logo" width="20" height="20" class="me-2">
+                  OrcaRouter
+                  <a href="{{orcarouter_home_url}}" target="_blank" rel="noopener noreferrer" class="ms-2 text-muted small">orcarouter.ai</a>
+                </label>
+                <p class="text-muted">
+                  OrcaRouter is an OpenAI-compatible AI gateway that routes many providers behind one endpoint
+                  (<code>{{orcarouter_api_base_url}}</code>). It is a named provider with its own key and its own
+                  model catalog; it is never used unless selected in the LLM Toolkit.
+                  It also runs gateway-level, zero-trust security for AI agents on the same endpoint &mdash; screening
+                  every prompt/response and governing every tool call on a default-deny basis, with no application
+                  code changes. For authorized security teams, the recommended model is OrcaCyber Zero
+                  (<code>{{orcarouter_default_model}}</code>); access to it requires business verification.
+                </p>
+                {% if orcarouter_secret_set %}
+                  <div class="alert alert-info border-0 py-2" role="alert" id="orcarouter-key-status">
+                    An OrcaRouter API key is configured (<code>{{orcarouter_key_masked}}</code>). Enter a new key to replace it,
+                    or clear it below. The stored key is never displayed.
+                  </div>
+                  <div class="flex-grow-1 position-relative">
+                    <input class="form-control" type="password" id="key_orcarouter" name="key_orcarouter" placeholder="Enter a new OrcaRouter key to replace the stored one" autocomplete="off">
+                    <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                      <span class="password-eye"></span>
+                    </div>
+                  </div>
+                  <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="clear_orcarouter" name="clear_orcarouter" value="1">
+                    <label class="form-check-label" for="clear_orcarouter">Clear the stored OrcaRouter API key</label>
+                  </div>
+                {% else %}
+                  <div class="flex-grow-1 position-relative">
+                    <input class="form-control" type="password" id="key_orcarouter" name="key_orcarouter" placeholder="Enter OrcaRouter Key ({{orcarouter_key_prefix}}...)" autocomplete="off">
+                    <div class="position-absolute top-50 end-0 translate-middle-y pe-2" style="cursor: pointer;" data-password="false">
+                      <span class="password-eye"></span>
+                    </div>
+                  </div>
+                {% endif %}
+                <span class="text-muted float-end optional-text mt-2">This is optional. Create or manage your API key in the
+                  <a href="{{orcarouter_console_keys_url}}" target="_blank" rel="noopener noreferrer">OrcaRouter console</a>.
+                  Keys start with <code>{{orcarouter_key_prefix}}</code>.</span>
+              </div>
               <div class="mb-3">
                 <label for="key_openai" class="form-label">OpenAI</label>
                 <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using GPT.</p>
