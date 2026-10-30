@@ -28,6 +28,7 @@ interface ScanFilterParams {
 	target_id?: string | string[];
 	status?: ScanStatus[];
 	engine?: string[];
+	tag?: string[];
 	search?: string;
 	sort_by?: ScanSortKey;
 	sort_dir?: ScanSortDir;
@@ -50,6 +51,7 @@ function buildScanQuery(projectId: string, params: ScanFilterParams): URLSearchP
 	for (const id of [params.target_id ?? []].flat()) sp.append('target_id', id);
 	for (const s of params.status ?? []) sp.append('status', s);
 	for (const e of params.engine ?? []) sp.append('engine', e);
+	for (const t of params.tag ?? []) sp.append('tag', t);
 	if (params.search?.trim()) sp.append('search', params.search.trim());
 	if (params.sort_by) sp.append('sort_by', params.sort_by);
 	if (params.sort_dir) sp.append('sort_dir', params.sort_dir);

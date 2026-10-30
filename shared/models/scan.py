@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
@@ -16,6 +16,7 @@ from shared.definitions.rescan import (
 )
 from shared.definitions.surface import SURFACE_ORDER
 from shared.enums.scan import ScanScope, ScanStatus
+from shared.models.scan_tag import MAX_TAGS_PER_CHANGE, ScanTagSummary, scan_tag_names
 from shared.services.scan_resolve import ResolvedScanConfig
 from shared.utils.datetime import utc_now
 
@@ -209,6 +210,12 @@ class ScanCreate(BaseModel):
     parent_scan_id: uuid.UUID | None = None
     run_group_id: uuid.UUID | None = None
     dimension: str | None = Field(default=None, max_length=32)
+    tags: list[str] = Field(default_factory=list, max_length=MAX_TAGS_PER_CHANGE)
+
+    @field_validator("tags")
+    @classmethod
+    def _tags(cls, v: list[str]) -> list[str]:
+        return scan_tag_names(v)
 
     @model_validator(mode="after")
     def _require_target(self):
@@ -288,6 +295,12 @@ class ScanBatchCreate(BaseModel):
     overrides: dict[str, dict] = Field(default_factory=dict)
     intensity: str | None = None
     new_checks: bool | None = None
+    tags: list[str] = Field(default_factory=list, max_length=MAX_TAGS_PER_CHANGE)
+
+    @field_validator("tags")
+    @classmethod
+    def _tags(cls, v: list[str]) -> list[str]:
+        return scan_tag_names(v)
 
     @model_validator(mode="after")
     def _require_targets(self):
@@ -383,6 +396,7 @@ class ScanRead(BaseModel):
     recheck: RecheckTally | None = None
     findings: ScanFindings | None = None
     web_assets_ok: int | None = None
+    tags: list[ScanTagSummary] = []
     target_runs: int | None = None
     queue_position: int | None = None
     source_ip: SourceIpRecord | None = None
@@ -438,6 +452,7 @@ class ScanStats(BaseModel):
     total: int
     by_status: ScanStatusCounts
     engines: list[ScanFacet] = []
+    tags: list[ScanFacet] = []
 
 
 FocusedRunRead.model_rebuild()

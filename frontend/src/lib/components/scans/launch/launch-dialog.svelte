@@ -43,6 +43,7 @@
 	import LaunchContextField from './launch-context-field.svelte';
 	import LaunchContextForm from './launch-context-form.svelte';
 	import SaveEngineDialog from './save-engine-dialog.svelte';
+	import ScanTagList from '../scan-tag-list.svelte';
 
 	interface Props {
 		open: boolean;
@@ -145,7 +146,8 @@
 			launch.engineId,
 			launch.patch,
 			launch.intensity,
-			launch.contextId
+			launch.contextId,
+			launch.tags
 		]);
 	let dirty = $derived(
 		open &&
@@ -477,6 +479,14 @@
 									onRemove={(key) => launch.removeTarget(key)}
 								/>
 							{/if}
+						</div>
+						<div class="flex flex-col gap-2">
+							<Label>Tags</Label>
+							<ScanTagList
+								tags={launch.tags}
+								onToggle={(name, on) => launch.toggleTag(name, on)}
+								disabled={launching}
+							/>
 						</div>
 					{/if}
 

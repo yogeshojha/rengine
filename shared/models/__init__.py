@@ -54,6 +54,7 @@ from shared.models.scan_delta import ScanDelta, ScanRetired, ScanRevision
 from shared.models.scan_engine import ScanEngine
 from shared.models.scan_schedule import ScanSchedule
 from shared.models.scan_surface import ScanSurfaceItem
+from shared.models.scan_tag import ScanTag, ScanTagLink
 from shared.models.secret import Secret, SecretCoverage, SecretSighting
 from shared.models.software import NvdCpeMatch, NvdCve, SoftwareCve
 from shared.models.subdomain import Subdomain
@@ -160,6 +161,8 @@ __all__ = [
     "ScanRevision",
     "ScanSchedule",
     "ScanSurfaceItem",
+    "ScanTag",
+    "ScanTagLink",
     "Secret",
     "SecretCoverage",
     "SecretSighting",

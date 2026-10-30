@@ -3,6 +3,8 @@
 	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import TagIcon from '@lucide/svelte/icons/tag';
+	import ScanTagPicker from './scan-tag-picker.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
@@ -18,6 +20,9 @@
 		onCancel: () => void;
 		onDelete: () => void;
 		onClear: () => void;
+		tagsOnAll: string[];
+		tagsOnSome: string[];
+		onTag: (name: string, on: boolean) => void;
 	}
 
 	let {
@@ -29,7 +34,10 @@
 		onRescan,
 		onCancel,
 		onDelete,
-		onClear
+		onClear,
+		tagsOnAll,
+		tagsOnSome,
+		onTag
 	}: Props = $props();
 </script>
 
@@ -57,6 +65,15 @@
 			{/snippet}
 		</Hint>
 	{/if}
+
+	<ScanTagPicker applied={tagsOnAll} partial={tagsOnSome} onToggle={onTag}>
+		{#snippet trigger(props)}
+			<Button {...props} variant="ghost" size="sm" class="font-medium">
+				<TagIcon class="h-3.5 w-3.5 text-muted-foreground" />
+				Tag
+			</Button>
+		{/snippet}
+	</ScanTagPicker>
 
 	{#if targetCount > 0}
 		<Button variant="ghost" size="sm" class="font-medium" onclick={onRescan}>

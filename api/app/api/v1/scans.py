@@ -45,6 +45,7 @@ from shared.models.scan import (
 from shared.models.scan_activity import ScanActivityRead
 from shared.models.scan_command import ScanCommandDetail, ScanCommandRead
 from shared.models.scan_preview import ScanPreview
+from shared.models.scan_tag import fold_scan_tag
 
 router = APIRouter(
     prefix="/scans",
@@ -172,6 +173,9 @@ async def list_scans(
     latest: Annotated[
         bool, Query(description="The newest matching run of each target")
     ] = False,
+    tag: Annotated[
+        list[str] | None, Query(description="Runs with any of these tags")
+    ] = None,
 ):
     if added is not None:
         await service.prepare_growth(project_id, target_id)
@@ -190,6 +194,7 @@ async def list_scans(
         started_from=started_from,
         started_to=started_to,
         latest=latest,
+        tags=[fold_scan_tag(t) for t in tag if t.strip()] if tag else None,
     )
     page = await paginate(
         session,

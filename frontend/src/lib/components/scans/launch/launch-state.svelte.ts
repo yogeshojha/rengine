@@ -62,6 +62,7 @@ export class LaunchState {
 	intensity = $state<Intensity | null>(null);
 	contextId = $state<string>(SELECT_NONE);
 	newChecks = $state<boolean | null>(null);
+	tags = $state<string[]>([]);
 	private savedQuick: { stages: StageOverrides; intensity: Intensity | null } | null = null;
 
 	readonly catalog = $derived(engineCatalogStore.catalog);
@@ -281,6 +282,11 @@ export class LaunchState {
 		this.targets = [...this.targets, chip];
 	}
 
+	toggleTag(name: string, on: boolean) {
+		this.tags = this.tags.filter((t) => t !== name);
+		if (on) this.tags.push(name);
+	}
+
 	removeTarget(key: string) {
 		this.targets = this.targets.filter((t) => t.key !== key);
 	}
@@ -304,7 +310,8 @@ export class LaunchState {
 			target_values: this.targets.filter((t) => !t.id).map((t) => t.value),
 			overrides: engine ? {} : this.overrides,
 			intensity: engine ? null : this.intensity,
-			new_checks: this.vulnerabilitiesOn ? this.newChecks : null
+			new_checks: this.vulnerabilitiesOn ? this.newChecks : null,
+			tags: this.tags
 		};
 	}
 
@@ -318,5 +325,6 @@ export class LaunchState {
 		this.intensity = null;
 		this.contextId = SELECT_NONE;
 		this.newChecks = null;
+		this.tags = [];
 	}
 }

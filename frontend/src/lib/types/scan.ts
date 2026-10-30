@@ -181,6 +181,7 @@ export interface ScanRead {
 	recheck: RecheckTally | null;
 	findings?: ScanFindings | null;
 	web_assets_ok?: number | null;
+	tags?: ScanTagSummary[];
 	target_runs?: number | null;
 	queue_position?: number | null;
 	source_ip?: SourceIpRecord | null;
@@ -198,6 +199,22 @@ export interface SourceIpCheck {
 export interface SourceIpRecord {
 	state: SourceIpState;
 	checks: SourceIpCheck[];
+}
+
+export const MAX_SCAN_TAG_LENGTH = 50;
+
+export interface ScanTagSummary {
+	id: string;
+	name: string;
+}
+
+export interface ScanTagRead extends ScanTagSummary {
+	scan_count: number;
+}
+
+export interface ScanTagAssignment {
+	scan_id: string;
+	tags: ScanTagSummary[];
 }
 
 export interface ScanFindings {
@@ -246,6 +263,7 @@ export interface ScanCreate {
 	overrides?: StageOverrides;
 	intensity?: string | null;
 	new_checks?: boolean | null;
+	tags?: string[];
 }
 
 export const MAX_SCAN_BATCH = 500;
@@ -258,6 +276,7 @@ export interface ScanBatchCreate {
 	overrides?: StageOverrides;
 	intensity?: string | null;
 	new_checks?: boolean | null;
+	tags?: string[];
 }
 
 export const PREVIEW_TOOL_STATUSES = [
@@ -348,6 +367,7 @@ export interface ScanStats {
 	total: number;
 	by_status: ScanStatusCounts;
 	engines: ScanFacet[];
+	tags: ScanFacet[];
 }
 
 export interface ScanPreview {

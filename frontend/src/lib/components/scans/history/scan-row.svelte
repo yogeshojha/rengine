@@ -51,6 +51,7 @@
 		onDelete: () => void;
 		onJump: (scanId: string) => void;
 		onChanged: () => void;
+		onTagFilter?: (name: string) => void;
 	}
 
 	let {
@@ -66,6 +67,7 @@
 		nested = false,
 		earlierOpen = false,
 		onEarlier,
+		onTagFilter,
 		onToggle,
 		onSelect,
 		onOpen,
@@ -115,7 +117,16 @@
 			/>
 		</div>
 		<div class={COL.target} role="cell">
-			<TargetCell {scan} {showTarget} {trend} {now} {earlierOpen} {onEarlier} {onJump} />
+			<TargetCell
+				{scan}
+				{showTarget}
+				{trend}
+				{now}
+				{earlierOpen}
+				{onEarlier}
+				{onJump}
+				{onTagFilter}
+			/>
 		</div>
 		<div class={COL.status} role="cell"><StatusCell {scan} /></div>
 		<div class={COL.findings} role="cell">

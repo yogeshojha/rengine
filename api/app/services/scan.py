@@ -33,6 +33,7 @@ from app.services import scan_deltas as stored_deltas
 from app.services.proxy import ProxyService
 from app.services.scan_context import ScanContextService
 from app.services.scan_engine import ScanEngineService, stage_effects
+from app.services.scan_tags import ScanTagService
 from app.services.target import TargetService
 from shared.definitions.activity import cancelled_reason, run_paused
 from shared.definitions.compare import Tone
@@ -88,6 +89,7 @@ from shared.models.scan_preview import (
     PreviewToolStatus,
     ScanPreview,
 )
+from shared.models.scan_tag import ScanTag, ScanTagLink
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
@@ -548,6 +550,7 @@ class ScanService:
         self.session.add(scan)
         await self.session.commit()
         await self.session.refresh(scan)
+        await self._tag([scan], project_id, data.tags, created_by)
 
         if engine.id is not None:
             await self.engine_service.touch(engine.id, project_id)
@@ -593,6 +596,7 @@ class ScanService:
 
         logger.info("Creating %d scans for engine=%s", len(scans), engine.id)
         await self.session.commit()
+        await self._tag(scans, project_id, data.tags, created_by)
 
         if engine.id is not None:
             await self.engine_service.touch(engine.id, project_id)
@@ -603,6 +607,14 @@ class ScanService:
 
         await self._dispatch_batch(scans)
         return [self._to_read(scan) for scan in scans]
+
+    async def _tag(
+        self, scans: list[Scan], project_id: UUID, names: list[str], user_id: UUID
+    ) -> None:
+        if names and scans:
+            await ScanTagService(self.session).change(
+                project_id, [s.id for s in scans], names, [], user_id
+            )
 
     def _dispatch_scan(self, scan: Scan) -> None:
         dispatch_scan_run(str(scan.id), scan.run_epoch)
@@ -677,6 +689,7 @@ class ScanService:
         started_from: datetime | None = None,
         started_to: datetime | None = None,
         latest: bool = False,
+        tags: list[str] | None = None,
     ) -> Select:
         query = select(Scan).where(
             Scan.project_id == project_id,
@@ -719,6 +732,14 @@ class ScanService:
             query = query.where(grew if added else not_(grew))
         if target_ids:
             query = query.where(Scan.target_id.in_(target_ids))
+        if tags:
+            query = query.where(
+                Scan.id.in_(
+                    select(ScanTagLink.scan_id)
+                    .join(ScanTag, ScanTag.id == ScanTagLink.tag_id)
+                    .where(ScanTag.project_id == project_id, ScanTag.name.in_(tags))
+                )
+            )
         if search and search.strip():
             term = f"%{search.strip().lower()}%"
             query = query.join(Target, Scan.target_id == Target.id).where(
@@ -895,11 +916,22 @@ class ScanService:
             )
         ).all()
         engines = [ScanFacet(name=name, count=n) for name, n in engine_rows if name]
+        tag_rows = (
+            await self.session.execute(
+                select(ScanTag.name, func.count())
+                .join(ScanTagLink, ScanTagLink.tag_id == ScanTag.id)
+                .join(Scan, Scan.id == ScanTagLink.scan_id)
+                .where(*conds)
+                .group_by(ScanTag.name)
+                .order_by(ScanTag.name)
+            )
+        ).all()
 
         return ScanStats(
             total=total,
             by_status=ScanStatusCounts(**counts),
             engines=engines,
+            tags=[ScanFacet(name=name, count=n) for name, n in tag_rows],
         )
 
     async def get(self, id: UUID, project_id: UUID) -> ScanRead:
@@ -925,6 +957,7 @@ class ScanService:
         )
         findings = await self.finding_counts(scan_ids)
         ok = await self.ok_counts(scan_ids)
+        tags = await ScanTagService(self.session).summaries(scan_ids)
         queued = await self.queue_positions(
             [i.id for i in items if i.status == ScanStatus.PENDING.value]
         )
@@ -932,6 +965,7 @@ class ScanService:
             i.queue_position = queued.get(i.id)
             i.findings = findings.get(i.id)
             i.web_assets_ok = ok.get(i.id)
+            i.tags = tags.get(i.id, [])
             i.new_subdomains = new_counts.get(i.id, 0)
             i.gone_subdomains = gone_counts.get(i.id, 0)
             i.prev_subdomains_found = prev_counts.get(i.id)

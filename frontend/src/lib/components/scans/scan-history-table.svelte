@@ -4,6 +4,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import Plus from '@lucide/svelte/icons/plus';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import X from '@lucide/svelte/icons/x';
@@ -207,6 +208,23 @@
 	});
 	let allRows = $derived(visible.map((v) => v.scan));
 	let selectedScans = $derived(allRows.filter((s) => selected.has(s.id)));
+	let selectionTags = $derived.by(() => {
+		const counts: Record<string, number> = {};
+		for (const s of selectedScans)
+			for (const t of s.tags ?? []) counts[t.name] = (counts[t.name] ?? 0) + 1;
+		const all: string[] = [];
+		const some: string[] = [];
+		for (const [name, n] of Object.entries(counts))
+			(n === selectedScans.length ? all : some).push(name);
+		return { all, some };
+	});
+
+	async function tagSelection(name: string, on: boolean) {
+		const ids = selectedScans.map((s) => s.id);
+		const ok = await scansStore.tagMany(ids, on ? [name] : [], on ? [] : [name]);
+		if (!ok) toast.error(scansStore.error ?? 'Tags not saved');
+	}
+
 	let selectedLive = $derived(selectedScans.filter((s) => isOpenStatus(s.status)).length);
 	let selectedTargets = $derived([...new Set(selectedScans.map((s) => s.target_id))]);
 	let pair = $derived(eligibility(selectedScans));
@@ -241,6 +259,9 @@
 
 	let activeViews = $derived(
 		SAVED_VIEWS.filter((v) => hasToken(queryText, v.token)).map((v) => v.token)
+	);
+	let tagCount = $derived(
+		(scansStore.stats?.tags ?? []).filter((t) => hasToken(queryText, `tag:${quote(t.name)}`)).length
 	);
 	let engineCount = $derived(
 		(scansStore.stats?.engines ?? []).filter((e) => hasToken(queryText, `engine:${quote(e.name)}`))
@@ -678,6 +699,42 @@
 				{/if}
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
+				{#if scansStore.stats?.tags?.length}
+					<DropdownMenu.Root>
+						<DropdownMenu.Trigger>
+							{#snippet child({ props })}
+								<Button
+									{...props}
+									variant="outline"
+									class={tagCount ? 'border-primary/50 bg-primary/5' : ''}
+									aria-label={tagCount ? `Tag, ${tagCount} selected` : 'Tag'}
+								>
+									Tag
+									{#if tagCount}
+										<Badge variant="secondary" class="h-5 px-1.5 text-xs">{tagCount}</Badge>
+									{/if}
+								</Button>
+							{/snippet}
+						</DropdownMenu.Trigger>
+						<DropdownMenu.Content align="end" class="max-h-none w-56 overflow-visible p-0">
+							<ScrollArea class="max-h-72">
+								<div class="p-1">
+									{#each scansStore.stats.tags as t (t.name)}
+										{@const token = `tag:${quote(t.name)}`}
+										<DropdownMenu.CheckboxItem
+											checked={hasToken(queryText, token)}
+											onCheckedChange={() => toggleToken(token)}
+											closeOnSelect={false}
+										>
+											<span class="flex-1 truncate">{t.name}</span>
+											<span class="font-mono text-2xs text-muted-foreground">{t.count}</span>
+										</DropdownMenu.CheckboxItem>
+									{/each}
+								</div>
+							</ScrollArea>
+						</DropdownMenu.Content>
+					</DropdownMenu.Root>
+				{/if}
 				{#if scansStore.stats?.engines?.length}
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger>
@@ -919,6 +976,7 @@
 						selected={selected.has(v.scan.id)}
 						earlierOpen={!!earlier[v.scan.id]}
 						onEarlier={latest && !v.nested ? () => toggleEarlier(v.scan) : undefined}
+						onTagFilter={(name) => toggleToken(`tag:${quote(name)}`)}
 						onToggle={() => toggleExpand(v.scan.id)}
 						onSelect={() =>
 							selected.has(v.scan.id) ? selected.delete(v.scan.id) : selected.add(v.scan.id)}
@@ -1009,6 +1067,9 @@
 	onCancel={() => (bulkCancelOpen = true)}
 	onDelete={() => (bulkDeleteOpen = true)}
 	onClear={() => selected.clear()}
+	tagsOnAll={selectionTags.all}
+	tagsOnSome={selectionTags.some}
+	onTag={tagSelection}
 />
 
 <ConfirmDialog

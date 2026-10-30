@@ -1,7 +1,7 @@
 import { SCAN_STATUSES, type ScanStatus } from '$lib/types/scan';
 import { ACTIONABLE_SEVERITIES } from '$lib/config/vulnerabilities';
 
-const SCAN_QUERY_FIELDS = ['target', 'engine', 'status', 'severity', 'is'] as const;
+const SCAN_QUERY_FIELDS = ['target', 'engine', 'tag', 'status', 'severity', 'is'] as const;
 export const SCAN_QUERY_FLAGS = ['partial', 'added'] as const;
 type Flag = (typeof SCAN_QUERY_FLAGS)[number];
 
@@ -16,6 +16,7 @@ export interface ParsedScanQuery {
 	tokens: ScanQueryToken[];
 	search: string;
 	engines: string[];
+	tags: string[];
 	statuses: ScanStatus[];
 	severities: string[];
 	flags: Partial<Record<Flag, boolean>>;
@@ -47,6 +48,7 @@ export function parseScanQuery(
 		tokens: [],
 		search: '',
 		engines: [],
+		tags: [],
 		statuses: [],
 		severities: [],
 		flags: {},
@@ -66,6 +68,9 @@ export function parseScanQuery(
 				break;
 			case 'engine':
 				parsed.engines.push(t.value);
+				break;
+			case 'tag':
+				parsed.tags.push(t.value);
 				break;
 			case 'status':
 				if (!(SCAN_STATUSES as readonly string[]).includes(v))

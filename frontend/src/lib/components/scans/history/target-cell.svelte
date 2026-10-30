@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { REVEAL_SM } from '$lib/components/scans/results/table/columns';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import TagIcon from '@lucide/svelte/icons/tag';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import { STALE_DAYS } from '$lib/config/dashboard';
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
@@ -19,9 +20,19 @@
 		earlierOpen?: boolean;
 		onEarlier?: () => void;
 		onJump: (scanId: string) => void;
+		onTagFilter?: (name: string) => void;
 	}
 
-	let { scan, showTarget, trend, now, earlierOpen = false, onEarlier, onJump }: Props = $props();
+	let {
+		scan,
+		showTarget,
+		trend,
+		now,
+		earlierOpen = false,
+		onEarlier,
+		onJump,
+		onTagFilter
+	}: Props = $props();
 
 	let focused = $derived(scan.scope === 'focused');
 	let schedule = $derived(
@@ -88,6 +99,21 @@
 			{#if scan.rescans && scan.rescans.total > 0}
 				<span>{plural(scan.rescans.total, 'rescan')}</span>
 			{/if}
+			{#each scan.tags ?? [] as tag (tag.id)}
+				<button
+					type="button"
+					class="inline-flex max-w-40 items-center gap-0.5 rounded border border-border/70 px-1 text-foreground/80 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none"
+					disabled={!onTagFilter}
+					aria-label="Filter by tag {tag.name}"
+					onclick={(e) => {
+						e.stopPropagation();
+						onTagFilter?.(tag.name);
+					}}
+				>
+					<TagIcon class="size-2.5 shrink-0 text-muted-foreground" />
+					<span class="truncate">{tag.name}</span>
+				</button>
+			{/each}
 		</div>
 	</div>
 	{#if showTarget && trend}

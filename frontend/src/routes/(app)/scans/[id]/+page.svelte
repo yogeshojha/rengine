@@ -53,6 +53,8 @@
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import ScanOverview from '$lib/components/scans/results/scan-overview.svelte';
 	import SourceIp from '$lib/components/scans/source-ip.svelte';
+	import ScanTagList from '$lib/components/scans/scan-tag-list.svelte';
+	import { scanTagsApi } from '$lib/api/scan-tags';
 	import MetaLine from '$lib/components/meta-line.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
@@ -681,13 +683,35 @@
 		}, 600);
 	}
 
+	let tagging = $state(false);
+	let tagNames = $derived((scan?.tags ?? []).map((t) => t.name));
+
+	async function toggleTag(name: string, on: boolean) {
+		const project = projectsStore.activeProject;
+		if (!scan || !project || tagging) return;
+		tagging = true;
+		try {
+			const [assigned] = await scanTagsApi.assign(
+				project.id,
+				[scan.id],
+				on ? [name] : [],
+				on ? [] : [name]
+			);
+			if (assigned && scan.id === assigned.scan_id) scan = { ...scan, tags: assigned.tags };
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Tags not saved');
+		} finally {
+			tagging = false;
+		}
+	}
+
 	async function pause() {
 		if (!scan || pausing) return;
 		pausing = true;
 		const updated = await liveScans.pause(scan);
 		pausing = false;
 		if (updated) {
-			scan = updated;
+			scan = { ...updated, tags: scan?.tags ?? updated.tags };
 			toast.success('Scan paused');
 			load(true);
 		} else toast.error('Scan not paused');
@@ -699,7 +723,7 @@
 		const updated = await liveScans.resume(scan);
 		resuming = false;
 		if (updated) {
-			scan = updated;
+			scan = { ...updated, tags: scan?.tags ?? updated.tags };
 			toast.success('Scan resumed');
 			load(true);
 		} else toast.error('Scan not resumed');
@@ -913,6 +937,9 @@
 							</span>
 						{/if}
 					</MetaLine>
+					<div class="mt-2">
+						<ScanTagList tags={tagNames} onToggle={toggleTag} disabled={tagging} linked />
+					</div>
 				</div>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">

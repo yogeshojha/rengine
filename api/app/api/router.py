@@ -41,6 +41,7 @@ from app.api.v1 import (
     scan_contexts,
     scan_engines,
     scan_schedules,
+    scan_tags,
     scans,
     secrets,
     software,
@@ -80,6 +81,7 @@ router.include_router(scan_engines.router)
 router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)
 router.include_router(scans.router)
+router.include_router(scan_tags.router)
 router.include_router(subdomains.router)
 router.include_router(domain_posture.router)
 router.include_router(lookalikes.router)

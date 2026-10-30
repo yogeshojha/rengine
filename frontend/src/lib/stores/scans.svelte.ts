@@ -1,3 +1,4 @@
+import { scanTagsApi } from '$lib/api/scan-tags';
 import { scansApi } from '$lib/api/scans';
 import type {
 	ScanBatchCreate,
@@ -118,6 +119,7 @@ function createScansStore() {
 					? q.statuses
 					: undefined,
 			engine: q.engines.length ? q.engines : undefined,
+			tag: q.tags.length ? q.tags : undefined,
 			search: q.search || undefined,
 			severity: q.severities.length ? q.severities : undefined,
 			short: q.flags.partial ?? null,
@@ -484,6 +486,23 @@ function createScansStore() {
 				return true;
 			} catch (e) {
 				error = e instanceof Error ? e.message : 'Scan not deleted';
+				return false;
+			}
+		},
+
+		async tagMany(ids: string[], add: string[], remove: string[]): Promise<boolean> {
+			const projectId = filters.projectId;
+			if (!projectId || !ids.length) return false;
+			try {
+				const result = await scanTagsApi.assign(projectId, ids, add, remove);
+				for (const a of result) {
+					const i = scans.findIndex((s) => s.id === a.scan_id);
+					if (i !== -1) scans[i] = { ...scans[i], tags: a.tags };
+				}
+				fetchStats();
+				return true;
+			} catch (e) {
+				error = e instanceof Error ? e.message : 'Tags not saved';
 				return false;
 			}
 		},
