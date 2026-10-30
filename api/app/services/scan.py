@@ -88,11 +88,12 @@ from shared.models.scan_preview import (
     PreviewToolStatus,
     ScanPreview,
 )
+from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability
 from shared.services import scan_admission, scan_deltas, target_seeds
 from shared.services.activity_log import ActivityLogService
-from shared.services.asset_query import QueryScope, vuln_suppressed
+from shared.services.asset_query import QueryScope, status_class, vuln_suppressed
 from shared.services.celery_dispatch import (
     dispatch_scan_admission,
     dispatch_scan_finalize,
@@ -116,6 +117,7 @@ from shared.services.scan_resolve import (
 from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.utils.datetime import duration_text, utc_now
 from shared.utils.validation import unrecognised_target, validate_target
+from stages.http_probe.stage import HttpProbeStage
 from stages.registry import resume_point
 
 logger = logging.getLogger(__name__)
@@ -922,12 +924,14 @@ class ScanService:
             [i.id for i in items if i.scope == ScanScope.FOCUSED.value]
         )
         findings = await self.finding_counts(scan_ids)
+        ok = await self.ok_counts(scan_ids)
         queued = await self.queue_positions(
             [i.id for i in items if i.status == ScanStatus.PENDING.value]
         )
         for i in items:
             i.queue_position = queued.get(i.id)
             i.findings = findings.get(i.id)
+            i.web_assets_ok = ok.get(i.id)
             i.new_subdomains = new_counts.get(i.id, 0)
             i.gone_subdomains = gone_counts.get(i.id, 0)
             i.prev_subdomains_found = prev_counts.get(i.id)
@@ -956,6 +960,40 @@ class ScanService:
             for scan_id, place in places.items()
             if busy + place - 1 >= limit
         }
+
+    async def ok_counts(self, scan_ids: list[UUID]) -> dict[UUID, int]:
+        """Per probed scan, web assets that answered 2xx."""
+        if not scan_ids:
+            return {}
+        rows = (
+            await self.session.execute(
+                select(
+                    Subdomain.scan_id,
+                    func.count().filter(status_class("2xx")),
+                    func.count(Subdomain.http_status),
+                )
+                .where(Subdomain.scan_id.in_(scan_ids))
+                .group_by(Subdomain.scan_id)
+            )
+        ).all()
+        probed = set(
+            (
+                await self.session.execute(
+                    select(ScanActivity.scan_id)
+                    .where(
+                        ScanActivity.scan_id.in_(scan_ids),
+                        ScanActivity.status.in_(_RAN),
+                        ScanActivity.name == HttpProbeStage.name,
+                    )
+                    .distinct()
+                )
+            ).scalars()
+        )
+        out = dict.fromkeys(probed, 0)
+        for sid, ok, answered in rows:
+            if answered or sid in probed:
+                out[sid] = int(ok)
+        return out
 
     async def finding_counts(self, scan_ids: list[UUID]) -> dict[UUID, ScanFindings]:
         """Per scan, open findings by actionable severity and whether the scan looked."""

@@ -180,6 +180,7 @@ export interface ScanRead {
 	rescans: RescanSummary | null;
 	recheck: RecheckTally | null;
 	findings?: ScanFindings | null;
+	web_assets_ok?: number | null;
 	target_runs?: number | null;
 	queue_position?: number | null;
 	source_ip?: SourceIpRecord | null;

@@ -382,6 +382,7 @@ class ScanRead(BaseModel):
     rescans: RescanSummary | None = None
     recheck: RecheckTally | None = None
     findings: ScanFindings | None = None
+    web_assets_ok: int | None = None
     target_runs: int | None = None
     queue_position: int | None = None
     source_ip: SourceIpRecord | None = None
