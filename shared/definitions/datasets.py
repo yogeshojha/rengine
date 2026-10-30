@@ -42,6 +42,7 @@ class DatasetSpec:
     capability: str | None = None
     # follows instance_settings.threat_intel_auto_sync
     auto_sync: bool = False
+    recommended: bool = False
 
 
 def _feed(kind: FeedKind) -> DatasetSpec:
@@ -90,6 +91,7 @@ DATASETS: tuple[DatasetSpec, ...] = (
         task="app.tasks.bounty_programs.sync_feed",
         stale_after_hours=None,
         capability=CAP_BOUNTY_PROGRAMS,
+        recommended=True,
     ),
     DatasetSpec(
         kind=DatasetKind.AI_PRICES.value,

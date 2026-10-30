@@ -107,6 +107,7 @@ class DatasetService:
                     last_attempt_at=row.last_attempt_at if row else None,
                     duration_ms=row.duration_ms if row else None,
                     auto_sync=spec.auto_sync,
+                    recommended=spec.recommended,
                 )
             )
         return out

@@ -11,6 +11,7 @@ export interface DatasetRead {
 	last_attempt_at: string | null;
 	duration_ms: number | null;
 	auto_sync: boolean;
+	recommended: boolean;
 }
 
 export interface DatasetSyncResult {

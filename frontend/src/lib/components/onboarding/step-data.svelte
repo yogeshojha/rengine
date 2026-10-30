@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import FormField from '$lib/components/form-field.svelte';
@@ -265,7 +266,12 @@
 					>
 						{@render dot(FEED_STATUS_DOT[waiting ? FeedStatus.SYNCING : d.status])}
 						<div class="flex min-w-0 flex-col gap-0.5">
-							<span class="text-sm leading-5 font-medium">{d.label}</span>
+							<span class="flex items-center gap-2">
+								<span class="text-sm leading-5 font-medium">{d.label}</span>
+								{#if d.recommended}
+									<Badge variant="secondary">Recommended</Badge>
+								{/if}
+							</span>
 							<span class="text-xs text-muted-foreground">{d.description}</span>
 							{#if d.status === FeedStatus.FAILED && d.error}
 								<span class="font-mono text-xs break-all text-destructive">{d.error}</span>

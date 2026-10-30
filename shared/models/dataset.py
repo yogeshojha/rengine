@@ -16,6 +16,7 @@ class DatasetRead(BaseModel):
     last_attempt_at: datetime | None = None
     duration_ms: int | None = None
     auto_sync: bool = False
+    recommended: bool = False
 
 
 class DatasetSyncResult(BaseModel):
