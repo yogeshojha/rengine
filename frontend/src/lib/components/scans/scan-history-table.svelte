@@ -11,6 +11,8 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import Search from '@lucide/svelte/icons/search';
 	import Columns3 from '@lucide/svelte/icons/columns-3';
+	import TagIcon from '@lucide/svelte/icons/tag';
+	import WorkflowIcon from '@lucide/svelte/icons/workflow';
 	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import History from '@lucide/svelte/icons/history';
@@ -30,6 +32,7 @@
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
+	import { mergeProps } from 'bits-ui';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
@@ -701,21 +704,23 @@
 			<div class="flex flex-wrap items-center gap-2">
 				{#if scansStore.stats?.tags?.length}
 					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="outline"
-									class={tagCount ? 'border-primary/50 bg-primary/5' : ''}
-									aria-label={tagCount ? `Tag, ${tagCount} selected` : 'Tag'}
-								>
-									Tag
-									{#if tagCount}
-										<Badge variant="secondary" class="h-5 px-1.5 text-xs">{tagCount}</Badge>
-									{/if}
-								</Button>
+						<Hint text={tagCount ? `Tag, ${tagCount} selected` : 'Tag'}>
+							{#snippet child(hintProps)}
+								<DropdownMenu.Trigger>
+									{#snippet child({ props })}
+										<Button
+											{...mergeProps(hintProps, props)}
+											variant="outline"
+											size="icon"
+											class={tagCount ? 'border-primary/50 bg-primary/5 text-primary' : ''}
+											aria-label={tagCount ? `Tag, ${tagCount} selected` : 'Tag'}
+										>
+											<TagIcon class="size-4" />
+										</Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
 							{/snippet}
-						</DropdownMenu.Trigger>
+						</Hint>
 						<DropdownMenu.Content align="end" class="max-h-none w-56 overflow-visible p-0">
 							<ScrollArea class="max-h-72">
 								<div class="p-1">
@@ -737,21 +742,23 @@
 				{/if}
 				{#if scansStore.stats?.engines?.length}
 					<DropdownMenu.Root>
-						<DropdownMenu.Trigger>
-							{#snippet child({ props })}
-								<Button
-									{...props}
-									variant="outline"
-									class={engineCount ? 'border-primary/50 bg-primary/5' : ''}
-									aria-label={engineCount ? `Engine, ${engineCount} selected` : 'Engine'}
-								>
-									Engine
-									{#if engineCount}
-										<Badge variant="secondary" class="h-5 px-1.5 text-xs">{engineCount}</Badge>
-									{/if}
-								</Button>
+						<Hint text={engineCount ? `Engine, ${engineCount} selected` : 'Engine'}>
+							{#snippet child(hintProps)}
+								<DropdownMenu.Trigger>
+									{#snippet child({ props })}
+										<Button
+											{...mergeProps(hintProps, props)}
+											variant="outline"
+											size="icon"
+											class={engineCount ? 'border-primary/50 bg-primary/5 text-primary' : ''}
+											aria-label={engineCount ? `Engine, ${engineCount} selected` : 'Engine'}
+										>
+											<WorkflowIcon class="size-4" />
+										</Button>
+									{/snippet}
+								</DropdownMenu.Trigger>
 							{/snippet}
-						</DropdownMenu.Trigger>
+						</Hint>
 						<DropdownMenu.Content align="end" class="w-56">
 							{#each scansStore.stats.engines as e (e.name)}
 								{@const token = `engine:${quote(e.name)}`}
