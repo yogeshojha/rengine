@@ -1,5 +1,6 @@
 import { api } from './client';
 import { scopeQuery } from '$lib/utilities/surface-scope';
+import type { FindingTimelineFilter, FindingTimelineResult } from '$lib/types/timeline';
 import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	BulkTriageResult,
@@ -28,6 +29,17 @@ export const vulnerabilitiesApi = {
 	async search(projectId: string, scanId: string, filter: VulnFilter): Promise<VulnSearchResult> {
 		return api.post<VulnSearchResult>(
 			`/vulnerabilities/search?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
+	},
+
+	async timeline(
+		projectId: string,
+		scanId: string,
+		filter: FindingTimelineFilter
+	): Promise<FindingTimelineResult> {
+		return api.post<FindingTimelineResult>(
+			`/vulnerabilities/timeline?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},

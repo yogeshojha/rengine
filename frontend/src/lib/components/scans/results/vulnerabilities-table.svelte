@@ -2,6 +2,8 @@
 	import { RowCursor } from './table/row-cursor.svelte';
 	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import { page as appPage } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { ROUTES } from '$lib/config/routes';
 	import { onDestroy, untrack } from 'svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
@@ -74,6 +76,27 @@
 		type FindingColumn
 	} from './vulnerabilities/findings/prefs.svelte';
 	import VulnerabilityDetailSheet from './vulnerability-detail-sheet.svelte';
+	import FindingTimeline from './vulnerabilities/timeline/finding-timeline.svelte';
+	import CheckMatrix from './vulnerabilities/timeline/check-matrix.svelte';
+	import {
+		CHECK_FLAG_HELP,
+		CHECK_FLAG_LABELS,
+		CHECK_FLAG_ORDER,
+		CHECK_SORTS,
+		DEFAULT_CHECK_SORT,
+		DEFAULT_FINDING_SORT,
+		DEFAULT_TIMELINE_WINDOW,
+		FINDING_GROUP_HELP,
+		FINDING_GROUP_LABELS,
+		FINDING_GROUP_ORDER,
+		FINDING_SORTS,
+		FINDINGS_TIMELINE_VIEW,
+		FindingTimelineMode,
+		TIMELINE_WINDOWS,
+		type CheckFlag,
+		type FindingGroup
+	} from '$lib/config/timeline';
+	import type { FindingLifespan, FindingTimelineResult } from '$lib/types/timeline';
 	import { ISSUE_COLUMNS, ISSUE_LEAD_COLUMNS, VULN_LEAD_COLUMNS } from './vulnerabilities/columns';
 
 	import { vulnerabilitiesApi } from '$lib/api/vulnerabilities';
@@ -102,6 +125,7 @@
 		DEFAULT_VULN_VIEW,
 		EMPTY_VULN_FACETS,
 		ISSUE_SORTS,
+		TABLE_VIEWS,
 		VULN_SORTS,
 		VULN_VIEWS,
 		type IssueRead,
@@ -129,6 +153,8 @@
 		onTab?: (tab: ResultTab, filter?: string) => void;
 		onScanTotal?: (total: number) => void;
 		query?: VulnQuery;
+		/** a census run, which offers the Timeline view */
+		census?: boolean;
 	}
 
 	let {
@@ -139,6 +165,7 @@
 		revision = 0,
 		onTab,
 		onScanTotal,
+		census = false,
 		query = $bindable({
 			...emptyVulnQuery(),
 			search: appPage.url.searchParams.get('vuln_q') ?? ''
@@ -155,25 +182,63 @@
 
 	const DEFAULT_SORT = { key: 'risk', dir: -1 as const };
 	const INSTANCE_PAGE = 100;
+	const TIMELINE = FINDINGS_TIMELINE_VIEW;
+	const timelineOffered = () => !projectWide && census && Boolean(scanId);
+	const views = () => (timelineOffered() ? VULN_VIEWS : TABLE_VIEWS);
 	const VIEW_KEYS = new Set<string>(VULN_VIEWS.map((v) => v.key));
+	function viewFrom(raw: string | null | undefined): VulnView | null {
+		if (!raw || !VIEW_KEYS.has(raw)) return null;
+		if (raw === TIMELINE && !timelineOffered()) return null;
+		return raw as VulnView;
+	}
+	function modeFrom(raw: string | null): FindingTimelineMode {
+		return raw === FindingTimelineMode.CHECKS
+			? FindingTimelineMode.CHECKS
+			: FindingTimelineMode.LIFESPANS;
+	}
+	function windowFrom(raw: string | null): number | null {
+		const n = Number(raw);
+		return (TIMELINE_WINDOWS as readonly number[]).includes(n) ? n : null;
+	}
+	function flagFrom(raw: string | null, m: FindingTimelineMode): FindingGroup | CheckFlag | null {
+		const order: string[] =
+			m === FindingTimelineMode.CHECKS ? CHECK_FLAG_ORDER : FINDING_GROUP_ORDER;
+		return order.includes(raw ?? '') ? (raw as FindingGroup | CheckFlag) : null;
+	}
+	const timelineSort = (m: FindingTimelineMode) =>
+		m === FindingTimelineMode.CHECKS ? { ...DEFAULT_CHECK_SORT } : { ...DEFAULT_FINDING_SORT };
 
 	const initial = appPage.url.searchParams;
 	const initialSort = initial.get('vuln_sort')?.split(':') ?? [];
-	const initialView = initial.get('vuln_view');
+	const initialView = viewFrom(initial.get('vuln_view'));
 
 	let view = $state<VulnView>(
-		initialView && VIEW_KEYS.has(initialView)
-			? (initialView as VulnView)
-			: readPref<VulnView>(STORAGE_KEYS.vulnsView, DEFAULT_VULN_VIEW)
+		initialView ??
+			viewFrom(readPref<VulnView>(STORAGE_KEYS.vulnsView, DEFAULT_VULN_VIEW)) ??
+			DEFAULT_VULN_VIEW
 	);
+	let timelineMode = $state<FindingTimelineMode>(modeFrom(initial.get('vuln_mode')));
+	let timelineWindow = $state<number>(
+		windowFrom(initial.get('vuln_window')) ??
+			readPref(STORAGE_KEYS.vulnsTimelineWindow, DEFAULT_TIMELINE_WINDOW)
+	);
+	let timelineFlag = $state<FindingGroup | CheckFlag | null>(
+		initialView === TIMELINE
+			? flagFrom(initial.get('vuln_flag'), modeFrom(initial.get('vuln_mode')))
+			: null
+	);
+	let strips = $state<FindingTimelineResult | null>(null);
 	let density = $state<string>(readPref(STORAGE_KEYS.vulnsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.vulnsPageSize, RESULTS_PAGE_SIZE));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
 			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
+			: initialView === TIMELINE
+				? timelineSort(modeFrom(initial.get('vuln_mode')))
+				: { ...DEFAULT_SORT }
 	);
 	let pageIndex = $state(Math.max(0, Number(initial.get('vuln_page') ?? 1) - 1));
+	$effect(() => writePref(STORAGE_KEYS.vulnsTimelineWindow, timelineWindow));
 
 	let items = $state<VulnerabilityRead[]>([]);
 	let issues = $state<IssueRead[]>([]);
@@ -222,7 +287,29 @@
 	});
 
 	let isIssues = $derived(view === 'issues');
-	let rowCount = $derived(isIssues ? issues.length : items.length);
+	let timeline = $derived(view === TIMELINE);
+	let byCheck = $derived(timeline && timelineMode === FindingTimelineMode.CHECKS);
+	let rowCount = $derived(
+		isIssues ? issues.length : byCheck ? (strips?.checks.length ?? 0) : items.length
+	);
+	const GROUP_TABS = [
+		{ key: 'all', label: 'All' },
+		...FINDING_GROUP_ORDER.map((g) => ({ key: g, label: FINDING_GROUP_LABELS[g] }))
+	];
+	const CHECK_TABS = [
+		{ key: 'all', label: 'All' },
+		...CHECK_FLAG_ORDER.map((f) => ({ key: f, label: CHECK_FLAG_LABELS[f] }))
+	];
+	let flagTabs = $derived(byCheck ? CHECK_TABS : GROUP_TABS);
+	let flagCounts = $derived(strips && !strips.error ? strips.counts : null);
+	let flagHelp = $derived(
+		timelineFlag
+			? byCheck
+				? CHECK_FLAG_HELP[timelineFlag as CheckFlag]
+				: FINDING_GROUP_HELP[timelineFlag as FindingGroup]
+			: ''
+	);
+	let timelineSorts = $derived(byCheck ? CHECK_SORTS : FINDING_SORTS);
 	let pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 	let sheetItems = $derived(isIssues ? instances : items);
 	let selectedIndex = $derived(selected ? sheetItems.findIndex((v) => v.id === selected?.id) : -1);
@@ -284,8 +371,8 @@
 		return m;
 	});
 	let ranScan = $derived(overview?.ran ?? false);
-	let noun = $derived(isIssues ? 'weakness' : VULN.noun);
-	let nounPlural = $derived(isIssues ? 'weaknesses' : VULN.nounPlural);
+	let noun = $derived(isIssues ? 'weakness' : byCheck ? 'check' : VULN.noun);
+	let nounPlural = $derived(isIssues ? 'weaknesses' : byCheck ? 'checks' : VULN.nounPlural);
 
 	$effect(() => writePref(STORAGE_KEYS.vulnsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.vulnsPageSize, pageSize));
@@ -313,7 +400,14 @@
 			return;
 		}
 		const filter = compileVulnQuery(query, sort.key, sort.dir, pageIndex * pageSize, pageSize);
-		const sig = JSON.stringify({ ...filter, offset: 0, view });
+		const sig = JSON.stringify({
+			...filter,
+			offset: 0,
+			view,
+			timelineWindow,
+			timelineMode,
+			timelineFlag
+		});
 		if (sig !== lastSig && pageIndex !== 0 && !pendingSelect) {
 			lastSig = sig;
 			pageIndex = 0;
@@ -323,7 +417,32 @@
 		const my = ++reqId;
 		loading = true;
 		try {
-			if (view === 'issues') {
+			if (timeline) {
+				const res = await vulnerabilitiesApi.timeline(projectId, scanId, {
+					...filter,
+					window: timelineWindow,
+					mode: timelineMode,
+					flag: timelineFlag
+				});
+				if (my !== reqId) return;
+				strips = res;
+				items = res.items.map((i) => i.finding);
+				issues = [];
+				total = res.total;
+				totalCapped = false;
+				queryError = res.error;
+				if (pendingVuln) {
+					const id = pendingVuln;
+					pendingVuln = null;
+					const hit = items.find((v) => v.id === id);
+					if (hit) open(hit);
+					else void openById(id);
+				}
+				if (pendingSelect) {
+					selected = pendingSelect === 'first' ? (items[0] ?? null) : (items.at(-1) ?? null);
+					pendingSelect = null;
+				}
+			} else if (view === 'issues') {
 				const res = await vulnerabilitiesApi.issues(projectId, scanId, filter);
 				if (my !== reqId) return;
 				issues = res.items;
@@ -518,7 +637,7 @@
 	$effect(() => {
 		const filter = compileVulnQuery(tabQuery, 'severity', 1, 0, 1);
 		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
-		const filtered = tabFiltered && !isIssues;
+		const filtered = tabFiltered && !isIssues && !timeline;
 		if (!ready || !seen || !queryReady) return;
 		untrack(() => {
 			if (filtered) tabCounts.track(key, () => vulnerabilitiesApi.tabs(projectId, scanId, filter));
@@ -536,6 +655,9 @@
 		void projectId;
 		void queryReady;
 		void view;
+		void timelineMode;
+		void timelineWindow;
+		void timelineFlag;
 		if (!seen || !ready) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(runSearch, primed ? SEARCH_DEBOUNCE_MS : 0);
@@ -576,6 +698,15 @@
 			set('vuln_q', query.search || null);
 			set('vuln_group', groupBy || null);
 			set('vuln_view', view !== DEFAULT_VULN_VIEW ? view : null);
+			set(
+				'vuln_mode',
+				timeline && timelineMode !== FindingTimelineMode.LIFESPANS ? timelineMode : null
+			);
+			set(
+				'vuln_window',
+				timeline && timelineWindow !== DEFAULT_TIMELINE_WINDOW ? String(timelineWindow) : null
+			);
+			set('vuln_flag', timeline ? timelineFlag : null);
 			set('vuln_page', pageIndex > 0 ? String(pageIndex + 1) : null);
 			set('vuln', drawerOpen && selected ? selected.id : null);
 			set(
@@ -589,16 +720,28 @@
 			// ignore
 		}
 	}
-	const urlSync = new UrlSync(['vuln_q', 'vuln_group', 'vuln_view']);
+	const urlSync = new UrlSync([
+		'vuln_q',
+		'vuln_group',
+		'vuln_view',
+		'vuln_mode',
+		'vuln_window',
+		'vuln_flag'
+	]);
 
 	function restoreUrl(sp: URLSearchParams) {
 		const search = sp.get('vuln_q') ?? '';
 		if (search !== query.search) query = { ...query, search };
 		const group = sp.get('vuln_group') ?? '';
 		if (group !== groupBy) groupBy = group;
-		const rawView = sp.get('vuln_view');
-		const nextView = rawView && VIEW_KEYS.has(rawView) ? (rawView as VulnView) : DEFAULT_VULN_VIEW;
+		const nextView = viewFrom(sp.get('vuln_view')) ?? DEFAULT_VULN_VIEW;
 		if (nextView !== view) view = nextView;
+		const nextMode = modeFrom(sp.get('vuln_mode'));
+		if (nextView === TIMELINE && nextMode !== timelineMode) timelineMode = nextMode;
+		const nextWindow = windowFrom(sp.get('vuln_window')) ?? DEFAULT_TIMELINE_WINDOW;
+		if (nextView === TIMELINE && nextWindow !== timelineWindow) timelineWindow = nextWindow;
+		const nextFlag = nextView === TIMELINE ? flagFrom(sp.get('vuln_flag'), nextMode) : null;
+		if (nextFlag !== timelineFlag) timelineFlag = nextFlag;
 		const [sortKey, sortDir] = sp.get('vuln_sort')?.split(':') ?? [];
 		const nextSort = sortKey
 			? { key: sortKey, dir: (sortDir === 'desc' ? -1 : 1) as 1 | -1 }
@@ -614,6 +757,9 @@
 		void groupBy;
 		void pageIndex;
 		void view;
+		void timelineMode;
+		void timelineWindow;
+		void timelineFlag;
 		void sort.key;
 		void sort.dir;
 		void drawerOpen;
@@ -627,8 +773,9 @@
 		drawerOpen = true;
 	}
 	async function openById(id: string) {
+		const owner = strips?.items.find((i) => i.finding.id === id)?.finding.scan_id ?? scanId;
 		try {
-			open(await vulnerabilitiesApi.detail(projectId, scanId, id));
+			open(await vulnerabilitiesApi.detail(projectId, owner, id));
 		} catch {
 			toast.error('Finding not found');
 		}
@@ -663,7 +810,47 @@
 		collapse();
 		rowCursor.index = -1;
 		pageIndex = 0;
-		sort = { ...DEFAULT_SORT };
+		if (next === TIMELINE) {
+			groupBy = '';
+			sort = timelineSort(timelineMode);
+		} else {
+			timelineFlag = null;
+			sort = { ...DEFAULT_SORT };
+		}
+	}
+	function setTimelineMode(m: FindingTimelineMode) {
+		if (m === timelineMode) return;
+		timelineMode = m;
+		timelineFlag = null;
+		pageIndex = 0;
+		rowCursor.index = -1;
+		sort = timelineSort(m);
+	}
+	function setFlag(key: string) {
+		timelineFlag = key === 'all' ? null : (key as FindingGroup | CheckFlag);
+		pageIndex = 0;
+	}
+	function openScanTimeline(id: string) {
+		void goto(
+			ROUTES.results(VULN.tab, id, {
+				vuln_view: TIMELINE,
+				...(timelineMode !== FindingTimelineMode.LIFESPANS ? { vuln_mode: timelineMode } : {}),
+				...(timelineWindow !== DEFAULT_TIMELINE_WINDOW
+					? { vuln_window: String(timelineWindow) }
+					: {})
+			})
+		);
+	}
+	function openPrevious() {
+		const scans = strips?.scans ?? [];
+		if (scans.length > 1) openScanTimeline(scans[scans.length - 2].id);
+	}
+	function openLifespan(item: FindingLifespan) {
+		open(item.finding);
+	}
+	function showCheck(templateId: string) {
+		setQuery({ ...query, templates: [templateId] });
+		setView('findings');
 	}
 	function toggleSort(key: string) {
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
@@ -935,7 +1122,7 @@
 			void triage(target, state);
 			return;
 		}
-		if (e.key === 'x' && !drawerOpen) {
+		if (e.key === 'x' && !drawerOpen && !timeline) {
 			e.preventDefault();
 			const id = isIssues ? issues[cursor]?.template_id : items[cursor]?.id;
 			if (id) toggleCheck(id);
@@ -946,11 +1133,16 @@
 			shortcutsOpen = true;
 			return;
 		}
+		if (timeline && e.key === 'ArrowLeft' && !drawerOpen) {
+			e.preventDefault();
+			openPrevious();
+			return;
+		}
 		if (drawerOpen || !rowCount) return;
 		// the Esc that closed a sheet or dialog is not also a collapse
 		if (e.key === 'Escape' && e.target instanceof Element && e.target.closest('[role=dialog]'))
 			return;
-		const row = !isIssues ? items[cursor] : null;
+		const row = !isIssues && !timeline ? items[cursor] : null;
 		if (row && (e.key === 'e' || e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
 			e.preventDefault();
 			if (e.key === 'ArrowLeft') expanded.delete(row.id);
@@ -969,6 +1161,7 @@
 		}
 		const handled = rowCursor.keys(e, rowCount, (i) => {
 			if (isIssues && issues[i]) toggleIssue(issues[i]);
+			else if (byCheck && strips?.checks[i]) showCheck(strips.checks[i].template_id);
 			else if (!isIssues && items[i]) open(items[i]);
 		});
 		if (handled && e.key === 'Escape' && isIssues) collapse();
@@ -1183,13 +1376,22 @@
 >
 	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pt-2 pr-3 pl-2 sm:pt-0">
 		<div class="order-last min-w-0 grow basis-full sm:order-none sm:basis-0">
-			<CountTabs
-				tabs={REVIEW_TABS}
-				value={reviewTab}
-				counts={reviewCounts}
-				capped={tabFiltered && !isIssues ? tabCounts.capped : null}
-				onChange={setReviewTab}
-			/>
+			{#if timeline}
+				<CountTabs
+					tabs={flagTabs}
+					value={timelineFlag ?? 'all'}
+					counts={flagCounts}
+					onChange={setFlag}
+				/>
+			{:else}
+				<CountTabs
+					tabs={REVIEW_TABS}
+					value={reviewTab}
+					counts={reviewCounts}
+					capped={tabFiltered && !isIssues ? tabCounts.capped : null}
+					onChange={setReviewTab}
+				/>
+			{/if}
 		</div>
 		<ToggleGroup.Root
 			type="single"
@@ -1200,7 +1402,7 @@
 			class="shrink-0"
 			aria-label="View"
 		>
-			{#each VULN_VIEWS as option (option.key)}
+			{#each views() as option (option.key)}
 				<ToggleGroup.Item value={option.key} class="h-7 px-2.5 text-xs font-normal">
 					{option.label}
 				</ToggleGroup.Item>
@@ -1224,11 +1426,19 @@
 		dimensions={vulnQuerySchema.schema.group_dimensions}
 		columns={isIssues ? ISSUE_COLUMNS : findingColumns}
 		visible={isIssues ? ISSUE_COLUMNS.map((c) => c.key) : findingVisible}
-		columnsLocked={isIssues}
+		columnsLocked={isIssues || timeline}
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}
-		sorts={isIssues ? ISSUE_SORTS : VULN_SORTS}
+		sorts={isIssues ? ISSUE_SORTS : timeline ? timelineSorts : VULN_SORTS}
+		{timeline}
+		{timelineWindow}
+		onTimelineWindow={(n) => {
+			timelineWindow = n;
+			pageIndex = 0;
+		}}
+		mode={timelineMode}
+		onMode={setTimelineMode}
 		sortKey={sort.key}
 		sortDir={sort.dir}
 		onSort={toggleSort}
@@ -1248,7 +1458,7 @@
 		onClear={() => setQuery({ ...emptyVulnQuery(), search: query.search })}
 	/>
 
-	{#if !groupBy}
+	{#if !groupBy && !timeline}
 		<SelectionBar
 			{noun}
 			{nounPlural}
@@ -1300,6 +1510,17 @@
 				description={queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
+		{:else if timeline && timelineFlag}
+			<EmptyState
+				icon={SearchX}
+				title="No findings match"
+				description={flagHelp}
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button size="sm" variant="outline" onclick={() => setFlag('all')}>
+					<X class="h-4 w-4" /> Clear filter
+				</Button>
+			</EmptyState>
 		{:else if filtered}
 			<EmptyState
 				icon={SearchX}
@@ -1331,6 +1552,27 @@
 				<Button size="sm" variant="outline" onclick={() => loadOverview()}>Retry</Button>
 			</EmptyState>
 		{/if}
+	{:else if timeline && strips && byCheck}
+		<CheckMatrix
+			result={strips}
+			{loading}
+			focusedIndex={rowCursor.index}
+			pad={rowPad}
+			onOpen={showCheck}
+			onOpenScan={openScanTimeline}
+			track={rowCursor.track}
+		/>
+	{:else if timeline && strips}
+		<FindingTimeline
+			result={strips}
+			{loading}
+			focusedIndex={rowCursor.index}
+			selectedId={drawerOpen ? (selected?.id ?? null) : null}
+			pad={rowPad}
+			onOpen={openLifespan}
+			onOpenScan={openScanTimeline}
+			track={rowCursor.track}
+		/>
 	{:else if isIssues}
 		<ListHeader
 			sticky

@@ -1,6 +1,11 @@
 import type {
 	AddressFlag,
 	AddressState,
+	CheckFlag,
+	CheckState,
+	FindingGroup,
+	FindingState,
+	FindingTimelineMode,
 	LaneState,
 	Observation,
 	PortFlag,
@@ -15,6 +20,7 @@ import type { QueryError } from './asset-query';
 import type { ScanStatus } from './scan';
 import type { SubdomainRead } from './subdomain';
 import type { SubdomainFilter } from '$lib/utilities/scan-insights';
+import type { VulnFilter, VulnerabilityRead } from '$lib/utilities/vulns';
 
 export interface TimelineFilter extends SubdomainFilter {
 	window: number;
@@ -173,6 +179,111 @@ export interface ServiceTimelineResult {
 	mode: ServiceTimelineMode;
 	addresses: ServiceAddressRow[];
 	ports: ServicePortRow[];
+	total: number;
+	counts: Record<string, number>;
+	error: QueryError | null;
+}
+
+export interface FindingTimelineFilter extends VulnFilter {
+	window: number;
+	mode: FindingTimelineMode;
+	flag: FindingGroup | CheckFlag | null;
+}
+
+export interface FindingCell {
+	state: FindingState;
+}
+
+export interface LifeSegment {
+	state: FindingState;
+	start: number;
+	end: number;
+	days: number | null;
+}
+
+export interface FindingLifespan {
+	finding: VulnerabilityRead;
+	group: FindingGroup;
+	state: FindingState;
+	cells: FindingCell[];
+	segments: LifeSegment[];
+	first_seen_at: string | null;
+	open_since: string | null;
+	open_days: number | null;
+	fixed_at: string | null;
+	fixed_scan_id: string | null;
+	regressions: number;
+	returned_at: string | null;
+	returned_scan_id: string | null;
+	not_tested_runs: number;
+	tested_runs: number;
+	is_new: boolean;
+	triage_state: string;
+	last_change_scan_id: string | null;
+}
+
+export interface RunPoint {
+	scan_id: string;
+	open: Record<string, number>;
+	fixed: number;
+	regressed: number;
+	tested_checks: number | null;
+	tested_origins: number | null;
+}
+
+export interface FindingStats {
+	open_now: number | null;
+	open_delta: number | null;
+	untested: number;
+	regressed: number;
+	fixed: number;
+	fixed_median_days: number | null;
+	oldest_open_days: number | null;
+	oldest_open_name: string | null;
+	oldest_open_severity: string | null;
+	runs: RunPoint[];
+}
+
+export interface CheckCell {
+	state: CheckState;
+	hosts: number;
+	delta: number;
+	added: string[];
+	removed: string[];
+	more: number;
+}
+
+export interface CheckRow {
+	template_id: string;
+	template_name: string;
+	severity: string;
+	is_kev: boolean;
+	cells: CheckCell[];
+	flags: CheckFlag[];
+	hosts_now: number | null;
+	peak: number;
+	library_scan_id: string | null;
+	first_seen_at: string | null;
+	last_change_scan_id: string | null;
+}
+
+export interface CheckStats {
+	checks: number;
+	tested_checks: number | null;
+	spread: number;
+	shrank: number;
+	cleared: number;
+	library_new: number;
+}
+
+export interface FindingTimelineResult {
+	scans: TimelineScan[];
+	runs: number;
+	mode: FindingTimelineMode;
+	stats: FindingStats | null;
+	check_stats: CheckStats | null;
+	items: FindingLifespan[];
+	checks: CheckRow[];
 	total: number;
 	counts: Record<string, number>;
 	error: QueryError | null;

@@ -18,7 +18,8 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from shared.config import BaseAppSettings
-from shared.definitions.vulnerabilities import Scanner
+from shared.definitions.scan_surface import SurfaceState
+from shared.definitions.vulnerabilities import Scanner, TemplateOrigin
 from shared.enums.target import TargetType
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
@@ -26,10 +27,12 @@ from shared.models.port import Port
 from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
+from shared.models.scan_surface import ScanSurfaceItem
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.user import User
-from shared.models.vulnerability import Vulnerability
+from shared.models.vuln_template import VulnTemplate
+from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 from shared.utils.datetime import utc_now
 
 TEST_DB = os.environ.get("POSTGRES_TEST_DB", "rengine_test")
@@ -344,6 +347,9 @@ class Estate:
         host: str = "www.example.com",
         kev: bool = False,
         scanner: str = Scanner.NUCLEI.value,
+        port: int | None = None,
+        template: str | None = None,
+        tags: list[str] | None = None,
     ) -> None:
         sid = self.scans[scan]
         target_id = await self._target_of(sid)
@@ -354,16 +360,66 @@ class Estate:
                     scan_id=sid,
                     target_id=target_id,
                     fingerprint=fingerprint,
-                    template_id=fingerprint,
-                    template_name=fingerprint.replace("-", " ").title(),
+                    template_id=template or fingerprint,
+                    template_name=(template or fingerprint).replace("-", " ").title(),
                     severity=severity,
                     matched_at=f"https://{host}/",
                     host=host,
+                    port=port,
+                    tags=tags or [],
                     is_kev=kev,
                     scanner=scanner,
                     discovered_at=at,
                 )
             )
+        await self.session.flush()
+
+    async def surface(self, scan: str, hosts: list[str], *, port: int = 443) -> None:
+        sid = self.scans[scan]
+        target_id = await self._target_of(sid)
+        for host in hosts:
+            self.session.add(
+                ScanSurfaceItem(
+                    project_id=self.project_id,
+                    scan_id=sid,
+                    target_id=target_id,
+                    value=f"https://{host}:{port}",
+                    host=host,
+                    port=port,
+                    scheme="https",
+                    state=SurfaceState.SCANNED.value,
+                )
+            )
+        await self.session.flush()
+
+    async def templates(
+        self, rows: list[tuple[str, str]], *, at: datetime | None = None
+    ) -> None:
+        for template_id, severity in rows:
+            self.session.add(
+                VulnTemplate(
+                    origin=TemplateOrigin.OFFICIAL.value,
+                    template_id=template_id,
+                    path=f"http/exposures/{template_id}.yaml",
+                    name=template_id.replace("-", " ").title(),
+                    severity=severity,
+                    protocol="http",
+                    created_at=at or utc_now(),
+                )
+            )
+        await self.session.flush()
+
+    async def triage(self, target: str, fingerprint: str, state: str) -> None:
+        self.session.add(
+            VulnerabilityTriage(
+                project_id=self.project_id,
+                target_id=await self.target(target),
+                fingerprint=fingerprint,
+                template_id=fingerprint,
+                matched_at="",
+                state=state,
+            )
+        )
         await self.session.flush()
 
     async def _target_of(self, scan_id: uuid.UUID) -> uuid.UUID:

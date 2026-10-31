@@ -20,6 +20,7 @@ export const STORAGE_KEYS = {
 	webAssetsRecentQueries: 'rengine:webassets:recentQueries',
 	webAssetsTimelineWindow: 'rengine:webassets:timelineWindow',
 	servicesTimelineWindow: 'rengine:services:timelineWindow',
+	vulnsTimelineWindow: 'rengine:vulns:timelineWindow',
 	ipsColumns: 'rengine:ips:columns',
 	ipsRecentQueries: 'rengine:ips:recentQueries',
 	ipsDensity: 'rengine:ips:density',

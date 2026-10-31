@@ -322,6 +322,134 @@ class PortSort(StrEnum):
 # addresses named on a port cell
 MAX_CELL_ADDRESSES = 8
 
+# ---------- findings ----------
+
+
+class FindingTimelineMode(StrEnum):
+    LIFESPANS = "lifespans"
+    CHECKS = "checks"
+
+
+FINDING_MODE_LABELS: dict[str, str] = {
+    FindingTimelineMode.LIFESPANS.value: "Lifespans",
+    FindingTimelineMode.CHECKS.value: "By check",
+}
+
+
+class FindingState(StrEnum):
+    OPEN = "open"
+    REGRESSED = "regressed"
+    FIXED = "fixed"
+    NOT_TESTED = "not_tested"
+    UNOBSERVED = "unobserved"
+    UNSEEN = "unseen"
+
+
+PRESENT_STATES: frozenset[str] = frozenset(
+    {FindingState.OPEN.value, FindingState.REGRESSED.value}
+)
+
+FINDING_STATE_LABELS: dict[str, str] = {
+    FindingState.OPEN.value: "Open",
+    FindingState.REGRESSED.value: "Came back",
+    FindingState.FIXED.value: "Fixed",
+    FindingState.NOT_TESTED.value: "Not tested",
+    FindingState.UNOBSERVED.value: "No vulnerability scan",
+    FindingState.UNSEEN.value: "Not seen yet",
+}
+
+FINDING_OBSERVATION_LABELS: dict[str, str] = {
+    Observation.PARTIAL.value: "Vulnerability scan incomplete",
+    Observation.UNOBSERVED.value: "No vulnerability scan in this run",
+}
+
+
+class FindingGroup(StrEnum):
+    REGRESSED = "regressed"
+    NEW = "new"
+    OPEN = "open"
+    FIXED = "fixed"
+    SET_ASIDE = "set_aside"
+
+
+FINDING_GROUP_ORDER: tuple[str, ...] = tuple(group.value for group in FindingGroup)
+
+FINDING_GROUP_LABELS: dict[str, str] = {
+    FindingGroup.REGRESSED.value: "Regressed",
+    FindingGroup.NEW.value: "New in this scan",
+    FindingGroup.OPEN.value: "Open",
+    FindingGroup.FIXED.value: "Fixed",
+    FindingGroup.SET_ASIDE.value: "Set aside",
+}
+
+FINDING_GROUP_HELP: dict[str, str] = {
+    FindingGroup.REGRESSED.value: "Came back after a run that found it fixed.",
+    FindingGroup.NEW.value: "First seen in this scan.",
+    FindingGroup.OPEN.value: "Found in this scan, or absent with the check untested since.",
+    FindingGroup.FIXED.value: "A later run tested for it and found nothing.",
+    FindingGroup.SET_ASIDE.value: "Reviewed as a false positive or an accepted risk.",
+}
+
+
+class FindingSort(StrEnum):
+    AGE = "age"
+    LAST_CHANGE = "last_change"
+    SEVERITY = "severity"
+    FIRST_SEEN = "first_seen"
+    NAME = "name"
+
+
+class CheckState(StrEnum):
+    TESTED = "tested"
+    NOT_TESTED = "not_tested"
+    NOT_IN_LIBRARY = "not_in_library"
+    UNOBSERVED = "unobserved"
+
+
+CHECK_STATE_LABELS: dict[str, str] = {
+    CheckState.TESTED.value: "Tested",
+    CheckState.NOT_TESTED.value: "Not tested",
+    CheckState.NOT_IN_LIBRARY.value: "Check not in the library yet",
+    CheckState.UNOBSERVED.value: "No vulnerability scan",
+}
+
+
+class CheckFlag(StrEnum):
+    SPREAD = "spread"
+    SHRANK = "shrank"
+    CLEARED = "cleared"
+    LIBRARY_NEW = "library_new"
+
+
+CHECK_FLAG_ORDER: tuple[str, ...] = tuple(flag.value for flag in CheckFlag)
+
+CHECK_FLAG_LABELS: dict[str, str] = {
+    CheckFlag.SPREAD.value: "Spread",
+    CheckFlag.SHRANK.value: "Shrank",
+    CheckFlag.CLEARED.value: "Cleared",
+    CheckFlag.LIBRARY_NEW.value: "New to the library",
+}
+
+CHECK_FLAG_HELP: dict[str, str] = {
+    CheckFlag.SPREAD.value: "The check matches more web assets than in the first run of the window that found it.",
+    CheckFlag.SHRANK.value: "The check matches fewer web assets than in the first run of the window that found it.",
+    CheckFlag.CLEARED.value: "No web asset carries the finding in this scan.",
+    CheckFlag.LIBRARY_NEW.value: "The library gained the check inside the window.",
+}
+
+
+class CheckSort(StrEnum):
+    HOSTS = "hosts"
+    SEVERITY = "severity"
+    LAST_CHANGE = "last_change"
+    NAME = "name"
+
+
+# findings the Timeline reads before it asks for a narrower query
+MAX_TIMELINE_FINDINGS = 5000
+# hosts named on a check cell
+MAX_CELL_HOSTS = MAX_CELL_ADDRESSES
+
 
 __all__ = [
     "ABSENT_STATES",
@@ -330,18 +458,31 @@ __all__ = [
     "ADDRESS_FLAG_ORDER",
     "ADDRESS_STATE_LABELS",
     "CAPTURED_STATES",
+    "CHECK_FLAG_HELP",
+    "CHECK_FLAG_LABELS",
+    "CHECK_FLAG_ORDER",
+    "CHECK_STATE_LABELS",
     "DEFAULT_TIMELINE_WINDOW",
+    "FINDING_GROUP_HELP",
+    "FINDING_GROUP_LABELS",
+    "FINDING_GROUP_ORDER",
+    "FINDING_MODE_LABELS",
+    "FINDING_OBSERVATION_LABELS",
+    "FINDING_STATE_LABELS",
     "FLAG_HELP",
     "FLAG_LABELS",
     "FLAG_ORDER",
     "FLAPPING_TRANSITIONS",
     "LANE_STATE_LABELS",
     "MAX_CELL_ADDRESSES",
+    "MAX_CELL_HOSTS",
+    "MAX_TIMELINE_FINDINGS",
     "MAX_TIMELINE_SCANS",
     "OBSERVATION_LABELS",
     "PORT_FLAG_HELP",
     "PORT_FLAG_LABELS",
     "PORT_FLAG_ORDER",
+    "PRESENT_STATES",
     "RENDER_FLAG_HELP",
     "RENDER_FLAG_LABELS",
     "RENDER_FLAG_ORDER",
@@ -357,6 +498,13 @@ __all__ = [
     "AddressFlag",
     "AddressSort",
     "AddressState",
+    "CheckFlag",
+    "CheckSort",
+    "CheckState",
+    "FindingGroup",
+    "FindingSort",
+    "FindingState",
+    "FindingTimelineMode",
     "LaneState",
     "Observation",
     "PortFlag",

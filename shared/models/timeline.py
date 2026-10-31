@@ -8,6 +8,10 @@ from shared.definitions.timeline import (
     MAX_TIMELINE_SCANS,
     AddressFlag,
     AddressSort,
+    CheckFlag,
+    FindingGroup,
+    FindingSort,
+    FindingTimelineMode,
     PortFlag,
     RenderFlag,
     RenderSort,
@@ -18,6 +22,7 @@ from shared.definitions.timeline import (
 from shared.models.asset_query import QueryError
 from shared.models.scan_correlation import ServiceFilter
 from shared.models.subdomain import SubdomainFilter, SubdomainRead
+from shared.models.vulnerability import VulnerabilityFilter, VulnerabilityRead
 
 
 class TimelineFilter(SubdomainFilter):
@@ -193,6 +198,117 @@ class ServiceTimelineResult(BaseModel):
     mode: ServiceTimelineMode = ServiceTimelineMode.ADDRESS
     addresses: list[ServiceAddressRow] = Field(default_factory=list)
     ports: list[ServicePortRow] = Field(default_factory=list)
+    total: int = 0
+    counts: dict[str, int] = Field(default_factory=dict)
+    error: QueryError | None = None
+
+
+class FindingTimelineFilter(VulnerabilityFilter):
+    """The findings filter plus the window, the mode and the group the view narrows to."""
+
+    window: int = Field(default=DEFAULT_TIMELINE_WINDOW, ge=2, le=MAX_TIMELINE_SCANS)
+    mode: FindingTimelineMode = FindingTimelineMode.LIFESPANS
+    flag: FindingGroup | CheckFlag | None = None
+    sort: str = Field(default=FindingSort.AGE.value, max_length=20)
+    order: str = Field(default="desc", max_length=4)
+
+
+class FindingCell(BaseModel):
+    state: str
+
+
+class LifeSegment(BaseModel):
+    """One stretch of columns in one state, first and last column inclusive."""
+
+    state: str
+    start: int
+    end: int
+    days: int | None = None
+
+
+class FindingLifespan(BaseModel):
+    finding: VulnerabilityRead
+    group: str
+    state: str
+    cells: list[FindingCell] = Field(default_factory=list)
+    segments: list[LifeSegment] = Field(default_factory=list)
+    first_seen_at: datetime | None = None
+    open_since: datetime | None = None
+    open_days: int | None = None
+    fixed_at: datetime | None = None
+    fixed_scan_id: uuid.UUID | None = None
+    regressions: int = 0
+    returned_at: datetime | None = None
+    returned_scan_id: uuid.UUID | None = None
+    not_tested_runs: int = 0
+    tested_runs: int = 0
+    is_new: bool = False
+    triage_state: str
+    last_change_scan_id: uuid.UUID | None = None
+
+
+class RunPoint(BaseModel):
+    scan_id: uuid.UUID
+    open: dict[str, int] = Field(default_factory=dict)
+    fixed: int = 0
+    regressed: int = 0
+    tested_checks: int | None = None
+    tested_origins: int | None = None
+
+
+class FindingStats(BaseModel):
+    open_now: int | None = None
+    open_delta: int | None = None
+    untested: int = 0
+    regressed: int = 0
+    fixed: int = 0
+    fixed_median_days: int | None = None
+    oldest_open_days: int | None = None
+    oldest_open_name: str | None = None
+    oldest_open_severity: str | None = None
+    runs: list[RunPoint] = Field(default_factory=list)
+
+
+class CheckCell(BaseModel):
+    state: str
+    hosts: int = 0
+    delta: int = 0
+    added: list[str] = Field(default_factory=list)
+    removed: list[str] = Field(default_factory=list)
+    more: int = 0
+
+
+class CheckRow(BaseModel):
+    template_id: str
+    template_name: str
+    severity: str
+    is_kev: bool = False
+    cells: list[CheckCell] = Field(default_factory=list)
+    flags: list[str] = Field(default_factory=list)
+    hosts_now: int | None = None
+    peak: int = 0
+    library_scan_id: uuid.UUID | None = None
+    first_seen_at: datetime | None = None
+    last_change_scan_id: uuid.UUID | None = None
+
+
+class CheckStats(BaseModel):
+    checks: int = 0
+    tested_checks: int | None = None
+    spread: int = 0
+    shrank: int = 0
+    cleared: int = 0
+    library_new: int = 0
+
+
+class FindingTimelineResult(BaseModel):
+    scans: list[TimelineScan] = Field(default_factory=list)
+    runs: int = 0
+    mode: FindingTimelineMode = FindingTimelineMode.LIFESPANS
+    stats: FindingStats | None = None
+    check_stats: CheckStats | None = None
+    items: list[FindingLifespan] = Field(default_factory=list)
+    checks: list[CheckRow] = Field(default_factory=list)
     total: int = 0
     counts: dict[str, int] = Field(default_factory=dict)
     error: QueryError | None = None

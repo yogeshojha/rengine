@@ -6,6 +6,7 @@
 	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ViewControls from '../table/view-controls.svelte';
+	import { FINDING_MODE_LABELS, FindingTimelineMode, TIMELINE_WINDOWS } from '$lib/config/timeline';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
 	import type { Facet } from '$lib/utilities/scan-insights';
@@ -36,6 +37,12 @@
 		onGroupBy: (key: string) => void;
 		columnsLocked?: boolean;
 		onShortcuts?: () => void;
+		/** the Timeline view is on */
+		timeline?: boolean;
+		timelineWindow?: number;
+		onTimelineWindow?: (scans: number) => void;
+		mode?: FindingTimelineMode;
+		onMode?: (mode: FindingTimelineMode) => void;
 	}
 
 	let {
@@ -61,7 +68,12 @@
 		projectId = '',
 		scanId = '',
 		exportFilters = {},
-		onShortcuts
+		onShortcuts,
+		timeline = false,
+		timelineWindow = TIMELINE_WINDOWS[1],
+		onTimelineWindow,
+		mode = FindingTimelineMode.LIFESPANS,
+		onMode
 	}: Props = $props();
 
 	const NEW_TOKEN = 'is:new';
@@ -184,6 +196,42 @@
 	</div>
 
 	<div class="ml-auto flex min-w-0 flex-wrap items-center gap-2">
+		{#if timeline}
+			<ToggleGroup.Root
+				type="single"
+				variant="outline"
+				value={mode}
+				onValueChange={(v) => v && onMode?.(v as FindingTimelineMode)}
+				aria-label="Timeline mode"
+			>
+				{#each Object.values(FindingTimelineMode) as m (m)}
+					<ToggleGroup.Item value={m} class="h-9 px-3 text-sm font-normal">
+						{FINDING_MODE_LABELS[m]}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+			<div class="flex items-center gap-2 text-sm text-muted-foreground">
+				<span>Last</span>
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					value={String(timelineWindow)}
+					onValueChange={(v) => v && onTimelineWindow?.(Number(v))}
+					aria-label="Runs shown"
+				>
+					{#each TIMELINE_WINDOWS as n (n)}
+						<ToggleGroup.Item
+							value={String(n)}
+							aria-label="Last {n} runs"
+							class="h-9 px-3 text-sm font-normal tabular-nums"
+						>
+							{n}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<span>runs</span>
+			</div>
+		{/if}
 		<ViewControls
 			dimension={SurfaceDimension.VULNERABILITIES}
 			{dimensions}

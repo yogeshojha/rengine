@@ -1384,6 +1384,7 @@
 						{#key scan.id}
 							<VulnerabilitiesTable
 								scanId={scan.id}
+								census={scan.scope === 'full'}
 								targetType={scan.execution_config.target_type}
 								active={activeTab === 'vulnerabilities'}
 								revision={resultTicks[SurfaceDimension.VULNERABILITIES] ?? 0}

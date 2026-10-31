@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import VulnScope
 from app.core.database import get_session
+from app.services.finding_timeline import FindingTimelineService
 from app.services.vulnerability import VulnerabilityService
 from shared.definitions.vulnerabilities import VULN_STATES
 from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.timeline import FindingTimelineFilter, FindingTimelineResult
 from shared.models.vulnerability import (
     BulkTriageResult,
     BulkTriageUpdate,
@@ -101,6 +103,27 @@ async def vulnerability_groups(
     body: VulnerabilityFilter,
 ):
     return await service.groups(scope, body, group_by)
+
+
+@router.post("/timeline", response_model=FindingTimelineResult)
+async def finding_timeline(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    body: FindingTimelineFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    service = FindingTimelineService(session)
+    return await lead_cache.cached(
+        session,
+        name="timeline:findings",
+        scans=(scan_id,),
+        facets=f"{project_id}|{body.model_dump_json()}",
+        model=FindingTimelineResult,
+        build=lambda: service.search(project_id, scan_id, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
+    )
 
 
 @router.get("/facets", response_model=VulnerabilityFacets)

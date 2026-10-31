@@ -156,9 +156,12 @@ export interface BulkTriageResult {
 
 export const VULN_VIEWS = [
 	{ key: 'issues', label: 'Issues' },
-	{ key: 'findings', label: 'Findings' }
+	{ key: 'findings', label: 'Findings' },
+	{ key: 'timeline', label: 'Timeline' }
 ] as const;
 export type VulnView = (typeof VULN_VIEWS)[number]['key'];
+/** the views a project-wide or focused page offers */
+export const TABLE_VIEWS = VULN_VIEWS.filter((v) => v.key !== 'timeline');
 export const DEFAULT_VULN_VIEW: VulnView = 'issues';
 
 export interface VulnQuery {

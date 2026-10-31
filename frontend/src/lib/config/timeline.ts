@@ -38,7 +38,8 @@ export const ABSENT_STATES: ReadonlySet<string> = new Set([
 	WebAssetState.UNSEEN
 ]);
 
-const HATCH = 'bg-[repeating-linear-gradient(135deg,var(--fill-hatch)_0_2px,transparent_2px_5px)]';
+export const HATCH =
+	'bg-[repeating-linear-gradient(135deg,var(--fill-hatch)_0_2px,transparent_2px_5px)]';
 
 // one cell of a strip
 export const STATE_CELL: Record<WebAssetState, string> = {
@@ -465,3 +466,164 @@ export const DEFAULT_ADDRESS_SORT = { key: AddressSort.LAST_CHANGE, dir: -1 as c
 export const DEFAULT_PORT_SORT = { key: PortSort.ADDRESSES, dir: -1 as const };
 
 export const SERVICES_TIMELINE_VIEW = 'timeline';
+
+// ---------- findings ----------
+
+export enum FindingTimelineMode {
+	LIFESPANS = 'lifespans',
+	CHECKS = 'checks'
+}
+
+export const FINDING_MODE_LABELS: Record<FindingTimelineMode, string> = {
+	[FindingTimelineMode.LIFESPANS]: 'Lifespans',
+	[FindingTimelineMode.CHECKS]: 'By check'
+};
+
+export enum FindingState {
+	OPEN = 'open',
+	REGRESSED = 'regressed',
+	FIXED = 'fixed',
+	NOT_TESTED = 'not_tested',
+	UNOBSERVED = 'unobserved',
+	UNSEEN = 'unseen'
+}
+
+export const PRESENT_STATES: FindingState[] = [FindingState.OPEN, FindingState.REGRESSED];
+
+export const FINDING_STATE_LABELS: Record<FindingState, string> = {
+	[FindingState.OPEN]: 'Open',
+	[FindingState.REGRESSED]: 'Came back',
+	[FindingState.FIXED]: 'Fixed',
+	[FindingState.NOT_TESTED]: 'Not tested',
+	[FindingState.UNOBSERVED]: 'No vulnerability scan',
+	[FindingState.UNSEEN]: 'Not seen yet'
+};
+
+export const FINDING_OBSERVATION_LABELS: Record<Observation, string> = {
+	[Observation.OBSERVED]: 'Vulnerability scan completed',
+	[Observation.PARTIAL]: 'Vulnerability scan incomplete',
+	[Observation.UNOBSERVED]: 'No vulnerability scan in this run'
+};
+
+export enum FindingGroup {
+	REGRESSED = 'regressed',
+	NEW = 'new',
+	OPEN = 'open',
+	FIXED = 'fixed',
+	SET_ASIDE = 'set_aside'
+}
+
+export const FINDING_GROUP_ORDER: FindingGroup[] = [
+	FindingGroup.REGRESSED,
+	FindingGroup.NEW,
+	FindingGroup.OPEN,
+	FindingGroup.FIXED,
+	FindingGroup.SET_ASIDE
+];
+
+export const FINDING_GROUP_LABELS: Record<FindingGroup, string> = {
+	[FindingGroup.REGRESSED]: 'Regressed',
+	[FindingGroup.NEW]: 'New in this scan',
+	[FindingGroup.OPEN]: 'Open',
+	[FindingGroup.FIXED]: 'Fixed',
+	[FindingGroup.SET_ASIDE]: 'Set aside'
+};
+
+export const FINDING_GROUP_HELP: Record<FindingGroup, string> = {
+	[FindingGroup.REGRESSED]: 'Came back after a run that found it fixed.',
+	[FindingGroup.NEW]: 'First seen in this scan.',
+	[FindingGroup.OPEN]: 'Found in this scan, or absent with the check untested since.',
+	[FindingGroup.FIXED]: 'A later run tested for it and found nothing.',
+	[FindingGroup.SET_ASIDE]: 'Reviewed as a false positive or an accepted risk.'
+};
+
+export enum FindingSort {
+	AGE = 'age',
+	LAST_CHANGE = 'last_change',
+	SEVERITY = 'severity',
+	FIRST_SEEN = 'first_seen',
+	NAME = 'name'
+}
+
+export const FINDING_SORTS: SortOption[] = [
+	{ key: FindingSort.AGE, label: 'Days open' },
+	{ key: FindingSort.LAST_CHANGE, label: 'Last change' },
+	{ key: FindingSort.SEVERITY, label: 'Severity' },
+	{ key: FindingSort.FIRST_SEEN, label: 'First seen' },
+	{ key: FindingSort.NAME, label: 'Check' }
+];
+
+export enum CheckState {
+	TESTED = 'tested',
+	NOT_TESTED = 'not_tested',
+	NOT_IN_LIBRARY = 'not_in_library',
+	UNOBSERVED = 'unobserved'
+}
+
+export const CHECK_STATE_LABELS: Record<CheckState, string> = {
+	[CheckState.TESTED]: 'Tested',
+	[CheckState.NOT_TESTED]: 'Not tested',
+	[CheckState.NOT_IN_LIBRARY]: 'Check not in the library yet',
+	[CheckState.UNOBSERVED]: 'No vulnerability scan'
+};
+
+export enum CheckFlag {
+	SPREAD = 'spread',
+	SHRANK = 'shrank',
+	CLEARED = 'cleared',
+	LIBRARY_NEW = 'library_new'
+}
+
+export const CHECK_FLAG_ORDER: CheckFlag[] = [
+	CheckFlag.SPREAD,
+	CheckFlag.SHRANK,
+	CheckFlag.CLEARED,
+	CheckFlag.LIBRARY_NEW
+];
+
+export const CHECK_FLAG_LABELS: Record<CheckFlag, string> = {
+	[CheckFlag.SPREAD]: 'Spread',
+	[CheckFlag.SHRANK]: 'Shrank',
+	[CheckFlag.CLEARED]: 'Cleared',
+	[CheckFlag.LIBRARY_NEW]: 'New to the library'
+};
+
+export const CHECK_FLAG_HELP: Record<CheckFlag, string> = {
+	[CheckFlag.SPREAD]:
+		'The check matches more web assets than in the first run of the window that found it.',
+	[CheckFlag.SHRANK]:
+		'The check matches fewer web assets than in the first run of the window that found it.',
+	[CheckFlag.CLEARED]: 'No web asset carries the finding in this scan.',
+	[CheckFlag.LIBRARY_NEW]: 'The library gained the check inside the window.'
+};
+
+export enum CheckSort {
+	HOSTS = 'hosts',
+	SEVERITY = 'severity',
+	LAST_CHANGE = 'last_change',
+	NAME = 'name'
+}
+
+export const CHECK_SORTS: SortOption[] = [
+	{ key: CheckSort.HOSTS, label: 'Hosts' },
+	{ key: CheckSort.SEVERITY, label: 'Severity' },
+	{ key: CheckSort.LAST_CHANGE, label: 'Last change' },
+	{ key: CheckSort.NAME, label: 'Check' }
+];
+
+export const DEFAULT_FINDING_SORT = { key: FindingSort.AGE, dir: -1 as const };
+export const DEFAULT_CHECK_SORT = { key: CheckSort.HOSTS, dir: -1 as const };
+
+export const FINDINGS_TIMELINE_VIEW = 'timeline';
+
+export const CHECK_CELL: Record<CheckState, string> = {
+	[CheckState.TESTED]: 'bg-fill-muted/40',
+	[CheckState.NOT_TESTED]: HATCH,
+	[CheckState.NOT_IN_LIBRARY]: 'border border-dotted border-fill-hatch',
+	[CheckState.UNOBSERVED]: `${HATCH} opacity-60`
+};
+
+export const SEGMENT_HATCH =
+	'repeating-linear-gradient(135deg, var(--fill-hatch) 0 3px, transparent 3px 6px)';
+export const SEGMENT_DASH =
+	'repeating-linear-gradient(90deg, var(--fill-strong) 0 6px, transparent 6px 10px)';
