@@ -1327,6 +1327,7 @@
 						{#key scan.id}
 							<ServicesTable
 								scanId={scan.id}
+								census={scan.scope === 'full'}
 								targetType={scan.execution_config.target_type}
 								{projectId}
 								active={activeTab === 'services'}

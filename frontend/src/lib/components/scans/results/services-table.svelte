@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
+	import { goto } from '$app/navigation';
+	import { toast } from 'svelte-sonner';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import X from '@lucide/svelte/icons/x';
@@ -42,6 +44,7 @@
 	import FilterChips from './table/filter-chips.svelte';
 	import FilterBar from './services/filter-bar.svelte';
 	import ServiceRow from './services/service-row.svelte';
+	import ServiceTimelineList from './services/timeline-list.svelte';
 	import ServiceDetailSheet from './service-detail-sheet.svelte';
 	import {
 		SERVICE_COLUMNS,
@@ -52,12 +55,33 @@
 	import { servicesApi } from '$lib/api/scan-results';
 	import { serviceQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { ROUTES } from '$lib/config/routes';
+	import {
+		ADDRESS_FLAG_LABELS,
+		ADDRESS_FLAG_ORDER,
+		ADDRESS_FLAG_HELP,
+		ADDRESS_SORTS,
+		DEFAULT_ADDRESS_SORT,
+		DEFAULT_PORT_SORT,
+		DEFAULT_TIMELINE_WINDOW,
+		PORT_FLAG_HELP,
+		PORT_FLAG_LABELS,
+		PORT_FLAG_ORDER,
+		PORT_SORTS,
+		SERVICES_TIMELINE_VIEW,
+		ServiceTimelineMode,
+		TIMELINE_WINDOWS,
+		type AddressFlag,
+		type PortFlag
+	} from '$lib/config/timeline';
+	import type { ServiceTimelineResult } from '$lib/types/timeline';
 	import {
 		hideLabel,
 		excludeToken,
 		appendTokens,
 		appendToken,
-		type Facet
+		type Facet,
+		filterToken
 	} from '$lib/utilities/scan-insights';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import { seedKindFor, selectionLabel } from '$lib/utilities/rechecks';
@@ -74,6 +98,7 @@
 		SERVICE_SORTS,
 		type ServiceFacetSet,
 		type ServiceQuery,
+		type ServiceFilter,
 		type ServiceRead as Service
 	} from '$lib/utilities/services';
 	import type { QueryError, QueryGroups, QueryLeads } from '$lib/types/asset-query';
@@ -88,6 +113,7 @@
 		projectWide?: boolean;
 		targetType?: string;
 		projectId: string;
+		census?: boolean;
 		active?: boolean;
 		revision?: number;
 		onTab?: (tab: ResultTab, filter?: string) => void;
@@ -100,6 +126,7 @@
 		projectWide = false,
 		targetType = '',
 		projectId,
+		census = false,
 		active = true,
 		revision = 0,
 		onTab,
@@ -125,12 +152,66 @@
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.servicesColumns, null));
 	let density = $state<string>(readPref(STORAGE_KEYS.servicesDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.servicesPageSize, RESULTS_PAGE_SIZE));
+	const TIMELINE = SERVICES_TIMELINE_VIEW;
+	const timelineOffered = () => !projectWide && census && Boolean(scanId);
+	function viewFrom(raw: string | null): string {
+		return raw === TIMELINE && timelineOffered() ? TIMELINE : 'table';
+	}
+	function modeFrom(raw: string | null): ServiceTimelineMode {
+		return raw === ServiceTimelineMode.PORT
+			? ServiceTimelineMode.PORT
+			: ServiceTimelineMode.ADDRESS;
+	}
+	function windowFrom(raw: string | null): number | null {
+		const n = Number(raw);
+		return (TIMELINE_WINDOWS as readonly number[]).includes(n) ? n : null;
+	}
+	function flagFrom(raw: string | null, m: ServiceTimelineMode): AddressFlag | PortFlag | null {
+		const order: string[] = m === ServiceTimelineMode.PORT ? PORT_FLAG_ORDER : ADDRESS_FLAG_ORDER;
+		return order.includes(raw ?? '') ? (raw as AddressFlag | PortFlag) : null;
+	}
+	const timelineSort = (m: ServiceTimelineMode) =>
+		m === ServiceTimelineMode.PORT ? { ...DEFAULT_PORT_SORT } : { ...DEFAULT_ADDRESS_SORT };
+	let view = $state<string>(viewFrom(initial.get('svc_view')));
+	let timeline = $derived(view === TIMELINE);
+	let mode = $state<ServiceTimelineMode>(modeFrom(initial.get('svc_mode')));
+	let timelineWindow = $state<number>(
+		windowFrom(initial.get('svc_window')) ??
+			readPref(STORAGE_KEYS.servicesTimelineWindow, DEFAULT_TIMELINE_WINDOW)
+	);
+	let timelineFlag = $state<AddressFlag | PortFlag | null>(
+		initial.get('svc_view') === TIMELINE
+			? flagFrom(initial.get('svc_flag'), modeFrom(initial.get('svc_mode')))
+			: null
+	);
+	let strips = $state<ServiceTimelineResult | null>(null);
+	const ADDRESS_TABS = [
+		{ key: 'all', label: 'All' },
+		...ADDRESS_FLAG_ORDER.map((flag) => ({ key: flag, label: ADDRESS_FLAG_LABELS[flag] }))
+	];
+	const PORT_TABS = [
+		{ key: 'all', label: 'All' },
+		...PORT_FLAG_ORDER.map((flag) => ({ key: flag, label: PORT_FLAG_LABELS[flag] }))
+	];
+	let flagTabs = $derived(mode === ServiceTimelineMode.PORT ? PORT_TABS : ADDRESS_TABS);
+	let flagCounts = $derived(strips && !strips.error ? strips.counts : null);
+	let timelineSorts = $derived(mode === ServiceTimelineMode.PORT ? PORT_SORTS : ADDRESS_SORTS);
+	let flagHelp = $derived(
+		timelineFlag
+			? mode === ServiceTimelineMode.PORT
+				? PORT_FLAG_HELP[timelineFlag as PortFlag]
+				: ADDRESS_FLAG_HELP[timelineFlag as AddressFlag]
+			: ''
+	);
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
 			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
+			: initial.get('svc_view') === TIMELINE
+				? timelineSort(modeFrom(initial.get('svc_mode')))
+				: { ...DEFAULT_SORT }
 	);
 	let pageIndex = $state(Math.max(0, Number(initial.get('svc_page') ?? 1) - 1));
+	$effect(() => writePref(STORAGE_KEYS.servicesTimelineWindow, timelineWindow));
 
 	let items = $state<Service[]>([]);
 	let total = $state(0);
@@ -230,6 +311,23 @@
 		const my = ++reqId;
 		loading = true;
 		try {
+			if (timeline) {
+				const res = await servicesApi.timeline(projectId, scanId, {
+					...filter,
+					window: timelineWindow,
+					mode,
+					flag: timelineFlag
+				});
+				if (my !== reqId) return;
+				strips = res;
+				items = [];
+				total = res.total;
+				totalCapped = false;
+				queryError = res.error;
+				errored = false;
+				if (!res.error && filter.q) queryBar?.remember(filter.q);
+				return;
+			}
 			const res = await servicesApi.search(projectId, scanId, filter);
 			if (my !== reqId) return;
 			items = res.items;
@@ -343,7 +441,8 @@
 		const filtered = tabFiltered;
 		if (!ready || !seen || !queryReady) return;
 		untrack(() => {
-			if (filtered) tabCounts.track(key, () => servicesApi.tabs(projectId, scanId, filter));
+			if (filtered && !timeline)
+				tabCounts.track(key, () => servicesApi.tabs(projectId, scanId, filter));
 			else tabCounts.clear();
 		});
 	});
@@ -354,6 +453,10 @@
 		void sort.dir;
 		void pageIndex;
 		void pageSize;
+		void view;
+		void mode;
+		void timelineWindow;
+		void timelineFlag;
 		void scanId;
 		void projectId;
 		void queryReady;
@@ -393,6 +496,13 @@
 			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
 			set('svc_q', query.search || null);
 			set('svc_group', groupBy || null);
+			set('svc_view', timeline ? TIMELINE : null);
+			set('svc_mode', timeline && mode !== ServiceTimelineMode.ADDRESS ? mode : null);
+			set(
+				'svc_window',
+				timeline && timelineWindow !== DEFAULT_TIMELINE_WINDOW ? String(timelineWindow) : null
+			);
+			set('svc_flag', timeline ? timelineFlag : null);
 			set('svc_page', pageIndex > 0 ? String(pageIndex + 1) : null);
 			set(
 				'svc_sort',
@@ -403,13 +513,28 @@
 			urlSync.write(sp);
 		} catch {}
 	}
-	const urlSync = new UrlSync(['svc_q', 'svc_group']);
+	const urlSync = new UrlSync([
+		'svc_q',
+		'svc_group',
+		'svc_view',
+		'svc_mode',
+		'svc_window',
+		'svc_flag'
+	]);
 
 	function restoreUrl(sp: URLSearchParams) {
 		const search = sp.get('svc_q') ?? '';
 		if (search !== query.search) query = { ...query, search };
 		const group = sp.get('svc_group') ?? '';
 		if (group !== groupBy) groupBy = group;
+		const nextView = viewFrom(sp.get('svc_view'));
+		if (nextView !== view) view = nextView;
+		const nextMode = modeFrom(sp.get('svc_mode'));
+		if (nextMode !== mode) mode = nextMode;
+		const nextWindow = windowFrom(sp.get('svc_window')) ?? DEFAULT_TIMELINE_WINDOW;
+		if (nextView === TIMELINE && nextWindow !== timelineWindow) timelineWindow = nextWindow;
+		const nextFlag = nextView === TIMELINE ? flagFrom(sp.get('svc_flag'), nextMode) : null;
+		if (nextFlag !== timelineFlag) timelineFlag = nextFlag;
 		const [sortKey, sortDir] = sp.get('svc_sort')?.split(':') ?? [];
 		const nextSort = sortKey
 			? { key: sortKey, dir: (sortDir === 'desc' ? -1 : 1) as 1 | -1 }
@@ -422,6 +547,10 @@
 	$effect(() => {
 		void query.search;
 		void groupBy;
+		void view;
+		void mode;
+		void timelineWindow;
+		void timelineFlag;
 		void pageIndex;
 		void sort.key;
 		void sort.dir;
@@ -446,6 +575,53 @@
 			pendingSelect = 'last';
 			pageIndex -= 1;
 		}
+	}
+	function setView(v: string) {
+		if (v === view) return;
+		const was = timeline;
+		view = v;
+		pageIndex = 0;
+		if (v === TIMELINE) {
+			groupBy = '';
+			if (!timelineSorts.some((s) => s.key === sort.key)) sort = timelineSort(mode);
+		} else if (was && !SERVICE_SORTS.some((s) => s.key === sort.key)) {
+			sort = { ...DEFAULT_SORT };
+		}
+	}
+	function setMode(m: ServiceTimelineMode) {
+		if (m === mode) return;
+		mode = m;
+		timelineFlag = null;
+		pageIndex = 0;
+		const sorts = m === ServiceTimelineMode.PORT ? PORT_SORTS : ADDRESS_SORTS;
+		if (!sorts.some((s) => s.key === sort.key)) sort = timelineSort(m);
+	}
+	function setFlag(key: string) {
+		timelineFlag = key === 'all' ? null : (key as AddressFlag | PortFlag);
+		pageIndex = 0;
+	}
+	async function openService(serviceId: string, atScanId: string) {
+		try {
+			const res = await servicesApi.search(projectId, atScanId, {
+				...compileServiceQuery(emptyServiceQuery(), 'port', 1, 0, 1),
+				ids: [serviceId]
+			} as ServiceFilter);
+			const hit = res.items[0];
+			if (!hit) {
+				toast.error('Service not in that scan');
+				return;
+			}
+			selected = hit;
+			drawerOpen = true;
+		} catch {
+			toast.error('Service not loaded');
+		}
+	}
+	function openScanTimeline(id: string) {
+		void goto(ROUTES.results(SVC.tab, id, { svc_view: TIMELINE, svc_mode: mode }));
+	}
+	function openPort(port: number, atScanId: string) {
+		void goto(ROUTES.results(SVC.tab, atScanId, { svc_q: filterToken('port', String(port)) }));
 	}
 	function toggleSort(key: string) {
 		sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
@@ -617,13 +793,22 @@
 	{@attach trackWidth((w) => (tableWidth = w))}
 >
 	<div class="border-b px-2">
-		<CountTabs
-			tabs={SERVICE_CLASS_TABS}
-			value={classTab}
-			counts={classCounts}
-			capped={tabFiltered ? tabCounts.capped : null}
-			onChange={setClassTab}
-		/>
+		{#if timeline}
+			<CountTabs
+				tabs={flagTabs}
+				value={timelineFlag ?? 'all'}
+				counts={flagCounts}
+				onChange={setFlag}
+			/>
+		{:else}
+			<CountTabs
+				tabs={SERVICE_CLASS_TABS}
+				value={classTab}
+				counts={classCounts}
+				capped={tabFiltered ? tabCounts.capped : null}
+				onChange={setClassTab}
+			/>
+		{/if}
 	</div>
 
 	<FilterBar
@@ -637,10 +822,20 @@
 		onToggleColumn={toggleCol}
 		{density}
 		onDensity={(d) => (density = d)}
-		sorts={SERVICE_SORTS}
+		sorts={timeline ? timelineSorts : SERVICE_SORTS}
 		sortKey={sort.key}
 		sortDir={sort.dir}
 		onSort={toggleSort}
+		timeline={timelineOffered()}
+		{view}
+		onView={setView}
+		{timelineWindow}
+		onTimelineWindow={(n) => {
+			timelineWindow = n;
+			pageIndex = 0;
+		}}
+		{mode}
+		onMode={setMode}
 		{refreshing}
 		{projectId}
 		{scanId}
@@ -657,7 +852,7 @@
 		onClear={() => setQuery({ ...emptyServiceQuery(), search: query.search })}
 	/>
 
-	{#if !groupBy}
+	{#if !groupBy && !timeline}
 		<SelectionBar
 			noun={SVC.noun}
 			nounPlural={SVC.nounPlural}
@@ -696,6 +891,22 @@
 			loading={groupLoading}
 			onPick={drillGroup}
 		/>
+	{:else if timeline && strips && !strips.error && strips.total > 0}
+		<ServiceTimelineList
+			result={strips}
+			{loading}
+			focusedIndex={rows.index}
+			pad={rowPad}
+			flag={timelineFlag}
+			sortKey={sort.key}
+			sortDir={sort.dir}
+			onSort={toggleSort}
+			onOpenScan={openScanTimeline}
+			onAddress={(ip) => showAddress(filterToken('ip', ip))}
+			onOpenService={openService}
+			onPort={openPort}
+			track={rows.track}
+		/>
 	{:else if items.length === 0}
 		{#if queryError}
 			<EmptyState
@@ -704,6 +915,17 @@
 				description={queryError.message}
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
+		{:else if timeline && timelineFlag}
+			<EmptyState
+				icon={SearchX}
+				title="No services match"
+				description={flagHelp}
+				class="rounded-none border-0 bg-transparent py-16"
+			>
+				<Button size="sm" variant="outline" onclick={() => setFlag('all')}>
+					<X class="h-4 w-4" /> Clear filter
+				</Button>
+			</EmptyState>
 		{:else if filtered}
 			<EmptyState
 				icon={SearchX}

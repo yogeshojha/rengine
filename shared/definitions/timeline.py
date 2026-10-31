@@ -191,30 +191,180 @@ class RenderSort(StrEnum):
     STATUS = "status"
 
 
+# ---------- services ----------
+
+
+class ServiceTimelineMode(StrEnum):
+    ADDRESS = "address"
+    PORT = "port"
+
+
+SERVICE_STAGE = "port_scan"
+
+
+class AddressState(StrEnum):
+    SAME = "same"
+    OPENED = "opened"
+    CLOSED = "closed"
+    BOTH = "both"
+    FIRST = "first"
+    GONE = "gone"
+    UNCONFIRMED = "unconfirmed"
+    UNOBSERVED = "unobserved"
+    UNSEEN = "unseen"
+
+
+ADDRESS_STATE_LABELS: dict[str, str] = {
+    AddressState.SAME.value: "Same ports",
+    AddressState.OPENED.value: "Port opened",
+    AddressState.CLOSED.value: "Port closed",
+    AddressState.BOTH.value: "Opened and closed",
+    AddressState.FIRST.value: "First seen",
+    AddressState.GONE.value: "Gone",
+    AddressState.UNCONFIRMED.value: "Not confirmed",
+    AddressState.UNOBSERVED.value: "Ports not scanned",
+    AddressState.UNSEEN.value: "Not yet seen",
+}
+
+
+class LaneState(StrEnum):
+    OPEN = "open"
+    CLOSED = "closed"
+    UNCONFIRMED = "unconfirmed"
+    UNOBSERVED = "unobserved"
+    UNSEEN = "unseen"
+
+
+LANE_STATE_LABELS: dict[str, str] = {
+    LaneState.OPEN.value: "Open",
+    LaneState.CLOSED.value: "Closed",
+    LaneState.UNCONFIRMED.value: "Not confirmed",
+    LaneState.UNOBSERVED.value: "Ports not scanned",
+    LaneState.UNSEEN.value: "Not yet seen",
+}
+
+SERVICE_OBSERVATION_LABELS: dict[str, str] = {
+    Observation.OBSERVED.value: "Ports scanned",
+    Observation.PARTIAL.value: "Port scan partial",
+    Observation.UNOBSERVED.value: "Ports not scanned in this run",
+}
+
+
+class AddressFlag(StrEnum):
+    OPENED = "opened"
+    CLOSED = "closed"
+    NEW = "new"
+    GONE = "gone"
+    SOFTWARE = "software"
+    FLAPPING = "flapping"
+
+
+ADDRESS_FLAG_ORDER: tuple[str, ...] = tuple(flag.value for flag in AddressFlag)
+
+ADDRESS_FLAG_LABELS: dict[str, str] = {
+    AddressFlag.OPENED.value: "Ports opened",
+    AddressFlag.CLOSED.value: "Ports closed",
+    AddressFlag.NEW.value: "New address",
+    AddressFlag.GONE.value: "Gone",
+    AddressFlag.SOFTWARE.value: "Software changed",
+    AddressFlag.FLAPPING.value: "Keeps changing",
+}
+
+ADDRESS_FLAG_HELP: dict[str, str] = {
+    AddressFlag.OPENED.value: "A port opened on the address inside the window.",
+    AddressFlag.CLOSED.value: "A port closed on the address inside the window.",
+    AddressFlag.NEW.value: "The address answered on a port for the first time in this scan.",
+    AddressFlag.GONE.value: "No port answers on the address in this scan.",
+    AddressFlag.SOFTWARE.value: "A service on the address reported different software.",
+    AddressFlag.FLAPPING.value: "One port opened and closed three or more times in the window.",
+}
+
+
+class PortFlag(StrEnum):
+    SPREAD = "spread"
+    SHRANK = "shrank"
+    NEW = "new"
+    GONE = "gone"
+
+
+PORT_FLAG_ORDER: tuple[str, ...] = tuple(flag.value for flag in PortFlag)
+
+PORT_FLAG_LABELS: dict[str, str] = {
+    PortFlag.SPREAD.value: "Spread",
+    PortFlag.SHRANK.value: "Shrank",
+    PortFlag.NEW.value: "New on target",
+    PortFlag.GONE.value: "Gone",
+}
+
+PORT_FLAG_HELP: dict[str, str] = {
+    PortFlag.SPREAD.value: "The port opened on more addresses inside the window.",
+    PortFlag.SHRANK.value: "The port closed on some addresses inside the window.",
+    PortFlag.NEW.value: "The port answered on this target for the first time in this scan.",
+    PortFlag.GONE.value: "No address answers on the port in this scan.",
+}
+
+
+class AddressSort(StrEnum):
+    LAST_CHANGE = "last_change"
+    CHANGES = "changes"
+    FIRST_SEEN = "first_seen"
+    OPEN = "open"
+    ADDRESS = "address"
+
+
+class PortSort(StrEnum):
+    ADDRESSES = "addresses"
+    LAST_CHANGE = "last_change"
+    FIRST_SEEN = "first_seen"
+    PORT = "port"
+
+
+# addresses named on a port cell
+MAX_CELL_ADDRESSES = 8
+
+
 __all__ = [
     "ABSENT_STATES",
+    "ADDRESS_FLAG_HELP",
+    "ADDRESS_FLAG_LABELS",
+    "ADDRESS_FLAG_ORDER",
+    "ADDRESS_STATE_LABELS",
     "CAPTURED_STATES",
     "DEFAULT_TIMELINE_WINDOW",
     "FLAG_HELP",
     "FLAG_LABELS",
     "FLAG_ORDER",
     "FLAPPING_TRANSITIONS",
+    "LANE_STATE_LABELS",
+    "MAX_CELL_ADDRESSES",
     "MAX_TIMELINE_SCANS",
     "OBSERVATION_LABELS",
+    "PORT_FLAG_HELP",
+    "PORT_FLAG_LABELS",
+    "PORT_FLAG_ORDER",
     "RENDER_FLAG_HELP",
     "RENDER_FLAG_LABELS",
     "RENDER_FLAG_ORDER",
     "RENDER_OBSERVATION_LABELS",
     "RENDER_STAGE",
     "RENDER_STATE_LABELS",
+    "SERVICE_OBSERVATION_LABELS",
+    "SERVICE_STAGE",
     "TIMELINE_WINDOWS",
     "WEB_ATTRIBUTES",
     "WEB_ATTRIBUTE_LABELS",
     "WEB_STATE_LABELS",
+    "AddressFlag",
+    "AddressSort",
+    "AddressState",
+    "LaneState",
     "Observation",
+    "PortFlag",
+    "PortSort",
     "RenderFlag",
     "RenderSort",
     "RenderState",
+    "ServiceTimelineMode",
     "TimelineFlag",
     "TimelineSort",
     "WebAssetState",

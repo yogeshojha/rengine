@@ -372,7 +372,13 @@ class Estate:
         )
 
     async def ports(
-        self, scan: str, rows: list[tuple[str, int, str]], *, at: datetime
+        self,
+        scan: str,
+        rows: list[tuple[str, int, str]],
+        *,
+        at: datetime,
+        product: str | None = None,
+        version: str | None = None,
     ) -> None:
         sid = self.scans[scan]
         target_id = await self._target_of(sid)
@@ -387,6 +393,8 @@ class Estate:
                     protocol="tcp",
                     service_name=service,
                     source="naabu",
+                    product=product,
+                    version=version,
                     discovered_at=at,
                 )
             )

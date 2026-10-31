@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { ServiceTimelineFilter, ServiceTimelineResult } from '$lib/types/timeline';
 import type {
 	SoftwareCoverage,
 	SoftwareFacets,
@@ -76,6 +77,17 @@ export const ipsApi = {
 };
 
 export const servicesApi = {
+	async timeline(
+		projectId: string,
+		scanId: string,
+		filter: ServiceTimelineFilter
+	): Promise<ServiceTimelineResult> {
+		return api.post<ServiceTimelineResult>(
+			`/ports/timeline?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
+	},
+
 	async search(
 		projectId: string,
 		scanId: string,

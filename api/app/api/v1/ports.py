@@ -9,6 +9,7 @@ from app.api.scope import ServiceScope
 from app.core.database import get_session
 from app.services.origin_exposure import OriginExposureService
 from app.services.port import PortService
+from app.services.service_timeline import ServiceTimelineService
 from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
 from shared.models.scan_correlation import (
     AiSummary,
@@ -18,6 +19,7 @@ from shared.models.scan_correlation import (
     ServiceFilter,
     ServicePage,
 )
+from shared.models.timeline import ServiceTimelineFilter, ServiceTimelineResult
 from shared.services.asset_query import lead_cache
 
 router = APIRouter(
@@ -144,4 +146,25 @@ async def scan_exposure(
         facets="",
         model=ScanExposure,
         build=lambda: service.exposure(scope),
+    )
+
+
+@router.post("/timeline", response_model=ServiceTimelineResult)
+async def service_timeline(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    body: ServiceTimelineFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    service = ServiceTimelineService(session)
+    return await lead_cache.cached(
+        session,
+        name="timeline:services",
+        scans=(scan_id,),
+        facets=f"{project_id}|{body.model_dump_json()}",
+        model=ServiceTimelineResult,
+        build=lambda: service.search(project_id, scan_id, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
     )

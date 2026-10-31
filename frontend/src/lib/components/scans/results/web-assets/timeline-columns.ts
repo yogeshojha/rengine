@@ -55,10 +55,10 @@ export const RENDER_COLUMNS: TableColumn[] = [
 export const CELL_PX = 10;
 export const CELL_GAP_PX = 2;
 
-export function stripWidth(cells: number): number {
-	return Math.max(0, cells * (CELL_PX + CELL_GAP_PX) - CELL_GAP_PX);
+export function stripWidth(cells: number, px: number = CELL_PX): number {
+	return Math.max(0, cells * (px + CELL_GAP_PX) - CELL_GAP_PX);
 }
 
-export function cellLeft(index: number): number {
-	return index * (CELL_PX + CELL_GAP_PX);
+export function cellLeft(index: number, px: number = CELL_PX): number {
+	return index * (px + CELL_GAP_PX);
 }

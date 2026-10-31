@@ -303,7 +303,7 @@ class TimelineService:
                 w.c.strict,
                 w.c.observed_before,
                 w.c.strict_before,
-                w.c.next_strict,
+                cast(w.c.next_strict, Integer).label("next_strict"),
                 web_state().label("st"),
                 _attribute_hash().label("ah"),
                 _addresses().label("ips"),

@@ -1,6 +1,15 @@
 <script lang="ts">
 	import { appendToken, tokenize } from '$lib/utilities/scan-insights';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import ChartGantt from '@lucide/svelte/icons/chart-gantt';
+	import {
+		SERVICE_MODE_LABELS,
+		SERVICES_TIMELINE_VIEW,
+		ServiceTimelineMode,
+		TIMELINE_WINDOWS
+	} from '$lib/config/timeline';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
@@ -32,6 +41,14 @@
 		groupBy: string;
 		onGroupBy: (key: string) => void;
 		onShortcuts?: () => void;
+		/** the Timeline view is offered */
+		timeline?: boolean;
+		view?: string;
+		onView?: (v: string) => void;
+		timelineWindow?: number;
+		onTimelineWindow?: (scans: number) => void;
+		mode?: ServiceTimelineMode;
+		onMode?: (mode: ServiceTimelineMode) => void;
 	}
 
 	let {
@@ -56,7 +73,14 @@
 		projectId = '',
 		scanId = '',
 		exportFilters = {},
-		onShortcuts
+		onShortcuts,
+		timeline = false,
+		view = 'table',
+		onView,
+		timelineWindow = TIMELINE_WINDOWS[1],
+		onTimelineWindow,
+		mode = ServiceTimelineMode.ADDRESS,
+		onMode
 	}: Props = $props();
 
 	const NEW_TOKEN = 'is:new';
@@ -168,6 +192,77 @@
 	</div>
 
 	<div class="ml-auto flex min-w-0 flex-wrap items-center gap-2">
+		{#if timeline}
+			<ToggleGroup.Root
+				type="single"
+				variant="outline"
+				value={view}
+				onValueChange={(v) => v && onView?.(v)}
+				aria-label="View"
+			>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item {...props} value="table" aria-label="Table view" class="h-9 px-3">
+								<Rows3 class="h-4 w-4" />
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Table view</Tooltip.Content>
+				</Tooltip.Root>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item
+								{...props}
+								value={SERVICES_TIMELINE_VIEW}
+								aria-label="Timeline view"
+								class="h-9 px-3"
+							>
+								<ChartGantt class="h-4 w-4" />
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Timeline view</Tooltip.Content>
+				</Tooltip.Root>
+			</ToggleGroup.Root>
+			{#if view === SERVICES_TIMELINE_VIEW}
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					value={mode}
+					onValueChange={(v) => v && onMode?.(v as ServiceTimelineMode)}
+					aria-label="Rows"
+				>
+					{#each Object.values(ServiceTimelineMode) as m (m)}
+						<ToggleGroup.Item value={m} class="h-9 px-3 text-sm font-normal">
+							{SERVICE_MODE_LABELS[m]}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<div class="flex items-center gap-2 text-sm text-muted-foreground">
+					<span>Last</span>
+					<ToggleGroup.Root
+						type="single"
+						variant="outline"
+						value={String(timelineWindow)}
+						onValueChange={(v) => v && onTimelineWindow?.(Number(v))}
+						aria-label="Scans shown"
+					>
+						{#each TIMELINE_WINDOWS as n (n)}
+							<ToggleGroup.Item
+								value={String(n)}
+								aria-label="Last {n} scans"
+								class="h-9 px-3 text-sm font-normal tabular-nums"
+							>
+								{n}
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup.Root>
+					<span>scans</span>
+				</div>
+			{/if}
+		{/if}
 		<ViewControls
 			dimension={SurfaceDimension.SERVICES}
 			{dimensions}

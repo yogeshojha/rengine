@@ -276,3 +276,192 @@ export const RENDER_SORTS: SortOption[] = [
 export const DEFAULT_RENDER_SORT = { key: RenderSort.LAST_CHANGE, dir: -1 as const };
 
 export const RENDERS_VIEW = 'screenshots';
+
+// ---------- services ----------
+
+export enum ServiceTimelineMode {
+	ADDRESS = 'address',
+	PORT = 'port'
+}
+
+export const SERVICE_MODE_LABELS: Record<ServiceTimelineMode, string> = {
+	[ServiceTimelineMode.ADDRESS]: 'By address',
+	[ServiceTimelineMode.PORT]: 'By port'
+};
+
+export enum AddressState {
+	SAME = 'same',
+	OPENED = 'opened',
+	CLOSED = 'closed',
+	BOTH = 'both',
+	FIRST = 'first',
+	GONE = 'gone',
+	UNCONFIRMED = 'unconfirmed',
+	UNOBSERVED = 'unobserved',
+	UNSEEN = 'unseen'
+}
+
+export const ADDRESS_STATE_LABELS: Record<AddressState, string> = {
+	[AddressState.SAME]: 'Same ports',
+	[AddressState.OPENED]: 'Port opened',
+	[AddressState.CLOSED]: 'Port closed',
+	[AddressState.BOTH]: 'Opened and closed',
+	[AddressState.FIRST]: 'First seen',
+	[AddressState.GONE]: 'Gone',
+	[AddressState.UNCONFIRMED]: 'Not confirmed',
+	[AddressState.UNOBSERVED]: 'Ports not scanned',
+	[AddressState.UNSEEN]: 'Not yet seen'
+};
+
+// one cell of an address strip
+export const ADDRESS_CELL: Record<AddressState, string> = {
+	[AddressState.SAME]: 'bg-fill-muted/50',
+	[AddressState.OPENED]: 'bg-fill-strong',
+	[AddressState.CLOSED]: 'border border-dashed border-fill-strong',
+	[AddressState.BOTH]:
+		'border border-dashed border-fill-strong bg-[linear-gradient(90deg,var(--fill-strong)_50%,transparent_50%)]',
+	[AddressState.FIRST]: 'bg-fill-muted',
+	[AddressState.GONE]: '',
+	[AddressState.UNCONFIRMED]: `border border-dashed border-fill-hatch ${HATCH}`,
+	[AddressState.UNOBSERVED]: HATCH,
+	[AddressState.UNSEEN]: ''
+};
+
+export const ADDRESS_LEGEND: AddressState[] = [
+	AddressState.SAME,
+	AddressState.OPENED,
+	AddressState.CLOSED,
+	AddressState.BOTH,
+	AddressState.FIRST,
+	AddressState.UNCONFIRMED,
+	AddressState.UNOBSERVED
+];
+
+export enum LaneState {
+	OPEN = 'open',
+	CLOSED = 'closed',
+	UNCONFIRMED = 'unconfirmed',
+	UNOBSERVED = 'unobserved',
+	UNSEEN = 'unseen'
+}
+
+export const LANE_STATE_LABELS: Record<LaneState, string> = {
+	[LaneState.OPEN]: 'Open',
+	[LaneState.CLOSED]: 'Closed',
+	[LaneState.UNCONFIRMED]: 'Not confirmed',
+	[LaneState.UNOBSERVED]: 'Ports not scanned',
+	[LaneState.UNSEEN]: 'Not yet seen'
+};
+
+export const LANE_CELL: Record<LaneState, string> = {
+	[LaneState.OPEN]: 'bg-fill-strong',
+	[LaneState.CLOSED]: 'border border-border',
+	[LaneState.UNCONFIRMED]: `border border-dashed border-fill-hatch ${HATCH}`,
+	[LaneState.UNOBSERVED]: HATCH,
+	[LaneState.UNSEEN]: ''
+};
+
+export const SERVICE_OBSERVATION_LABELS: Record<Observation, string> = {
+	[Observation.OBSERVED]: 'Ports scanned',
+	[Observation.PARTIAL]: 'Port scan partial',
+	[Observation.UNOBSERVED]: 'Ports not scanned in this run'
+};
+
+export enum AddressFlag {
+	OPENED = 'opened',
+	CLOSED = 'closed',
+	NEW = 'new',
+	GONE = 'gone',
+	SOFTWARE = 'software',
+	FLAPPING = 'flapping'
+}
+
+export const ADDRESS_FLAG_ORDER: AddressFlag[] = [
+	AddressFlag.OPENED,
+	AddressFlag.CLOSED,
+	AddressFlag.NEW,
+	AddressFlag.GONE,
+	AddressFlag.SOFTWARE,
+	AddressFlag.FLAPPING
+];
+
+export const ADDRESS_FLAG_LABELS: Record<AddressFlag, string> = {
+	[AddressFlag.OPENED]: 'Ports opened',
+	[AddressFlag.CLOSED]: 'Ports closed',
+	[AddressFlag.NEW]: 'New address',
+	[AddressFlag.GONE]: 'Gone',
+	[AddressFlag.SOFTWARE]: 'Software changed',
+	[AddressFlag.FLAPPING]: 'Keeps changing'
+};
+
+export const ADDRESS_FLAG_HELP: Record<AddressFlag, string> = {
+	[AddressFlag.OPENED]: 'A port opened on the address inside the window.',
+	[AddressFlag.CLOSED]: 'A port closed on the address inside the window.',
+	[AddressFlag.NEW]: 'The address answered on a port for the first time in this scan.',
+	[AddressFlag.GONE]: 'No port answers on the address in this scan.',
+	[AddressFlag.SOFTWARE]: 'A service on the address reported different software.',
+	[AddressFlag.FLAPPING]: 'One port opened and closed three or more times in the window.'
+};
+
+export enum PortFlag {
+	SPREAD = 'spread',
+	SHRANK = 'shrank',
+	NEW = 'new',
+	GONE = 'gone'
+}
+
+export const PORT_FLAG_ORDER: PortFlag[] = [
+	PortFlag.SPREAD,
+	PortFlag.SHRANK,
+	PortFlag.NEW,
+	PortFlag.GONE
+];
+
+export const PORT_FLAG_LABELS: Record<PortFlag, string> = {
+	[PortFlag.SPREAD]: 'Spread',
+	[PortFlag.SHRANK]: 'Shrank',
+	[PortFlag.NEW]: 'New on target',
+	[PortFlag.GONE]: 'Gone'
+};
+
+export const PORT_FLAG_HELP: Record<PortFlag, string> = {
+	[PortFlag.SPREAD]: 'The port opened on more addresses inside the window.',
+	[PortFlag.SHRANK]: 'The port closed on some addresses inside the window.',
+	[PortFlag.NEW]: 'The port answered on this target for the first time in this scan.',
+	[PortFlag.GONE]: 'No address answers on the port in this scan.'
+};
+
+export enum AddressSort {
+	LAST_CHANGE = 'last_change',
+	CHANGES = 'changes',
+	FIRST_SEEN = 'first_seen',
+	OPEN = 'open',
+	ADDRESS = 'address'
+}
+
+export const ADDRESS_SORTS: SortOption[] = [
+	{ key: AddressSort.LAST_CHANGE, label: 'Last change' },
+	{ key: AddressSort.CHANGES, label: 'Changes' },
+	{ key: AddressSort.FIRST_SEEN, label: 'First seen' },
+	{ key: AddressSort.OPEN, label: 'Open ports' },
+	{ key: AddressSort.ADDRESS, label: 'Address' }
+];
+
+export enum PortSort {
+	ADDRESSES = 'addresses',
+	LAST_CHANGE = 'last_change',
+	FIRST_SEEN = 'first_seen',
+	PORT = 'port'
+}
+
+export const PORT_SORTS: SortOption[] = [
+	{ key: PortSort.ADDRESSES, label: 'Addresses' },
+	{ key: PortSort.LAST_CHANGE, label: 'Last change' },
+	{ key: PortSort.FIRST_SEEN, label: 'First seen' },
+	{ key: PortSort.PORT, label: 'Port' }
+];
+
+export const DEFAULT_ADDRESS_SORT = { key: AddressSort.LAST_CHANGE, dir: -1 as const };
+export const DEFAULT_PORT_SORT = { key: PortSort.ADDRESSES, dir: -1 as const };
+
+export const SERVICES_TIMELINE_VIEW = 'timeline';
