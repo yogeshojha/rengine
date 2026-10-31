@@ -133,7 +133,7 @@
 				</Hint>
 			{/each}
 		</div>
-		<div class="ml-auto shrink-0 text-right" style="width: {HOSTS_PX}px">Hosts now</div>
+		<div class="ml-auto shrink-0 text-right" style="width: {HOSTS_PX}px">Web assets now</div>
 	</div>
 
 	<div

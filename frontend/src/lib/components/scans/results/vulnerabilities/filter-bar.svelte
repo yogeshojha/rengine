@@ -1,12 +1,20 @@
 <script lang="ts">
 	import { appendToken, tokenize } from '$lib/utilities/scan-insights';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import ChartGantt from '@lucide/svelte/icons/chart-gantt';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { SurfaceDimension } from '$lib/config/surface';
 	import ViewControls from '../table/view-controls.svelte';
-	import { FINDING_MODE_LABELS, FindingTimelineMode, TIMELINE_WINDOWS } from '$lib/config/timeline';
+	import {
+		FINDING_MODE_LABELS,
+		FINDINGS_TIMELINE_VIEW,
+		FindingTimelineMode,
+		TIMELINE_WINDOWS
+	} from '$lib/config/timeline';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
 	import type { Facet } from '$lib/utilities/scan-insights';
@@ -37,8 +45,10 @@
 		onGroupBy: (key: string) => void;
 		columnsLocked?: boolean;
 		onShortcuts?: () => void;
-		/** the Timeline view is on */
+		/** the Timeline view is offered */
 		timeline?: boolean;
+		view?: string;
+		onView?: (v: string) => void;
 		timelineWindow?: number;
 		onTimelineWindow?: (scans: number) => void;
 		mode?: FindingTimelineMode;
@@ -70,6 +80,8 @@
 		exportFilters = {},
 		onShortcuts,
 		timeline = false,
+		view = 'table',
+		onView,
 		timelineWindow = TIMELINE_WINDOWS[1],
 		onTimelineWindow,
 		mode = FindingTimelineMode.LIFESPANS,
@@ -200,37 +212,72 @@
 			<ToggleGroup.Root
 				type="single"
 				variant="outline"
-				value={mode}
-				onValueChange={(v) => v && onMode?.(v as FindingTimelineMode)}
-				aria-label="Timeline mode"
+				value={view}
+				onValueChange={(v) => v && onView?.(v)}
+				aria-label="View"
 			>
-				{#each Object.values(FindingTimelineMode) as m (m)}
-					<ToggleGroup.Item value={m} class="h-9 px-3 text-sm font-normal">
-						{FINDING_MODE_LABELS[m]}
-					</ToggleGroup.Item>
-				{/each}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item {...props} value="table" aria-label="Table view" class="h-9 px-3">
+								<Rows3 class="h-4 w-4" />
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Table view</Tooltip.Content>
+				</Tooltip.Root>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item
+								{...props}
+								value={FINDINGS_TIMELINE_VIEW}
+								aria-label="Timeline view"
+								class="h-9 px-3"
+							>
+								<ChartGantt class="h-4 w-4" />
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Timeline view</Tooltip.Content>
+				</Tooltip.Root>
 			</ToggleGroup.Root>
-			<div class="flex items-center gap-2 text-sm text-muted-foreground">
-				<span>Last</span>
+			{#if view === FINDINGS_TIMELINE_VIEW}
 				<ToggleGroup.Root
 					type="single"
 					variant="outline"
-					value={String(timelineWindow)}
-					onValueChange={(v) => v && onTimelineWindow?.(Number(v))}
-					aria-label="Runs shown"
+					value={mode}
+					onValueChange={(v) => v && onMode?.(v as FindingTimelineMode)}
+					aria-label="Rows"
 				>
-					{#each TIMELINE_WINDOWS as n (n)}
-						<ToggleGroup.Item
-							value={String(n)}
-							aria-label="Last {n} runs"
-							class="h-9 px-3 text-sm font-normal tabular-nums"
-						>
-							{n}
+					{#each Object.values(FindingTimelineMode) as m (m)}
+						<ToggleGroup.Item value={m} class="h-9 px-3 text-sm font-normal">
+							{FINDING_MODE_LABELS[m]}
 						</ToggleGroup.Item>
 					{/each}
 				</ToggleGroup.Root>
-				<span>runs</span>
-			</div>
+				<div class="flex items-center gap-2 text-sm text-muted-foreground">
+					<span>Last</span>
+					<ToggleGroup.Root
+						type="single"
+						variant="outline"
+						value={String(timelineWindow)}
+						onValueChange={(v) => v && onTimelineWindow?.(Number(v))}
+						aria-label="Scans shown"
+					>
+						{#each TIMELINE_WINDOWS as n (n)}
+							<ToggleGroup.Item
+								value={String(n)}
+								aria-label="Last {n} scans"
+								class="h-9 px-3 text-sm font-normal tabular-nums"
+							>
+								{n}
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup.Root>
+					<span>scans</span>
+				</div>
+			{/if}
 		{/if}
 		<ViewControls
 			dimension={SurfaceDimension.VULNERABILITIES}

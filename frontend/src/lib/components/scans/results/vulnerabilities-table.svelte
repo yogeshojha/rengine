@@ -184,7 +184,6 @@
 	const INSTANCE_PAGE = 100;
 	const TIMELINE = FINDINGS_TIMELINE_VIEW;
 	const timelineOffered = () => !projectWide && census && Boolean(scanId);
-	const views = () => (timelineOffered() ? VULN_VIEWS : TABLE_VIEWS);
 	const VIEW_KEYS = new Set<string>(VULN_VIEWS.map((v) => v.key));
 	function viewFrom(raw: string | null | undefined): VulnView | null {
 		if (!raw || !VIEW_KEYS.has(raw)) return null;
@@ -1395,14 +1394,14 @@
 		</div>
 		<ToggleGroup.Root
 			type="single"
-			value={view}
+			value={timeline ? 'findings' : view}
 			onValueChange={(v) => v && setView(v as VulnView)}
 			variant="outline"
 			size="sm"
 			class="shrink-0"
-			aria-label="View"
+			aria-label="Issues or findings"
 		>
-			{#each views() as option (option.key)}
+			{#each TABLE_VIEWS as option (option.key)}
 				<ToggleGroup.Item value={option.key} class="h-7 px-2.5 text-xs font-normal">
 					{option.label}
 				</ToggleGroup.Item>
@@ -1431,7 +1430,9 @@
 		{density}
 		onDensity={(d) => (density = d)}
 		sorts={isIssues ? ISSUE_SORTS : timeline ? timelineSorts : VULN_SORTS}
-		{timeline}
+		timeline={timelineOffered()}
+		view={timeline ? TIMELINE : 'table'}
+		onView={(v) => setView(v === TIMELINE ? TIMELINE : 'findings')}
 		{timelineWindow}
 		onTimelineWindow={(n) => {
 			timelineWindow = n;
