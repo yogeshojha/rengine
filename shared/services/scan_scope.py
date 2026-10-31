@@ -57,3 +57,14 @@ def covers(model, dimension: str):
             ScanActivity.name.in_(covering_stages()[dimension]),
         )
     )
+
+
+@lru_cache(maxsize=1)
+def observing_stages() -> dict[str, frozenset[str]]:
+    """Dimension -> the stages whose outcome says whether a run observed its state."""
+    from stages.registry import stages  # noqa: PLC0415
+
+    always = {s.name for s in stages() if s.always_on}
+    producing = producing_stages()
+    covering = covering_stages()
+    return {key: covering[key] | (names & always) for key, names in producing.items()}

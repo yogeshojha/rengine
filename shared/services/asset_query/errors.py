@@ -9,13 +9,15 @@ from .ast import QuerySyntaxError
 STATEMENT_TIMEOUT = "SET LOCAL statement_timeout = '20s'"
 NO_JIT = "SET LOCAL jit = off"
 
+TIMEOUT_SQLSTATE = "57014"
+
 QUERY_SQLSTATES = {
     "2201B": (
         "Invalid regular expression.",
         "PostgreSQL regular expression syntax applies.",
     ),
     "2201G": ("Invalid regular expression.", None),
-    "57014": ("The search timed out.", "Add a field filter."),
+    TIMEOUT_SQLSTATE: ("The search timed out.", "Add a field filter."),
     "22003": ("A number is out of range.", None),
     "22P02": ("A value has the wrong type.", None),
     "54000": ("A search term is too long to index.", None),

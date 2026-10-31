@@ -3,6 +3,12 @@ import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type { HostingComposition } from '$lib/types/hosting';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import type { RenderGroups } from '$lib/types/subdomain';
+import type {
+	RenderFilter,
+	RenderSearchResult,
+	TimelineFilter,
+	TimelineSearchResult
+} from '$lib/types/timeline';
 import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
 	Facet,
@@ -62,6 +68,28 @@ export const subdomainsApi = {
 	): Promise<QueryGroups> {
 		return api.post<QueryGroups>(
 			`/subdomains/search/groups?${scopeQuery({ projectId, scanId })}&group_by=${encodeURIComponent(groupBy)}`,
+			filter
+		);
+	},
+
+	async timeline(
+		projectId: string,
+		scanId: string,
+		filter: TimelineFilter
+	): Promise<TimelineSearchResult> {
+		return api.post<TimelineSearchResult>(
+			`/subdomains/timeline?${scopeQuery({ projectId, scanId })}`,
+			filter
+		);
+	},
+
+	async renderTimeline(
+		projectId: string,
+		scanId: string,
+		filter: RenderFilter
+	): Promise<RenderSearchResult> {
+		return api.post<RenderSearchResult>(
+			`/subdomains/timeline/renders?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
 	},

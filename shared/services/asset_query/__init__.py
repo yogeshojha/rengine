@@ -4,6 +4,7 @@ from .endpoint_compiler import EndpointQueryContext, compile_endpoint_query
 from .errors import (
     NO_JIT,
     STATEMENT_TIMEOUT,
+    TIMEOUT_SQLSTATE,
     query_error_for,
     syntax_error,
 )
@@ -50,6 +51,7 @@ from .vuln_compiler import VulnQueryContext, compile_vuln_query
 __all__ = [
     "NO_JIT",
     "STATEMENT_TIMEOUT",
+    "TIMEOUT_SQLSTATE",
     "EndpointQueryContext",
     "IpQueryContext",
     "QueryContext",

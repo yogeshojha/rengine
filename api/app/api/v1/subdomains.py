@@ -9,7 +9,9 @@ from app.api.scope import WebAssetScope
 from app.core.database import get_session
 from app.services.correlation_graph import CorrelationGraphService
 from app.services.hosting import HostingService
+from app.services.render_timeline import RenderTimelineService
 from app.services.subdomain import SubdomainService
+from app.services.timeline import TimelineService
 from shared.models.asset_query import (
     QueryCountRequest,
     QueryCounts,
@@ -29,6 +31,12 @@ from shared.models.subdomain import (
     SubdomainFacets,
     SubdomainFilter,
     SubdomainSearchResult,
+)
+from shared.models.timeline import (
+    RenderFilter,
+    RenderSearchResult,
+    TimelineFilter,
+    TimelineSearchResult,
 )
 from shared.services.asset_query import lead_cache
 
@@ -258,3 +266,45 @@ async def subdomain_correlation(
     name: Annotated[str, Query(description="Web asset name")],
 ):
     return await service.correlation(project_id=project_id, scope=scope, name=name)
+
+
+@router.post("/timeline", response_model=TimelineSearchResult)
+async def subdomain_timeline(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    body: TimelineFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    service = TimelineService(session)
+    return await lead_cache.cached(
+        session,
+        name="timeline:web_assets",
+        scans=(scan_id,),
+        facets=f"{project_id}|{body.model_dump_json()}",
+        model=TimelineSearchResult,
+        build=lambda: service.search(project_id, scan_id, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
+    )
+
+
+@router.post("/timeline/renders", response_model=RenderSearchResult)
+async def subdomain_render_timeline(
+    _current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    body: RenderFilter,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+):
+    service = RenderTimelineService(session)
+    return await lead_cache.cached(
+        session,
+        name="timeline:renders",
+        scans=(scan_id,),
+        facets=f"{project_id}|{body.model_dump_json()}",
+        model=RenderSearchResult,
+        build=lambda: service.search(project_id, scan_id, body),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
+    )

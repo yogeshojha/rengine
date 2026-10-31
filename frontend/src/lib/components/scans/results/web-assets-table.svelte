@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page as appPage } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
@@ -7,6 +8,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import SearchX from '@lucide/svelte/icons/search-x';
 	import Globe from '@lucide/svelte/icons/globe';
+	import Images from '@lucide/svelte/icons/images';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import MailCheck from '@lucide/svelte/icons/mail-check';
 	import Settings2 from '@lucide/svelte/icons/settings-2';
@@ -36,6 +38,8 @@
 	import AssetRow from './web-assets/asset-row.svelte';
 	import AssetGallery from './web-assets/asset-gallery.svelte';
 	import RenderGallery from './web-assets/render-gallery.svelte';
+	import TimelineList from './web-assets/timeline-list.svelte';
+	import RenderList from './web-assets/render-list.svelte';
 	import CheckRail, { type RailBreakdown, type RailRow } from './web-assets/check-rail.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
@@ -84,6 +88,26 @@
 		type PostureRow
 	} from '$lib/config/domain-posture';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
+	import { ROUTES } from '$lib/config/routes';
+	import {
+		DEFAULT_RENDER_SORT,
+		DEFAULT_TIMELINE_SORT,
+		DEFAULT_TIMELINE_WINDOW,
+		FLAG_HELP,
+		FLAG_LABELS,
+		FLAG_ORDER,
+		RENDER_FLAG_HELP,
+		RENDER_FLAG_LABELS,
+		RENDER_FLAG_ORDER,
+		RENDER_SORTS,
+		RENDERS_VIEW,
+		TIMELINE_SORTS,
+		TIMELINE_VIEW,
+		TIMELINE_WINDOWS,
+		type RenderFlag,
+		type TimelineFlag
+	} from '$lib/config/timeline';
+	import type { RenderSearchResult, TimelineSearchResult } from '$lib/types/timeline';
 	import type { RenderGroups, SubdomainRead } from '$lib/types/subdomain';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import {
@@ -113,6 +137,8 @@
 	interface Props {
 		scanId: string;
 		projectWide?: boolean;
+		/** a census run offers the Timeline view */
+		census?: boolean;
 		targetType?: string;
 		projectId: string;
 		apex?: string;
@@ -125,6 +151,7 @@
 	let {
 		scanId,
 		projectWide = false,
+		census = true,
 		targetType = '',
 		projectId,
 		apex = '',
@@ -157,7 +184,45 @@
 	let pendingAsset = initial.get('asset');
 
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.webAssetsColumns, null));
-	let view = $state<string>(initial.get('view') === 'gallery' ? 'gallery' : 'table');
+	const timelineOffered = () => !projectWide && census && Boolean(scanId);
+	const FLAG_TABS = [
+		{ key: 'all', label: 'All' },
+		...FLAG_ORDER.map((flag) => ({ key: flag, label: FLAG_LABELS[flag] }))
+	];
+	const RENDER_FLAG_TABS = [
+		{ key: 'all', label: 'All' },
+		...RENDER_FLAG_ORDER.map((flag) => ({ key: flag, label: RENDER_FLAG_LABELS[flag] }))
+	];
+	const STRIP_VIEWS = new Set([TIMELINE_VIEW, RENDERS_VIEW]);
+	function viewFrom(raw: string | null): string {
+		if (raw === 'gallery') return raw;
+		if (raw && STRIP_VIEWS.has(raw) && timelineOffered()) return raw;
+		return 'table';
+	}
+	function windowFrom(raw: string | null): number | null {
+		const n = Number(raw);
+		return (TIMELINE_WINDOWS as readonly number[]).includes(n) ? n : null;
+	}
+	function flagFrom(raw: string | null): TimelineFlag | null {
+		return (FLAG_ORDER as string[]).includes(raw ?? '') ? (raw as TimelineFlag) : null;
+	}
+	function renderFlagFrom(raw: string | null): RenderFlag | null {
+		return (RENDER_FLAG_ORDER as string[]).includes(raw ?? '') ? (raw as RenderFlag) : null;
+	}
+	let view = $state<string>(viewFrom(initial.get('view')));
+	let strips = $derived(STRIP_VIEWS.has(view));
+	let timelineWindow = $state<number>(
+		windowFrom(initial.get('window')) ??
+			readPref(STORAGE_KEYS.webAssetsTimelineWindow, DEFAULT_TIMELINE_WINDOW)
+	);
+	let timelineFlag = $state<TimelineFlag | null>(
+		initial.get('view') === TIMELINE_VIEW ? flagFrom(initial.get('flag')) : null
+	);
+	let timeline = $state<TimelineSearchResult | null>(null);
+	let renderFlag = $state<RenderFlag | null>(
+		initial.get('view') === RENDERS_VIEW ? renderFlagFrom(initial.get('flag')) : null
+	);
+	let renders = $state<RenderSearchResult | null>(null);
 	let density = $state<string>(readPref(STORAGE_KEYS.webAssetsDensity, 'cozy'));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.webAssetsPageSize, RESULTS_PAGE_SIZE));
 	let onlyShots = $state(true);
@@ -169,7 +234,11 @@
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
 			? { key: initialSort[0], dir: initialSort[1] === 'desc' ? -1 : 1 }
-			: { ...DEFAULT_SORT }
+			: initial.get('view') === TIMELINE_VIEW
+				? { ...DEFAULT_TIMELINE_SORT }
+				: initial.get('view') === RENDERS_VIEW
+					? { ...DEFAULT_RENDER_SORT }
+					: { ...DEFAULT_SORT }
 	);
 	let pageIndex = $state(Math.max(0, Number(initial.get('page') ?? 1) - 1));
 
@@ -326,6 +395,11 @@
 	});
 	$effect(() => writePref(STORAGE_KEYS.webAssetsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.webAssetsPageSize, pageSize));
+	$effect(() => writePref(STORAGE_KEYS.webAssetsTimelineWindow, timelineWindow));
+	let flagCounts = $derived.by(() => {
+		const res = view === RENDERS_VIEW ? renders : timeline;
+		return res && !res.error ? res.counts : null;
+	});
 
 	const initialSearch = initial.get('q');
 	if (initialSearch) query = { ...query, search: initialSearch };
@@ -358,6 +432,38 @@
 		const my = ++reqId;
 		loading = true;
 		try {
+			if (view === RENDERS_VIEW) {
+				const res = await subdomainsApi.renderTimeline(projectId, scanId, {
+					...filter,
+					window: timelineWindow,
+					flag: renderFlag
+				});
+				if (my !== reqId) return;
+				renders = res;
+				items = res.items.map((row) => row.host);
+				total = res.total;
+				totalCapped = false;
+				queryError = res.error;
+				errored = false;
+				if (!res.error && filter.q) queryBar?.remember(filter.q);
+				return;
+			}
+			if (view === TIMELINE_VIEW) {
+				const res = await subdomainsApi.timeline(projectId, scanId, {
+					...filter,
+					window: timelineWindow,
+					flag: timelineFlag
+				});
+				if (my !== reqId) return;
+				timeline = res;
+				items = res.items.map((row) => row.host);
+				total = res.total;
+				totalCapped = false;
+				queryError = res.error;
+				errored = false;
+				if (!res.error && filter.q) queryBar?.remember(filter.q);
+				return;
+			}
 			const res = await subdomainsApi.search(projectId, scanId, filter);
 			if (my !== reqId) return;
 			items = res.items;
@@ -535,9 +641,11 @@
 		const filter = compileQuery(tabQuery, 'name', 1, 0, 1);
 		const key = `${projectId}|${scanId}|${JSON.stringify(filter)}`;
 		const filtered = tabFiltered;
+		const statusTabs = !strips;
 		if (!ready || !seen || !queryReady) return;
 		untrack(() => {
-			if (filtered) tabCounts.track(key, () => subdomainsApi.tabs(projectId, scanId, filter));
+			if (filtered && statusTabs)
+				tabCounts.track(key, () => subdomainsApi.tabs(projectId, scanId, filter));
 			else tabCounts.clear();
 		});
 	});
@@ -550,6 +658,9 @@
 		void pageSize;
 		void view;
 		void onlyShots;
+		void timelineWindow;
+		void timelineFlag;
+		void renderFlag;
 		void scanId;
 		void projectId;
 		void queryReady;
@@ -599,7 +710,15 @@
 			const sp = new SvelteURLSearchParams(location.search);
 			const set = (k: string, v: string | null) => (v ? sp.set(k, v) : sp.delete(k));
 			set('q', query.search || null);
-			set('view', view === 'gallery' ? 'gallery' : null);
+			set('view', view === 'table' ? null : view);
+			set(
+				'window',
+				strips && timelineWindow !== DEFAULT_TIMELINE_WINDOW ? String(timelineWindow) : null
+			);
+			set(
+				'flag',
+				view === TIMELINE_VIEW ? timelineFlag : view === RENDERS_VIEW ? renderFlag : null
+			);
 			set('group', groupBy || null);
 			set('page', pageIndex > 0 ? String(pageIndex + 1) : null);
 			set(
@@ -614,15 +733,21 @@
 			// ignore
 		}
 	}
-	const urlSync = new UrlSync(['q', 'group', 'view']);
+	const urlSync = new UrlSync(['q', 'group', 'view', 'window', 'flag']);
 
 	function restoreUrl(sp: URLSearchParams) {
 		const search = sp.get('q') ?? '';
 		if (search !== query.search) query = { ...query, search };
 		const group = sp.get('group') ?? '';
 		if (group !== groupBy) groupBy = group;
-		const nextView = sp.get('view') === 'gallery' ? 'gallery' : 'table';
+		const nextView = viewFrom(sp.get('view'));
 		if (nextView !== view) view = nextView;
+		const nextWindow = windowFrom(sp.get('window')) ?? DEFAULT_TIMELINE_WINDOW;
+		if (STRIP_VIEWS.has(nextView) && nextWindow !== timelineWindow) timelineWindow = nextWindow;
+		const nextFlag = nextView === TIMELINE_VIEW ? flagFrom(sp.get('flag')) : null;
+		if (nextFlag !== timelineFlag) timelineFlag = nextFlag;
+		const nextRenderFlag = nextView === RENDERS_VIEW ? renderFlagFrom(sp.get('flag')) : null;
+		if (nextRenderFlag !== renderFlag) renderFlag = nextRenderFlag;
 		const [sortKey, sortDir] = sp.get('sort')?.split(':') ?? [];
 		const nextSort = sortKey
 			? { key: sortKey, dir: (sortDir === 'desc' ? -1 : 1) as 1 | -1 }
@@ -636,6 +761,9 @@
 	$effect(() => {
 		void query.search;
 		void view;
+		void timelineWindow;
+		void timelineFlag;
+		void renderFlag;
 		void groupBy;
 		void pageIndex;
 		void sort.key;
@@ -723,6 +851,48 @@
 	function setQuery(q: WebAssetQuery) {
 		query = q;
 		pageIndex = 0;
+	}
+	function setView(v: string) {
+		if (v === view) return;
+		const wasStrip = strips;
+		view = v;
+		pageIndex = 0;
+		if (v !== 'table') groupBy = '';
+		if (v === TIMELINE_VIEW && !TIMELINE_SORTS.some((s) => s.key === sort.key)) {
+			sort = { ...DEFAULT_TIMELINE_SORT };
+		} else if (v === RENDERS_VIEW && !RENDER_SORTS.some((s) => s.key === sort.key)) {
+			sort = { ...DEFAULT_RENDER_SORT };
+		} else if (wasStrip && !strips && !WEB_ASSET_SORTS.some((s) => s.key === sort.key)) {
+			sort = { ...DEFAULT_SORT };
+		}
+	}
+	function setFlag(key: string) {
+		if (view === RENDERS_VIEW) renderFlag = key === 'all' ? null : (key as RenderFlag);
+		else timelineFlag = key === 'all' ? null : (key as TimelineFlag);
+		pageIndex = 0;
+	}
+	async function openAt(host: SubdomainRead, atScanId: string) {
+		if (atScanId === host.scan_id) return open(host);
+		try {
+			const res = await subdomainsApi.search(
+				projectId,
+				atScanId,
+				compileQuery({ ...emptyQuery(), search: exactToken('host', host.name) }, 'name', 1, 0, 5)
+			);
+			const hit = res.items.find((s) => s.name === host.name);
+			if (!hit) {
+				toast.error('Web asset not in that scan');
+				return;
+			}
+			selected = hit;
+			sheetFocus = null;
+			drawerOpen = true;
+		} catch {
+			toast.error('Web asset not loaded');
+		}
+	}
+	function openScanTimeline(id: string) {
+		void goto(ROUTES.results(WEB.tab, id, { view }));
 	}
 	function toggleHygiene(key: string) {
 		const on = query.hygiene.includes(key);
@@ -860,7 +1030,7 @@
 			shortcutsOpen = true;
 			return;
 		}
-		if (view !== 'table' || !items.length) return;
+		if (view === 'gallery' || !items.length) return;
 		if (e.key === 'Enter' && onControl(e.target, '[data-row-index]')) return;
 		if (rows.keys(e, items.length, (i) => open(items[i]))) return;
 		if (e.key === 'r') {
@@ -965,14 +1135,23 @@
 	{@attach trackWidth((w) => (tableWidth = w))}
 >
 	<div class="border-b px-2">
-		<CountTabs
-			tabs={STATUS_CLASS_TABS}
-			value={statusTab}
-			counts={statusCounts}
-			capped={statusCapped}
-			countClass={statusCountClass}
-			onChange={setStatusTab}
-		/>
+		{#if strips}
+			<CountTabs
+				tabs={view === RENDERS_VIEW ? RENDER_FLAG_TABS : FLAG_TABS}
+				value={(view === RENDERS_VIEW ? renderFlag : timelineFlag) ?? 'all'}
+				counts={flagCounts}
+				onChange={setFlag}
+			/>
+		{:else}
+			<CountTabs
+				tabs={STATUS_CLASS_TABS}
+				value={statusTab}
+				counts={statusCounts}
+				capped={statusCapped}
+				countClass={statusCountClass}
+				onChange={setStatusTab}
+			/>
+		{/if}
 	</div>
 
 	<FilterBar
@@ -980,10 +1159,12 @@
 		{facets}
 		onQuery={setQuery}
 		{view}
-		onView={(v) => {
-			view = v;
+		onView={setView}
+		timeline={timelineOffered()}
+		{timelineWindow}
+		onTimelineWindow={(n) => {
+			timelineWindow = n;
 			pageIndex = 0;
-			if (v === 'gallery') groupBy = '';
 		}}
 		columns={WEB_ASSET_COLUMNS}
 		{visible}
@@ -1000,7 +1181,11 @@
 			onlyShots = v;
 			pageIndex = 0;
 		}}
-		sorts={WEB_ASSET_SORTS}
+		sorts={view === TIMELINE_VIEW
+			? TIMELINE_SORTS
+			: view === RENDERS_VIEW
+				? RENDER_SORTS
+				: WEB_ASSET_SORTS}
 		sortKey={sort.key}
 		sortDir={sort.dir}
 		onSort={toggleSort}
@@ -1020,7 +1205,7 @@
 		onClear={() => setQuery({ ...emptyQuery(), search: query.search })}
 	/>
 
-	{#if !groupBy}
+	{#if !groupBy && !strips}
 		<SelectionBar
 			noun={WEB.noun}
 			nounPlural={WEB.nounPlural}
@@ -1074,6 +1259,28 @@
 						description={queryError.message}
 						class="rounded-none border-0 bg-transparent py-16"
 					/>
+				{:else if view === TIMELINE_VIEW && timelineFlag}
+					<EmptyState
+						icon={SearchX}
+						title="No web assets match"
+						description={FLAG_HELP[timelineFlag]}
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button size="sm" variant="outline" onclick={() => setFlag('all')}>
+							<X class="h-4 w-4" /> Clear filter
+						</Button>
+					</EmptyState>
+				{:else if view === RENDERS_VIEW && renderFlag}
+					<EmptyState
+						icon={SearchX}
+						title="No web assets match"
+						description={RENDER_FLAG_HELP[renderFlag]}
+						class="rounded-none border-0 bg-transparent py-16"
+					>
+						<Button size="sm" variant="outline" onclick={() => setFlag('all')}>
+							<X class="h-4 w-4" /> Clear filter
+						</Button>
+					</EmptyState>
 				{:else if filtered || (view === 'gallery' && onlyShots)}
 					<EmptyState
 						icon={SearchX}
@@ -1084,6 +1291,12 @@
 							<X class="h-4 w-4" /> Clear filters
 						</Button>
 					</EmptyState>
+				{:else if view === RENDERS_VIEW}
+					<EmptyState
+						icon={Images}
+						title="No screenshots in this window"
+						class="rounded-none border-0 bg-transparent py-16"
+					/>
 				{:else}
 					<EmptyState
 						icon={Globe}
@@ -1091,6 +1304,43 @@
 						class="rounded-none border-0 bg-transparent py-16"
 					/>
 				{/if}
+			{:else if view === TIMELINE_VIEW && timeline}
+				<TimelineList
+					result={timeline}
+					{loading}
+					{apex}
+					selectedId={drawerOpen ? (selected?.id ?? null) : null}
+					focusedIndex={rows.index}
+					pad={rowPad}
+					flag={timelineFlag}
+					sortKey={sort.key}
+					sortDir={sort.dir}
+					onSort={toggleSort}
+					onOpen={open}
+					onOpenAt={openAt}
+					onOpenScan={openScanTimeline}
+					onQuery={applyDsl}
+					onGone={() => setFlag('gone')}
+					track={rows.track}
+				/>
+			{:else if view === RENDERS_VIEW && renders}
+				<RenderList
+					result={renders}
+					{loading}
+					{apex}
+					selectedId={drawerOpen ? (selected?.id ?? null) : null}
+					focusedIndex={rows.index}
+					pad={rowPad}
+					flag={renderFlag}
+					sortKey={sort.key}
+					sortDir={sort.dir}
+					onSort={toggleSort}
+					onOpen={open}
+					onOpenAt={openAt}
+					onOpenScan={openScanTimeline}
+					onFlag={setFlag}
+					track={rows.track}
+				/>
 			{:else if view === 'gallery' && groupRenders}
 				<RenderGallery
 					data={renderSet}

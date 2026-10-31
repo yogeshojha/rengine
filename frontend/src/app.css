@@ -102,6 +102,14 @@
 	--input: oklch(0.922 0.01 265);
 	--ring: oklch(0.5 0.16 264);
 	--series: oklch(0.45 0.02 265);
+	/* area fills for a state */
+	--fill-success: oklch(0.74 0.16 150);
+	--fill-info: oklch(0.74 0.13 215);
+	--fill-warning: oklch(0.84 0.16 90);
+	--fill-destructive: oklch(0.66 0.21 25);
+	--fill-muted: oklch(0.9 0.012 265);
+	--fill-strong: oklch(0.42 0.03 265);
+	--fill-hatch: oklch(0.78 0.014 265);
 	--chart-1: oklch(0.6 0.12 215);
 	--chart-2: oklch(0.55 0.16 150);
 	--chart-3: oklch(0.52 0.18 320);
@@ -194,6 +202,13 @@
 	--input: oklch(0.36 0.014 265);
 	--ring: oklch(0.7 0.15 264);
 	--series: oklch(0.75 0.02 265);
+	--fill-success: oklch(0.7 0.15 150);
+	--fill-info: oklch(0.7 0.12 215);
+	--fill-warning: oklch(0.8 0.15 90);
+	--fill-destructive: oklch(0.64 0.2 25);
+	--fill-muted: oklch(0.34 0.012 265);
+	--fill-strong: oklch(0.82 0.012 265);
+	--fill-hatch: oklch(0.42 0.012 265);
 	--chart-1: oklch(0.66 0.11 215);
 	--chart-2: oklch(0.6 0.16 150);
 	--chart-3: oklch(0.62 0.17 320);
@@ -256,6 +271,13 @@
 	--color-input: var(--input);
 	--color-ring: var(--ring);
 	--color-series: var(--series);
+	--color-fill-success: var(--fill-success);
+	--color-fill-info: var(--fill-info);
+	--color-fill-warning: var(--fill-warning);
+	--color-fill-destructive: var(--fill-destructive);
+	--color-fill-muted: var(--fill-muted);
+	--color-fill-strong: var(--fill-strong);
+	--color-fill-hatch: var(--fill-hatch);
 	--color-chart-1: var(--chart-1);
 	--color-chart-2: var(--chart-2);
 	--color-chart-3: var(--chart-3);

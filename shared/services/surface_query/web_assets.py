@@ -77,20 +77,18 @@ def apply_filter(query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
     return query
 
 
-def order(query, f: SubdomainFilter):
+def order(query, f: SubdomainFilter, host=Subdomain):
     col = {
-        "status": Subdomain.http_status,
-        "size": Subdomain.content_length,
-        "time": Subdomain.response_time,
-        "title": Subdomain.page_title,
-        "cert": Subdomain.tls_not_after,
-        "discovered": Subdomain.discovered_at,
-        "ip": cast(Subdomain.resolved_ips, JSONB).op("->>")(0),
-    }.get(f.sort, Subdomain.name)
+        "status": host.http_status,
+        "size": host.content_length,
+        "time": host.response_time,
+        "title": host.page_title,
+        "cert": host.tls_not_after,
+        "discovered": host.discovered_at,
+        "ip": cast(host.resolved_ips, JSONB).op("->>")(0),
+    }.get(f.sort, host.name)
     primary = col.desc() if f.order == "desc" else col.asc()
-    return query.order_by(
-        primary.nulls_last(), Subdomain.name.asc(), Subdomain.id.asc()
-    )
+    return query.order_by(primary.nulls_last(), host.name.asc(), host.id.asc())
 
 
 def scoped(

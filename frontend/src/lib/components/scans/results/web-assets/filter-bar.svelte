@@ -4,12 +4,15 @@
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import Layers from '@lucide/svelte/icons/layers';
 	import Image from '@lucide/svelte/icons/image';
+	import ChartGantt from '@lucide/svelte/icons/chart-gantt';
+	import Images from '@lucide/svelte/icons/images';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Toggle } from '$lib/components/ui/toggle';
 	import FacetedFilter from '../faceted-filter.svelte';
 	import { SurfaceDimension } from '$lib/config/surface';
+	import { RENDERS_VIEW, TIMELINE_VIEW, TIMELINE_WINDOWS } from '$lib/config/timeline';
 	import ViewControls from '../table/view-controls.svelte';
 	import type { SortOption, TableColumn } from '../table/columns';
 	import type { SubdomainFacetSet, WebAssetQuery } from '$lib/utilities/scan-insights';
@@ -43,6 +46,10 @@
 		groupBy: string;
 		onGroupBy: (key: string) => void;
 		onShortcuts?: () => void;
+		/** the Timeline view is offered */
+		timeline?: boolean;
+		timelineWindow?: number;
+		onTimelineWindow?: (scans: number) => void;
 	}
 
 	let {
@@ -72,7 +79,10 @@
 		projectId = '',
 		scanId = '',
 		exportFilters = {},
-		onShortcuts
+		onShortcuts,
+		timeline = false,
+		timelineWindow = TIMELINE_WINDOWS[1],
+		onTimelineWindow
 	}: Props = $props();
 
 	const NEW_TOKEN = 'is:new';
@@ -214,7 +224,63 @@
 				</Tooltip.Trigger>
 				<Tooltip.Content>Gallery view</Tooltip.Content>
 			</Tooltip.Root>
+			{#if timeline}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item
+								{...props}
+								value={TIMELINE_VIEW}
+								aria-label="Timeline view"
+								class="h-9 px-3"
+							>
+								<ChartGantt class="h-4 w-4" />
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Timeline view</Tooltip.Content>
+				</Tooltip.Root>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#snippet child({ props })}
+							<ToggleGroup.Item
+								{...props}
+								value={RENDERS_VIEW}
+								aria-label="Screenshots view"
+								class="h-9 px-3"
+							>
+								<Images class="h-4 w-4" />
+							</ToggleGroup.Item>
+						{/snippet}
+					</Tooltip.Trigger>
+					<Tooltip.Content>Screenshots view</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
 		</ToggleGroup.Root>
+
+		{#if view === TIMELINE_VIEW || view === RENDERS_VIEW}
+			<div class="flex items-center gap-2 text-sm text-muted-foreground">
+				<span>Last</span>
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					value={String(timelineWindow)}
+					onValueChange={(v) => v && onTimelineWindow?.(Number(v))}
+					aria-label="Scans shown"
+				>
+					{#each TIMELINE_WINDOWS as n (n)}
+						<ToggleGroup.Item
+							value={String(n)}
+							aria-label="Last {n} scans"
+							class="h-9 px-3 text-sm font-normal tabular-nums"
+						>
+							{n}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<span>scans</span>
+			</div>
+		{/if}
 
 		{#if view === 'gallery'}
 			<Toggle

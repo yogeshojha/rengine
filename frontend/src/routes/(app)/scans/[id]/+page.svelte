@@ -1285,6 +1285,7 @@
 						{#key scan.id}
 							<WebAssetsTable
 								scanId={scan.id}
+								census={scan.scope === 'full'}
 								targetType={scan.execution_config.target_type}
 								{projectId}
 								apex={scan.execution_config.target_value}
