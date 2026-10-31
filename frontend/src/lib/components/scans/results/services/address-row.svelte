@@ -13,7 +13,7 @@
 	} from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
 	import { stopProp } from '$lib/utilities';
-	import { columnCell, rowTone } from '../table/columns';
+	import { columnCell, pinnedTone, rowTone } from '../table/columns';
 	import { ADDRESS_COLUMNS, ADDRESS_LEAD_COLUMNS } from './timeline-columns';
 
 	interface Props {
@@ -137,8 +137,9 @@
 	}}
 >
 	<div
-		class="sticky left-0 z-[1] flex min-w-0 items-start gap-2 bg-card pr-2 {ADDRESS_LEAD_COLUMNS[0]
-			.width}"
+		class="sticky left-0 z-[1] flex min-w-0 items-start gap-2 pr-2 transition-colors {pinnedTone(
+			focused
+		)} {ADDRESS_LEAD_COLUMNS[0].width}"
 	>
 		<ChevronRight
 			class="mt-1 size-3.5 shrink-0 text-muted-foreground transition-transform {expanded

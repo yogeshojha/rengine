@@ -47,6 +47,7 @@ export interface TimelineRow {
 
 export interface TimelineSearchResult {
 	scans: TimelineScan[];
+	runs: number;
 	items: TimelineRow[];
 	total: number;
 	counts: Record<string, number>;
@@ -75,6 +76,7 @@ export interface RenderRow {
 
 export interface RenderSearchResult {
 	scans: TimelineScan[];
+	runs: number;
 	items: RenderRow[];
 	total: number;
 	counts: Record<string, number>;
@@ -167,6 +169,7 @@ export interface ServicePortRow {
 
 export interface ServiceTimelineResult {
 	scans: TimelineScan[];
+	runs: number;
 	mode: ServiceTimelineMode;
 	addresses: ServiceAddressRow[];
 	ports: ServicePortRow[];

@@ -214,8 +214,8 @@ class TimelineService:
             )
         return scan
 
-    async def window(self, scan: Scan, window: int) -> list[Scan]:
-        """The target's census runs up to the viewed one, oldest first."""
+    @staticmethod
+    def _runs_up_to(scan: Scan):
         started = func.coalesce(Scan.started_at, Scan.created_at)
         ran = exists(select(1).where(ScanActivity.scan_id == Scan.id))
         earlier = and_(
@@ -224,18 +224,31 @@ class TimelineService:
             started <= (scan.started_at or scan.created_at),
             ran,
         )
+        return select(Scan).where(
+            Scan.target_id == scan.target_id,
+            Scan.project_id == scan.project_id,
+            census_only(),
+            or_(Scan.id == scan.id, earlier),
+        )
+
+    async def window(self, scan: Scan, window: int) -> list[Scan]:
+        """The target's census runs up to the viewed one, oldest first."""
+        started = func.coalesce(Scan.started_at, Scan.created_at)
         result = await self.session.execute(
-            select(Scan)
-            .where(
-                Scan.target_id == scan.target_id,
-                Scan.project_id == scan.project_id,
-                census_only(),
-                or_(Scan.id == scan.id, earlier),
-            )
+            self._runs_up_to(scan)
             .order_by(started.desc(), Scan.created_at.desc())
             .limit(window)
         )
         return list(reversed(result.scalars().all()))
+
+    async def runs(self, scan: Scan) -> int:
+        """How many census runs the target has up to the viewed one."""
+        return int(
+            await self.session.scalar(
+                select(func.count()).select_from(self._runs_up_to(scan).subquery())
+            )
+            or 0
+        )
 
     async def _columns(self, scans: list[Scan]) -> list[TimelineColumn]:
         names = self._stages()
@@ -400,6 +413,7 @@ class TimelineService:
     async def search(self, project_id: UUID, scan_id: UUID, f):
         scan = await self._scan(scan_id, project_id)
         columns = await self._columns(await self.window(scan, f.window))
+        runs = await self.runs(scan)
         scans = [
             TimelineScan(
                 id=c.scan.id,
@@ -417,7 +431,7 @@ class TimelineService:
         try:
             predicate = surface_hosts.compiled(scope, f, now)
         except QuerySyntaxError as exc:
-            return self.result(scans=scans, error=syntax_error(exc))
+            return self.result(scans=scans, runs=runs, error=syntax_error(exc))
         keys = (*by_flag, ALL)
         base = surface_hosts.scoped(
             project_id,
@@ -464,7 +478,7 @@ class TimelineService:
             if getattr(exc.orig, "sqlstate", None) == TIMEOUT_SQLSTATE:
                 rejected = TIMED_OUT
             logger.info("timeline query rejected by postgres", error=str(exc.orig))
-            return self.result(scans=scans, error=rejected)
+            return self.result(scans=scans, runs=runs, error=rejected)
 
         reader = SubdomainService(self.session)
         items = [
@@ -479,6 +493,7 @@ class TimelineService:
         ]
         return self.result(
             scans=scans,
+            runs=runs,
             items=items,
             total=counts[f.flag.value if f.flag else ALL],
             counts=counts,

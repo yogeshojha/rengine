@@ -71,6 +71,11 @@
 	let width = $derived(stripWidth(scans.length, px));
 	let last = $derived(scans.length - 1);
 	let highlight = $state(-1);
+	let windowNote = $derived(
+		result.runs > scans.length && scans[0]?.started_at
+			? `Last ${scans.length} of ${result.runs} runs · earlier runs open from ${formatMonthDay(scans[0].started_at)}`
+			: ''
+	);
 	const expanded = new SvelteSet<string>();
 
 	// the viewed scan, the first scan, then every few columns from the right, each kept clear of the others
@@ -291,7 +296,8 @@
 		></span>
 		This scan
 	</span>
-	{#if help}
-		<span class="ml-auto px-2 py-1">{help}</span>
-	{/if}
+	<span class="ml-auto flex flex-wrap items-center gap-x-3 px-2 py-1">
+		{#if windowNote}<span>{windowNote}</span>{/if}
+		{#if help}<span>{help}</span>{/if}
+	</span>
 </div>

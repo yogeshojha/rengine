@@ -9,7 +9,7 @@
 		formatMonthDay,
 		relativeTimeLong
 	} from '$lib/utilities/dates';
-	import { columnCell, rowTone } from '../table/columns';
+	import { columnCell, pinnedTone, rowTone } from '../table/columns';
 	import { PORT_COLUMNS, PORT_LEAD_COLUMNS } from './timeline-columns';
 
 	interface Props {
@@ -67,8 +67,9 @@
 	}}
 >
 	<div
-		class="sticky left-0 z-[1] flex min-w-0 items-baseline gap-2 bg-card pr-2 {PORT_LEAD_COLUMNS[0]
-			.width}"
+		class="sticky left-0 z-[1] flex min-w-0 items-baseline gap-2 pr-2 transition-colors {pinnedTone(
+			focused
+		)} {PORT_LEAD_COLUMNS[0].width}"
 	>
 		<span class="font-mono text-sm leading-5 font-medium {gone ? 'text-muted-foreground' : ''}"
 			>{row.port}/{row.protocol}</span

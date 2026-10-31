@@ -279,6 +279,7 @@ class ServiceTimelineService(TimelineService):
     ) -> ServiceTimelineResult:
         scan = await self._scan(scan_id, project_id)
         columns = await self._columns(await self.window(scan, f.window))
+        runs = await self.runs(scan)
         scans = [
             TimelineScan(
                 id=c.scan.id,
@@ -295,15 +296,18 @@ class ServiceTimelineService(TimelineService):
             rows = self._rows(w, scope, f, utc_now())
         except QuerySyntaxError as exc:
             return ServiceTimelineResult(
-                scans=scans, mode=mode, error=syntax_error(exc)
+                scans=scans, runs=runs, mode=mode, error=syntax_error(exc)
             )
 
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
         try:
             if mode == ServiceTimelineMode.PORT:
-                return await self._by_port(scan, scans, columns, w, rows, f)
-            return await self._by_address(scan, scans, columns, scope, w, rows, f)
+                result = await self._by_port(scan, scans, columns, w, rows, f)
+            else:
+                result = await self._by_address(scan, scans, columns, scope, w, rows, f)
+            result.runs = runs
+            return result
         except DBAPIError as exc:
             await self.session.rollback()
             rejected = query_error_for(exc)
@@ -312,7 +316,9 @@ class ServiceTimelineService(TimelineService):
             if getattr(exc.orig, "sqlstate", None) == TIMEOUT_SQLSTATE:
                 rejected = TIMED_OUT
             logger.info("service timeline rejected by postgres", error=str(exc.orig))
-            return ServiceTimelineResult(scans=scans, mode=mode, error=rejected)
+            return ServiceTimelineResult(
+                scans=scans, runs=runs, mode=mode, error=rejected
+            )
 
     @staticmethod
     def _started(scan: Scan) -> datetime:

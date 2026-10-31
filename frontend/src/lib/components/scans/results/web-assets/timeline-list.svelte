@@ -67,6 +67,11 @@
 	let width = $derived(stripWidth(scans.length));
 	let last = $derived(scans.length - 1);
 	let highlight = $state(-1);
+	let windowNote = $derived(
+		result.runs > scans.length && scans[0]?.started_at
+			? `Last ${scans.length} of ${result.runs} runs · earlier runs open from ${formatMonthDay(scans[0].started_at)}`
+			: ''
+	);
 
 	// the viewed scan, the first scan, then every few columns from the right, each kept clear of the others
 	const LABEL_PX = 40;
@@ -231,7 +236,8 @@
 		></span>
 		This scan
 	</span>
-	{#if flag}
-		<span class="ml-auto px-2 py-1">{FLAG_HELP[flag]}</span>
-	{/if}
+	<span class="ml-auto flex flex-wrap items-center gap-x-3 px-2 py-1">
+		{#if windowNote}<span>{windowNote}</span>{/if}
+		{#if flag}<span>{FLAG_HELP[flag]}</span>{/if}
+	</span>
 </div>

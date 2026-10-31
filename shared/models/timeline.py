@@ -57,6 +57,7 @@ class TimelineRow(BaseModel):
 
 class TimelineSearchResult(BaseModel):
     scans: list[TimelineScan] = Field(default_factory=list)
+    runs: int = 0
     items: list[TimelineRow] = Field(default_factory=list)
     total: int = 0
     counts: dict[str, int] = Field(default_factory=dict)
@@ -89,6 +90,7 @@ class RenderRow(BaseModel):
 
 class RenderSearchResult(BaseModel):
     scans: list[TimelineScan] = Field(default_factory=list)
+    runs: int = 0
     items: list[RenderRow] = Field(default_factory=list)
     total: int = 0
     counts: dict[str, int] = Field(default_factory=dict)
@@ -187,6 +189,7 @@ class ServicePortRow(BaseModel):
 
 class ServiceTimelineResult(BaseModel):
     scans: list[TimelineScan] = Field(default_factory=list)
+    runs: int = 0
     mode: ServiceTimelineMode = ServiceTimelineMode.ADDRESS
     addresses: list[ServiceAddressRow] = Field(default_factory=list)
     ports: list[ServicePortRow] = Field(default_factory=list)

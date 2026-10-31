@@ -44,6 +44,13 @@ export function rowTone(active: boolean, focused: boolean): string {
 	return `${tone} focus-visible:bg-muted/40 ${ROW_FOCUS}`;
 }
 
+// a cell pinned while the row scrolls paints the row's tint over the card
+export function pinnedTone(focused: boolean): string {
+	return focused
+		? 'bg-[color-mix(in_oklch,var(--muted)_40%,var(--card))]'
+		: 'bg-card group-hover:bg-[color-mix(in_oklch,var(--muted)_30%,var(--card))]';
+}
+
 export function columnCell(col: TableColumn): string {
 	// contain-inline-size: a growing column fills the row but never widens it past the card
 	const grow = col.grow
