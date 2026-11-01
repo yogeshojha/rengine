@@ -80,7 +80,7 @@ def test_a_token_is_never_sent_when_oast_is_off():
 
 def test_the_token_has_somewhere_to_be_stored():
     assert APIProvider.INTERACTSH in API_PROVIDER_META
-    assert API_PROVIDER_META[APIProvider.INTERACTSH]["requires_username"] is False
+    assert "account" not in API_PROVIDER_META[APIProvider.INTERACTSH]
 
 
 @pytest.mark.parametrize(

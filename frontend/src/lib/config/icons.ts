@@ -15,6 +15,9 @@ import Biohazard from '@lucide/svelte/icons/biohazard';
 import SatelliteDish from '@lucide/svelte/icons/satellite-dish';
 import Package from '@lucide/svelte/icons/package';
 import Send from '@lucide/svelte/icons/send';
+import Database from '@lucide/svelte/icons/database';
+import Search from '@lucide/svelte/icons/search';
+import BadgeCheck from '@lucide/svelte/icons/badge-check';
 
 export type IconComponent = typeof Globe;
 
@@ -55,7 +58,10 @@ export const PROVIDER_ICONS: Record<string, IconComponent> = {
 	biohazard: Biohazard,
 	'satellite-dish': SatelliteDish,
 	github: Github,
-	send: Send
+	send: Send,
+	database: Database,
+	search: Search,
+	'badge-check': BadgeCheck
 };
 
 export function getProviderIcon(icon: string): IconComponent {

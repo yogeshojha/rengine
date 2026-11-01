@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser
 from app.core.database import get_session
+from app.services.api_key_checks import KEY_CHECKS
 from channels.service import ChannelService
 from channels.telegram.driver import TelegramError, valid_token
 from channels.telegram.driver import verify as verify_bot
@@ -73,6 +74,7 @@ API_KEY_TESTERS = {
     APIProvider.HACKERONE: _test_hackerone,
     APIProvider.INTIGRITI: _test_intigriti,
     APIProvider.TELEGRAM: _test_telegram,
+    **KEY_CHECKS,
 }
 
 

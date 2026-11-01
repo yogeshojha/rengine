@@ -156,7 +156,7 @@
 						{/snippet}
 					</Tooltip.Trigger>
 					<Tooltip.Content class="text-xs">
-						{stage.requires_api_keys ? 'Needs' : 'Uses'} API keys: {stage.api_keys.join(', ')}
+						{stage.requires_api_keys ? 'Needs' : 'Uses'} API keys: {stage.api_key_names.join(', ')}
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}

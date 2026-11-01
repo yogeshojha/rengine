@@ -53,13 +53,21 @@ class APIKeyRead(BaseModel):
     updated_at: datetime
 
 
+class ProviderAccount(BaseModel):
+    field: str
+    label: str
+    required: bool = True
+    default: str | None = None
+
+
 class ProviderInfo(BaseModel):
     provider: APIProvider
     name: str
     description: str
     docs_url: str
     icon: str = "package"
-    requires_username: bool = False
+    account: ProviderAccount | None = None
+    setup: bool = False
     group: str
     group_label: str
     configured: bool = False

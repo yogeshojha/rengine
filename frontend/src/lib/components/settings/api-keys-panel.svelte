@@ -33,7 +33,7 @@
 	import { relativeTime } from '$lib/utilities/dates';
 	import { externalHref } from '$lib/utilities/links';
 	import type { APIKeyRead, ProviderInfo } from '$lib/types/api-key';
-	import { ProviderGroup } from '$lib/config/api-keys';
+	import { ProviderGroup, accountMeta } from '$lib/config/api-keys';
 	import CheckStatus from './check-status.svelte';
 	import { BODY_ROW, GROUP_ROW, HEAD_ROW, KEY_COL, KEY_SKELETON } from './columns';
 	import { checkState, type CheckState } from './status';
@@ -56,11 +56,11 @@
 	let editing = $state<ProviderInfo | null>(null);
 	let dialogOpen = $state(false);
 	let keyValue = $state('');
-	let username = $state('');
-	let initialUsername = $state('');
+	let account = $state('');
+	let initialAccount = $state('');
 	let showKey = $state(false);
 	let saving = $state(false);
-	let usernameInput = $state<HTMLInputElement | null>(null);
+	let accountInput = $state<HTMLInputElement | null>(null);
 	let keyInput = $state<HTMLInputElement | null>(null);
 
 	let removing = $state<ProviderInfo | null>(null);
@@ -73,7 +73,7 @@
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const replacing = $derived(editing ? keys.has(editing.provider) : false);
 	const canSave = $derived(
-		!saving && !!keyValue.trim() && (!editing?.requires_username || !!username.trim() || replacing)
+		!saving && !!keyValue.trim() && (!editing?.account?.required || !!account.trim() || replacing)
 	);
 	const groups = $derived.by(() => {
 		const out: { group: string; label: string; items: ProviderInfo[] }[] = [];
@@ -92,7 +92,7 @@
 		);
 	});
 	const setCount = $derived(providers.filter((p) => keys.has(p.provider)).length);
-	const dirty = $derived(!!keyValue.trim() || username.trim() !== initialUsername);
+	const dirty = $derived(!!keyValue.trim() || account.trim() !== initialAccount);
 	const guard = new DiscardGuard(
 		() => dirty,
 		() => (dialogOpen = false)
@@ -121,6 +121,11 @@
 		else loading = false;
 	});
 
+	function storedAccount(provider: ProviderInfo, key: APIKeyRead | undefined): string {
+		const field = provider.account?.field;
+		return field ? String(key?.key_meta?.[field] ?? '') : '';
+	}
+
 	function stateOf(provider: ProviderInfo): CheckState {
 		const key = keys.get(provider.provider);
 		if (!key) return 'off';
@@ -130,20 +135,19 @@
 	async function openDialog(provider: ProviderInfo) {
 		editing = provider;
 		keyValue = '';
-		username = String(keys.get(provider.provider)?.key_meta?.username ?? '');
-		initialUsername = username.trim();
+		account = storedAccount(provider, keys.get(provider.provider));
+		initialAccount = account.trim();
 		showKey = false;
 		dialogOpen = true;
 		await tick();
-		(provider.requires_username && !username ? usernameInput : keyInput)?.focus();
+		(provider.account?.required && !account ? accountInput : keyInput)?.focus();
 	}
 
 	async function saveKey() {
 		const provider = editing;
 		if (!provider || !canSave) return;
 		saving = true;
-		const name = username.trim();
-		const meta = provider.requires_username && name ? { key_meta: { username: name } } : {};
+		const meta = accountMeta(provider.account, account);
 		try {
 			const existing = keys.get(provider.provider);
 			const stored = existing
@@ -292,12 +296,9 @@
 										>
 											{key.key_value_masked}
 										</code>
-										{#if key.key_meta?.username}
-											<code
-												class="truncate font-mono text-2xs text-muted-foreground"
-												title={String(key.key_meta.username)}
-											>
-												{key.key_meta.username}
+										{#if storedAccount(provider, key)}
+											<code class="truncate font-mono text-2xs text-muted-foreground">
+												{storedAccount(provider, key)}
 											</code>
 										{/if}
 									</span>
@@ -455,14 +456,16 @@
 			}}
 		>
 			<div class="flex flex-col gap-4 px-6 py-5">
-				{#if editing?.requires_username}
-					<FormField label="Username" required>
+				{#if editing?.account}
+					<FormField label={editing.account.label} required={editing.account.required}>
 						{#snippet children({ id })}
 							<Input
 								{id}
-								bind:ref={usernameInput}
-								bind:value={username}
+								bind:ref={accountInput}
+								bind:value={account}
+								placeholder={editing?.account?.default ?? undefined}
 								autocomplete="off"
+								spellcheck={false}
 								disabled={saving}
 							/>
 						{/snippet}

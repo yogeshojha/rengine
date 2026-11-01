@@ -57,7 +57,7 @@
 			(s) => s.api_keys.length && Boolean(engine.stages?.[s.name]?.enabled ?? s.defaults.enabled)
 		)
 	);
-	const keyNames = $derived([...new Set(keyedStages.flatMap((s) => s.api_keys))]);
+	const keyNames = $derived([...new Set(keyedStages.flatMap((s) => s.api_key_names))]);
 
 	const usage = $derived.by(() => {
 		const parts: string[] = [];

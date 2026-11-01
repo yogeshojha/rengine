@@ -12,7 +12,7 @@ from shared.definitions.intensity import (
     tool_threads,
 )
 from shared.definitions.launch import ASSET_KIND_LABELS, seed_produces
-from shared.enums.scan import Intensity
+from shared.enums.scan import Intensity, StageRole
 from shared.enums.target import TargetType
 from shared.models.scan_context import ScanContext
 from shared.models.scan_engine import EnginePreviewResult, PreviewResolved
@@ -89,10 +89,12 @@ def _stage_status(
         reason = f"{spec.title} skipped. API key not configured."
         warnings.append(reason)
         return _skip(PreviewToolStatus.SKIPPED_NEEDS_KEY, reason)
-    if missing:
-        warnings.append(
-            f"{spec.title}: no API key for {', '.join(missing)}. Reduced coverage."
-        )
+    if (
+        missing
+        and len(missing) == len(spec.api_keys)
+        and spec.role == StageRole.CAPABILITY.value
+    ):
+        warnings.append(f"{spec.title}: no API key set. Reduced coverage.")
 
     transport = (resolved.transports or {}).get(spec.name) or {}
     quiet = resolved.intensity == Intensity.PASSIVE.value and spec.passive_capable

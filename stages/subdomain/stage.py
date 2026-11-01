@@ -15,6 +15,8 @@ from pathlib import Path
 from sqlalchemy import bindparam, cast, delete, not_, or_, update
 from sqlalchemy.dialects.postgresql import JSONB, insert
 
+from shared.definitions.api_keys import SUBFINDER_SOURCES
+from shared.definitions.discovery_sources import NOTE_KEY, SOURCES_KEY, UNKEYED_KEY
 from shared.definitions.intensity import TransportTool
 from shared.definitions.rescan import SEED_SOURCES
 from shared.definitions.surface import SurfaceDimension
@@ -46,6 +48,7 @@ from stages.subdomain.providers import (
     ProviderResult,
     SubdomainProvider,
 )
+from stages.subdomain.sources import run_notes, source_report
 from tools.alterx import AlterxClient, AlterxError
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.parser import parse_dnsx_jsonl
@@ -66,11 +69,16 @@ _RESOLUTION_UPDATE = (
     )
 )
 
-_PREFETCH_KEYS = (
-    APIProvider.SECURITYTRAILS,
-    APIProvider.CHAOS,
-    APIProvider.NETLAS,
-    APIProvider.GITHUB,
+_PREFETCH_KEYS: tuple[APIProvider, ...] = tuple(
+    dict.fromkeys(
+        (
+            APIProvider.SECURITYTRAILS,
+            APIProvider.CHAOS,
+            APIProvider.NETLAS,
+            APIProvider.GITHUB,
+            *SUBFINDER_SOURCES,
+        )
+    )
 )
 _MAX_CONCURRENCY = 8
 _MAX_RESOLVE_THREADS = 50
@@ -192,15 +200,16 @@ class SubdomainStage(Stage):
         resolved = self.ctx.resolved
         domain = self.ctx.target_value.strip().lower().rstrip(".")
 
-        api_keys = self._prefetch_keys()
+        credentials = self._prefetch_keys()
         pctx = ProviderContext(
             domain=domain,
             timeout=tool_timeout(resolved.intensity),
             threads=self.transport.threads,
             proxy_url=resolved.proxy_url,
-            api_keys=api_keys,
+            api_keys={name: key for name, (key, _) in credentials.items()},
             recorder=self.ctx.recorder,
             tool_options=dict(resolved.tool_options or {}),
+            key_meta={name: meta for name, (_, meta) in credentials.items()},
         )
 
         def write(result: ProviderResult) -> None:
@@ -253,6 +262,7 @@ class SubdomainStage(Stage):
 
         active, ips_seen = self._persist(merged, state.records, wildcard, excluded)
         cut = [r.source.value for r in extra if r.cut_short]
+        notes = run_notes(results)
         return StageResult(
             counts={
                 "subdomains": len(merged),
@@ -262,6 +272,9 @@ class SubdomainStage(Stage):
                 **rules,
                 **({"recovered": state.recovered} if state.recovered else {}),
                 **{r.source.value: len(r.subdomains) for r in extra if r.subdomains},
+                SOURCES_KEY: source_report([*results, *extra], merged),
+                **self._unkeyed(results, credentials),
+                **({NOTE_KEY: notes} if notes else {}),
             },
             warnings=[
                 *self._resolution_warnings(state),
@@ -536,9 +549,22 @@ class SubdomainStage(Stage):
             )
         return notes
 
-    def _prefetch_keys(self) -> dict[str, str | None]:
-        svc = SyncAPIKeyService(self.session)
-        return {p.value: svc.get_key_for_provider(p) for p in _PREFETCH_KEYS}
+    @staticmethod
+    def _unkeyed(
+        results: list[ProviderResult], credentials: dict[str, tuple[str, dict | None]]
+    ) -> dict[str, int]:
+        """Keyed subfinder sources this instance holds no key for."""
+        ran = any(
+            r.source is SubdomainSource.SUBFINDER and not r.skipped for r in results
+        )
+        if not ran:
+            return {}
+        return {
+            UNKEYED_KEY: sum(1 for p in SUBFINDER_SOURCES if p.value not in credentials)
+        }
+
+    def _prefetch_keys(self) -> dict[str, tuple[str, dict | None]]:
+        return SyncAPIKeyService(self.session).credentials(_PREFETCH_KEYS)
 
     def _infostealer_names(self) -> ProviderResult | None:
         if not infostealer.lookups_enabled(self.session):

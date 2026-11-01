@@ -30,6 +30,17 @@ class ProviderContext:
     api_keys: dict[str, str | None]
     recorder: CommandRecorder | None = None
     tool_options: dict[str, str] = field(default_factory=dict)
+    key_meta: dict[str, dict | None] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class SourceStat:
+    """One upstream source's figures inside an aggregating tool."""
+
+    results: int = 0
+    requests: int = 0
+    errors: int = 0
+    skipped: bool = False
 
 
 @dataclass
@@ -43,6 +54,9 @@ class ProviderResult:
     skipped: bool = False
     skip_reason: str | None = None
     duration_seconds: float = 0.0
+    breakdown: dict[str, set[str]] = field(default_factory=dict)
+    source_stats: dict[str, SourceStat] = field(default_factory=dict)
+    keyed_sources: dict[str, str] = field(default_factory=dict)
 
 
 class SubdomainProvider(ABC):
@@ -55,6 +69,10 @@ class SubdomainProvider(ABC):
     def __init__(self, ctx: ProviderContext) -> None:
         self.ctx = ctx
         self._note: str | None = None
+        self._cut = False
+        self._breakdown: dict[str, set[str]] = {}
+        self._stats: dict[str, SourceStat] = {}
+        self._keyed: dict[str, str] = {}
 
     @property
     def extra_args(self) -> list[str]:
@@ -112,11 +130,16 @@ class SubdomainProvider(ABC):
                 source=self.source,
                 error=str(e)[:300],
                 duration_seconds=round(time.monotonic() - start, 2),
+                keyed_sources=dict(self._keyed),
             )
         return ProviderResult(
             source=self.source,
             subdomains=set(subs),
             raw_count=len(subs),
             note=self._note,
+            cut_short=self._cut,
             duration_seconds=round(time.monotonic() - start, 2),
+            breakdown=self._breakdown,
+            source_stats=self._stats,
+            keyed_sources=dict(self._keyed),
         )

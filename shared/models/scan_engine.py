@@ -135,6 +135,7 @@ class StageCatalogEntry(BaseModel):
     applies_to: list[str]
     tools: list[str]
     api_keys: list[str]
+    api_key_names: list[str] = PydanticField(default_factory=list)
     requires_api_keys: bool = False
     touches_target: bool = True
     passive_capable: bool = False

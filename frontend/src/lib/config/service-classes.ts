@@ -58,15 +58,23 @@ export enum PortSource {
 	INTERNETDB = 'internetdb',
 	HTTP_PROBE = 'http_probe',
 	BANNER = 'banner',
-	SEED = 'seed'
+	SEED = 'seed',
+	SHODAN = 'shodan'
 }
+
+// mirrors shared/definitions/ports.py PASSIVE_PORT_SOURCES
+export const PASSIVE_PORT_SOURCES: ReadonlySet<string> = new Set([
+	PortSource.INTERNETDB,
+	PortSource.SHODAN
+]);
 
 export const PORT_SOURCE_LABELS: Record<string, string> = {
 	naabu: 'Port scan',
 	internetdb: 'External scanner',
 	http_probe: 'HTTP probe',
 	banner: 'Service banner',
-	seed: 'Seeded'
+	seed: 'Seeded',
+	shodan: 'Shodan'
 };
 
 export const PORT_SOURCE_HELP: Record<string, string> = {
@@ -74,7 +82,8 @@ export const PORT_SOURCE_HELP: Record<string, string> = {
 	internetdb: 'Reported by an internet-wide scanner, not observed directly',
 	http_probe: 'Answered an HTTP request',
 	banner: 'Returned a service banner',
-	seed: 'Port named by a seeded URL'
+	seed: 'Port named by a seeded URL',
+	shodan: 'Reported by Shodan, not observed directly'
 };
 
 export const SCAN_POLICY_LABELS: Record<string, string> = {

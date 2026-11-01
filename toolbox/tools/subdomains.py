@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from pydantic import Field, field_validator
 
+from shared.definitions.api_keys import SUBFINDER_SOURCES
 from shared.definitions.toolbox import (
     MAX_INPUT_LENGTH,
     Tone,
@@ -53,8 +54,8 @@ SOURCE_LABELS = {
 PROVIDER_LABELS = {cls.source.value: SOURCE_LABELS[key] for key, cls in SOURCES.items()}
 
 DEFAULT_SOURCES = ["certificates", "subfinder", "assetfinder"]
-PREFETCH_KEYS = (APIProvider.SECURITYTRAILS, APIProvider.CHAOS)
-TOOL_TIMEOUT = 120
+PREFETCH_KEYS: tuple[APIProvider, ...] = tuple(SUBFINDER_SOURCES)
+TOOL_TIMEOUT = 180
 MAX_LISTED = 500
 
 
@@ -107,12 +108,14 @@ class SubdomainFinder(Tool):
     Input = Input
 
     def run(self, ctx: ToolContext, args: Input) -> ToolOutcome:
+        credentials = _credentials(ctx)
         pctx = ProviderContext(
             domain=args.domain,
             timeout=TOOL_TIMEOUT,
             threads=20,
             proxy_url=None,
-            api_keys=_api_keys(ctx),
+            api_keys={name: key for name, (key, _) in credentials.items()},
+            key_meta={name: meta for name, (_, meta) in credentials.items()},
         )
         with ThreadPoolExecutor(max_workers=len(args.sources)) as pool:
             results = list(pool.map(lambda key: SOURCES[key](pctx).run(), args.sources))
@@ -211,8 +214,7 @@ def _source_note(result: ProviderResult) -> str:
     return f"{len(result.subdomains):,} in {result.duration_seconds:.0f}s"
 
 
-def _api_keys(ctx: ToolContext) -> dict[str, str | None]:
+def _credentials(ctx: ToolContext) -> dict[str, tuple[str, dict | None]]:
     from shared.services.api_key.sync_api_key import SyncAPIKeyService  # noqa: PLC0415
 
-    service = SyncAPIKeyService(ctx.session)
-    return {p.value: service.get_key_for_provider(p) for p in PREFETCH_KEYS}
+    return SyncAPIKeyService(ctx.session).credentials(PREFETCH_KEYS)

@@ -9,7 +9,20 @@ export enum APIProvider {
 	VULNX = 'vulnx',
 	INTERACTSH = 'interactsh',
 	GITHUB = 'github',
-	TELEGRAM = 'telegram'
+	TELEGRAM = 'telegram',
+	VIRUSTOTAL = 'virustotal',
+	CENSYS = 'censys',
+	SHODAN = 'shodan',
+	ALIENVAULT = 'alienvault',
+	URLSCAN = 'urlscan',
+	CERTSPOTTER = 'certspotter',
+	FULLHUNT = 'fullhunt',
+	LEAKIX = 'leakix',
+	BEVIGIL = 'bevigil',
+	INTELX = 'intelx',
+	WHOISXMLAPI = 'whoisxmlapi',
+	FOFA = 'fofa',
+	ZOOMEYE = 'zoomeye'
 }
 
 export interface APIKeyRead {
@@ -25,13 +38,21 @@ export interface APIKeyRead {
 	updated_at: string;
 }
 
+export interface ProviderAccount {
+	field: string;
+	label: string;
+	required: boolean;
+	default: string | null;
+}
+
 export interface ProviderInfo {
 	provider: APIProvider;
 	name: string;
 	description: string;
 	docs_url: string;
 	icon: string;
-	requires_username: boolean;
+	account: ProviderAccount | null;
+	setup: boolean;
 	group: string;
 	group_label: string;
 	configured: boolean;

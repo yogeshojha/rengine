@@ -26,9 +26,9 @@
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { productBrand, serviceLabel, type ServiceRead } from '$lib/utilities/services';
 	import {
+		PASSIVE_PORT_SOURCES,
 		PORT_SOURCE_HELP,
 		PORT_SOURCE_LABELS,
-		PortSource,
 		SCAN_POLICY_LABELS,
 		SERVICE_CLASS_ICONS,
 		serviceClassLabel
@@ -140,7 +140,7 @@
 					{#if s.is_cdn}
 						<Badge variant="info" class="font-normal">{s.cdn_name ?? 'CDN'}</Badge>
 					{/if}
-					{#if s.source === PortSource.INTERNETDB}
+					{#if PASSIVE_PORT_SOURCES.has(s.source)}
 						<Badge variant="outline" class="font-normal text-muted-foreground">Unconfirmed</Badge>
 					{/if}
 				</div>

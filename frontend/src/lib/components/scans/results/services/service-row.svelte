@@ -29,9 +29,9 @@
 	import { excludeToken, exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { productBrand } from '$lib/utilities/services';
 	import {
+		PASSIVE_PORT_SOURCES,
 		PORT_SOURCE_HELP,
 		PORT_SOURCE_LABELS,
-		PortSource,
 		SERVICE_CLASS_FILL,
 		serviceClassLabel
 	} from '$lib/config/service-classes';
@@ -90,7 +90,7 @@
 
 	let hosts = $derived(s.hosts ?? []);
 	let endpoint = $derived(hostPort(s.ip, s.port));
-	let passive = $derived(s.source === PortSource.INTERNETDB);
+	let passive = $derived(PASSIVE_PORT_SOURCES.has(s.source));
 	let aiServices = $derived(s.ai_services ?? []);
 	let aiModels = $derived(s.ai_models ?? []);
 	let software = $derived(s.product ? (s.version ? `${s.product} ${s.version}` : s.product) : null);
@@ -282,7 +282,7 @@
 		{/if}
 
 		{#if passive}
-			<Hint text={PORT_SOURCE_HELP[PortSource.INTERNETDB]}>
+			<Hint text={PORT_SOURCE_HELP[s.source]}>
 				{#snippet child(props)}
 					<button
 						{...props}

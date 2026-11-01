@@ -7,7 +7,7 @@
 	import { apiKeysApi } from '$lib/api/api-keys';
 	import type { ProviderInfo } from '$lib/types/api-key';
 	import { getProviderIcon } from '$lib/config/icons';
-	import { RECON_GROUPS, type ProviderGroup } from '$lib/config/api-keys';
+	import { RECON_GROUPS, accountMeta, type ProviderGroup } from '$lib/config/api-keys';
 	import { plural } from '$lib/utilities/strings';
 	import { externalHref } from '$lib/utilities/links';
 	import { toast } from 'svelte-sonner';
@@ -25,7 +25,7 @@
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
 	let keys = $state<Record<string, string>>({});
-	let usernames = $state<Record<string, string>>({});
+	let accounts = $state<Record<string, string>>({});
 	let reveal = $state<Record<string, boolean>>({});
 	let busy = $state(false);
 
@@ -40,7 +40,7 @@
 		loading = true;
 		try {
 			providers = (await apiKeysApi.listProviders()).filter(
-				(p) => !p.configured && RECON_GROUPS.includes(p.group as ProviderGroup)
+				(p) => p.setup && !p.configured && RECON_GROUPS.includes(p.group as ProviderGroup)
 			);
 			loadError = null;
 		} catch (e) {
@@ -62,12 +62,11 @@
 	}
 
 	async function createKey(p: ProviderInfo, keyValue: string): Promise<boolean> {
-		const username = (usernames[p.provider] ?? '').trim();
 		try {
 			await apiKeysApi.create({
 				provider: p.provider,
 				key_value: keyValue,
-				...(p.requires_username && username ? { key_meta: { username } } : {})
+				...accountMeta(p.account, accounts[p.provider] ?? '')
 			});
 			return true;
 		} catch (e) {
@@ -85,8 +84,8 @@
 			for (const p of providers) {
 				const v = (keys[p.provider] ?? '').trim();
 				if (!v) continue;
-				if (p.requires_username && !(usernames[p.provider] ?? '').trim()) {
-					toast.error(`${p.name} requires a username`);
+				if (p.account?.required && !(accounts[p.provider] ?? '').trim()) {
+					toast.error(`${p.name} requires the ${p.account.label.toLowerCase()}`);
 					ok = false;
 					continue;
 				}
@@ -151,12 +150,13 @@
 										<p class="text-xs text-muted-foreground">{p.description}</p>
 									</div>
 									<div class="grid gap-4 sm:grid-cols-2">
-										{#if p.requires_username}
-											<FormField label="API username">
+										{#if p.account}
+											<FormField label={p.account.label}>
 												{#snippet children({ id })}
 													<Input
 														{id}
-														bind:value={usernames[p.provider]}
+														bind:value={accounts[p.provider]}
+														placeholder={p.account?.default ?? undefined}
 														disabled={busy}
 														class="h-9 text-xs"
 														autocomplete="off"
@@ -164,10 +164,7 @@
 												{/snippet}
 											</FormField>
 										{/if}
-										<FormField
-											label="API key"
-											class={p.requires_username ? undefined : 'sm:col-span-2'}
-										>
+										<FormField label="API key" class={p.account ? undefined : 'sm:col-span-2'}>
 											{#snippet children({ id })}
 												<div class="relative">
 													<Input

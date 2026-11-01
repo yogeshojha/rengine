@@ -8,7 +8,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from shared.definitions.api_keys import API_PROVIDER_META, PROVIDER_GROUP_LABELS
+from shared.definitions.api_keys import (
+    API_PROVIDER_META,
+    PROVIDER_GROUP_LABELS,
+    account_error,
+    account_of,
+    clean_meta,
+    key_error,
+)
 from shared.definitions.mode_features import provider_allowed
 from shared.enums.api_key import APIProvider
 from shared.enums.instance import InstanceMode
@@ -17,6 +24,7 @@ from shared.models.api_key import (
     APIKeyCreate,
     APIKeyRead,
     APIKeyUpdate,
+    ProviderAccount,
     ProviderInfo,
 )
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
@@ -72,6 +80,7 @@ class APIKeyService:
         providers = []
         for provider, meta in API_PROVIDER_META.items():
             key = configured.get(provider)
+            account = account_of(provider)
             providers.append(
                 ProviderInfo(
                     provider=provider,
@@ -79,7 +88,15 @@ class APIKeyService:
                     description=meta["description"],
                     docs_url=meta["docs_url"],
                     icon=meta.get("icon", "package"),
-                    requires_username=meta.get("requires_username", False),
+                    account=ProviderAccount(
+                        field=account.field,
+                        label=account.label,
+                        required=account.required,
+                        default=account.default,
+                    )
+                    if account
+                    else None,
+                    setup=meta.get("setup", False),
                     group=meta["group"],
                     group_label=PROVIDER_GROUP_LABELS[meta["group"]],
                     configured=key is not None,
@@ -98,19 +115,17 @@ class APIKeyService:
                 f"{name} requires bug bounty mode.",
             )
 
-        if API_PROVIDER_META.get(data.provider, {}).get("requires_username"):
-            username = (data.key_meta or {}).get("username")
-            if not username or not str(username).strip():
-                raise _http_error(
-                    HTTPStatus.BAD_REQUEST,
-                    f"{name} requires a username.",
-                )
-
         if MASK in data.key_value:
             raise _http_error(
                 HTTPStatus.BAD_REQUEST,
                 f"The {name} key carries a masked value. Enter the key again.",
             )
+        key_value = data.key_value.strip()
+        problem = key_error(data.provider, key_value) or account_error(
+            data.provider, data.key_meta
+        )
+        if problem:
+            raise _http_error(HTTPStatus.BAD_REQUEST, problem)
 
         existing = await self.session.execute(
             select(APIKey).where(
@@ -125,8 +140,8 @@ class APIKeyService:
 
         api_key = APIKey(
             provider=data.provider,
-            key_value=encrypt_secret(data.key_value),
-            key_meta=data.key_meta,
+            key_value=encrypt_secret(key_value),
+            key_meta=clean_meta(data.provider, data.key_meta),
         )
         self.session.add(api_key)
         try:
@@ -142,16 +157,36 @@ class APIKeyService:
 
     async def update_key(self, key_id: str, data: APIKeyUpdate) -> APIKeyRead:
         api_key = await self._get_key_or_404(key_id)
+        provider = api_key.provider
+        key_value = (
+            data.key_value.strip()
+            if data.key_value is not None and MASK not in data.key_value
+            else None
+        )
+        problem = (
+            key_error(provider, key_value) if key_value is not None else None
+        ) or (
+            account_error(provider, data.key_meta)
+            if data.key_meta is not None
+            else None
+        )
+        if problem:
+            raise _http_error(HTTPStatus.BAD_REQUEST, problem)
 
-        if data.key_value is not None and MASK not in data.key_value:
-            api_key.key_value = encrypt_secret(data.key_value)
+        changed = key_value is not None
+        if key_value is not None:
+            api_key.key_value = encrypt_secret(key_value)
+        if data.key_meta is not None:
+            meta = clean_meta(provider, data.key_meta)
+            if meta != api_key.key_meta:
+                api_key.key_meta = meta
+                changed = True
+        if changed:
             api_key.last_test_at = None
             api_key.last_test_ok = None
             api_key.last_test_message = None
         if data.is_enabled is not None:
             api_key.is_enabled = data.is_enabled
-        if data.key_meta is not None:
-            api_key.key_meta = data.key_meta
 
         api_key.updated_at = utc_now()
         self.session.add(api_key)

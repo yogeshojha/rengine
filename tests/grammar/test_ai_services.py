@@ -8,6 +8,7 @@ from app.services.subdomain import SubdomainService
 from shared.definitions.ai_services import model_query
 from shared.definitions.asset_query import SERVICE_QUERY
 from shared.models.http_asset import HttpAsset
+from shared.models.port import Port
 from shared.models.scan_correlation import ServiceFilter
 from shared.models.subdomain import SubdomainFilter
 from shared.services.ai_services import _FOLD_SQL
@@ -131,3 +132,27 @@ async def test_the_summary_counts_equal_the_filters(estate, session, now):
     for entry in summary.models:
         assert await _services(service, sid, entry.query) == entry.count
     assert {m.name for m in summary.models} == {"llama3:8b", "qwen2.5", "gpt-4o"}
+
+
+async def test_every_indexed_source_reads_passive(estate, session, now):
+    await estate.scan("example.com", "indexed", at=now)
+    await estate.ports(
+        "indexed",
+        [
+            ("203.0.113.10", 22, "ssh"),
+            ("203.0.113.11", 22, "ssh"),
+            ("203.0.113.12", 22, "ssh"),
+        ],
+        at=now,
+    )
+    sid = estate.scans["indexed"]
+    for ip, source in (("203.0.113.10", "internetdb"), ("203.0.113.11", "shodan")):
+        await session.execute(
+            update(Port).where(Port.scan_id == sid, Port.ip == ip).values(source=source)
+        )
+    await session.flush()
+    service = PortService(session)
+
+    assert await _services(service, sid, "is:passive") == 2
+    assert await _services(service, sid, "is:confirmed") == 1
+    assert (await service.exposure(sid)).passive_only == 2

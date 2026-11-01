@@ -58,7 +58,7 @@ export interface ScanActivityRead {
 	title: string;
 	status: ScanActivityStatus;
 	error: string | null;
-	result: Record<string, number | string>;
+	result: Record<string, unknown>;
 	figures: StageFigure[];
 	started_at: string | null;
 	completed_at: string | null;

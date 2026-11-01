@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from shared.definitions.discovery_sources import NOTE_KEY, SOURCES_KEY, UNKEYED_KEY
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 
 Label = tuple[str, str]
@@ -38,6 +39,7 @@ STAGE_COUNT_LABELS: dict[str, Label] = {
     "cloud_buckets_open": ("open cloud bucket", "open cloud buckets"),
     "covered": noun(_WEB, after="covered by an equivalent"),
     "directories": ("directory", "directories"),
+    "described": noun(_SERVICES, after="with a product or banner"),
     "dns_records": ("DNS record", "DNS records"),
     "documents": ("response read", "responses read"),
     "edge_only": ("CDN edge address", "CDN edge addresses"),
@@ -51,6 +53,7 @@ STAGE_COUNT_LABELS: dict[str, Label] = {
     "infostealer_hosts": ("infostealer hostname", "infostealer hostnames"),
     "ips": noun(_IPS),
     "known_ports": noun(_SERVICES, before="known"),
+    "looked_up": noun(_IPS, after="looked up"),
     "lookalike_threats": (
         "lookalike with a page or mail server",
         "lookalikes with a page or mail server",
@@ -89,9 +92,12 @@ STAGE_COUNT_OVERRIDES: dict[tuple[str, str], Label] = {
     ("session_check", "checked"): ("URL checked", "URLs checked"),
     ("origin_probe", "probed"): noun(_IPS, after="requested"),
     ("service_fingerprint", "probed"): noun(_SERVICES, after="probed"),
+    ("passive_ports", "looked_up"): noun(_IPS, after="looked up on Shodan"),
 }
 
-UNSHOWN_COUNTS: frozenset[str] = frozenset({"excluded"})
+UNSHOWN_COUNTS: frozenset[str] = frozenset(
+    {"excluded", SOURCES_KEY, UNKEYED_KEY, NOTE_KEY}
+)
 
 
 def stage_figures(stage: str | None, counts: dict) -> list[tuple[str, int, str]]:

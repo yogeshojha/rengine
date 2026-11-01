@@ -50,11 +50,18 @@ class PortSource(StrEnum):
     HTTP_PROBE = "http_probe"
     BANNER = "banner"
     SEED = "seed"
+    SHODAN = "shodan"
 
+
+# reported by an internet-wide scanner, never observed by this scan
+PASSIVE_PORT_SOURCES: frozenset[str] = frozenset(
+    {PortSource.INTERNETDB.value, PortSource.SHODAN.value}
+)
 
 PORT_SOURCE_LABELS: dict[str, str] = {
     PortSource.NAABU.value: "Port scan",
     PortSource.INTERNETDB.value: "External scanner",
+    PortSource.SHODAN.value: "Shodan",
     PortSource.HTTP_PROBE.value: "HTTP probe",
     PortSource.BANNER.value: "Service banner",
     PortSource.SEED.value: "Seeded",
@@ -63,6 +70,7 @@ PORT_SOURCE_LABELS: dict[str, str] = {
 PORT_SOURCE_RANK: dict[str, int] = {
     PortSource.SEED.value: 0,
     PortSource.INTERNETDB.value: 0,
+    PortSource.SHODAN.value: 0,
     PortSource.BANNER.value: 1,
     PortSource.HTTP_PROBE.value: 2,
     PortSource.NAABU.value: 3,

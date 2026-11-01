@@ -12,6 +12,7 @@ function stage(name: string, over: Partial<StageCatalogEntry>): StageCatalogEntr
 		applies_to: ['domain'],
 		tools: [],
 		api_keys: [],
+		api_key_names: [],
 		requires_api_keys: false,
 		touches_target: true,
 		launch_fields: [],

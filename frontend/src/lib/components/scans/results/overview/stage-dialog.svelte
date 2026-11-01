@@ -28,6 +28,10 @@
 		ScanCommandRead
 	} from '$lib/types/scan';
 	import { formatClock } from '$lib/utilities/dates';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { ROUTES } from '$lib/config/routes';
+	import { plural } from '$lib/utilities/strings';
+	import { SourceStatus, discoverySources, unkeyedSources } from '$lib/config/discovery-sources';
 
 	interface Props {
 		open: boolean;
@@ -116,6 +120,10 @@
 
 	let Icon = $derived(activity ? activityStatusIcon(activity.status) : Circle);
 	let figures = $derived(activity?.figures ?? []);
+	let sources = $derived(discoverySources(activity?.result));
+	let unkeyed = $derived(unkeyedSources(activity?.result));
+	const SOURCE_ROW = 'flex items-start gap-3 px-3';
+	const SOURCE_COUNT = 'w-20 shrink-0 text-right tabular-nums';
 	let notes = $derived(
 		Object.entries(activity?.result ?? {}).filter(
 			(e): e is [string, string] => typeof e[1] === 'string'
@@ -174,6 +182,72 @@
 									</div>
 								{/each}
 							</div>
+						</section>
+					{/if}
+					{#if sources.length}
+						<section class="flex flex-col gap-2">
+							<SectionHead title="Sources" />
+							<div class="overflow-hidden rounded-lg border" role="table" aria-label="Sources">
+								<div
+									class="{SOURCE_ROW} border-b bg-muted/20 py-1.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+									role="row"
+								>
+									<div class="min-w-0 flex-1" role="columnheader">Source</div>
+									<div class={SOURCE_COUNT} role="columnheader">Web assets</div>
+									<div class={SOURCE_COUNT} role="columnheader">Unique</div>
+								</div>
+								{#each sources as row (row.key)}
+									<div
+										class="{SOURCE_ROW} border-b border-border/60 py-2 last:border-b-0"
+										role="row"
+									>
+										<div class="flex min-w-0 flex-1 flex-col" role="cell">
+											<span class="text-sm leading-5">
+												{row.label}
+												{#if row.via}<span class="text-muted-foreground"> · {row.via}</span>{/if}
+											</span>
+											{#if row.note}
+												<span
+													class="text-xs break-words {row.status === SourceStatus.FAILED
+														? 'text-destructive'
+														: 'text-muted-foreground'}"
+												>
+													{row.note}
+												</span>
+											{/if}
+										</div>
+										<div
+											class="{SOURCE_COUNT} text-sm leading-5 {row.names
+												? ''
+												: 'text-muted-foreground'}"
+											role="cell"
+										>
+											{row.names.toLocaleString()}
+										</div>
+										<div
+											class="{SOURCE_COUNT} text-sm leading-5 {row.only
+												? ''
+												: 'text-muted-foreground'}"
+											role="cell"
+										>
+											{row.only.toLocaleString()}
+										</div>
+									</div>
+								{/each}
+							</div>
+							{#if unkeyed}
+								<p class="text-xs text-muted-foreground">
+									API keys not set for {plural(unkeyed, 'source')}.
+									{#if auth.user?.is_superuser}
+										<a
+											href={ROUTES.settings('api-keys')}
+											class="text-primary transition-colors hover:text-foreground"
+										>
+											API keys
+										</a>
+									{/if}
+								</p>
+							{/if}
 						</section>
 					{/if}
 					{#each notes as [key, value] (key)}

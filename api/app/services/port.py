@@ -17,12 +17,12 @@ from shared.definitions import ai_services as ai_defs
 from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, SERVICE_QUERY
 from shared.definitions.ports import (
     DEFAULT_WEB_PORTS,
+    PASSIVE_PORT_SOURCES,
     PORT_SOURCE_LABELS,
     SCAN_POLICY_LABELS,
     SCAN_POLICY_REASON_LABELS,
     SERVICE_CLASS_LABELS,
     UNPLANNED,
-    PortSource,
     ScanPolicy,
     ServiceClass,
     describe,
@@ -508,7 +508,7 @@ class PortService:
                     n.filter(answering).label("answering"),
                     n.filter(d.c.sensitive.is_(True)).label("sensitive"),
                     n.filter(d.c.product.isnot(None)).label("named"),
-                    n.filter(d.c.source == PortSource.INTERNETDB.value).label(
+                    n.filter(d.c.source.in_(sorted(PASSIVE_PORT_SOURCES))).label(
                         "passive"
                     ),
                     n.filter(answering & ~standard).label("nonstandard"),

@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
 from shared.definitions.asset_query import SERVICE_FLAGS, SERVICE_QUERY, Op
-from shared.definitions.ports import PortSource
+from shared.definitions.ports import PASSIVE_PORT_SOURCES
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
 
@@ -87,8 +87,8 @@ _FLAG_BUILDERS = {
     "tls": lambda ctx: ctx.source.c.tls.is_(True),
     "sensitive": lambda ctx: ctx.source.c.sensitive.is_(True),
     "named": lambda ctx: ctx.source.c.product.isnot(None),
-    "passive": lambda ctx: ctx.source.c.source == PortSource.INTERNETDB.value,
-    "confirmed": lambda ctx: ctx.source.c.source != PortSource.INTERNETDB.value,
+    "passive": lambda ctx: ctx.source.c.source.in_(sorted(PASSIVE_PORT_SOURCES)),
+    "confirmed": lambda ctx: ctx.source.c.source.not_in(sorted(PASSIVE_PORT_SOURCES)),
     "cdn": lambda ctx: ctx.source.c.is_cdn.is_(True),
     "hosted": lambda ctx: ctx.source.c.host_count > 0,
     "private": lambda ctx: or_(*[_within(ctx, n) for n in PRIVATE_NETWORKS]),

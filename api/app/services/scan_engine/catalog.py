@@ -1,3 +1,4 @@
+from shared.definitions.api_keys import provider_name
 from shared.definitions.launch import STAGE_GROUP_LABELS, seed_produces
 from shared.definitions.tools import SCAN_TOOLS
 from shared.enums.scan import INTENSITIES, StageGroup
@@ -86,6 +87,7 @@ def build_catalog(unavailable: dict[str, str] | None = None) -> EngineCatalog:
                 applies_to=sorted(spec.applies_to),
                 tools=list(spec.tools),
                 api_keys=list(spec.api_keys),
+                api_key_names=[provider_name(k) for k in spec.api_keys],
                 requires_api_keys=spec.requires_api_keys,
                 touches_target=spec.touches_target,
                 passive_capable=spec.passive_capable,

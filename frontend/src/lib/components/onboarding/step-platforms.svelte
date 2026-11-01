@@ -14,6 +14,7 @@
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
+	import { accountMeta } from '$lib/config/api-keys';
 	import { bountyProgramsApi } from '$lib/api/bounty-programs';
 	import { SYNC_INTERVAL_LABELS } from '$lib/config/bounty-programs';
 	import { getProviderIcon } from '$lib/config/icons';
@@ -86,15 +87,15 @@
 	function filled(p: PlatformCount): boolean {
 		const d = drafts[p.platform];
 		if (!d || p.configured || !d.token.trim()) return false;
-		return !providerOf(p)?.requires_username || !!d.username.trim();
+		return !providerOf(p)?.account?.required || !!d.username.trim();
 	}
 
 	async function connect(p: PlatformCount): Promise<boolean> {
 		const provider = providerOf(p);
 		const d = drafts[p.platform];
 		if (!provider || !d) return false;
-		if (provider.requires_username && !d.username.trim()) {
-			d.error = `${p.label} requires a username.`;
+		if (provider.account?.required && !d.username.trim()) {
+			d.error = `${p.label} requires the ${provider.account.label.toLowerCase()}.`;
 			return false;
 		}
 		d.connecting = true;
@@ -104,7 +105,7 @@
 			const key = await apiKeysApi.create({
 				provider: provider.provider as APIProvider,
 				key_value: d.token.trim(),
-				...(provider.requires_username ? { key_meta: { username: d.username.trim() } } : {})
+				...accountMeta(provider.account, d.username)
 			});
 			untested = key.id;
 			const test = await apiKeysApi.test(key.id);
@@ -222,8 +223,8 @@
 								{/if}
 							{:else if d}
 								<div class="grid gap-4 sm:grid-cols-2">
-									{#if provider?.requires_username}
-										<FormField label="Username">
+									{#if provider?.account}
+										<FormField label={provider.account.label}>
 											{#snippet children({ id })}
 												<Input
 													{id}
@@ -237,7 +238,7 @@
 									{/if}
 									<FormField
 										label="API key"
-										class={provider?.requires_username ? undefined : 'sm:col-span-2'}
+										class={provider?.account ? undefined : 'sm:col-span-2'}
 									>
 										{#snippet children({ id })}
 											<div class="relative">

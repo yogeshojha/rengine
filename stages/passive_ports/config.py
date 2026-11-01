@@ -14,3 +14,7 @@ class PassivePortsConfig(StageConfig):
 
 
 MAX_ADDRESSES = 1024
+# port_scan waits on this stage
+SHODAN_BUDGET_SECONDS = 180
+SHODAN_MAX_FAILURES = 3
+SHODAN_RETRY_SECONDS = 2

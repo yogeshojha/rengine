@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
@@ -33,3 +35,23 @@ class SyncAPIKeyService:
         if not api_key:
             return None
         return open_key(api_key)
+
+    def credentials(
+        self, providers: Iterable[APIProvider]
+    ) -> dict[str, tuple[str, dict | None]]:
+        """Each enabled, readable key among `providers`, with its key_meta."""
+        wanted = list(dict.fromkeys(providers))
+        if not wanted:
+            return {}
+        rows = self.session.execute(
+            select(APIKey).where(
+                APIKey.provider.in_(wanted),
+                APIKey.is_enabled.is_(True),
+            )
+        ).scalars()
+        out: dict[str, tuple[str, dict | None]] = {}
+        for row in rows:
+            key = open_key(row)
+            if key:
+                out[row.provider.value] = (key, row.key_meta)
+        return out
