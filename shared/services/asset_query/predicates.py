@@ -37,6 +37,7 @@ from shared.definitions.vulnerabilities import SUPPRESSED_STATES, Severity, Vuln
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.interest import InterestSignal
+from shared.models.investigate import Investigation
 from shared.models.ip_address import IpAddress
 from shared.models.issue_tracker import TrackedIssue, TrackedIssueFinding
 from shared.models.port import Port
@@ -623,6 +624,34 @@ def vuln_ticketed(scope: ScopeLike, categories: list[str] | None = None):
         .select_from(TrackedIssueFinding)
         .join(TrackedIssue, TrackedIssue.id == TrackedIssueFinding.issue_id)
         .where(*conditions)
+    )
+
+
+def vuln_verified(scope: ScopeLike):
+    """An investigation of this finding set the verification stamp."""
+    scope = scope_of(scope)
+    return exists(
+        select(1)
+        .select_from(Investigation)
+        .where(
+            Investigation.target_id == _one_target(scope, Vulnerability.target_id),
+            Investigation.fingerprint == Vulnerability.fingerprint,
+            Investigation.verified_at.isnot(None),
+        )
+    )
+
+
+def vuln_verdict(scope: ScopeLike, verdicts: list[str]):
+    """An investigation of this finding reached one of the named verdicts."""
+    scope = scope_of(scope)
+    return exists(
+        select(1)
+        .select_from(Investigation)
+        .where(
+            Investigation.target_id == _one_target(scope, Vulnerability.target_id),
+            Investigation.fingerprint == Vulnerability.fingerprint,
+            Investigation.verdict.in_(verdicts),
+        )
     )
 
 

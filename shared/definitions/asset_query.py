@@ -33,6 +33,7 @@ from shared.definitions.interest import (
 from shared.definitions.interest import (
     SOURCE_LABELS as INTEREST_SOURCE_LABELS,
 )
+from shared.definitions.investigate import Verdict
 from shared.definitions.issue_trackers import REMOTE_CATEGORY_ORDER
 from shared.definitions.ports import (
     PORT_SOURCE_LABELS,
@@ -1934,6 +1935,7 @@ VULN_FLAGS: dict[str, str] = {
     "open": "Not reviewed",
     "suppressed": "Reviewed and set aside as a false positive or accepted risk",
     "ticketed": "Linked to an issue",
+    "verified": "Reproduced or confirmed by an investigation",
 }
 
 VULN_FIELDS: tuple[QueryField, ...] = (
@@ -2158,6 +2160,14 @@ VULN_FIELDS: tuple[QueryField, ...] = (
         description="Tracker status of the issue filed for this finding.",
         example="ticket:done",
         values=REMOTE_CATEGORY_ORDER,
+    ),
+    QueryField(
+        name="verification",
+        type=FieldType.ENUM,
+        group="Review",
+        description="Verdict an investigation reached for this finding.",
+        example="verification:reproduced",
+        values=tuple(v.value for v in Verdict),
     ),
     QueryField(
         name="evidence",

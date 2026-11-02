@@ -398,6 +398,32 @@ def dispatch_tripwire_settle(scan_id: str) -> bool:
         return False
 
 
+def dispatch_investigate_settle(scan_id: str) -> bool:
+    try:
+        get_celery_client().send_task(
+            "app.tasks.investigate.settle",
+            kwargs={"scan_id": scan_id},
+            queue=DEFAULT_QUEUE,
+        )
+        return True
+    except Exception:
+        logger.warning("investigate settle dispatch failed", exc_info=True)
+        return False
+
+
+def dispatch_investigate_rule(scan_id: str) -> bool:
+    try:
+        get_celery_client().send_task(
+            "app.tasks.investigate.replay_kev",
+            kwargs={"scan_id": scan_id},
+            queue=DEFAULT_QUEUE,
+        )
+        return True
+    except Exception:
+        logger.warning("investigate rule dispatch failed", exc_info=True)
+        return False
+
+
 def dispatch_tripwire_live(scan_id: str, dimension: str) -> None:
     try:
         get_celery_client().send_task(

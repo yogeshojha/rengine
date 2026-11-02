@@ -102,6 +102,7 @@ class InstanceSettingsService:
             cert_recheck_enabled=settings.cert_recheck_enabled,
             infostealer_lookups=settings.infostealer_lookups,
             source_ip_lookups=settings.source_ip_lookups,
+            investigate_replay_kev=settings.investigate_replay_kev,
             concurrent_scans=settings.concurrent_scans,
             capabilities=capabilities_for(settings.mode),
             created_at=settings.created_at,
@@ -151,6 +152,8 @@ class InstanceSettingsService:
             settings.infostealer_lookups = data.infostealer_lookups
         if data.source_ip_lookups is not None:
             settings.source_ip_lookups = data.source_ip_lookups
+        if data.investigate_replay_kev is not None:
+            settings.investigate_replay_kev = data.investigate_replay_kev
         limit_changed = _apply_limit(settings, data.concurrent_scans)
         settings.updated_at = utc_now()
         await self.session.commit()

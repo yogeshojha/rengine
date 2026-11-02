@@ -40,6 +40,7 @@ class AITask(StrEnum):
     ASK = "ask"
     ASK_DEEP = "ask_deep"
     ASK_FOLLOW_UPS = "ask_follow_ups"
+    INVESTIGATE = "investigate"
     CONNECTION_TEST = "connection_test"
 
 
@@ -63,6 +64,7 @@ TASK_OUTPUT_TOKENS: dict[str, int] = {
     AITask.ASK.value: 4000,
     AITask.ASK_DEEP.value: 8000,
     AITask.ASK_FOLLOW_UPS.value: 900,
+    AITask.INVESTIGATE.value: 4000,
     AITask.CONNECTION_TEST.value: 20,
 }
 
@@ -85,6 +87,7 @@ TASK_EFFORT: dict[str, str] = {
     AITask.ASK.value: Effort.MEDIUM.value,
     AITask.ASK_DEEP.value: Effort.HIGH.value,
     AITask.ASK_FOLLOW_UPS.value: Effort.LOW.value,
+    AITask.INVESTIGATE.value: Effort.MEDIUM.value,
     AITask.CONNECTION_TEST.value: Effort.LOW.value,
 }
 
@@ -415,6 +418,15 @@ AI_FEATURES: tuple[AIFeature, ...] = (
         "response, and what the read-only tools return, with secrets masked.",
         True,
     ),
+    AIFeature(
+        "investigate",
+        "Investigate",
+        "Verifies a finding after a scan and reaches a verdict. Proposes re-running a "
+        "check through the scanner, which a person approves before it runs. Sends a "
+        "finding's request and response, and what the read-only tools return, with "
+        "secrets masked.",
+        False,
+    ),
 )
 
 DEFAULT_AI_FEATURES: dict[str, bool] = {f.key: f.default for f in AI_FEATURES}
@@ -433,6 +445,7 @@ TASK_FEATURE: dict[str, str] = {
     AITask.ASK.value: "ask",
     AITask.ASK_DEEP.value: "ask",
     AITask.ASK_FOLLOW_UPS.value: "ask",
+    AITask.INVESTIGATE.value: "investigate",
     AITask.CONNECTION_TEST.value: TEST_FEATURE,
 }
 

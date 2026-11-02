@@ -22,11 +22,19 @@ export const FINDING_COLUMN_LABELS: Record<FindingColumn, string> = {
 	seen: 'Seen'
 };
 
-export const SHEET_TABS = ['overview', 'ask', 'evidence', 'related', 'intel'] as const;
+export const SHEET_TABS = [
+	'overview',
+	'ask',
+	'investigate',
+	'evidence',
+	'related',
+	'intel'
+] as const;
 export type SheetTab = (typeof SHEET_TABS)[number];
 export const SHEET_TAB_LABELS: Record<SheetTab, string> = {
 	overview: 'Overview',
 	ask: 'Ask',
+	investigate: 'Investigate',
 	evidence: 'Evidence',
 	related: 'Same check',
 	intel: 'Intel'

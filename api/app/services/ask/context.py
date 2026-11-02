@@ -69,11 +69,16 @@ class Context:
 
 
 def build(
-    v: VulnerabilityRead, *, facts: list[Fact], verdict: str, target: str
+    v: VulnerabilityRead,
+    *,
+    facts: list[Fact],
+    verdict: str,
+    target: str,
+    rules: str = RULES,
 ) -> Context:
     fenced, masked, flags, response_lines = _fenced(v)
     sections = [
-        RULES.format(target=target or "the finding's host"),
+        rules.format(target=target or "the finding's host"),
         "CONTEXT",
         "FINDING",
         json.dumps(_finding(v), default=str, ensure_ascii=False),

@@ -46,6 +46,8 @@ from shared.services.activity_log import ActivityLogService
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
+    dispatch_investigate_rule,
+    dispatch_investigate_settle,
     dispatch_issue_observe,
     dispatch_source_ip_check,
     dispatch_threat_intel,
@@ -529,6 +531,10 @@ def _settle(session: Session, scan: Scan) -> None:
     if (scan.execution_config or {}).get(WATCH_HOST_KEY):
         dispatch_watch_settle(str(scan.id))
     dispatch_tripwire_settle(str(scan.id))
+    if scan.scope == ScanScope.FOCUSED.value:
+        dispatch_investigate_settle(str(scan.id))
+    elif scan.scope == ScanScope.FULL.value and not new_checks.is_follow_up(scan):
+        dispatch_investigate_rule(str(scan.id))
 
 
 def _check_source_ip(scan: Scan) -> None:

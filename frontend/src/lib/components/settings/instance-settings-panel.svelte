@@ -220,6 +220,18 @@
 				onCheckedChange={(v) => save({ source_ip_lookups: v }, 'Source IP recording')}
 			/>
 		</SettingRow>
+		<SettingRow
+			label="Replay known-exploited findings"
+			help="Re-runs a known-exploited finding's own check at the end of a scan, with no approval"
+			for="instance-replay-kev"
+		>
+			<Switch
+				id="instance-replay-kev"
+				checked={settings.investigate_replay_kev}
+				disabled={locked}
+				onCheckedChange={(v) => save({ investigate_replay_kev: v }, 'Known-exploited replay')}
+			/>
+		</SettingRow>
 
 		<div class="border-t px-4 pt-4 pb-2"><SectionHead title="Retention" /></div>
 		<SettingRow

@@ -22,6 +22,7 @@ from app.api.v1 import (
     http_assets,
     instance_settings,
     interest,
+    investigate,
     ip_addresses,
     issue_trackers,
     lookalikes,
@@ -121,5 +122,6 @@ router.include_router(notification_channels.router)
 router.include_router(issue_trackers.router)
 router.include_router(tripwires.router)
 router.include_router(ask.router)
+router.include_router(investigate.router)
 router.include_router(onboarding.router)
 router.include_router(totp.router)

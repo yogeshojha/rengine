@@ -14,6 +14,7 @@ export interface InstanceSettings {
 	cert_recheck_enabled: boolean;
 	infostealer_lookups: boolean;
 	source_ip_lookups: boolean;
+	investigate_replay_kev: boolean;
 	concurrent_scans: number;
 	concurrent_scans_auto: number | null;
 	capabilities: string[];
@@ -30,5 +31,6 @@ export interface InstanceSettingsUpdate {
 	cert_recheck_enabled?: boolean;
 	infostealer_lookups?: boolean;
 	source_ip_lookups?: boolean;
+	investigate_replay_kev?: boolean;
 	concurrent_scans?: number;
 }

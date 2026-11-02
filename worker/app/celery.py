@@ -144,6 +144,7 @@ celery_app.autodiscover_tasks(
         "app.tasks.estate",
         "app.tasks.issue_trackers",
         "app.tasks.tripwires",
+        "app.tasks.investigate",
     ]
 )
 

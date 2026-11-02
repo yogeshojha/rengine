@@ -57,6 +57,8 @@ class InstanceSettings(SQLModel, table=True):
     cert_recheck_enabled: bool = Field(default=False)
     infostealer_lookups: bool = Field(default=True)
     source_ip_lookups: bool = Field(default=True)
+    # reNgine replays a known-exploited finding's own check at finalize, no approval
+    investigate_replay_kev: bool = Field(default=False)
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)
     bounty_events_seen_at: datetime | None = Field(default=None)
@@ -88,6 +90,7 @@ class InstanceSettingsUpdate(BaseModel):
     cert_recheck_enabled: bool | None = None
     infostealer_lookups: bool | None = None
     source_ip_lookups: bool | None = None
+    investigate_replay_kev: bool | None = None
     concurrent_scans: int | None = PydanticField(
         default=None, ge=AUTOMATIC, le=MAX_CONCURRENT_SCANS
     )
@@ -109,6 +112,7 @@ class InstanceSettingsRead(BaseModel):
     cert_recheck_enabled: bool
     infostealer_lookups: bool = True
     source_ip_lookups: bool = True
+    investigate_replay_kev: bool = False
     concurrent_scans: int = AUTOMATIC
     concurrent_scans_auto: int | None = None
     capabilities: list[str]
