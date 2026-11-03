@@ -55,9 +55,15 @@ export const ipsApi = {
 		return api.post<QueryCounts>(`/ips/search/tabs?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
-	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+	async counts(
+		projectId: string,
+		scanId: string,
+		queries: string[],
+		filter: Partial<IpGroupFilter> | null = null
+	): Promise<QueryCounts> {
 		return api.post<QueryCounts>(`/ips/search/counts?${scopeQuery({ projectId, scanId })}`, {
-			queries
+			queries,
+			filter
 		});
 	},
 
@@ -109,9 +115,15 @@ export const servicesApi = {
 		return api.post<QueryCounts>(`/ports/search/tabs?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
-	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+	async counts(
+		projectId: string,
+		scanId: string,
+		queries: string[],
+		filter: Partial<ServiceFilter> | null = null
+	): Promise<QueryCounts> {
 		return api.post<QueryCounts>(`/ports/search/counts?${scopeQuery({ projectId, scanId })}`, {
-			queries
+			queries,
+			filter
 		});
 	},
 
@@ -160,9 +172,15 @@ export const endpointsApi = {
 		);
 	},
 
-	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+	async counts(
+		projectId: string,
+		scanId: string,
+		queries: string[],
+		filter: Partial<EndpointFilter> | null = null
+	): Promise<QueryCounts> {
 		return api.post<QueryCounts>(`/endpoints/search/counts?${scopeQuery({ projectId, scanId })}`, {
-			queries
+			queries,
+			filter
 		});
 	},
 

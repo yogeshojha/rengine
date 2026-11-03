@@ -72,16 +72,20 @@ async def search_subdomains(
     )
 
 
+class SubdomainCountRequest(QueryCountRequest):
+    filter: SubdomainFilter | None = None
+
+
 @router.post("/search/counts", response_model=QueryCounts)
 async def subdomain_search_counts(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     scope: WebAssetScope,
-    body: QueryCountRequest,
+    body: SubdomainCountRequest,
 ):
     return await service.counts(
-        project_id=project_id, scope=scope, queries=body.queries
+        project_id=project_id, scope=scope, queries=body.queries, f=body.filter
     )
 
 

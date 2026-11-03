@@ -1,11 +1,13 @@
 import type { TabCounts } from '$lib/utilities/tab-counts.svelte';
-import { appendToken, tokenize } from '$lib/utilities/scan-insights';
+import { appendToken, holdsClause, withoutToken } from '$lib/utilities/scan-insights';
 import {
 	dropSuggestion,
+	escapeRe,
 	holdsSuggestion,
 	joinSuggestion,
 	type ExtraChip,
-	type FilterSuggestion
+	type FilterSuggestion,
+	type SignalSpec
 } from './filter-toolbar';
 
 export const SUGGESTION_CANDIDATES = 8;
@@ -19,37 +21,29 @@ export interface SuggestionSource {
 	capped?: boolean;
 }
 
-const CONNECTORS = new Set(['and', 'or']);
-
-/** the search without a token, its leading not and any connector left dangling */
-export function removeToken(search: string, token: string): string {
-	const kept: string[] = [];
-	for (const part of tokenize(search)) {
-		if (part === token) {
-			if (kept.at(-1)?.toLowerCase() === 'not') kept.pop();
-			continue;
-		}
-		kept.push(part);
-	}
-	const joined: string[] = [];
-	for (const part of kept) {
-		const connector = CONNECTORS.has(part.toLowerCase());
-		if (connector && (!joined.length || CONNECTORS.has(joined.at(-1)!.toLowerCase()))) continue;
-		joined.push(part);
-	}
-	while (joined.length && CONNECTORS.has(joined.at(-1)!.toLowerCase())) joined.pop();
-	return joined.join(' ');
-}
-
 export function holdsNew(search: string): boolean {
-	const parts = tokenize(search);
-	const at = parts.indexOf(NEW_TOKEN);
-	return at >= 0 && parts[at - 1]?.toLowerCase() !== 'not';
+	return holdsClause(search, NEW_TOKEN);
 }
 
 /** the search with the is:new token added or removed */
 export function withNew(search: string, on: boolean): string {
-	return on ? appendToken(search, NEW_TOKEN) : removeToken(search, NEW_TOKEN);
+	return on ? appendToken(search, NEW_TOKEN) : withoutToken(search, NEW_TOKEN);
+}
+
+/** the New signal every table offers, on while the search holds is:new */
+export function newSignal(
+	search: string,
+	onSearch: (next: string) => void,
+	alsoOn = false
+): SignalSpec {
+	const on = alsoOn || holdsNew(search);
+	return {
+		key: 'new',
+		label: 'New',
+		token: NEW_TOKEN,
+		on,
+		onToggle: () => onSearch(withNew(search, !on))
+	};
 }
 
 /** a query shape and whether the table already filters on it */
@@ -57,8 +51,7 @@ export type OverlapRule = [RegExp, boolean];
 
 /** the rule for a token the table switches on and off */
 export function tokenRule(token: string, on: boolean): OverlapRule {
-	const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	return [new RegExp(`(^|\\s)${escaped}(\\s|$)`), on];
+	return [new RegExp(`(^|\\s)${escapeRe(token)}(\\s|$)`), on];
 }
 
 export function overlaps(rules: OverlapRule[]): (query: string) => boolean {

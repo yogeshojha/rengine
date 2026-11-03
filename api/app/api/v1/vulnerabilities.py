@@ -89,14 +89,18 @@ async def vulnerability_tabs(
     return await service.tabs(scope, body)
 
 
+class VulnerabilityCountRequest(QueryCountRequest):
+    filter: VulnerabilityFilter | None = None
+
+
 @router.post("/search/counts", response_model=QueryCounts)
 async def vulnerability_counts(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
     scope: VulnScope,
-    body: QueryCountRequest,
+    body: VulnerabilityCountRequest,
 ):
-    return await service.counts(scope, body.queries)
+    return await service.counts(scope, body.queries, body.filter)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

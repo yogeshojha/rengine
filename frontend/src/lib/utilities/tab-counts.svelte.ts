@@ -1,4 +1,5 @@
 import type { QueryCounts } from '$lib/types/asset-query';
+import { appendToken, tokenize, withoutToken } from '$lib/utilities/scan-insights';
 import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 
 type Loader = () => Promise<QueryCounts>;
@@ -7,8 +8,11 @@ export const ALL_TAB = 'all';
 
 /** The query a grammar tab opens: the search without the field, then the tab's value. */
 export function withTab(search: string, field: string, key: string): string {
-	const without = search.replace(new RegExp(`(?:^|\\s)${field}:[a-z]+`, 'g'), '').trim();
-	return key === ALL_TAB ? without : `${without} ${field}:${key}`.trim();
+	const prefix = `${field}:`;
+	const without = tokenize(search)
+		.filter((t) => t.startsWith(prefix) && /^[a-z]+$/.test(t.slice(prefix.length)))
+		.reduce((acc, token) => withoutToken(acc, token), search);
+	return key === ALL_TAB ? without : appendToken(without, `${field}:${key}`);
 }
 
 /** Counts of each tab's query, keyed by tab. */

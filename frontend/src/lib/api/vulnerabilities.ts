@@ -74,10 +74,15 @@ export const vulnerabilitiesApi = {
 		);
 	},
 
-	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+	async counts(
+		projectId: string,
+		scanId: string,
+		queries: string[],
+		filter: Partial<VulnFilter> | null = null
+	): Promise<QueryCounts> {
 		return api.post<QueryCounts>(
 			`/vulnerabilities/search/counts?${scopeQuery({ projectId, scanId })}`,
-			{ queries }
+			{ queries, filter }
 		);
 	},
 

@@ -44,10 +44,11 @@
 	import FilterToolbar from './table/filter-toolbar.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
-	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { holdsNew, newSignal, overlaps, withNew } from './table/suggestions';
 	import { createSuggestions } from './table/suggestions.svelte';
+	import ViewToggle from './table/view-toggle.svelte';
+	import ScansWindow from './table/scans-window.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import * as Tooltip from '$lib/components/ui/tooltip';
 	import Rows3 from '@lucide/svelte/icons/rows-3';
 	import ChartGantt from '@lucide/svelte/icons/chart-gantt';
 	import ServiceRow from './services/service-row.svelte';
@@ -297,18 +298,11 @@
 		)
 	);
 	let toolbarSignals = $derived.by((): SignalSpec[] => [
-		{
-			key: 'new',
-			label: 'New',
-			token: NEW_TOKEN,
-			on: query.newOnly || holdsNew(query.search),
-			onToggle: () =>
-				setQuery({
-					...query,
-					newOnly: false,
-					search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
-				})
-		},
+		newSignal(
+			query.search,
+			(search) => setQuery({ ...query, search, newOnly: false }),
+			query.newOnly
+		),
 		{
 			key: 'sensitive',
 			label: 'Sensitive',
@@ -354,10 +348,10 @@
 			]),
 		total: () => total,
 		leadTotal: () => leadSet?.total ?? null,
-		facetsActive: () => timeline || serviceActiveFacetCount(query) > 0,
+		countable: () => !timeline,
 		ready: () => ready,
-		scope: () => `${projectId}:${scanId}`,
-		count: (queries) => servicesApi.counts(projectId, scanId, queries)
+		scope: () => `${projectId}:${scanId}:${leadSig}`,
+		count: (queries) => servicesApi.counts(projectId, scanId, queries, leadFilter)
 	});
 	let toolbarExtras = $derived([
 		...leadSuggestions.applied,
@@ -535,6 +529,7 @@
 		try {
 			if (!quiet) loadedLeadSig = '';
 			tabCounts.refresh();
+			leadSuggestions.refresh();
 			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;
@@ -901,19 +896,6 @@
 	/>
 </div>
 
-{#snippet viewItem(value: string, Icon: typeof Rows3, label: string)}
-	<Tooltip.Root>
-		<Tooltip.Trigger>
-			{#snippet child({ props })}
-				<ToggleGroup.Item {...props} {value} aria-label={label} class="h-7 px-2">
-					<Icon class="size-3.5" />
-				</ToggleGroup.Item>
-			{/snippet}
-		</Tooltip.Trigger>
-		<Tooltip.Content>{label}</Tooltip.Content>
-	</Tooltip.Root>
-{/snippet}
-
 <Card.Root
 	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
 	{@attach trackWidth((w) => (tableWidth = w))}
@@ -947,8 +929,8 @@
 				onValueChange={(v) => v && setView(v)}
 				aria-label="View"
 			>
-				{@render viewItem('table', Rows3, 'Table view')}
-				{@render viewItem(TIMELINE, ChartGantt, 'Timeline view')}
+				<ViewToggle value="table" icon={Rows3} label="Table view" />
+				<ViewToggle value={TIMELINE} icon={ChartGantt} label="Timeline view" />
 			</ToggleGroup.Root>
 		{/if}
 	</div>
@@ -1005,32 +987,13 @@
 					</ToggleGroup.Item>
 				{/each}
 			</ToggleGroup.Root>
-			<div class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-				<span>Last</span>
-				<ToggleGroup.Root
-					type="single"
-					variant="outline"
-					size="sm"
-					value={String(timelineWindow)}
-					onValueChange={(v) => {
-						if (!v) return;
-						timelineWindow = Number(v);
-						pageIndex = 0;
-					}}
-					aria-label="Scans shown"
-				>
-					{#each TIMELINE_WINDOWS as n (n)}
-						<ToggleGroup.Item
-							value={String(n)}
-							aria-label="Last {n} scans"
-							class="h-7 px-2.5 text-xs font-normal tabular-nums"
-						>
-							{n}
-						</ToggleGroup.Item>
-					{/each}
-				</ToggleGroup.Root>
-				<span>scans</span>
-			</div>
+			<ScansWindow
+				value={timelineWindow}
+				onChange={(n) => {
+					timelineWindow = n;
+					pageIndex = 0;
+				}}
+			/>
 		</div>
 	{/if}
 

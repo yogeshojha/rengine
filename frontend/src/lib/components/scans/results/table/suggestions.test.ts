@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { withoutToken } from '$lib/utilities/scan-insights';
+import { withTab } from '$lib/utilities/tab-counts.svelte';
 import {
 	dropSuggestion,
 	holdsSuggestion,
@@ -13,8 +15,8 @@ import {
 	clearLeadSearch,
 	countedSuggestions,
 	holdsNew,
+	newSignal,
 	overlaps,
-	removeToken,
 	suggestionCandidates,
 	tokenRule,
 	withNew
@@ -34,6 +36,43 @@ describe('joining a lead onto the search', () => {
 		expect(joinSuggestion('tech:nginx or tech:apache', 'status:500')).toBe(
 			'(tech:nginx or tech:apache) and status:500'
 		);
+	});
+
+	it('recognises a bare or-lead applied on an empty search', () => {
+		const lead = 'title:phpinfo or body:phpinfo';
+		const search = joinSuggestion('', lead);
+		expect(search).toBe(lead);
+		expect(holdsSuggestion(search, lead)).toBe(true);
+		expect(dropSuggestion(search, lead)).toBe('');
+		const stacked = joinSuggestion(search, 'status:200');
+		expect(stacked).toBe('(title:phpinfo or body:phpinfo) and status:200');
+		expect(holdsSuggestion(stacked, lead)).toBe(true);
+		expect(dropSuggestion(stacked, lead)).toBe('status:200');
+	});
+
+	it('keeps an applied lead when a plain token follows it', () => {
+		const search = 'host:a and is:kev is:new';
+		expect(holdsSuggestion(search, 'is:kev')).toBe(true);
+		expect(dropSuggestion(search, 'is:kev')).toBe('host:a and is:new');
+	});
+
+	it('swaps a tab token without leaving a connector', () => {
+		expect(withTab('severity:critical and is:kev and is:firm', 'severity', 'all')).toBe(
+			'is:kev and is:firm'
+		);
+		expect(withTab('is:kev and severity:high', 'severity', 'low')).toBe('is:kev severity:low');
+	});
+
+	it('builds the New signal from the search', () => {
+		let search = 'host:a';
+		const on = newSignal(search, (next) => (search = next));
+		expect(on.on).toBe(false);
+		on.onToggle();
+		expect(search).toBe('host:a is:new');
+		const off = newSignal(search, (next) => (search = next));
+		expect(off.on).toBe(true);
+		off.onToggle();
+		expect(search).toBe('host:a');
 	});
 
 	it('matches an applied lead as a whole clause, never a substring', () => {
@@ -77,7 +116,7 @@ describe('joining a lead onto the search', () => {
 		expect(withNew('not is:new', false)).toBe('');
 		expect(withNew('tech:a or is:new', false)).toBe('tech:a');
 		expect(withNew('is:new and tech:a', false)).toBe('tech:a');
-		expect(removeToken('tech:a and not is:kev and is:cve', 'is:kev')).toBe('tech:a and is:cve');
+		expect(withoutToken('tech:a and not is:kev and is:cve', 'is:kev')).toBe('tech:a and is:cve');
 	});
 });
 

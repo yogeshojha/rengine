@@ -266,10 +266,12 @@ class IpAddressService:
             build=_build,
         )
 
-    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
-        """Addresses each query selects in the scope, one statement."""
+    async def counts(
+        self, scope: ScopeLike, queries: list[str], f: IpGroupFilter | None = None
+    ) -> QueryCounts:
+        """Addresses each query selects under the filter, one statement."""
         scope = QueryScope.of(scope)
-        f = IpGroupFilter()
+        f = f or IpGroupFilter()
 
         async def _build() -> QueryCounts:
             d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
@@ -292,7 +294,7 @@ class IpAddressService:
             self.session,
             name="counts:ips",
             scans=scope.ids,
-            facets="|".join(queries),
+            facets=f"{lead_cache.facets_of(f)}|{'|'.join(queries)}",
             model=QueryCounts,
             build=_build,
             keep=lambda computed: computed.computed,

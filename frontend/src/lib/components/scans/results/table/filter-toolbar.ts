@@ -1,4 +1,10 @@
-import { hasTopLevelOr, tokenize, type Facet } from '$lib/utilities/scan-insights';
+import {
+	hasTopLevelOr,
+	holdsClause,
+	tokenize,
+	withoutClause,
+	type Facet
+} from '$lib/utilities/scan-insights';
 
 export type FacetOption = Omit<Facet, 'count'> & { count?: number };
 
@@ -12,7 +18,7 @@ export interface FacetSpec {
 	/** options render in the mono face (hostnames, check ids) */
 	mono?: boolean;
 	loading?: boolean;
-	/** one value at a time; picking another replaces it */
+	/** one value at a time */
 	single?: boolean;
 }
 
@@ -23,9 +29,9 @@ export interface SignalSpec {
 	on: boolean;
 	count?: number | null;
 	onToggle: () => void;
-	/** a view preference: switched in the menu, never a chip */
+	/** a view preference, switched in the menu without a chip */
 	quiet?: boolean;
-	/** the grammar token the signal stands for; an applied query holding it owns the chip */
+	/** the grammar token the signal stands for */
 	token?: string;
 }
 
@@ -116,7 +122,7 @@ export function valuesLabel(values: string[]): string {
 	return `${values.slice(0, SHOWN_VALUES).join(', ')} +${values.length - SHOWN_VALUES}`;
 }
 
-const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** the lead as one clause: parenthesised when it carries a top-level or */
 export function clauseOf(query: string): string {
@@ -132,16 +138,10 @@ export function joinSuggestion(search: string, query: string): string {
 }
 
 export function holdsSuggestion(search: string, query: string): boolean {
-	const clause = escapeRe(clauseOf(query));
-	const text = search.trim();
-	return new RegExp(`(^|\\sand\\s)${clause}(?=\\sand\\s|$)`).test(text);
+	return holdsClause(search, clauseOf(query)) || holdsClause(search, query);
 }
 
 export function dropSuggestion(search: string, query: string): string {
-	const clause = escapeRe(clauseOf(query));
-	const text = search.trim();
-	if (new RegExp(`^${clause}$`).test(text)) return '';
-	const tail = text.replace(new RegExp(`\\sand\\s${clause}(?=\\sand\\s|$)`), '');
-	if (tail !== text) return tail;
-	return text.replace(new RegExp(`^${clause}\\sand\\s`), '');
+	const clause = clauseOf(query);
+	return holdsClause(search, clause) ? withoutClause(search, clause) : withoutClause(search, query);
 }

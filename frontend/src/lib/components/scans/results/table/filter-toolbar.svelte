@@ -328,7 +328,7 @@
 					<button
 						{...props}
 						type="button"
-						class="inline-flex h-8 max-w-full items-center gap-1.5 rounded-md border border-dashed px-2 text-xs text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+						class="hidden h-8 max-w-full items-center gap-1.5 rounded-md border border-dashed px-2 text-xs text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:inline-flex"
 						onclick={() => suggest(suggestion)}
 						aria-label={suggestion.count == null
 							? `Add filter ${suggestion.query}`

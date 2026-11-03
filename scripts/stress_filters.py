@@ -1,8 +1,4 @@
-"""Regression stress for the filter grammar behind suggestions and chips, against a running api.
-
-Usage: RENGINE_USER=… RENGINE_PASSWORD=… python scripts/stress_filters.py <project id> [scan id|-]
-BURST=<workers> adds a concurrent burst of count calls.
-"""
+"""Stress the filter grammar behind suggestions and chips against a running api."""
 
 import http.cookiejar
 import itertools

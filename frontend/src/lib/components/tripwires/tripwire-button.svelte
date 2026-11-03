@@ -37,7 +37,7 @@
 		projectId?: string;
 		scanId?: string | null;
 		class?: string;
-		/** opens beside this element instead of its own button */
+		/** the element the popover opens beside */
 		anchor?: HTMLElement | null;
 		open?: boolean;
 	}

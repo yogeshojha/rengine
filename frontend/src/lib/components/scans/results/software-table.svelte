@@ -21,7 +21,7 @@
 	import ViewControls from './table/view-controls.svelte';
 	import FilterToolbar from './table/filter-toolbar.svelte';
 	import type { SignalSpec } from './table/filter-toolbar';
-	import { overlaps, removeToken, tokenRule } from './table/suggestions';
+	import { overlaps, tokenRule } from './table/suggestions';
 	import { createSuggestions } from './table/suggestions.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
@@ -413,15 +413,14 @@
 		overlapping: () =>
 			overlaps(QUICK_FILTERS.map((f) => tokenRule(f.token, hasToken(search, f.token)))),
 		total: () => total,
-		facetsActive: () => false,
-		ready: () => ready,
+		ready: () => ready && seen,
 		scope: () => `${projectId}:${scanId}`,
 		count: (queries) => softwareApi.counts(projectId, scanId, queries)
 	});
 	let toolbarExtras = $derived(leadSuggestions.applied);
 	function clearFilters() {
 		let next = leadSuggestions.cleared();
-		for (const { token } of QUICK_FILTERS) next = removeToken(next, token);
+		for (const { token } of QUICK_FILTERS) next = withoutToken(next, token);
 		onQuery(next);
 	}
 

@@ -315,10 +315,12 @@ class PortService:
             build=_build,
         )
 
-    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
-        """Rows each query selects in the scope, one statement."""
+    async def counts(
+        self, scope: ScopeLike, queries: list[str], f: ServiceFilter | None = None
+    ) -> QueryCounts:
+        """Rows each query selects under the filter, one statement."""
         scope = QueryScope.of(scope)
-        f = ServiceFilter()
+        f = f or ServiceFilter()
 
         async def _build() -> QueryCounts:
             d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
@@ -341,7 +343,7 @@ class PortService:
             self.session,
             name="counts:services",
             scans=scope.ids,
-            facets="|".join(queries),
+            facets=f"{lead_cache.facets_of(f)}|{'|'.join(queries)}",
             model=QueryCounts,
             build=_build,
             keep=lambda computed: computed.computed,

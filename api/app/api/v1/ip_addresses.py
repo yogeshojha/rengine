@@ -57,14 +57,18 @@ async def ip_search_tabs(
     return await service.tabs(scope=scope, f=body)
 
 
+class IpCountRequest(QueryCountRequest):
+    filter: IpGroupFilter | None = None
+
+
 @router.post("/search/counts", response_model=QueryCounts)
 async def ip_search_counts(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
     scope: IpScope,
-    body: QueryCountRequest,
+    body: IpCountRequest,
 ):
-    return await service.counts(scope, body.queries)
+    return await service.counts(scope, body.queries, body.filter)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

@@ -558,10 +558,12 @@ class EndpointService:
             build=_build,
         )
 
-    async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
-        """Rows each query selects in the scope, one statement."""
+    async def counts(
+        self, scope: ScopeLike, queries: list[str], f: EndpointFilter | None = None
+    ) -> QueryCounts:
+        """Rows each query selects under the filter, one statement."""
         scope = QueryScope.of(scope)
-        f = EndpointFilter()
+        f = f or EndpointFilter()
 
         async def _build() -> QueryCounts:
             base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
@@ -587,7 +589,7 @@ class EndpointService:
             self.session,
             name="counts:endpoints",
             scans=scope.ids,
-            facets="|".join(queries),
+            facets=f"{lead_cache.facets_of(f)}|{'|'.join(queries)}",
             model=QueryCounts,
             build=_build,
             keep=lambda computed: computed.computed,

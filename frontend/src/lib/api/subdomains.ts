@@ -36,11 +36,13 @@ export const subdomainsApi = {
 		projectId: string,
 		scanId: string,
 		queries: string[],
-		scope: TargetScope = {}
+		scope: TargetScope = {},
+		filter: Partial<SubdomainFilter> | null = null
 	): Promise<QueryCounts> {
 		return api.post<QueryCounts>(
 			`/subdomains/search/counts?${scopeQuery({ projectId, scanId, ...scope })}`,
 			{
+				filter,
 				queries
 			}
 		);

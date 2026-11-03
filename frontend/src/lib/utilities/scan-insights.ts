@@ -202,10 +202,46 @@ export function hasToken(search: string, token: string): boolean {
 	return tokenize(search).includes(token);
 }
 
+const CONNECTORS = new Set(['and', 'or']);
+
+function joinTokens(parts: string[]): string {
+	const joined: string[] = [];
+	for (const part of parts) {
+		const connector = CONNECTORS.has(part.toLowerCase());
+		if (connector && (!joined.length || CONNECTORS.has(joined.at(-1)!.toLowerCase()))) continue;
+		joined.push(part);
+	}
+	while (joined.length && CONNECTORS.has(joined.at(-1)!.toLowerCase())) joined.pop();
+	return joined.join(' ');
+}
+
+/** the index where the clause's tokens start */
+function clauseAt(parts: string[], clause: string[], negated: boolean): number {
+	for (let i = 0; i + clause.length <= parts.length; i++) {
+		if (!negated && parts[i - 1]?.toLowerCase() === 'not') continue;
+		if (clause.every((t, k) => parts[i + k] === t)) return i;
+	}
+	return -1;
+}
+
+/** true when the search applies the clause without negating it */
+export function holdsClause(search: string, clause: string): boolean {
+	return clauseAt(tokenize(search), tokenize(clause), false) >= 0;
+}
+
+/** the search without the clause, its leading not and any connector left dangling */
+export function withoutClause(search: string, clause: string): string {
+	const parts = tokenize(search);
+	const words = tokenize(clause);
+	const at = clauseAt(parts, words, true);
+	if (at < 0) return search;
+	const kept = [...parts.slice(0, at), ...parts.slice(at + words.length)];
+	if (kept[at - 1]?.toLowerCase() === 'not') kept.splice(at - 1, 1);
+	return joinTokens(kept);
+}
+
 export function withoutToken(search: string, token: string): string {
-	return tokenize(search)
-		.filter((t) => t !== token)
-		.join(' ');
+	return withoutClause(search, token);
 }
 
 export function hideLabel(values: string[], nounPlural: string): string {

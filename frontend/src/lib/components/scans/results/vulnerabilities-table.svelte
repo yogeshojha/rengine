@@ -53,8 +53,9 @@
 	import FilterToolbar from './table/filter-toolbar.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
-	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { holdsNew, newSignal, overlaps, withNew } from './table/suggestions';
 	import { createSuggestions } from './table/suggestions.svelte';
+	import ScansWindow from './table/scans-window.svelte';
 	import IssueInstances from './vulnerabilities/issue-instances.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
@@ -373,31 +374,22 @@
 		return specs;
 	});
 	let toolbarSignals = $derived.by((): SignalSpec[] => {
-		const flag = (key: keyof VulnQuery, label: string, count: number | null = null) => ({
+		const flag = (key: keyof VulnQuery, label: string) => ({
 			key,
 			label,
 			on: Boolean(query[key]),
-			count,
 			onToggle: () => setQuery({ ...query, [key]: !query[key] })
 		});
 		return [
-			{
-				key: 'new',
-				label: 'New',
-				token: NEW_TOKEN,
-				on: query.newOnly || holdsNew(query.search),
-				count: overview?.new_count ?? null,
-				onToggle: () =>
-					setQuery({
-						...query,
-						newOnly: false,
-						search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
-					})
-			},
-			flag('kevOnly', 'Known exploited', overview?.kev_count ?? null),
+			newSignal(
+				query.search,
+				(search) => setQuery({ ...query, search, newOnly: false }),
+				query.newOnly
+			),
+			flag('kevOnly', 'Known exploited'),
 			flag('cveOnly', 'Has a CVE'),
 			flag('corroboratedOnly', EVIDENCE_LABELS[Evidence.CROSS_CHECKED]),
-			flag('provenOnly', EVIDENCE_LABELS[Evidence.PROVEN], overview?.proven_count ?? null),
+			flag('provenOnly', EVIDENCE_LABELS[Evidence.PROVEN]),
 			{
 				key: 'info',
 				label: 'Info hidden',
@@ -424,14 +416,10 @@
 			]),
 		total: () => total,
 		leadTotal: () => leadSet?.total ?? null,
-		facetsActive: () =>
-			timeline ||
-			vulnActiveFacetCount(query) > 0 ||
-			query.states.length > 0 ||
-			query.includeSuppressed,
+		countable: () => !timeline && !isIssues,
 		ready: () => ready,
-		scope: () => `${projectId}:${scanId}`,
-		count: (queries) => vulnerabilitiesApi.counts(projectId, scanId, queries)
+		scope: () => `${projectId}:${scanId}:${leadSig}`,
+		count: (queries) => vulnerabilitiesApi.counts(projectId, scanId, queries, leadFilter)
 	});
 	let toolbarExtras = $derived(leadSuggestions.applied);
 	function clearFilters() {
@@ -737,6 +725,7 @@
 			if (!quiet) loadedLeadSig = '';
 			forgetPeeks();
 			tabCounts.refresh();
+			leadSuggestions.refresh();
 			await Promise.all([runSearch(), loadFacets(), loadGroups(), loadOverview()]);
 			if (expandedId) await loadInstances(expandedId, instanceLimit);
 		} finally {
@@ -1586,32 +1575,13 @@
 					</ToggleGroup.Item>
 				{/each}
 			</ToggleGroup.Root>
-			<div class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-				<span>Last</span>
-				<ToggleGroup.Root
-					type="single"
-					variant="outline"
-					size="sm"
-					value={String(timelineWindow)}
-					onValueChange={(v) => {
-						if (!v) return;
-						timelineWindow = Number(v);
-						pageIndex = 0;
-					}}
-					aria-label="Scans shown"
-				>
-					{#each TIMELINE_WINDOWS as n (n)}
-						<ToggleGroup.Item
-							value={String(n)}
-							aria-label="Last {n} scans"
-							class="h-7 px-2.5 text-xs font-normal tabular-nums"
-						>
-							{n}
-						</ToggleGroup.Item>
-					{/each}
-				</ToggleGroup.Root>
-				<span>scans</span>
-			</div>
+			<ScansWindow
+				value={timelineWindow}
+				onChange={(n) => {
+					timelineWindow = n;
+					pageIndex = 0;
+				}}
+			/>
 		</div>
 	{/if}
 

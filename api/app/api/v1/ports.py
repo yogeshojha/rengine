@@ -68,14 +68,18 @@ async def service_tabs(
     return await service.tabs(scope, body)
 
 
+class ServiceCountRequest(QueryCountRequest):
+    filter: ServiceFilter | None = None
+
+
 @router.post("/search/counts", response_model=QueryCounts)
 async def service_counts(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
     scope: ServiceScope,
-    body: QueryCountRequest,
+    body: ServiceCountRequest,
 ):
-    return await service.counts(scope, body.queries)
+    return await service.counts(scope, body.queries, body.filter)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

@@ -40,7 +40,7 @@
 	import FilterToolbar from './table/filter-toolbar.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
-	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { holdsNew, newSignal, overlaps, withNew } from './table/suggestions';
 	import { createSuggestions } from './table/suggestions.svelte';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import Layers from '@lucide/svelte/icons/layers';
@@ -81,6 +81,7 @@
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
 	import { EndpointSource, STATIC_CLASSES } from '$lib/config/endpoints';
 	import Hint from '$lib/components/hint.svelte';
+	import type { IconComponent } from '$lib/config/icons';
 	import {
 		hideLabel,
 		excludeToken,
@@ -292,7 +293,7 @@
 	);
 	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
 	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
-	const LENSES: { value: EndpointView; label: string; hint: string; icon: typeof Rows3 }[] = [
+	const LENSES: { value: EndpointView; label: string; hint: string; icon: IconComponent }[] = [
 		{ value: 'hosts', label: 'Web assets', hint: 'Every web asset, ranked', icon: Network },
 		{
 			value: 'merged',
@@ -332,18 +333,11 @@
 	);
 	let toolbarSignals = $derived.by((): SignalSpec[] => {
 		const signals: SignalSpec[] = [
-			{
-				key: 'new',
-				label: 'New',
-				token: NEW_TOKEN,
-				on: query.newOnly || holdsNew(query.search),
-				onToggle: () =>
-					setQuery({
-						...query,
-						newOnly: false,
-						search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
-					})
-			},
+			newSignal(
+				query.search,
+				(search) => setQuery({ ...query, search, newOnly: false }),
+				query.newOnly
+			),
 			{
 				key: 'unverified',
 				label: 'Not verified',
@@ -410,11 +404,10 @@
 			]),
 		total: () => total,
 		leadTotal: () => leadSet?.total ?? null,
-		facetsActive: () =>
-			endpointActiveFacetCount(query) > 0 || hideStatic || (atEstate && hideRootOnly),
+		countable: () => !goneLens,
 		ready: () => ready,
-		scope: () => `${projectId}:${scanId}`,
-		count: (queries) => endpointsApi.counts(projectId, scanId, queries)
+		scope: () => `${projectId}:${scanId}:${leadSig}`,
+		count: (queries) => endpointsApi.counts(projectId, scanId, queries, leadFilter)
 	});
 	let toolbarExtras = $derived([
 		...leadSuggestions.applied,
@@ -449,6 +442,7 @@
 			host: inHost ? query.host : '',
 			endpointClass: query.endpointClass
 		});
+		goneLens = false;
 	}
 	let rowPad = $derived(rowPadding(density));
 	let known = $derived((name: string) => endpointQuerySchema.byName.has(name));
@@ -839,6 +833,7 @@
 		try {
 			if (!quiet) loadedLeadSig = '';
 			tabCounts.refresh();
+			leadSuggestions.refresh();
 			const heavy = quiet ? liveAggregates.call() : aggregates();
 			await Promise.all([runSearch(), heavy ?? Promise.resolve()]);
 		} finally {

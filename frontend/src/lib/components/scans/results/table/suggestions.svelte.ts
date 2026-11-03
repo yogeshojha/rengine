@@ -20,9 +20,10 @@ export interface SuggestionOptions {
 	total: () => number | null;
 	/** rows in the scope the leads were counted under */
 	leadTotal?: () => number | null;
-	/** true while a facet, a signal or a tab narrows the rows beyond the search */
-	facetsActive: () => boolean;
+	/** false while the view counts something other than the rows the leads count */
+	countable?: () => boolean;
 	ready: () => boolean;
+	/** the scan and the facets the counts are read under */
 	scope: () => string;
 	count: (queries: string[]) => Promise<QueryCounts>;
 }
@@ -33,9 +34,10 @@ export interface Suggestions {
 	apply: (suggestion: FilterSuggestion) => void;
 	/** the search with every applied lead removed */
 	cleared: () => string;
+	refresh: () => void;
 }
 
-/** suggested queries for a table, counted only where the count equals the rows a click opens */
+/** suggested queries for a table, counted where the view's rows are the rows the leads count */
 export function createSuggestions(options: SuggestionOptions): Suggestions {
 	const counts = new TabCounts();
 	const candidates = $derived(
@@ -46,7 +48,8 @@ export function createSuggestions(options: SuggestionOptions): Suggestions {
 			options.leadTotal?.() ?? null
 		)
 	);
-	const exact = $derived(!options.facetsActive());
+	const countable = $derived(options.countable?.() ?? true);
+	const exact = $derived(countable);
 	const typed = $derived(Boolean(options.search().trim()));
 	const requested = $derived(
 		exact && options.ready() && candidates.some((lead) => typed || lead.count == null)
@@ -62,7 +65,14 @@ export function createSuggestions(options: SuggestionOptions): Suggestions {
 		counts.track(JSON.stringify([options.scope(), queries]), () => options.count(queries));
 	});
 	const list = $derived(
-		countedSuggestions(candidates, options.search(), exact, counts, options.total())
+		countable
+			? countedSuggestions(candidates, options.search(), exact, counts, options.total())
+			: candidates.map((lead) => ({
+					query: lead.query,
+					description: lead.description,
+					count: null,
+					capped: false
+				}))
 	);
 	const applied = $derived(appliedLeadChips(options.leads(), options.search(), options.onSearch));
 	return {
@@ -73,6 +83,7 @@ export function createSuggestions(options: SuggestionOptions): Suggestions {
 			return applied;
 		},
 		apply: (suggestion) => options.onSearch(joinSuggestion(options.search(), suggestion.query)),
-		cleared: () => clearLeadSearch(options.leads(), options.search())
+		cleared: () => clearLeadSearch(options.leads(), options.search()),
+		refresh: () => counts.refresh()
 	};
 }

@@ -1,5 +1,4 @@
 // Drives every result table's filter toolbar in a running instance over the DevTools protocol.
-// Usage: RENGINE_USER=… RENGINE_PASSWORD=… node scripts/e2e-filter-toolbar.mjs <scan id> [tab,tab]
 import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -275,6 +274,32 @@ for (const [tab, extra] of TABS) {
 				await until(`__vis('[role=group][aria-label^="Filter "]').length === 0`);
 			}
 			return `${facetCount} facets, ${picked} picked, ${signalCount} signals toggled twice`;
+		});
+	}
+	if (process.env.E2E_STRESS) {
+		await step(tab, 'stress: suggestion count stays exact under a facet', async () => {
+			if (tab === 'interesting') return 'none expected';
+			await click(`__vis('button[aria-label="Filter"],button[aria-label^="Filter, "]')[0]`);
+			await until(`__vis('[role=option]').length > 0`);
+			if (!(await evaluate(`Boolean(__group('Filters'))`))) { await key('Escape'); return 'no facets on this table'; }
+			await clickUntil(`__group('Filters').querySelector('[role=option]')`, `__vis('[role=option]').some(o => o.textContent.includes('Filters'))`);
+			if (!(await evaluate(`Boolean(__vis('[role=option]').find(o => o.querySelector('.tabular-nums')))`))) { await key('Escape'); return 'no counted option'; }
+			await clickUntil(`__vis('[role=option]').find(o => o.querySelector('.tabular-nums'))`, `__vis('[role=group][aria-label^="Filter "]').length === 1`);
+			await key('Escape');
+			await until(`__vis('[role=option]').length === 0`);
+			try { await until(`__vis('button[aria-label^="Add filter "]').some(b => / rows$/.test(b.getAttribute('aria-label')))`, 10000); } catch { /* none counted */ }
+			const labels = await stableLabels();
+			const hit = labels.map((l) => /^Add filter (.+?), (\d[\d,]*)\+? rows$/.exec(l)).find(Boolean);
+			if (!hit) {
+				await clickUntil(`__vis('button[aria-label="Clear all filters"]')[0]`, `__vis('[role=group][aria-label^="Filter "]').length === 0`);
+				return 'no counted suggestion under the facet';
+			}
+			const [, q, n] = hit;
+			await clickUntil(`__vis('button[aria-label^="Add filter ${q.replace(/"/g, '\\"')}"]')[0]`, `(__vis('input[aria-label^="Search"]')[0]?.value || '').includes(${JSON.stringify(q)})`);
+			const shown = await until(`__count()`, 20000);
+			if (shown !== Number(n.replace(/,/g, ''))) throw new Error(`${q} under a facet: chip said ${n}, table shows ${shown}`);
+			await clickUntil(`__vis('button[aria-label="Clear all filters"]')[0]`, `__vis('[role=group][aria-label^="Filter "]').length === 0`);
+			return `${q} → ${shown}`;
 		});
 	}
 	await step(tab, 'view and more menus open', async () => {

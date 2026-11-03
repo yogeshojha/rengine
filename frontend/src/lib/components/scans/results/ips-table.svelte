@@ -41,7 +41,7 @@
 	import FilterToolbar from './table/filter-toolbar.svelte';
 	import ViewControls from './table/view-controls.svelte';
 	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
-	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { holdsNew, newSignal, overlaps, withNew } from './table/suggestions';
 	import { createSuggestions } from './table/suggestions.svelte';
 	import IpRow from './ips/ip-row.svelte';
 	import IpDetailSheet from './ip-detail-sheet.svelte';
@@ -204,13 +204,7 @@
 		].filter((f) => f.loading || f.options.length || f.selected.length)
 	);
 	let toolbarSignals = $derived.by((): SignalSpec[] => [
-		{
-			key: 'new',
-			label: 'New',
-			token: NEW_TOKEN,
-			on: holdsNew(query.search),
-			onToggle: () => setQuery({ ...query, search: withNew(query.search, !holdsNew(query.search)) })
-		},
+		newSignal(query.search, (search) => setQuery({ ...query, search })),
 		{
 			key: 'sensitive',
 			label: 'Sensitive',
@@ -255,10 +249,9 @@
 			]),
 		total: () => total,
 		leadTotal: () => leadSet?.total ?? null,
-		facetsActive: () => ipActiveFacetCount(query) > 0,
 		ready: () => ready,
-		scope: () => `${projectId}:${scanId}`,
-		count: (queries) => ipsApi.counts(projectId, scanId, queries)
+		scope: () => `${projectId}:${scanId}:${leadSig}`,
+		count: (queries) => ipsApi.counts(projectId, scanId, queries, leadFilter)
 	});
 	let toolbarExtras = $derived([
 		...leadSuggestions.applied,
@@ -424,6 +417,7 @@
 		try {
 			if (!quiet) loadedLeadSig = '';
 			tabCounts.refresh();
+			leadSuggestions.refresh();
 			await Promise.all([runSearch(), loadFacets(), loadGroups()]);
 		} finally {
 			if (!quiet) refreshing = false;

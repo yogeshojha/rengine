@@ -57,6 +57,7 @@
 	import { scanTagsApi } from '$lib/api/scan-tags';
 	import MetaLine from '$lib/components/meta-line.svelte';
 	import WebAssetsTable from '$lib/components/scans/results/web-assets-table.svelte';
+	import { holdsNew, withNew } from '$lib/components/scans/results/table/suggestions';
 	import IpsTable from '$lib/components/scans/results/ips-table.svelte';
 	import ServicesTable from '$lib/components/scans/results/services-table.svelte';
 	import EndpointsTable from '$lib/components/scans/results/endpoints-table.svelte';
@@ -76,12 +77,7 @@
 		elapsedSeconds,
 		elapsedText
 	} from '$lib/utilities/scan-status';
-	import {
-		appendToken,
-		emptyQuery,
-		tokenize,
-		type WebAssetQuery
-	} from '$lib/utilities/scan-insights';
+	import { emptyQuery, type WebAssetQuery } from '$lib/utilities/scan-insights';
 	import { emptyIpQuery, type IpQuery } from '$lib/utilities/ip-groups';
 	import { emptyServiceQuery, type ServiceQuery } from '$lib/utilities/services';
 	import { emptyEndpointQuery, type EndpointQuery } from '$lib/utilities/endpoints';
@@ -280,7 +276,6 @@
 		applyFilter(filter);
 	}
 
-	const NEW_TOKEN = 'is:new';
 	const QUERY_TABS: Record<string, true> = {
 		'web-assets': true,
 		ips: true,
@@ -310,8 +305,6 @@
 				return '';
 		}
 	});
-	// The toolbars' "New" quick toggle sets the query's newOnly flag (except IPs, which use the
-	// is:new token like this toggle), so either one counts as on and turning this off clears both.
 	let queryNewOnly = $derived.by(() => {
 		switch (activeTab) {
 			case 'web-assets':
@@ -326,15 +319,11 @@
 				return false;
 		}
 	});
-	let newOnly = $derived(tokenize(activeSearch).includes(NEW_TOKEN) || queryNewOnly);
+	let newOnly = $derived(holdsNew(activeSearch) || queryNewOnly);
 
 	function toggleNew() {
 		const off = newOnly;
-		const search = off
-			? tokenize(activeSearch)
-					.filter((t) => t !== NEW_TOKEN)
-					.join(' ')
-			: appendToken(activeSearch, NEW_TOKEN);
+		const search = withNew(activeSearch, !off);
 		switch (activeTab) {
 			case 'web-assets':
 				webQuery = { ...webQuery, search, newOnly: off ? false : webQuery.newOnly };

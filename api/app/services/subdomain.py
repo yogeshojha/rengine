@@ -358,15 +358,19 @@ class SubdomainService:
         }
 
     async def counts(
-        self, project_id: UUID, scope: ScopeLike, queries: list[str]
+        self,
+        project_id: UUID,
+        scope: ScopeLike,
+        queries: list[str],
+        f: SubdomainFilter | None = None,
     ) -> QueryCounts:
+        """Rows each query selects under the filter, one statement."""
         scope = QueryScope.of(scope)
+        f = f or SubdomainFilter()
 
         async def _build() -> QueryCounts:
             now = utc_now()
-            base = select(Subdomain.id).where(
-                Subdomain.project_id == project_id, scope.match(Subdomain.scan_id)
-            )
+            base = self._scoped(project_id, scope, f, now, columns=(Subdomain.id,))
             await self.session.execute(text(STATEMENT_TIMEOUT))
             await self.session.execute(text(NO_JIT))
             ctx = QueryContext(scope=scope, now=now)
@@ -386,7 +390,7 @@ class SubdomainService:
             self.session,
             name="counts:web_assets",
             scans=scope.ids,
-            facets=f"{project_id}|{'|'.join(queries)}",
+            facets=f"{project_id}|{lead_cache.facets_of(f)}|{'|'.join(queries)}",
             model=QueryCounts,
             build=_build,
             keep=lambda computed: computed.computed,
