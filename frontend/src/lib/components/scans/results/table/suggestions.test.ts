@@ -95,13 +95,22 @@ describe('joining a lead onto the search', () => {
 		expect(dropSuggestion('is:kev', 'is:kev')).toBe('');
 	});
 
-	it('clears every applied lead at once', () => {
+	it('clears every applied lead at once and keeps what the user negated or alternated', () => {
 		const leads = [
 			{ query: 'is:kev', description: '' },
 			{ query: 'cvss>=9', description: '' }
 		];
 		expect(clearLeadSearch(leads, 'is:kev and cvss>=9')).toBe('');
 		expect(clearLeadSearch(leads, 'host:a and is:kev')).toBe('host:a');
+		expect(clearLeadSearch(leads, 'not is:kev and tech:a')).toBe('not is:kev and tech:a');
+		expect(clearLeadSearch(leads, 'tech:a or is:kev')).toBe('tech:a or is:kev');
+	});
+
+	it('does not read a lead inside an or as applied', () => {
+		expect(holdsSuggestion('tech:a or is:kev', 'is:kev')).toBe(false);
+		expect(holdsSuggestion('is:kev or tech:a', 'is:kev')).toBe(false);
+		expect(holdsSuggestion('(tech:a or tech:b) and is:kev', 'is:kev')).toBe(true);
+		expect(dropSuggestion('tech:a or is:kev', 'is:kev')).toBe('tech:a or is:kev');
 	});
 
 	it('toggles the is:new token', () => {
@@ -113,10 +122,18 @@ describe('joining a lead onto the search', () => {
 	it('removes a negated or connected token without leaving a dangling word', () => {
 		expect(holdsNew('not is:new')).toBe(false);
 		expect(holdsNew('tech:a and is:new')).toBe(true);
-		expect(withNew('not is:new', false)).toBe('');
-		expect(withNew('tech:a or is:new', false)).toBe('tech:a');
+		expect(holdsNew('tech:a or is:new')).toBe(false);
+		expect(withNew('not is:new', true)).toBe('is:new');
+		expect(withNew('not is:new', false)).toBe('not is:new');
 		expect(withNew('is:new and tech:a', false)).toBe('tech:a');
-		expect(withoutToken('tech:a and not is:kev and is:cve', 'is:kev')).toBe('tech:a and is:cve');
+		expect(withNew('is:new && tech:a', false)).toBe('tech:a');
+		expect(withNew('tech:a || is:new', false)).toBe('tech:a || is:new');
+		expect(withNew('is:new and tech:a and is:new', false)).toBe('tech:a');
+		expect(withoutToken('tech:a and not is:kev and is:cve', 'is:kev')).toBe(
+			'tech:a and not is:kev and is:cve'
+		);
+		expect(withoutToken('( tech:a and is:new )', 'is:new')).toBe('( tech:a and is:new )');
+		expect(withoutToken('( is:new ) and tech:a', 'is:new')).toBe('( is:new ) and tech:a');
 	});
 });
 

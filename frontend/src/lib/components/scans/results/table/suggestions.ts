@@ -1,5 +1,10 @@
 import type { TabCounts } from '$lib/utilities/tab-counts.svelte';
-import { appendToken, holdsClause, withoutToken } from '$lib/utilities/scan-insights';
+import {
+	appendToken,
+	holdsClause,
+	withoutClause,
+	withoutToken
+} from '$lib/utilities/scan-insights';
 import {
 	dropSuggestion,
 	escapeRe,
@@ -25,9 +30,13 @@ export function holdsNew(search: string): boolean {
 	return holdsClause(search, NEW_TOKEN);
 }
 
+const NOT_NEW = `not ${NEW_TOKEN}`;
+
 /** the search with the is:new token added or removed */
 export function withNew(search: string, on: boolean): string {
-	return on ? appendToken(search, NEW_TOKEN) : withoutToken(search, NEW_TOKEN);
+	if (!on) return withoutToken(search, NEW_TOKEN);
+	const base = holdsClause(search, NOT_NEW) ? withoutClause(search, NOT_NEW) : search;
+	return appendToken(base, NEW_TOKEN);
 }
 
 /** the New signal every table offers, on while the search holds is:new */
@@ -91,7 +100,9 @@ export function appliedLeadChips(
 
 /** the search with every applied lead removed */
 export function clearLeadSearch(leads: SuggestionSource[], search: string): string {
-	return leads.reduce((acc, lead) => dropSuggestion(acc, lead.query), search);
+	return leads
+		.filter((lead) => holdsSuggestion(search, lead.query))
+		.reduce((acc, lead) => dropSuggestion(acc, lead.query), search);
 }
 
 export function suggestionQueries(candidates: SuggestionSource[], search: string): string[] {
@@ -111,8 +122,8 @@ export function countedSuggestions(
 		.map((lead) => {
 			const joined = joinSuggestion(search, lead.query);
 			const own = !typed && lead.count != null;
-			const count = own ? (lead.count ?? null) : exact ? (counts.counts?.[joined] ?? null) : null;
-			const capped = own ? Boolean(lead.capped) : Boolean(counts.capped?.[joined]);
+			const count = !exact ? null : own ? (lead.count ?? null) : (counts.counts?.[joined] ?? null);
+			const capped = exact && (own ? Boolean(lead.capped) : Boolean(counts.capped?.[joined]));
 			return { query: lead.query, description: lead.description, count, capped };
 		})
 		.filter((s) => s.count !== 0 && (s.count == null || total == null || s.count < total));

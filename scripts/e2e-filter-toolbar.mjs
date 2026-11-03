@@ -83,6 +83,7 @@ async function stableLabels() {
 	}
 	return last ?? [];
 }
+const matches = (shown, label) => (String(label).endsWith('+') ? shown >= Number(String(label).replace(/[,+]/g, '')) : shown === Number(String(label).replace(/,/g, '')));
 async function key(k) {
 	await call('Input.dispatchKeyEvent', { type: 'keyDown', key: k, code: k, windowsVirtualKeyCode: k === 'Escape' ? 27 : 0 });
 	await call('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code: k, windowsVirtualKeyCode: k === 'Escape' ? 27 : 0 });
@@ -144,7 +145,7 @@ for (const [tab, extra] of TABS) {
 		try { await until(`__vis('button[aria-label^="Add filter "]').some(b => / rows$/.test(b.getAttribute('aria-label')))`, 6000); } catch { /* uncounted is allowed */ }
 	}
 	const suggestions = await stableLabels();
-	const parsed = suggestions.map((l) => { const m = /^Add filter (.+?)(?:, (\d[\d,]*)\+? rows)?$/.exec(l); return m ? { query: m[1], count: m[2] ? Number(m[2].replace(/,/g, '')) : null } : null; }).filter(Boolean);
+	const parsed = suggestions.map((l) => { const m = /^Add filter (.+?)(?:, (\d[\d,]*\+?) rows)?$/.exec(l); return m ? { query: m[1], raw: m[2] ?? null, count: m[2] ? Number(m[2].replace(/[,+]/g, '')) : null } : null; }).filter(Boolean);
 	await step(tab, 'suggestions offered', async () => {
 		if (tab === 'interesting') return 'none expected';
 		if (!parsed.length) throw new Error('no suggestion chips');
@@ -155,19 +156,19 @@ for (const [tab, extra] of TABS) {
 		await step(tab, 'suggestion count is a promise', async () => {
 			await clickUntil(`__vis('button[aria-label^="Add filter ${counted.query.replace(/"/g, '\\"')}"]')[0]`, `(__vis('input[aria-label^="Search"]')[0]?.value || '').includes(${JSON.stringify(counted.query)})`);
 			const shown = await until(`__count()`, 15000);
-			if (shown !== counted.count) throw new Error(`chip said ${counted.count}, table shows ${shown}`);
+			if (!matches(shown, counted.raw)) throw new Error(`chip said ${counted.raw}, table shows ${shown}`);
 			await until(`__vis('[role=group][aria-label="Filter ${counted.query.replace(/"/g, '\\"')}"]').length > 0`);
 			return `${counted.query} → ${shown}`;
 		});
 		await step(tab, 'second suggestions stay exact under the search', async () => {
 			try { await until(`__vis('button[aria-label^="Add filter "]').some(b => / rows$/.test(b.getAttribute('aria-label')))`, 8000); } catch { /* none counted */ }
 			const next = await stableLabels();
-			const withCount = next.map((l) => /^Add filter (.+?), (\d[\d,]*)\+? rows$/.exec(l)).filter(Boolean);
+			const withCount = next.map((l) => /^Add filter (.+?), (\d[\d,]*\+?) rows$/.exec(l)).filter(Boolean);
 			if (!withCount.length) return `no counted follow-up (${next.length} offered)`;
 			const [, q, n] = withCount[0];
 			await clickUntil(`__vis('button[aria-label^="Add filter ${q.replace(/"/g, '\\"')}"]')[0]`, `(__vis('input[aria-label^="Search"]')[0]?.value || '').includes(${JSON.stringify(q)})`);
 			const shown = await until(`__count()`, 15000);
-			if (shown !== Number(n.replace(/,/g, ''))) throw new Error(`${q}: chip said ${n}, table shows ${shown}`);
+			if (!matches(shown, n)) throw new Error(`${q}: chip said ${n}, table shows ${shown}`);
 			return `${q} → ${shown}`;
 		});
 		await step(tab, 'clear removes chips and search', async () => {
@@ -216,13 +217,13 @@ for (const [tab, extra] of TABS) {
 			for (let i = 0; i < 3; i++) {
 				try { await until(`__vis('button[aria-label^="Add filter "]').some(b => / rows$/.test(b.getAttribute('aria-label')))`, 8000); } catch { /* none counted */ }
 				const labels = await stableLabels();
-				const hit = labels.map((l) => /^Add filter (.+?), (\d[\d,]*)\+? rows$/.exec(l)).find(Boolean);
+				const hit = labels.map((l) => /^Add filter (.+?), (\d[\d,]*\+?) rows$/.exec(l)).find(Boolean);
 				if (!hit) break;
 				const [, q, n] = hit;
 				const t0 = Date.now();
 				await clickUntil(`__vis('button[aria-label^="Add filter ${q.replace(/"/g, '\\"')}"]')[0]`, `(__vis('input[aria-label^="Search"]')[0]?.value || '').includes(${JSON.stringify(q)})`);
 				const shown = await until(`__count()`, 20000);
-				if (shown !== Number(n.replace(/,/g, ''))) throw new Error(`${q}: chip said ${n}, table shows ${shown}`);
+				if (!matches(shown, n)) throw new Error(`${q}: chip said ${n}, table shows ${shown}`);
 				applied.push(`${q} → ${shown} in ${Date.now() - t0} ms`);
 				try { await until(`__vis('button[aria-label^="Add filter "]').some(b => / rows$/.test(b.getAttribute('aria-label')))`, 6000); } catch { /* none left */ }
 			}
@@ -256,9 +257,12 @@ for (const [tab, extra] of TABS) {
 				const before = await evaluate(`__group('Signals').querySelectorAll('[role=option]')[${i}].querySelector('.bg-primary') !== null`);
 				for (const want of [!before, before]) {
 					await clickUntil(`__group('Signals').querySelectorAll('[role=option]')[${i}]`, `!__group('Signals') || (__group('Signals').querySelectorAll('[role=option]')[${i}].querySelector('.bg-primary') !== null) === ${want}`);
+					try { await until(`Boolean(__group('Signals'))`, 2000); } catch { /* checked below */ }
 					if (!(await evaluate(`Boolean(__group('Signals'))`))) {
-						closedAfter.push(label);
-						await click(`__vis('button[aria-label="Filter"],button[aria-label^="Filter, "]')[0]`);
+						if (await evaluate(`__vis('[role=option]').length === 0`)) {
+							closedAfter.push(label);
+							await click(`__vis('button[aria-label="Filter"],button[aria-label^="Filter, "]')[0]`);
+						}
 						await until(`Boolean(__group('Signals'))`);
 					}
 				}
@@ -289,7 +293,7 @@ for (const [tab, extra] of TABS) {
 			await until(`__vis('[role=option]').length === 0`);
 			try { await until(`__vis('button[aria-label^="Add filter "]').some(b => / rows$/.test(b.getAttribute('aria-label')))`, 10000); } catch { /* none counted */ }
 			const labels = await stableLabels();
-			const hit = labels.map((l) => /^Add filter (.+?), (\d[\d,]*)\+? rows$/.exec(l)).find(Boolean);
+			const hit = labels.map((l) => /^Add filter (.+?), (\d[\d,]*\+?) rows$/.exec(l)).find(Boolean);
 			if (!hit) {
 				await clickUntil(`__vis('button[aria-label="Clear all filters"]')[0]`, `__vis('[role=group][aria-label^="Filter "]').length === 0`);
 				return 'no counted suggestion under the facet';
@@ -297,7 +301,7 @@ for (const [tab, extra] of TABS) {
 			const [, q, n] = hit;
 			await clickUntil(`__vis('button[aria-label^="Add filter ${q.replace(/"/g, '\\"')}"]')[0]`, `(__vis('input[aria-label^="Search"]')[0]?.value || '').includes(${JSON.stringify(q)})`);
 			const shown = await until(`__count()`, 20000);
-			if (shown !== Number(n.replace(/,/g, ''))) throw new Error(`${q} under a facet: chip said ${n}, table shows ${shown}`);
+			if (!matches(shown, n)) throw new Error(`${q} under a facet: chip said ${n}, table shows ${shown}`);
 			await clickUntil(`__vis('button[aria-label="Clear all filters"]')[0]`, `__vis('[role=group][aria-label^="Filter "]').length === 0`);
 			return `${q} → ${shown}`;
 		});

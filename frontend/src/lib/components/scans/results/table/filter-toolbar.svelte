@@ -69,17 +69,27 @@
 		}
 		return shown;
 	});
-	let menuSuggestions = $derived(suggestions.slice(0, MENU_SUGGESTIONS));
+	// the menu keeps the suggestions it opened with, so its rows hold still while counts move
+	let pinned = $state<FilterSuggestion[]>([]);
+	let menuSuggestions = $derived(
+		pinned.map((p) => suggestions.find((s) => s.query === p.query) ?? { ...p, count: null })
+	);
+
+	function pin() {
+		pinned = suggestions.slice(0, MENU_SUGGESTIONS);
+	}
 
 	function openAt(key: string | null) {
 		level = key;
 		search = '';
+		pin();
 		open = true;
 	}
 
 	function onOpenChange(next: boolean) {
 		open = next;
-		if (!next) {
+		if (next) pin();
+		else {
 			level = null;
 			search = '';
 		}
@@ -219,7 +229,7 @@
 								</Command.Group>
 							{/if}
 						{:else}
-							{#if suggestions.length && !search}
+							{#if menuSuggestions.length && !search}
 								<Command.Group heading="Suggested">
 									{#each menuSuggestions as suggestion (suggestion.query)}
 										<Command.Item
@@ -332,7 +342,7 @@
 						onclick={() => suggest(suggestion)}
 						aria-label={suggestion.count == null
 							? `Add filter ${suggestion.query}`
-							: `Add filter ${suggestion.query}, ${suggestion.count} rows`}
+							: `Add filter ${suggestion.query}, ${suggestion.count}${suggestion.capped ? '+' : ''} rows`}
 					>
 						<Plus class="size-3 shrink-0" />
 						<span class="truncate font-mono">{suggestion.query}</span>

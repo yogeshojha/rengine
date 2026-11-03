@@ -48,8 +48,7 @@ export function createSuggestions(options: SuggestionOptions): Suggestions {
 			options.leadTotal?.() ?? null
 		)
 	);
-	const countable = $derived(options.countable?.() ?? true);
-	const exact = $derived(countable);
+	const exact = $derived(options.countable?.() ?? true);
 	const typed = $derived(Boolean(options.search().trim()));
 	const requested = $derived(
 		exact && options.ready() && candidates.some((lead) => typed || lead.count == null)
@@ -65,14 +64,7 @@ export function createSuggestions(options: SuggestionOptions): Suggestions {
 		counts.track(JSON.stringify([options.scope(), queries]), () => options.count(queries));
 	});
 	const list = $derived(
-		countable
-			? countedSuggestions(candidates, options.search(), exact, counts, options.total())
-			: candidates.map((lead) => ({
-					query: lead.query,
-					description: lead.description,
-					count: null,
-					capped: false
-				}))
+		countedSuggestions(candidates, options.search(), exact, counts, options.total())
 	);
 	const applied = $derived(appliedLeadChips(options.leads(), options.search(), options.onSearch));
 	return {

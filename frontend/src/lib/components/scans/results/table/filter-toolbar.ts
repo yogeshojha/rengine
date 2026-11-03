@@ -143,5 +143,6 @@ export function holdsSuggestion(search: string, query: string): boolean {
 
 export function dropSuggestion(search: string, query: string): string {
 	const clause = clauseOf(query);
-	return holdsClause(search, clause) ? withoutClause(search, clause) : withoutClause(search, query);
+	if (holdsClause(search, clause)) return withoutClause(search, clause);
+	return holdsClause(search, query) ? withoutClause(search, query) : search;
 }

@@ -202,42 +202,69 @@ export function hasToken(search: string, token: string): boolean {
 	return tokenize(search).includes(token);
 }
 
-const CONNECTORS = new Set(['and', 'or']);
+const AND_WORDS = new Set(['and', '&&']);
+const OR_WORDS_ALL = new Set(['or', '||']);
+const CONNECTORS = new Set([...AND_WORDS, ...OR_WORDS_ALL]);
+
+const isConnector = (part: string | undefined) =>
+	part !== undefined && CONNECTORS.has(part.toLowerCase());
+const opensGroup = (part: string | undefined) => part === '(';
+const closesGroup = (part: string | undefined) => part === ')';
 
 function joinTokens(parts: string[]): string {
 	const joined: string[] = [];
 	for (const part of parts) {
-		const connector = CONNECTORS.has(part.toLowerCase());
-		if (connector && (!joined.length || CONNECTORS.has(joined.at(-1)!.toLowerCase()))) continue;
+		const last = joined.at(-1);
+		if (isConnector(part) && (last === undefined || isConnector(last) || opensGroup(last)))
+			continue;
+		if (closesGroup(part)) {
+			while (joined.length && isConnector(joined.at(-1))) joined.pop();
+			if (opensGroup(joined.at(-1))) {
+				joined.pop();
+				continue;
+			}
+		}
 		joined.push(part);
 	}
-	while (joined.length && CONNECTORS.has(joined.at(-1)!.toLowerCase())) joined.pop();
+	while (joined.length && isConnector(joined.at(-1))) joined.pop();
 	return joined.join(' ');
 }
 
-/** the index where the clause's tokens start */
-function clauseAt(parts: string[], clause: string[], negated: boolean): number {
+/** the index of the clause as a top-level conjunct, outside every or and parenthesis */
+function clauseAt(parts: string[], clause: string[], from = 0): number {
+	let depth = 0;
 	for (let i = 0; i + clause.length <= parts.length; i++) {
-		if (!negated && parts[i - 1]?.toLowerCase() === 'not') continue;
-		if (clause.every((t, k) => parts[i + k] === t)) return i;
+		const part = parts[i];
+		if (i >= from && depth === 0 && clause.every((t, k) => parts[i + k] === t)) {
+			const before = parts[i - 1]?.toLowerCase();
+			const after = parts[i + clause.length]?.toLowerCase();
+			const negated = before === 'not';
+			const inOr =
+				(before !== undefined && OR_WORDS_ALL.has(before)) ||
+				(after !== undefined && OR_WORDS_ALL.has(after));
+			if (!negated && !inOr) return i;
+		}
+		for (const ch of part.replace(/"[^"]*"/g, '')) {
+			if (ch === '(') depth++;
+			else if (ch === ')') depth = Math.max(0, depth - 1);
+		}
 	}
 	return -1;
 }
 
-/** true when the search applies the clause without negating it */
+/** true when the search applies the clause as a top-level conjunct */
 export function holdsClause(search: string, clause: string): boolean {
-	return clauseAt(tokenize(search), tokenize(clause), false) >= 0;
+	return clauseAt(tokenize(search), tokenize(clause)) >= 0;
 }
 
-/** the search without the clause, its leading not and any connector left dangling */
+/** the search without every top-level occurrence of the clause and any connector left dangling */
 export function withoutClause(search: string, clause: string): string {
-	const parts = tokenize(search);
 	const words = tokenize(clause);
-	const at = clauseAt(parts, words, true);
-	if (at < 0) return search;
-	const kept = [...parts.slice(0, at), ...parts.slice(at + words.length)];
-	if (kept[at - 1]?.toLowerCase() === 'not') kept.splice(at - 1, 1);
-	return joinTokens(kept);
+	let parts = tokenize(search);
+	for (let at = clauseAt(parts, words); at >= 0; at = clauseAt(parts, words)) {
+		parts = [...parts.slice(0, at), ...parts.slice(at + words.length)];
+	}
+	return joinTokens(parts);
 }
 
 export function withoutToken(search: string, token: string): string {

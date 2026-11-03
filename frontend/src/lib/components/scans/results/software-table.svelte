@@ -58,7 +58,7 @@
 		excludeToken,
 		appendTokens,
 		appendToken,
-		hasToken,
+		holdsClause,
 		withoutToken,
 		type Facet
 	} from '$lib/utilities/scan-insights';
@@ -394,10 +394,12 @@
 			key: f.token,
 			label: f.label,
 			token: f.token,
-			on: hasToken(search, f.token),
+			on: holdsClause(search, f.token),
 			onToggle: () =>
 				onQuery(
-					hasToken(search, f.token) ? withoutToken(search, f.token) : appendToken(search, f.token)
+					holdsClause(search, f.token)
+						? withoutToken(search, f.token)
+						: appendToken(search, f.token)
 				)
 		}))
 	);
@@ -411,7 +413,7 @@
 		search: () => search,
 		onSearch: onQuery,
 		overlapping: () =>
-			overlaps(QUICK_FILTERS.map((f) => tokenRule(f.token, hasToken(search, f.token)))),
+			overlaps(QUICK_FILTERS.map((f) => tokenRule(f.token, holdsClause(search, f.token)))),
 		total: () => total,
 		ready: () => ready && seen,
 		scope: () => `${projectId}:${scanId}`,
