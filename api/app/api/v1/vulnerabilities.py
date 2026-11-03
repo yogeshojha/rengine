@@ -10,7 +10,12 @@ from app.core.database import get_session
 from app.services.finding_timeline import FindingTimelineService
 from app.services.vulnerability import VulnerabilityService
 from shared.definitions.vulnerabilities import VULN_STATES
-from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.asset_query import (
+    QueryCountRequest,
+    QueryCounts,
+    QueryGroups,
+    QueryLeads,
+)
 from shared.models.timeline import FindingTimelineFilter, FindingTimelineResult
 from shared.models.vulnerability import (
     BulkTriageResult,
@@ -82,6 +87,16 @@ async def vulnerability_tabs(
     body: VulnerabilityFilter,
 ):
     return await service.tabs(scope, body)
+
+
+@router.post("/search/counts", response_model=QueryCounts)
+async def vulnerability_counts(
+    _current_user: CurrentUser,
+    service: Annotated[VulnerabilityService, Depends(get_service)],
+    scope: VulnScope,
+    body: QueryCountRequest,
+):
+    return await service.counts(scope, body.queries)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

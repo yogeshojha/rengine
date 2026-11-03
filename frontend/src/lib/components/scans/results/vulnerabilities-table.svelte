@@ -50,10 +50,13 @@
 	} from './table/columns';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import CoverageStrip from './vulnerabilities/coverage-strip.svelte';
-	import FilterBar from './vulnerabilities/filter-bar.svelte';
+	import FilterToolbar from './table/filter-toolbar.svelte';
+	import ViewControls from './table/view-controls.svelte';
+	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
+	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { createSuggestions } from './table/suggestions.svelte';
 	import IssueInstances from './vulnerabilities/issue-instances.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
-	import FilterChips from './table/filter-chips.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import RescanAction from './table/rescan-action.svelte';
 	import ProxySend from './endpoints/proxy-send.svelte';
@@ -89,6 +92,7 @@
 		FINDING_GROUP_HELP,
 		FINDING_GROUP_LABELS,
 		FINDING_GROUP_ORDER,
+		FINDING_MODE_LABELS,
 		FINDING_SORTS,
 		FINDINGS_TIMELINE_VIEW,
 		FindingTimelineMode,
@@ -103,11 +107,14 @@
 	import { vulnQuerySchema } from '$lib/stores/query-schema.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import {
+		SEVERITY_LABELS,
+		SEVERITY_ORDER,
 		SUPPRESSED_STATES,
 		VULN_STATE_LABELS,
 		VULN_STATE_KEYS,
 		VulnState
 	} from '$lib/config/vulnerabilities';
+	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import {
 		hideLabel,
 		excludeToken,
@@ -125,7 +132,6 @@
 		DEFAULT_VULN_VIEW,
 		EMPTY_VULN_FACETS,
 		ISSUE_SORTS,
-		TABLE_VIEWS,
 		VULN_SORTS,
 		VULN_VIEWS,
 		type IssueRead,
@@ -325,6 +331,118 @@
 	let selectAllChecked = $derived(selectAllState(checkedCount, rowCount));
 	let filtered = $derived(vulnActiveFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(vulnQueryChips(query));
+	const facetOptions = (list: VulnFacetSet[keyof VulnFacetSet]) =>
+		list.map((f) => ({ value: f.name, label: f.label ?? f.name, count: f.count }));
+	const listFacet = (
+		key: 'templates' | 'tags' | 'hosts' | 'protocols' | 'scanners',
+		label: string,
+		list: VulnFacetSet[keyof VulnFacetSet],
+		mono = false
+	): FacetSpec => ({
+		key,
+		label,
+		options: facetOptions(list),
+		selected: query[key],
+		onChange: (next) => setQuery({ ...query, [key]: next }),
+		mono,
+		loading: !facetsLoaded && !facetsFailed
+	});
+	let views = $derived(VULN_VIEWS.filter((v) => v.key !== TIMELINE || timelineOffered()));
+	let toolbarFacets = $derived.by((): FacetSpec[] => {
+		const counts = new Map(facets.severity.map((f) => [f.name, f.count]));
+		const specs: FacetSpec[] = [
+			{
+				key: 'severities',
+				label: 'Severity',
+				options: SEVERITY_ORDER.map((sev) => ({
+					value: sev,
+					label: SEVERITY_LABELS[sev] ?? sev,
+					count: counts.get(sev) ?? 0
+				})),
+				selected: query.severities,
+				onChange: (next) => setQuery({ ...query, severities: next })
+			},
+			listFacet('templates', 'Check', facets.template, true),
+			listFacet('tags', 'Category', facets.tag),
+			listFacet('hosts', WEB.noun, facets.host, true)
+		];
+		if (facets.protocol.length > 1 || query.protocols.length)
+			specs.push(listFacet('protocols', 'Type', facets.protocol));
+		if (facets.scanner.length > 1 || query.scanners.length)
+			specs.push(listFacet('scanners', 'Scanner', facets.scanner));
+		return specs;
+	});
+	let toolbarSignals = $derived.by((): SignalSpec[] => {
+		const flag = (key: keyof VulnQuery, label: string, count: number | null = null) => ({
+			key,
+			label,
+			on: Boolean(query[key]),
+			count,
+			onToggle: () => setQuery({ ...query, [key]: !query[key] })
+		});
+		return [
+			{
+				key: 'new',
+				label: 'New',
+				token: NEW_TOKEN,
+				on: query.newOnly || holdsNew(query.search),
+				count: overview?.new_count ?? null,
+				onToggle: () =>
+					setQuery({
+						...query,
+						newOnly: false,
+						search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
+					})
+			},
+			flag('kevOnly', 'Known exploited', overview?.kev_count ?? null),
+			flag('cveOnly', 'Has a CVE'),
+			flag('corroboratedOnly', EVIDENCE_LABELS[Evidence.CROSS_CHECKED]),
+			flag('provenOnly', EVIDENCE_LABELS[Evidence.PROVEN], overview?.proven_count ?? null),
+			{
+				key: 'info',
+				label: 'Info hidden',
+				on: !query.includeInfo,
+				onToggle: () => setQuery({ ...query, includeInfo: !query.includeInfo })
+			}
+		];
+	});
+	const leadSuggestions = createSuggestions({
+		leads: () => leadSet?.leads ?? [],
+		search: () => query.search,
+		onSearch: (search) => setQuery({ ...query, search }),
+		overlapping: () =>
+			overlaps([
+				[/\bseverity:|\bcvss/, query.severities.length > 0],
+				[/\bis:kev\b|\bis:exploitable\b/, query.kevOnly],
+				[/\bis:cross-checked\b/, query.corroboratedOnly],
+				[/\bevidence:proven\b/, query.provenOnly],
+				[/\bis:new\b|\bseen:/, query.newOnly || holdsNew(query.search)],
+				[/\bis:cve\b/, query.cveOnly],
+				[/\btag:/, query.tags.length > 0],
+				[/\bhost:/, query.hosts.length > 0],
+				[/\btemplate:/, query.templates.length > 0]
+			]),
+		total: () => total,
+		leadTotal: () => leadSet?.total ?? null,
+		facetsActive: () =>
+			timeline ||
+			vulnActiveFacetCount(query) > 0 ||
+			query.states.length > 0 ||
+			query.includeSuppressed,
+		ready: () => ready,
+		scope: () => `${projectId}:${scanId}`,
+		count: (queries) => vulnerabilitiesApi.counts(projectId, scanId, queries)
+	});
+	let toolbarExtras = $derived(leadSuggestions.applied);
+	function clearFilters() {
+		const search = leadSuggestions.cleared();
+		setQuery({
+			...emptyVulnQuery(),
+			search: withNew(search, false),
+			includeSuppressed: query.includeSuppressed,
+			states: query.states
+		});
+	}
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let severityCounts = $derived.by(() => {
@@ -1394,14 +1512,14 @@
 		</div>
 		<ToggleGroup.Root
 			type="single"
-			value={timeline ? 'findings' : view}
+			value={view}
 			onValueChange={(v) => v && setView(v as VulnView)}
 			variant="outline"
 			size="sm"
 			class="shrink-0"
-			aria-label="Issues or findings"
+			aria-label="View"
 		>
-			{#each TABLE_VIEWS as option (option.key)}
+			{#each views as option (option.key)}
 				<ToggleGroup.Item value={option.key} class="h-7 px-2.5 text-xs font-normal">
 					{option.label}
 				</ToggleGroup.Item>
@@ -1417,47 +1535,85 @@
 		</div>
 	{/if}
 
-	<FilterBar
-		{query}
-		{facets}
-		facetsLoaded={facetsLoaded || facetsFailed}
-		onQuery={setQuery}
-		dimensions={vulnQuerySchema.schema.group_dimensions}
-		columns={isIssues ? ISSUE_COLUMNS : findingColumns}
-		visible={isIssues ? ISSUE_COLUMNS.map((c) => c.key) : findingVisible}
-		columnsLocked={isIssues || timeline}
-		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
-		sorts={isIssues ? ISSUE_SORTS : timeline ? timelineSorts : VULN_SORTS}
-		timeline={timelineOffered()}
-		view={timeline ? TIMELINE : 'table'}
-		onView={(v) => setView(v === TIMELINE ? TIMELINE : 'findings')}
-		{timelineWindow}
-		onTimelineWindow={(n) => {
-			timelineWindow = n;
-			pageIndex = 0;
-		}}
-		mode={timelineMode}
-		onMode={setTimelineMode}
-		sortKey={sort.key}
-		sortDir={sort.dir}
-		onSort={toggleSort}
-		{refreshing}
-		{projectId}
-		{scanId}
-		{exportFilters}
-		onRefresh={refresh}
-		onShortcuts={() => (shortcutsOpen = true)}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
-	/>
+	<FilterToolbar
+		facets={toolbarFacets}
+		signals={toolbarSignals}
+		extras={toolbarExtras}
+		suggestions={leadSuggestions.list}
+		onSuggest={leadSuggestions.apply}
+		onClear={clearFilters}
+	>
+		{#snippet tools()}
+			<ViewControls
+				dimension={SurfaceDimension.VULNERABILITIES}
+				dimensions={vulnQuerySchema.schema.group_dimensions}
+				{groupBy}
+				onGroupBy={(key) => (groupBy = key)}
+				sorts={isIssues ? ISSUE_SORTS : timeline ? timelineSorts : VULN_SORTS}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				onSort={toggleSort}
+				columns={isIssues ? ISSUE_COLUMNS : findingColumns}
+				visible={isIssues ? ISSUE_COLUMNS.map((c) => c.key) : findingVisible}
+				columnsLocked={isIssues || timeline}
+				onToggleColumn={toggleCol}
+				{density}
+				onDensity={(d) => (density = d)}
+				{refreshing}
+				onRefresh={refresh}
+				{projectId}
+				{scanId}
+				{exportFilters}
+				showGroupBy={!timeline}
+				onShortcuts={() => (shortcutsOpen = true)}
+			/>
+		{/snippet}
+	</FilterToolbar>
 
-	<FilterChips
-		{chips}
-		onRemove={(chip) => setQuery(chip.remove(query))}
-		onClear={() => setQuery({ ...emptyVulnQuery(), search: query.search })}
-	/>
+	{#if timeline}
+		<div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-3 py-2">
+			<ToggleGroup.Root
+				type="single"
+				variant="outline"
+				size="sm"
+				value={timelineMode}
+				onValueChange={(v) => v && setTimelineMode(v as FindingTimelineMode)}
+				aria-label="Rows"
+			>
+				{#each Object.values(FindingTimelineMode) as m (m)}
+					<ToggleGroup.Item value={m} class="h-7 px-2.5 text-xs font-normal">
+						{FINDING_MODE_LABELS[m]}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+			<div class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+				<span>Last</span>
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					size="sm"
+					value={String(timelineWindow)}
+					onValueChange={(v) => {
+						if (!v) return;
+						timelineWindow = Number(v);
+						pageIndex = 0;
+					}}
+					aria-label="Scans shown"
+				>
+					{#each TIMELINE_WINDOWS as n (n)}
+						<ToggleGroup.Item
+							value={String(n)}
+							aria-label="Last {n} scans"
+							class="h-7 px-2.5 text-xs font-normal tabular-nums"
+						>
+							{n}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<span>scans</span>
+			</div>
+		</div>
+	{/if}
 
 	{#if !groupBy && !timeline}
 		<SelectionBar
@@ -1553,27 +1709,29 @@
 				<Button size="sm" variant="outline" onclick={() => loadOverview()}>Retry</Button>
 			</EmptyState>
 		{/if}
-	{:else if timeline && strips && byCheck}
-		<CheckMatrix
-			result={strips}
-			{loading}
-			focusedIndex={rowCursor.index}
-			pad={rowPad}
-			onOpen={showCheck}
-			onOpenScan={openScanTimeline}
-			track={rowCursor.track}
-		/>
 	{:else if timeline && strips}
-		<FindingTimeline
-			result={strips}
-			{loading}
-			focusedIndex={rowCursor.index}
-			selectedId={drawerOpen ? (selected?.id ?? null) : null}
-			pad={rowPad}
-			onOpen={openLifespan}
-			onOpenScan={openScanTimeline}
-			track={rowCursor.track}
-		/>
+		{#if byCheck}
+			<CheckMatrix
+				result={strips}
+				{loading}
+				focusedIndex={rowCursor.index}
+				pad={rowPad}
+				onOpen={showCheck}
+				onOpenScan={openScanTimeline}
+				track={rowCursor.track}
+			/>
+		{:else}
+			<FindingTimeline
+				result={strips}
+				{loading}
+				focusedIndex={rowCursor.index}
+				selectedId={drawerOpen ? (selected?.id ?? null) : null}
+				pad={rowPad}
+				onOpen={openLifespan}
+				onOpenScan={openScanTimeline}
+				track={rowCursor.track}
+			/>
+		{/if}
 	{:else if isIssues}
 		<ListHeader
 			sticky

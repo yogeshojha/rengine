@@ -37,16 +37,26 @@
 		projectId?: string;
 		scanId?: string | null;
 		class?: string;
+		/** opens beside this element instead of its own button */
+		anchor?: HTMLElement | null;
+		open?: boolean;
 	}
 
-	let { dimension, query, projectId = '', scanId = null, class: klass = '' }: Props = $props();
+	let {
+		dimension,
+		query,
+		projectId = '',
+		scanId = null,
+		class: klass = '',
+		anchor = null,
+		open = $bindable(false)
+	}: Props = $props();
 
 	const SCOPES = [
 		{ key: 'target', label: 'This target' },
 		{ key: ScopeKind.All, label: SCOPE_LABELS[ScopeKind.All] }
 	];
 
-	let open = $state(false);
 	let name = $state('');
 	let fireOn = $state<string>(FireOn.Appears);
 	let scopeChoice = $state<string>('target');
@@ -151,22 +161,33 @@
 </script>
 
 <Popover.Root bind:open>
-	<Tooltip.Root>
-		<Tooltip.Trigger>
-			{#snippet child({ props: tip })}
-				<Popover.Trigger {...tip}>
-					{#snippet child({ props })}
-						<Button {...props} variant="outline" class={klass} aria-label="Tripwire on this query">
-							<Zap class="h-4 w-4" />
-							<span class="hidden 2xl:inline">Tripwire</span>
-						</Button>
-					{/snippet}
-				</Popover.Trigger>
-			{/snippet}
-		</Tooltip.Trigger>
-		<Tooltip.Content class="2xl:hidden">Tripwire on this query</Tooltip.Content>
-	</Tooltip.Root>
-	<Popover.Content class="w-[min(24rem,calc(100vw-2rem))] p-0" align="end">
+	{#if !anchor}
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props: tip })}
+					<Popover.Trigger {...tip}>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="outline"
+								class={klass}
+								aria-label="Tripwire on this query"
+							>
+								<Zap class="h-4 w-4" />
+								<span class="hidden 2xl:inline">Tripwire</span>
+							</Button>
+						{/snippet}
+					</Popover.Trigger>
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Content class="2xl:hidden">Tripwire on this query</Tooltip.Content>
+		</Tooltip.Root>
+	{/if}
+	<Popover.Content
+		class="w-[min(24rem,calc(100vw-2rem))] p-0"
+		align="end"
+		customAnchor={anchor ?? undefined}
+	>
 		<div class="flex flex-col gap-4 p-4">
 			<div class="flex flex-col gap-1.5">
 				<span class="text-sm font-medium">Tripwire on this query</span>

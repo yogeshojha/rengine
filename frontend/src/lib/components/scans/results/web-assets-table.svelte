@@ -21,7 +21,20 @@
 	import CountTabs from '$lib/components/count-tabs.svelte';
 
 	import QueryBar from './query-bar/query-bar.svelte';
-	import FilterBar from './web-assets/filter-bar.svelte';
+	import FilterToolbar from './table/filter-toolbar.svelte';
+	import ViewControls from './table/view-controls.svelte';
+	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
+	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { createSuggestions } from './table/suggestions.svelte';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { Toggle } from '$lib/components/ui/toggle';
+	import { querySchema } from '$lib/stores/query-schema.svelte';
+	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import LayoutGrid from '@lucide/svelte/icons/layout-grid';
+	import ChartGantt from '@lucide/svelte/icons/chart-gantt';
+	import Image from '@lucide/svelte/icons/image';
+	import Layers from '@lucide/svelte/icons/layers';
 	import ListHeader from './table/list-header.svelte';
 	import {
 		inPopover,
@@ -53,7 +66,6 @@
 	import { RowCursor } from './table/row-cursor.svelte';
 	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import GroupList from './table/group-list.svelte';
-	import FilterChips from './table/filter-chips.svelte';
 	import WebAssetDetailSheet from './web-asset-detail-sheet.svelte';
 	import HostStructureDialog from './web-assets/host-structure-dialog.svelte';
 	import {
@@ -68,7 +80,6 @@
 	import { seedKindFor, selectionLabel, startRescan } from '$lib/utilities/rechecks';
 	import { rechecks } from '$lib/stores/rechecks.svelte';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
-	import { querySchema } from '$lib/stores/query-schema.svelte';
 	import {
 		HYGIENE_NONE,
 		HygieneTone,
@@ -320,6 +331,115 @@
 	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(activeFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(queryChips(query));
+	const listFacet = (
+		key: 'tech' | 'service' | 'cert' | 'hygiene' | 'posture' | 'source',
+		label: string,
+		list: Facet[],
+		mono = false
+	): FacetSpec => ({
+		key,
+		label,
+		options: list,
+		selected: query[key],
+		onChange: (next) => setQuery({ ...query, [key]: next }),
+		mono,
+		loading: !facetsLoaded
+	});
+	let toolbarFacets = $derived.by((): FacetSpec[] =>
+		[
+			listFacet('tech', 'Tech', facets.tech),
+			listFacet('service', 'Service', facets.service),
+			listFacet('cert', 'Cert', facets.cert),
+			listFacet('hygiene', 'Hygiene', facets.hygiene),
+			listFacet('posture', 'Posture', facets.posture),
+			listFacet('source', 'Found by', facets.source)
+		].filter((f) => f.loading || f.options.length || f.selected.length)
+	);
+	let toolbarSignals = $derived.by((): SignalSpec[] => [
+		{
+			key: 'new',
+			label: 'New',
+			token: NEW_TOKEN,
+			on: query.newOnly || holdsNew(query.search),
+			onToggle: () =>
+				setQuery({
+					...query,
+					newOnly: false,
+					search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
+				})
+		},
+		{
+			key: 'issues',
+			label: 'Has issues',
+			on: query.issuesOnly,
+			onToggle: () => setQuery({ ...query, issuesOnly: !query.issuesOnly })
+		},
+		{
+			key: 'nowaf',
+			label: 'No WAF',
+			on: query.waf === 'none',
+			onToggle: () => setQuery({ ...query, waf: query.waf === 'none' ? 'any' : 'none' })
+		},
+		{
+			key: 'nocdn',
+			label: 'No CDN',
+			on: query.cdn === 'no',
+			onToggle: () => setQuery({ ...query, cdn: query.cdn === 'no' ? 'any' : 'no' })
+		},
+		{
+			key: 'live',
+			label: 'Live',
+			on: query.liveOnly,
+			onToggle: () => setQuery({ ...query, liveOnly: !query.liveOnly })
+		},
+		{
+			key: 'screenshot',
+			label: 'With screenshot',
+			on: query.hasScreenshot,
+			onToggle: () => setQuery({ ...query, hasScreenshot: !query.hasScreenshot })
+		}
+	]);
+	const leadSuggestions = createSuggestions({
+		leads: () => leadSet?.leads ?? [],
+		search: () => query.search,
+		onSearch: (search) => setQuery({ ...query, search }),
+		overlapping: () =>
+			overlaps([
+				[/\btech:/, query.tech.length > 0],
+				[/\bservice:|\bport:/, query.service.length > 0],
+				[/\bcert/, query.cert.length > 0],
+				[/\bhygiene:/, query.hygiene.length > 0],
+				[/\bposture:/, query.posture.length > 0],
+				[/\bsource:/, query.source.length > 0],
+				[/\bis:cdn\b/, query.cdn !== 'any'],
+				[/\bwaf/, query.waf !== 'any'],
+				[/\bstatus:/, query.status.length > 0],
+				[/\bis:new\b|\bseen:/, query.newOnly || holdsNew(query.search)]
+			]),
+		total: () => total,
+		leadTotal: () => leadSet?.total ?? null,
+		facetsActive: () =>
+			activeFacetCount(query) > 0 || Boolean(strips) || (view === 'gallery' && onlyShots),
+		ready: () => ready,
+		scope: () => `${projectId}:${scanId}`,
+		count: (queries) => subdomainsApi.counts(projectId, scanId, queries)
+	});
+	let toolbarExtras = $derived([
+		...leadSuggestions.applied,
+		...(query.cdn === 'yes'
+			? [{ id: 'cdn', label: 'Behind CDN', onRemove: () => setQuery({ ...query, cdn: 'any' }) }]
+			: []),
+		...(query.waf === 'present'
+			? [{ id: 'waf', label: 'WAF present', onRemove: () => setQuery({ ...query, waf: 'any' }) }]
+			: [])
+	]);
+	function clearFilters() {
+		setQuery({
+			...emptyQuery(),
+			search: withNew(leadSuggestions.cleared(), false),
+			status: query.status
+		});
+	}
 	let rowPad = $derived(rowPadding(density));
 	let statusTab = $derived(
 		query.status.length === 0 ? 'all' : query.status.length === 1 ? query.status[0] : ''
@@ -1130,80 +1250,160 @@
 	</QueryBar>
 </div>
 
+{#snippet viewItem(value: string, Icon: typeof Rows3, label: string)}
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
+				<ToggleGroup.Item {...props} {value} aria-label={label} class="h-7 px-2">
+					<Icon class="size-3.5" />
+				</ToggleGroup.Item>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content>{label}</Tooltip.Content>
+	</Tooltip.Root>
+{/snippet}
+
 <Card.Root
 	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
 	{@attach trackWidth((w) => (tableWidth = w))}
 >
-	<div class="border-b px-2">
-		{#if strips}
-			<CountTabs
-				tabs={view === RENDERS_VIEW ? RENDER_FLAG_TABS : FLAG_TABS}
-				value={(view === RENDERS_VIEW ? renderFlag : timelineFlag) ?? 'all'}
-				counts={flagCounts}
-				onChange={setFlag}
-			/>
-		{:else}
-			<CountTabs
-				tabs={STATUS_CLASS_TABS}
-				value={statusTab}
-				counts={statusCounts}
-				capped={statusCapped}
-				countClass={statusCountClass}
-				onChange={setStatusTab}
-			/>
-		{/if}
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pt-2 pr-3 pl-2 sm:pt-0">
+		<div class="order-last min-w-0 grow basis-full sm:order-none sm:basis-0">
+			{#if strips}
+				<CountTabs
+					tabs={view === RENDERS_VIEW ? RENDER_FLAG_TABS : FLAG_TABS}
+					value={(view === RENDERS_VIEW ? renderFlag : timelineFlag) ?? 'all'}
+					counts={flagCounts}
+					onChange={setFlag}
+				/>
+			{:else}
+				<CountTabs
+					tabs={STATUS_CLASS_TABS}
+					value={statusTab}
+					counts={statusCounts}
+					capped={statusCapped}
+					countClass={statusCountClass}
+					onChange={setStatusTab}
+				/>
+			{/if}
+		</div>
+		<ToggleGroup.Root
+			type="single"
+			variant="outline"
+			size="sm"
+			class="shrink-0"
+			value={view}
+			onValueChange={(v) => v && setView(v)}
+			aria-label="View"
+		>
+			{@render viewItem('table', Rows3, 'List view')}
+			{@render viewItem('gallery', LayoutGrid, 'Gallery view')}
+			{#if timelineOffered()}
+				{@render viewItem(TIMELINE_VIEW, ChartGantt, 'Timeline view')}
+				{@render viewItem(RENDERS_VIEW, Images, 'Screenshots view')}
+			{/if}
+		</ToggleGroup.Root>
 	</div>
 
-	<FilterBar
-		{query}
-		{facets}
-		onQuery={setQuery}
-		{view}
-		onView={setView}
-		timeline={timelineOffered()}
-		{timelineWindow}
-		onTimelineWindow={(n) => {
-			timelineWindow = n;
-			pageIndex = 0;
-		}}
-		columns={WEB_ASSET_COLUMNS}
-		{visible}
-		folded={foldedColumns}
-		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
-		{groupRenders}
-		onGroupRenders={(v) => {
-			groupRenders = v;
-		}}
-		{onlyShots}
-		onOnlyShots={(v) => {
-			onlyShots = v;
-			pageIndex = 0;
-		}}
-		sorts={view === TIMELINE_VIEW
-			? TIMELINE_SORTS
-			: view === RENDERS_VIEW
-				? RENDER_SORTS
-				: WEB_ASSET_SORTS}
-		sortKey={sort.key}
-		sortDir={sort.dir}
-		onSort={toggleSort}
-		{refreshing}
-		{projectId}
-		{scanId}
-		{exportFilters}
-		onRefresh={refresh}
-		onShortcuts={() => (shortcutsOpen = true)}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
-	/>
+	<FilterToolbar
+		facets={toolbarFacets}
+		signals={toolbarSignals}
+		extras={toolbarExtras}
+		suggestions={leadSuggestions.list}
+		onSuggest={leadSuggestions.apply}
+		onClear={clearFilters}
+	>
+		{#snippet tools()}
+			<ViewControls
+				dimension={SurfaceDimension.WEB_ASSETS}
+				dimensions={querySchema.schema.group_dimensions}
+				{groupBy}
+				onGroupBy={(key) => (groupBy = key)}
+				sorts={view === TIMELINE_VIEW
+					? TIMELINE_SORTS
+					: view === RENDERS_VIEW
+						? RENDER_SORTS
+						: WEB_ASSET_SORTS}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				onSort={toggleSort}
+				columns={WEB_ASSET_COLUMNS}
+				{visible}
+				folded={foldedColumns}
+				onToggleColumn={toggleCol}
+				{density}
+				onDensity={(d) => (density = d)}
+				{refreshing}
+				onRefresh={refresh}
+				{projectId}
+				{scanId}
+				{exportFilters}
+				showColumns={view === 'table'}
+				showGroupBy={view === 'table'}
+				onShortcuts={() => (shortcutsOpen = true)}
+			/>
+		{/snippet}
+	</FilterToolbar>
 
-	<FilterChips
-		{chips}
-		onRemove={(chip) => setQuery(chip.remove(query))}
-		onClear={() => setQuery({ ...emptyQuery(), search: query.search })}
-	/>
+	{#if view === 'gallery' || strips}
+		<div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-3 py-2">
+			{#if view === 'gallery'}
+				<Toggle
+					pressed={onlyShots}
+					onPressedChange={(v) => {
+						onlyShots = v;
+						pageIndex = 0;
+					}}
+					variant="outline"
+					size="sm"
+					class="gap-2 text-xs font-normal"
+					aria-label="Only web assets with a screenshot"
+				>
+					<Image class="size-3.5" />
+					With screenshot
+				</Toggle>
+				<Toggle
+					pressed={groupRenders}
+					onPressedChange={(v) => (groupRenders = v)}
+					variant="outline"
+					size="sm"
+					class="gap-2 text-xs font-normal"
+					aria-label="Group web assets that render the same page"
+				>
+					<Layers class="size-3.5" />
+					Group identical
+				</Toggle>
+			{/if}
+			{#if strips}
+				<div class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+					<span>Last</span>
+					<ToggleGroup.Root
+						type="single"
+						variant="outline"
+						size="sm"
+						value={String(timelineWindow)}
+						onValueChange={(v) => {
+							if (!v) return;
+							timelineWindow = Number(v);
+							pageIndex = 0;
+						}}
+						aria-label="Scans shown"
+					>
+						{#each TIMELINE_WINDOWS as n (n)}
+							<ToggleGroup.Item
+								value={String(n)}
+								aria-label="Last {n} scans"
+								class="h-7 px-2.5 text-xs font-normal tabular-nums"
+							>
+								{n}
+							</ToggleGroup.Item>
+						{/each}
+					</ToggleGroup.Root>
+					<span>scans</span>
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	{#if !groupBy && !strips}
 		<SelectionBar

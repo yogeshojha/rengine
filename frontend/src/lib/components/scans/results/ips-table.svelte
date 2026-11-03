@@ -38,8 +38,11 @@
 	import RescanAction from './table/rescan-action.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
-	import FilterChips from './table/filter-chips.svelte';
-	import FilterBar from './ips/filter-bar.svelte';
+	import FilterToolbar from './table/filter-toolbar.svelte';
+	import ViewControls from './table/view-controls.svelte';
+	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
+	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { createSuggestions } from './table/suggestions.svelte';
 	import IpRow from './ips/ip-row.svelte';
 	import IpDetailSheet from './ip-detail-sheet.svelte';
 	import { IP_COLUMNS, IP_LEAD_COLUMNS, DEFAULT_VISIBLE_IP_COLUMNS } from './ips/columns';
@@ -180,6 +183,99 @@
 	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(ipActiveFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(ipQueryChips(query, facets));
+	const listFacet = (
+		key: 'asn' | 'country' | 'port' | 'service',
+		label: string,
+		list: Facet[]
+	): FacetSpec => ({
+		key,
+		label,
+		options: list,
+		selected: query[key],
+		onChange: (next) => setQuery({ ...query, [key]: next }),
+		loading: !facetsLoaded
+	});
+	let toolbarFacets = $derived.by((): FacetSpec[] =>
+		[
+			listFacet('asn', 'Network', facets.asn),
+			listFacet('country', 'Country', facets.country),
+			listFacet('port', 'Port', facets.port),
+			listFacet('service', 'Service', facets.service)
+		].filter((f) => f.loading || f.options.length || f.selected.length)
+	);
+	let toolbarSignals = $derived.by((): SignalSpec[] => [
+		{
+			key: 'new',
+			label: 'New',
+			token: NEW_TOKEN,
+			on: holdsNew(query.search),
+			onToggle: () => setQuery({ ...query, search: withNew(query.search, !holdsNew(query.search)) })
+		},
+		{
+			key: 'sensitive',
+			label: 'Sensitive',
+			on: query.sensitiveOnly,
+			onToggle: () => setQuery({ ...query, sensitiveOnly: !query.sensitiveOnly })
+		},
+		{
+			key: 'hosted',
+			label: 'Has web assets',
+			on: query.hostedOnly,
+			onToggle: () => setQuery({ ...query, hostedOnly: !query.hostedOnly })
+		},
+		{
+			key: 'nocdn',
+			label: 'No CDN',
+			on: query.cdn === 'no',
+			onToggle: () => setQuery({ ...query, cdn: query.cdn === 'no' ? 'any' : 'no' })
+		},
+		{
+			key: 'v6',
+			label: 'IPv6',
+			on: query.version === 6,
+			onToggle: () => setQuery({ ...query, version: query.version === 6 ? 0 : 6 })
+		}
+	]);
+	const leadSuggestions = createSuggestions({
+		leads: () => leadSet?.leads ?? [],
+		search: () => query.search,
+		onSearch: (search) => setQuery({ ...query, search }),
+		overlapping: () =>
+			overlaps([
+				[/\basn:|\bnetwork/, query.asn.length > 0],
+				[/\bcountry:/, query.country.length > 0],
+				[/\bport:/, query.port.length > 0],
+				[/\bservice:/, query.service.length > 0],
+				[/\bis:cdn\b/, query.cdn !== 'any'],
+				[/\bis:v6\b|\bversion:/, query.version !== 0],
+				[/\bis:web\b|\bhosts/, query.hostedOnly],
+				[/\bis:sensitive\b/, query.sensitiveOnly],
+				[/\bexposure:/, query.exposure.length > 0],
+				[/\bis:new\b|\bseen:/, holdsNew(query.search)]
+			]),
+		total: () => total,
+		leadTotal: () => leadSet?.total ?? null,
+		facetsActive: () => ipActiveFacetCount(query) > 0,
+		ready: () => ready,
+		scope: () => `${projectId}:${scanId}`,
+		count: (queries) => ipsApi.counts(projectId, scanId, queries)
+	});
+	let toolbarExtras = $derived([
+		...leadSuggestions.applied,
+		...(query.cdn === 'yes'
+			? [{ id: 'cdn', label: 'Behind CDN', onRemove: () => setQuery({ ...query, cdn: 'any' }) }]
+			: []),
+		...(query.version === 4
+			? [{ id: 'v4', label: 'IPv4', onRemove: () => setQuery({ ...query, version: 0 }) }]
+			: [])
+	]);
+	function clearFilters() {
+		setQuery({
+			...emptyIpQuery(),
+			search: withNew(leadSuggestions.cleared(), false),
+			exposure: query.exposure
+		});
+	}
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let exposureTab = $derived(
@@ -651,36 +747,39 @@
 		/>
 	</div>
 
-	<FilterBar
-		{query}
-		{facets}
-		onQuery={setQuery}
-		dimensions={ipQuerySchema.schema.group_dimensions}
-		columns={IP_COLUMNS}
-		{visible}
-		folded={foldedColumns}
-		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
-		sorts={IP_SORTS}
-		sortKey={sort.key}
-		sortDir={sort.dir}
-		onSort={toggleSort}
-		{refreshing}
-		{projectId}
-		{scanId}
-		{exportFilters}
-		onRefresh={refresh}
-		onShortcuts={() => (shortcutsOpen = true)}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
-	/>
-
-	<FilterChips
-		{chips}
-		onRemove={(chip) => setQuery(chip.remove(query))}
-		onClear={() => setQuery({ ...emptyIpQuery(), search: query.search })}
-	/>
+	<FilterToolbar
+		facets={toolbarFacets}
+		signals={toolbarSignals}
+		extras={toolbarExtras}
+		suggestions={leadSuggestions.list}
+		onSuggest={leadSuggestions.apply}
+		onClear={clearFilters}
+	>
+		{#snippet tools()}
+			<ViewControls
+				dimension={SurfaceDimension.IPS}
+				dimensions={ipQuerySchema.schema.group_dimensions}
+				{groupBy}
+				onGroupBy={(key) => (groupBy = key)}
+				sorts={IP_SORTS}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				onSort={toggleSort}
+				columns={IP_COLUMNS}
+				{visible}
+				folded={foldedColumns}
+				onToggleColumn={toggleCol}
+				{density}
+				onDensity={(d) => (density = d)}
+				{refreshing}
+				onRefresh={refresh}
+				{projectId}
+				{scanId}
+				{exportFilters}
+				onShortcuts={() => (shortcutsOpen = true)}
+			/>
+		{/snippet}
+	</FilterToolbar>
 
 	{#if !groupBy}
 		<SelectionBar

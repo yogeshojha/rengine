@@ -9,7 +9,12 @@ from app.api.scope import EndpointScope
 from app.core.database import get_session
 from app.services.endpoint import EndpointService
 from app.services.endpoint_structure import EndpointStructureService
-from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.asset_query import (
+    QueryCountRequest,
+    QueryCounts,
+    QueryGroups,
+    QueryLeads,
+)
 from shared.models.endpoint import (
     CoverageRead,
     EndpointDetail,
@@ -66,6 +71,16 @@ async def endpoint_tabs(
     body: EndpointFilter,
 ):
     return await service.tabs(scope, body)
+
+
+@router.post("/search/counts", response_model=QueryCounts)
+async def endpoint_counts(
+    _current_user: CurrentUser,
+    service: Annotated[EndpointService, Depends(get_service)],
+    scope: EndpointScope,
+    body: QueryCountRequest,
+):
+    return await service.counts(scope, body.queries)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

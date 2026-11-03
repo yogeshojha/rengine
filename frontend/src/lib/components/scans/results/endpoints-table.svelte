@@ -34,11 +34,19 @@
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import GroupList from './table/group-list.svelte';
-	import FilterChips from './table/filter-chips.svelte';
 	import SelectionBar from './table/selection-bar.svelte';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
 	import { RowSelection } from './table/selection.svelte';
-	import FilterBar from './endpoints/filter-bar.svelte';
+	import FilterToolbar from './table/filter-toolbar.svelte';
+	import ViewControls from './table/view-controls.svelte';
+	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
+	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { createSuggestions } from './table/suggestions.svelte';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import Layers from '@lucide/svelte/icons/layers';
+	import Network from '@lucide/svelte/icons/network';
+	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import ChevronsDownUp from '@lucide/svelte/icons/chevrons-down-up';
 	import EndpointRow from './endpoints/endpoint-row.svelte';
 	import Outline from './endpoints/outline.svelte';
 	import HostTable from './endpoints/host-table.svelte';
@@ -71,7 +79,8 @@
 	import { connectors as connectorStore } from '$lib/stores/connectors.svelte';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import { SURFACE, SurfaceDimension, type ResultTab } from '$lib/config/surface';
-	import { STATIC_CLASSES } from '$lib/config/endpoints';
+	import { EndpointSource, STATIC_CLASSES } from '$lib/config/endpoints';
+	import Hint from '$lib/components/hint.svelte';
 	import {
 		hideLabel,
 		excludeToken,
@@ -99,6 +108,7 @@
 		type EndpointRead as Endpoint,
 		type EndpointSummary,
 		type EndpointTree,
+		type EndpointFacet,
 		type EndpointView,
 		type FolderChip,
 		type HostBrief,
@@ -282,6 +292,164 @@
 	);
 	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
 	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
+	const LENSES: { value: EndpointView; label: string; hint: string; icon: typeof Rows3 }[] = [
+		{ value: 'hosts', label: 'Web assets', hint: 'Every web asset, ranked', icon: Network },
+		{
+			value: 'merged',
+			label: 'Across web assets',
+			hint: 'Paths merged across web assets',
+			icon: Layers
+		},
+		{ value: 'list', label: 'List', hint: 'One flat list', icon: Rows3 }
+	];
+	let hasProxy = $derived(facets.source.some((f) => f.value === EndpointSource.PROXY));
+	const oneFacet = (
+		key: 'source' | 'interest' | 'statusClass',
+		label: string,
+		list: EndpointFacet[]
+	): FacetSpec => ({
+		key,
+		label,
+		options: list,
+		selected: query[key] ? [query[key]] : [],
+		onChange: (next) => setQuery({ ...query, [key]: next.at(-1) ?? '' }),
+		loading: !facetsLoaded,
+		single: true
+	});
+	let toolbarFacets = $derived.by((): FacetSpec[] =>
+		[
+			facets.source.length > 1 || query.source
+				? oneFacet('source', 'Found by', facets.source)
+				: null,
+			oneFacet('interest', 'Interest', facets.interest),
+			facets.status_class.length > 1 || query.statusClass
+				? oneFacet('statusClass', 'Status', facets.status_class)
+				: null
+		].filter(
+			(f): f is FacetSpec =>
+				f !== null && (f.loading || f.options.length > 0 || f.selected.length > 0)
+		)
+	);
+	let toolbarSignals = $derived.by((): SignalSpec[] => {
+		const signals: SignalSpec[] = [
+			{
+				key: 'new',
+				label: 'New',
+				token: NEW_TOKEN,
+				on: query.newOnly || holdsNew(query.search),
+				onToggle: () =>
+					setQuery({
+						...query,
+						newOnly: false,
+						search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
+					})
+			},
+			{
+				key: 'unverified',
+				label: 'Not verified',
+				on: query.probed === 'no',
+				onToggle: () => setQuery({ ...query, probed: query.probed === 'no' ? 'any' : 'no' })
+			}
+		];
+		if (hasProxy || query.browsed !== 'any') {
+			signals.push(
+				{
+					key: 'browsed',
+					label: 'Browsed',
+					on: query.browsed === 'yes',
+					onToggle: () => setQuery({ ...query, browsed: query.browsed === 'yes' ? 'any' : 'yes' })
+				},
+				{
+					key: 'unbrowsed',
+					label: 'Not browsed',
+					on: query.browsed === 'no',
+					onToggle: () => setQuery({ ...query, browsed: query.browsed === 'no' ? 'any' : 'no' })
+				}
+			);
+		}
+		signals.push({
+			key: 'static',
+			label: 'Hide static',
+			on: hideStatic,
+			onToggle: () => setHideStatic(!hideStatic),
+			quiet: true
+		});
+		if (atEstate)
+			signals.push({
+				key: 'rootonly',
+				label: 'Hide root-only web assets',
+				on: hideRootOnly,
+				onToggle: () => (hideRootOnly = !hideRootOnly),
+				quiet: true
+			});
+		const gone = projectWide ? 0 : (summary?.gone ?? 0);
+		if (gone > 0)
+			signals.push({
+				key: 'gone',
+				label: 'Gone since the previous scan',
+				on: goneLens,
+				count: gone,
+				onToggle: () => (goneLens = !goneLens)
+			});
+		return signals;
+	});
+	const leadSuggestions = createSuggestions({
+		leads: () => leadSet?.leads ?? [],
+		search: () => query.search,
+		onSearch: (search) => setQuery({ ...query, search }),
+		overlapping: () =>
+			overlaps([
+				[/\bsource:/, Boolean(query.source) || query.browsed !== 'any'],
+				[/\binterest:/, Boolean(query.interest)],
+				[/\bstatus:/, Boolean(query.statusClass)],
+				[/\bis:probed\b|\bis:verified\b/, query.probed !== 'any'],
+				[/\bhost:/, Boolean(query.host)],
+				[/\bdir:|\bpath:/, Boolean(query.dir)],
+				[/\bclass:/, Boolean(query.endpointClass)],
+				[/\bis:new\b|\bseen:/, query.newOnly || holdsNew(query.search)]
+			]),
+		total: () => total,
+		leadTotal: () => leadSet?.total ?? null,
+		facetsActive: () =>
+			endpointActiveFacetCount(query) > 0 || hideStatic || (atEstate && hideRootOnly),
+		ready: () => ready,
+		scope: () => `${projectId}:${scanId}`,
+		count: (queries) => endpointsApi.counts(projectId, scanId, queries)
+	});
+	let toolbarExtras = $derived([
+		...leadSuggestions.applied,
+		...(query.host && !inHost
+			? [
+					{
+						id: 'host',
+						label: query.host,
+						mono: true,
+						onRemove: () => setQuery({ ...query, host: '' })
+					}
+				]
+			: []),
+		...(query.dir
+			? [
+					{
+						id: 'dir',
+						label: query.dir,
+						mono: true,
+						onRemove: () => setQuery({ ...query, dir: '', subtree: true })
+					}
+				]
+			: []),
+		...(query.probed === 'yes'
+			? [{ id: 'probed', label: 'Verified', onRemove: () => setQuery({ ...query, probed: 'any' }) }]
+			: [])
+	]);
+	function clearFilters() {
+		setQuery({
+			...emptyEndpointQuery(),
+			search: withNew(leadSuggestions.cleared(), false),
+			host: inHost ? query.host : '',
+			endpointClass: query.endpointClass
+		});
+	}
 	let rowPad = $derived(rowPadding(density));
 	let known = $derived((name: string) => endpointQuerySchema.byName.has(name));
 	let terms = $derived(highlightTerms(query.search, known));
@@ -1207,14 +1375,57 @@
 	{@attach trackWidth((w) => (tableWidth = w))}
 	{@attach hostCursor.track}
 >
-	<div class="border-b px-2">
-		<CountTabs
-			tabs={classTabs}
-			value={classTab}
-			counts={classCounts}
-			capped={tabFiltered ? tabCounts.capped : null}
-			onChange={setClassTab}
-		/>
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pt-2 pr-3 pl-2 sm:pt-0">
+		<div class="order-last min-w-0 grow basis-full sm:order-none sm:basis-0">
+			<CountTabs
+				tabs={classTabs}
+				value={classTab}
+				counts={classCounts}
+				capped={tabFiltered ? tabCounts.capped : null}
+				onChange={setClassTab}
+			/>
+		</div>
+		{#if view !== 'list' && expandedCount > 0}
+			<Hint text="Collapse all folders">
+				{#snippet child(props)}
+					<Button
+						{...props}
+						variant="outline"
+						size="icon-sm"
+						class="h-7 w-7 shrink-0"
+						aria-label="Collapse all"
+						onclick={() => outline?.collapseAll()}
+					>
+						<ChevronsDownUp class="size-3.5" />
+					</Button>
+				{/snippet}
+			</Hint>
+		{/if}
+		<ToggleGroup.Root
+			type="single"
+			variant="outline"
+			size="sm"
+			class="shrink-0"
+			value={view}
+			onValueChange={(v) => v && setView(v as EndpointView)}
+			aria-label="View"
+		>
+			{#each LENSES as lens (lens.value)}
+				<Hint text={lens.hint}>
+					{#snippet child(props)}
+						<ToggleGroup.Item
+							{...props}
+							value={lens.value}
+							class="h-7 gap-1.5 px-2 text-xs font-normal"
+							aria-label={lens.label}
+						>
+							<lens.icon class="size-3.5" />
+							<span class="hidden xl:inline">{lens.label}</span>
+						</ToggleGroup.Item>
+					{/snippet}
+				</Hint>
+			{/each}
+		</ToggleGroup.Root>
 	</div>
 
 	<SelectionBar
@@ -1271,53 +1482,40 @@
 		/>
 	{/if}
 
-	<FilterBar
-		{query}
-		{facets}
-		onQuery={setQuery}
-		dimensions={endpointQuerySchema.schema.group_dimensions}
-		columns={columnOptions}
-		{visible}
-		folded={foldedColumns}
-		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
-		sorts={atEstate ? HOST_SORTS : ENDPOINT_SORTS}
-		sortKey={atEstate ? hostSort.key : sort.key}
-		sortDir={atEstate ? hostSort.dir : sort.dir}
-		onSort={toggleSort}
-		{refreshing}
-		{projectId}
-		{scanId}
-		{exportFilters}
-		onRefresh={refresh}
-		onShortcuts={() => (shortcutsOpen = true)}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
-		{view}
-		onView={setView}
-		{inHost}
-		{hideStatic}
-		onHideStatic={setHideStatic}
-		{hideRootOnly}
-		onHideRootOnly={(v) => (hideRootOnly = v)}
-		{expandedCount}
-		onCollapseAll={() => outline?.collapseAll()}
-		goneCount={projectWide ? 0 : (summary?.gone ?? 0)}
-		{goneLens}
-		onGoneLens={projectWide ? undefined : (on) => (goneLens = on)}
-	/>
-
-	<FilterChips
-		{chips}
-		onRemove={(chip) => setQuery(chip.remove(query))}
-		onClear={() =>
-			setQuery({
-				...emptyEndpointQuery(),
-				search: query.search,
-				host: inHost ? query.host : ''
-			})}
-	/>
+	<FilterToolbar
+		facets={toolbarFacets}
+		signals={toolbarSignals}
+		extras={toolbarExtras}
+		suggestions={leadSuggestions.list}
+		onSuggest={leadSuggestions.apply}
+		onClear={clearFilters}
+	>
+		{#snippet tools()}
+			<ViewControls
+				dimension={SurfaceDimension.ENDPOINTS}
+				dimensions={endpointQuerySchema.schema.group_dimensions}
+				{groupBy}
+				onGroupBy={(key) => (groupBy = key)}
+				sorts={atEstate ? HOST_SORTS : ENDPOINT_SORTS}
+				sortKey={atEstate ? hostSort.key : sort.key}
+				sortDir={atEstate ? hostSort.dir : sort.dir}
+				onSort={toggleSort}
+				columns={columnOptions}
+				{visible}
+				folded={foldedColumns}
+				onToggleColumn={toggleCol}
+				{density}
+				onDensity={(d) => (density = d)}
+				{refreshing}
+				onRefresh={refresh}
+				{projectId}
+				{scanId}
+				{exportFilters}
+				showGroupBy={view === 'list'}
+				onShortcuts={() => (shortcutsOpen = true)}
+			/>
+		{/snippet}
+	</FilterToolbar>
 
 	{#if goneLens}
 		<div

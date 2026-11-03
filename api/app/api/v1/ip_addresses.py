@@ -7,7 +7,12 @@ from app.api.deps import CurrentUser
 from app.api.scope import IpScope
 from app.core.database import get_session
 from app.services.ip_address import IpAddressService
-from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.asset_query import (
+    QueryCountRequest,
+    QueryCounts,
+    QueryGroups,
+    QueryLeads,
+)
 from shared.models.scan_correlation import IpFacets, IpGroupFilter, IpGroupPage
 from shared.services.asset_query import lead_cache
 
@@ -50,6 +55,16 @@ async def ip_search_tabs(
     body: IpGroupFilter,
 ):
     return await service.tabs(scope=scope, f=body)
+
+
+@router.post("/search/counts", response_model=QueryCounts)
+async def ip_search_counts(
+    _current_user: CurrentUser,
+    service: Annotated[IpAddressService, Depends(get_service)],
+    scope: IpScope,
+    body: QueryCountRequest,
+):
+    return await service.counts(scope, body.queries)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

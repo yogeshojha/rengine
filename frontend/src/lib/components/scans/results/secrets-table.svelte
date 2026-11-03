@@ -14,13 +14,15 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import QueryBar from './query-bar/query-bar.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import ViewControls from './table/view-controls.svelte';
+	import FilterToolbar from './table/filter-toolbar.svelte';
+	import type { SignalSpec } from './table/filter-toolbar';
+	import { overlaps, removeToken, tokenRule } from './table/suggestions';
+	import { createSuggestions } from './table/suggestions.svelte';
 	import GroupList from './table/group-list.svelte';
 	import { inPopover, onControl, readPref, selectAllState, writePref } from './table/columns';
 	import RowSelectionBar from './table/row-selection-bar.svelte';
@@ -383,15 +385,37 @@
 		onQuery(withTab(search, 'state', key));
 	}
 
-	let quick = $derived(QUICK_FILTERS.filter((f) => hasToken(search, f.token)).map((f) => f.token));
-
-	function setQuick(values: string[]) {
-		let next = search;
-		for (const { token } of QUICK_FILTERS) {
-			const on = values.includes(token);
-			if (on && !hasToken(next, token)) next = appendToken(next, token);
-			else if (!on && hasToken(next, token)) next = withoutToken(next, token);
-		}
+	let toolbarSignals = $derived.by((): SignalSpec[] =>
+		QUICK_FILTERS.map((f) => ({
+			key: f.token,
+			label: f.label,
+			token: f.token,
+			on: hasToken(search, f.token),
+			onToggle: () =>
+				onQuery(
+					hasToken(search, f.token) ? withoutToken(search, f.token) : appendToken(search, f.token)
+				)
+		}))
+	);
+	let examples = $derived(
+		secretQuerySchema.schema.examples.filter((e) => !QUICK_FILTERS.some((f) => f.token === e.query))
+	);
+	const leadSuggestions = createSuggestions({
+		leads: () => examples,
+		search: () => search,
+		onSearch: onQuery,
+		overlapping: () =>
+			overlaps(QUICK_FILTERS.map((f) => tokenRule(f.token, hasToken(search, f.token)))),
+		total: () => total,
+		facetsActive: () => false,
+		ready: () => ready,
+		scope: () => `${projectId}:${scanId}`,
+		count: (queries) => secretsApi.counts(projectId, scanId, queries)
+	});
+	let toolbarExtras = $derived(leadSuggestions.applied);
+	function clearFilters() {
+		let next = leadSuggestions.cleared();
+		for (const { token } of QUICK_FILTERS) next = removeToken(next, token);
 		onQuery(next);
 	}
 
@@ -484,29 +508,15 @@
 
 	<CoverageStrip {coverage} {projectWide} />
 
-	<div class="flex flex-wrap items-start gap-2 border-b px-4 py-3">
-		<div class="flex min-w-0 flex-1 basis-72 flex-wrap items-center gap-2">
-			<ScrollArea
-				orientation="horizontal"
-				class="max-lg:max-w-full max-lg:min-w-0"
-				scrollbarXClasses="h-1"
-			>
-				<ToggleGroup.Root
-					type="multiple"
-					value={quick}
-					onValueChange={setQuick}
-					variant="outline"
-					aria-label="Filters"
-				>
-					{#each QUICK_FILTERS as filter (filter.token)}
-						<ToggleGroup.Item value={filter.token} class="h-9 px-3 text-sm font-normal">
-							{filter.label}
-						</ToggleGroup.Item>
-					{/each}
-				</ToggleGroup.Root>
-			</ScrollArea>
-		</div>
-		<div class="ml-auto flex min-w-0 flex-wrap items-center gap-2">
+	<FilterToolbar
+		facets={[]}
+		signals={toolbarSignals}
+		extras={toolbarExtras}
+		suggestions={leadSuggestions.list}
+		onSuggest={leadSuggestions.apply}
+		onClear={clearFilters}
+	>
+		{#snippet tools()}
 			<ViewControls
 				dimension={SurfaceDimension.SECRETS}
 				dimensions={secretQuerySchema.schema.group_dimensions}
@@ -533,8 +543,8 @@
 				{exportFilters}
 				onShortcuts={() => (shortcutsOpen = true)}
 			/>
-		</div>
-	</div>
+		{/snippet}
+	</FilterToolbar>
 
 	<div class="@container/secrets">
 		{#if groupBy}

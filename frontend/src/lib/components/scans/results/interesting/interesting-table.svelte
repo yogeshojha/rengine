@@ -23,7 +23,7 @@
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { inPopover, onControl, type SortOption, type TableColumn } from '../table/columns';
-	import FacetedFilter from '../faceted-filter.svelte';
+	import FilterToolbar from '../table/filter-toolbar.svelte';
 	import SortMenu from '../table/sort-menu.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
@@ -416,61 +416,73 @@
 			/>
 		</div>
 
-		<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-			<InputGroup.Root class="w-auto min-w-56 flex-1">
-				<InputGroup.Addon><Search /></InputGroup.Addon>
-				<InputGroup.Input
-					bind:ref={searchRef}
-					bind:value={q}
-					placeholder="Filter by hostname"
-					aria-label="Filter by hostname"
-					oninput={() => (page = 1)}
-				/>
-			</InputGroup.Root>
-
-			<FacetedFilter
-				title="Reason"
-				options={kindOptions}
-				selected={kinds}
-				onChange={(next) => {
-					kinds = next;
-					page = 1;
-				}}
-			/>
-
-			<FacetedFilter
-				title="Flagged by"
-				options={sourceOptions}
-				selected={sources}
-				onChange={(next) => {
-					sources = next;
-					page = 1;
-				}}
-			/>
-
-			<SortMenu
-				sorts={SORTS}
-				sortKey={sort}
-				sortDir={sort === 'host' ? 1 : -1}
-				onSort={(key) => {
-					sort = key;
-					page = 1;
-				}}
-			/>
-
-			{#if filtered}
-				<Button
-					variant="ghost"
-					onclick={() => {
-						q = '';
-						applied = '';
-						sources = [];
-						kinds = [];
+		<FilterToolbar
+			facets={[
+				{
+					key: 'kinds',
+					label: 'Reason',
+					options: kindOptions,
+					selected: kinds,
+					onChange: (next) => {
+						kinds = next;
 						page = 1;
-					}}>Clear</Button
-				>
-			{/if}
-		</div>
+					}
+				},
+				{
+					key: 'sources',
+					label: 'Flagged by',
+					options: sourceOptions,
+					selected: sources,
+					onChange: (next) => {
+						sources = next;
+						page = 1;
+					}
+				}
+			]}
+			extras={q.trim()
+				? [
+						{
+							id: 'host',
+							label: q.trim(),
+							mono: true,
+							onRemove: () => {
+								q = '';
+								applied = '';
+								page = 1;
+							}
+						}
+					]
+				: []}
+			onClear={() => {
+				q = '';
+				applied = '';
+				sources = [];
+				kinds = [];
+				page = 1;
+			}}
+		>
+			{#snippet tools()}
+				<InputGroup.Root class="h-8 w-auto min-w-56">
+					<InputGroup.Addon><Search /></InputGroup.Addon>
+					<InputGroup.Input
+						bind:ref={searchRef}
+						bind:value={q}
+						placeholder="Filter by hostname"
+						aria-label="Filter by hostname"
+						oninput={() => (page = 1)}
+					/>
+				</InputGroup.Root>
+				<SortMenu
+					sorts={SORTS}
+					sortKey={sort}
+					sortDir={sort === 'host' ? 1 : -1}
+					onSort={(key) => {
+						sort = key;
+						page = 1;
+					}}
+				/>
+			{/snippet}
+		</FilterToolbar>
 
 		{#each suggestions as suggestion (suggestion.query)}
 			<SuggestionRow

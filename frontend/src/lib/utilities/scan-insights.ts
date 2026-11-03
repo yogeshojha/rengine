@@ -179,7 +179,7 @@ export function excludeToken(key: string, value: string): string {
 
 const OR_WORDS = new Set(['or', '||']);
 
-function hasTopLevelOr(parts: string[]): boolean {
+export function hasTopLevelOr(parts: string[]): boolean {
 	let depth = 0;
 	for (const part of parts) {
 		if (depth === 0 && OR_WORDS.has(part.toLowerCase())) return true;

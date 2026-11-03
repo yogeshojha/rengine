@@ -10,7 +10,12 @@ from app.core.database import get_session
 from app.services.origin_exposure import OriginExposureService
 from app.services.port import PortService
 from app.services.service_timeline import ServiceTimelineService
-from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.asset_query import (
+    QueryCountRequest,
+    QueryCounts,
+    QueryGroups,
+    QueryLeads,
+)
 from shared.models.scan_correlation import (
     AiSummary,
     OriginExposure,
@@ -61,6 +66,16 @@ async def service_tabs(
     body: ServiceFilter,
 ):
     return await service.tabs(scope, body)
+
+
+@router.post("/search/counts", response_model=QueryCounts)
+async def service_counts(
+    _current_user: CurrentUser,
+    service: Annotated[PortService, Depends(get_service)],
+    scope: ServiceScope,
+    body: QueryCountRequest,
+):
+    return await service.counts(scope, body.queries)
 
 
 @router.post("/search/leads", response_model=QueryLeads)

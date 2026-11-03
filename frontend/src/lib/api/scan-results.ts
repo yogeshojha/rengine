@@ -55,6 +55,12 @@ export const ipsApi = {
 		return api.post<QueryCounts>(`/ips/search/tabs?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
+	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/ips/search/counts?${scopeQuery({ projectId, scanId })}`, {
+			queries
+		});
+	},
+
 	async leads(projectId: string, scanId: string, filter: IpGroupFilter): Promise<QueryLeads> {
 		return api.post<QueryLeads>(`/ips/search/leads?${scopeQuery({ projectId, scanId })}`, filter);
 	},
@@ -103,6 +109,12 @@ export const servicesApi = {
 		return api.post<QueryCounts>(`/ports/search/tabs?${scopeQuery({ projectId, scanId })}`, filter);
 	},
 
+	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/ports/search/counts?${scopeQuery({ projectId, scanId })}`, {
+			queries
+		});
+	},
+
 	async leads(projectId: string, scanId: string, filter: ServiceFilter): Promise<QueryLeads> {
 		return api.post<QueryLeads>(`/ports/search/leads?${scopeQuery({ projectId, scanId })}`, filter);
 	},
@@ -146,6 +158,12 @@ export const endpointsApi = {
 			`/endpoints/search/tabs?${scopeQuery({ projectId, scanId })}`,
 			filter
 		);
+	},
+
+	async counts(projectId: string, scanId: string, queries: string[]): Promise<QueryCounts> {
+		return api.post<QueryCounts>(`/endpoints/search/counts?${scopeQuery({ projectId, scanId })}`, {
+			queries
+		});
 	},
 
 	async leads(projectId: string, scanId: string, filter: EndpointFilter): Promise<QueryLeads> {

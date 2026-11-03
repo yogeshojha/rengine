@@ -41,8 +41,15 @@
 	import ShortcutsDialog, { type Shortcut } from '$lib/components/shortcuts-dialog.svelte';
 	import type { SeedPick, SeedSelection } from '$lib/types/recheck';
 	import GroupList from './table/group-list.svelte';
-	import FilterChips from './table/filter-chips.svelte';
-	import FilterBar from './services/filter-bar.svelte';
+	import FilterToolbar from './table/filter-toolbar.svelte';
+	import ViewControls from './table/view-controls.svelte';
+	import type { FacetSpec, SignalSpec } from './table/filter-toolbar';
+	import { NEW_TOKEN, holdsNew, overlaps, withNew } from './table/suggestions';
+	import { createSuggestions } from './table/suggestions.svelte';
+	import * as ToggleGroup from '$lib/components/ui/toggle-group';
+	import * as Tooltip from '$lib/components/ui/tooltip';
+	import Rows3 from '@lucide/svelte/icons/rows-3';
+	import ChartGantt from '@lucide/svelte/icons/chart-gantt';
 	import ServiceRow from './services/service-row.svelte';
 	import ServiceTimelineList from './services/timeline-list.svelte';
 	import ServiceDetailSheet from './service-detail-sheet.svelte';
@@ -68,6 +75,7 @@
 		PORT_FLAG_LABELS,
 		PORT_FLAG_ORDER,
 		PORT_SORTS,
+		SERVICE_MODE_LABELS,
 		SERVICES_TIMELINE_VIEW,
 		ServiceTimelineMode,
 		TIMELINE_WINDOWS,
@@ -262,6 +270,111 @@
 	let selectAllChecked = $derived(selectAllState(checkedCount, items.length));
 	let filtered = $derived(serviceActiveFacetCount(query) > 0 || !!query.search);
 	let chips = $derived(serviceQueryChips(query, facets));
+	const listFacet = (
+		key: 'port' | 'service' | 'source' | 'asn' | 'country',
+		label: string,
+		list: Facet[]
+	): FacetSpec => ({
+		key,
+		label,
+		options: list,
+		selected: query[key],
+		onChange: (next) => setQuery({ ...query, [key]: next }),
+		loading: !facetsLoaded
+	});
+	let toolbarFacets = $derived.by((): FacetSpec[] =>
+		[
+			listFacet('service', 'Service', facets.service),
+			listFacet('port', 'Port', facets.port),
+			facets.source.length > 1 || query.source.length
+				? listFacet('source', 'Evidence', facets.source)
+				: null,
+			listFacet('asn', 'Network', facets.asn),
+			listFacet('country', 'Country', facets.country)
+		].filter(
+			(f): f is FacetSpec =>
+				f !== null && (f.loading || f.options.length > 0 || f.selected.length > 0)
+		)
+	);
+	let toolbarSignals = $derived.by((): SignalSpec[] => [
+		{
+			key: 'new',
+			label: 'New',
+			token: NEW_TOKEN,
+			on: query.newOnly || holdsNew(query.search),
+			onToggle: () =>
+				setQuery({
+					...query,
+					newOnly: false,
+					search: withNew(query.search, !(query.newOnly || holdsNew(query.search)))
+				})
+		},
+		{
+			key: 'sensitive',
+			label: 'Sensitive',
+			on: query.sensitiveOnly,
+			onToggle: () => setQuery({ ...query, sensitiveOnly: !query.sensitiveOnly })
+		},
+		{
+			key: 'nonweb',
+			label: 'Non-web',
+			on: query.http === 'no',
+			onToggle: () => setQuery({ ...query, http: query.http === 'no' ? 'any' : 'no' })
+		},
+		{
+			key: 'named',
+			label: 'Software named',
+			on: query.namedOnly,
+			onToggle: () => setQuery({ ...query, namedOnly: !query.namedOnly })
+		},
+		{
+			key: 'nocdn',
+			label: 'No CDN',
+			on: query.cdn === 'no',
+			onToggle: () => setQuery({ ...query, cdn: query.cdn === 'no' ? 'any' : 'no' })
+		}
+	]);
+	const leadSuggestions = createSuggestions({
+		leads: () => leadSet?.leads ?? [],
+		search: () => query.search,
+		onSearch: (search) => setQuery({ ...query, search }),
+		overlapping: () =>
+			overlaps([
+				[/\bport:/, query.port.length > 0],
+				[/\bservice:/, query.service.length > 0],
+				[/\bsource:/, query.source.length > 0],
+				[/\basn:|\bnetwork/, query.asn.length > 0],
+				[/\bcountry:/, query.country.length > 0],
+				[/\bis:cdn\b/, query.cdn !== 'any'],
+				[/\bis:web\b|\bhttp/, query.http !== 'any'],
+				[/\bis:sensitive\b/, query.sensitiveOnly],
+				[/\bproduct:|\bsoftware/, query.namedOnly],
+				[/\bclass:/, query.classes.length > 0],
+				[/\bis:new\b|\bseen:/, query.newOnly || holdsNew(query.search)]
+			]),
+		total: () => total,
+		leadTotal: () => leadSet?.total ?? null,
+		facetsActive: () => timeline || serviceActiveFacetCount(query) > 0,
+		ready: () => ready,
+		scope: () => `${projectId}:${scanId}`,
+		count: (queries) => servicesApi.counts(projectId, scanId, queries)
+	});
+	let toolbarExtras = $derived([
+		...leadSuggestions.applied,
+		...(query.cdn === 'yes'
+			? [{ id: 'cdn', label: 'Behind CDN', onRemove: () => setQuery({ ...query, cdn: 'any' }) }]
+			: []),
+		...(query.http === 'yes'
+			? [{ id: 'http', label: 'Answers HTTP', onRemove: () => setQuery({ ...query, http: 'any' }) }]
+			: [])
+	]);
+	function clearFilters() {
+		setQuery({
+			...emptyServiceQuery(),
+			search: withNew(leadSuggestions.cleared(), false),
+			classes: query.classes
+		});
+	}
 	let rowPad = $derived(rowPadding(density));
 	let term = $derived(query.search.trim().includes(':') ? '' : query.search.trim());
 	let classTab = $derived(
@@ -788,69 +901,138 @@
 	/>
 </div>
 
+{#snippet viewItem(value: string, Icon: typeof Rows3, label: string)}
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props })}
+				<ToggleGroup.Item {...props} {value} aria-label={label} class="h-7 px-2">
+					<Icon class="size-3.5" />
+				</ToggleGroup.Item>
+			{/snippet}
+		</Tooltip.Trigger>
+		<Tooltip.Content>{label}</Tooltip.Content>
+	</Tooltip.Root>
+{/snippet}
+
 <Card.Root
 	class="gap-0 overflow-clip rounded-t-none border-t-0 py-0"
 	{@attach trackWidth((w) => (tableWidth = w))}
 >
-	<div class="border-b px-2">
-		{#if timeline}
-			<CountTabs
-				tabs={flagTabs}
-				value={timelineFlag ?? 'all'}
-				counts={flagCounts}
-				onChange={setFlag}
-			/>
-		{:else}
-			<CountTabs
-				tabs={SERVICE_CLASS_TABS}
-				value={classTab}
-				counts={classCounts}
-				capped={tabFiltered ? tabCounts.capped : null}
-				onChange={setClassTab}
-			/>
+	<div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b pt-2 pr-3 pl-2 sm:pt-0">
+		<div class="order-last min-w-0 grow basis-full sm:order-none sm:basis-0">
+			{#if timeline}
+				<CountTabs
+					tabs={flagTabs}
+					value={timelineFlag ?? 'all'}
+					counts={flagCounts}
+					onChange={setFlag}
+				/>
+			{:else}
+				<CountTabs
+					tabs={SERVICE_CLASS_TABS}
+					value={classTab}
+					counts={classCounts}
+					capped={tabFiltered ? tabCounts.capped : null}
+					onChange={setClassTab}
+				/>
+			{/if}
+		</div>
+		{#if timelineOffered()}
+			<ToggleGroup.Root
+				type="single"
+				variant="outline"
+				size="sm"
+				class="shrink-0"
+				value={view}
+				onValueChange={(v) => v && setView(v)}
+				aria-label="View"
+			>
+				{@render viewItem('table', Rows3, 'Table view')}
+				{@render viewItem(TIMELINE, ChartGantt, 'Timeline view')}
+			</ToggleGroup.Root>
 		{/if}
 	</div>
 
-	<FilterBar
-		{query}
-		{facets}
-		onQuery={setQuery}
-		dimensions={serviceQuerySchema.schema.group_dimensions}
-		columns={SERVICE_COLUMNS}
-		{visible}
-		folded={foldedColumns}
-		onToggleColumn={toggleCol}
-		{density}
-		onDensity={(d) => (density = d)}
-		sorts={timeline ? timelineSorts : SERVICE_SORTS}
-		sortKey={sort.key}
-		sortDir={sort.dir}
-		onSort={toggleSort}
-		timeline={timelineOffered()}
-		{view}
-		onView={setView}
-		{timelineWindow}
-		onTimelineWindow={(n) => {
-			timelineWindow = n;
-			pageIndex = 0;
-		}}
-		{mode}
-		onMode={setMode}
-		{refreshing}
-		{projectId}
-		{scanId}
-		{exportFilters}
-		onRefresh={refresh}
-		onShortcuts={() => (shortcutsOpen = true)}
-		{groupBy}
-		onGroupBy={(key) => (groupBy = key)}
-	/>
+	<FilterToolbar
+		facets={toolbarFacets}
+		signals={toolbarSignals}
+		extras={toolbarExtras}
+		suggestions={leadSuggestions.list}
+		onSuggest={leadSuggestions.apply}
+		onClear={clearFilters}
+	>
+		{#snippet tools()}
+			<ViewControls
+				dimension={SurfaceDimension.SERVICES}
+				dimensions={serviceQuerySchema.schema.group_dimensions}
+				{groupBy}
+				onGroupBy={(key) => (groupBy = key)}
+				sorts={timeline ? timelineSorts : SERVICE_SORTS}
+				sortKey={sort.key}
+				sortDir={sort.dir}
+				onSort={toggleSort}
+				columns={SERVICE_COLUMNS}
+				{visible}
+				folded={foldedColumns}
+				onToggleColumn={toggleCol}
+				{density}
+				onDensity={(d) => (density = d)}
+				{refreshing}
+				onRefresh={refresh}
+				{projectId}
+				{scanId}
+				{exportFilters}
+				showGroupBy={!timeline}
+				showColumns={!timeline}
+				onShortcuts={() => (shortcutsOpen = true)}
+			/>
+		{/snippet}
+	</FilterToolbar>
 
-	<FilterChips
-		{chips}
-		onRemove={(chip) => setQuery(chip.remove(query))}
-		onClear={() => setQuery({ ...emptyServiceQuery(), search: query.search })}
-	/>
+	{#if timeline}
+		<div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-3 py-2">
+			<ToggleGroup.Root
+				type="single"
+				variant="outline"
+				size="sm"
+				value={mode}
+				onValueChange={(v) => v && setMode(v as ServiceTimelineMode)}
+				aria-label="Rows"
+			>
+				{#each Object.values(ServiceTimelineMode) as m (m)}
+					<ToggleGroup.Item value={m} class="h-7 px-2.5 text-xs font-normal">
+						{SERVICE_MODE_LABELS[m]}
+					</ToggleGroup.Item>
+				{/each}
+			</ToggleGroup.Root>
+			<div class="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+				<span>Last</span>
+				<ToggleGroup.Root
+					type="single"
+					variant="outline"
+					size="sm"
+					value={String(timelineWindow)}
+					onValueChange={(v) => {
+						if (!v) return;
+						timelineWindow = Number(v);
+						pageIndex = 0;
+					}}
+					aria-label="Scans shown"
+				>
+					{#each TIMELINE_WINDOWS as n (n)}
+						<ToggleGroup.Item
+							value={String(n)}
+							aria-label="Last {n} scans"
+							class="h-7 px-2.5 text-xs font-normal tabular-nums"
+						>
+							{n}
+						</ToggleGroup.Item>
+					{/each}
+				</ToggleGroup.Root>
+				<span>scans</span>
+			</div>
+		</div>
+	{/if}
 
 	{#if !groupBy && !timeline}
 		<SelectionBar

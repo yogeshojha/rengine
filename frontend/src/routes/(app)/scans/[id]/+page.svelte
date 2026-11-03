@@ -565,6 +565,14 @@
 	});
 
 	let lastScanId = page.params.id ?? '';
+	// the search each key carried when the URL was last read
+	const lastUrlSearch: Record<string, string> = {
+		q: initialSearch('q'),
+		ip_q: initialSearch('ip_q'),
+		svc_q: initialSearch('svc_q'),
+		ep_q: initialSearch('ep_q'),
+		vuln_q: initialSearch('vuln_q')
+	};
 	$effect(() => {
 		void page.url;
 		const id = scanId;
@@ -579,17 +587,27 @@
 			}
 			const tab = resolveTab(url.searchParams.get('tab'));
 			if (tab !== activeTab) activeTab = tab;
-			const read = (key: string) => url.searchParams.get(key) ?? '';
-			if (changed || read('q') !== webQuery.search)
-				webQuery = { ...emptyQuery(), search: read('q') };
-			if (changed || read('ip_q') !== ipQuery.search)
-				ipQuery = { ...emptyIpQuery(), search: read('ip_q') };
-			if (changed || read('svc_q') !== serviceQuery.search)
-				serviceQuery = { ...emptyServiceQuery(), search: read('svc_q') };
-			if (changed || read('ep_q') !== endpointQuery.search)
-				endpointQuery = { ...emptyEndpointQuery(), search: read('ep_q') };
-			if (changed || read('vuln_q') !== vulnQuery.search)
-				vulnQuery = { ...emptyVulnQuery(), search: read('vuln_q') };
+			const moved = (key: string): string | null => {
+				const next = url.searchParams.get(key) ?? '';
+				const was = lastUrlSearch[key];
+				lastUrlSearch[key] = next;
+				return changed || next !== was ? next : null;
+			};
+			const q = moved('q');
+			if (q !== null && (changed || q !== webQuery.search))
+				webQuery = { ...emptyQuery(), search: q };
+			const ipQ = moved('ip_q');
+			if (ipQ !== null && (changed || ipQ !== ipQuery.search))
+				ipQuery = { ...emptyIpQuery(), search: ipQ };
+			const svcQ = moved('svc_q');
+			if (svcQ !== null && (changed || svcQ !== serviceQuery.search))
+				serviceQuery = { ...emptyServiceQuery(), search: svcQ };
+			const epQ = moved('ep_q');
+			if (epQ !== null && (changed || epQ !== endpointQuery.search))
+				endpointQuery = { ...emptyEndpointQuery(), search: epQ };
+			const vulnQ = moved('vuln_q');
+			if (vulnQ !== null && (changed || vulnQ !== vulnQuery.search))
+				vulnQuery = { ...emptyVulnQuery(), search: vulnQ };
 		});
 	});
 
