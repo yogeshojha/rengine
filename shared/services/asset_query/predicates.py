@@ -926,6 +926,7 @@ def resolved_by(scope: QueryScope, ip, condition):
     ips = array_elements(Subdomain.resolved_ips, "resolved")
     return ip.in_(
         select(ips.c.value)
+        .distinct()
         .select_from(Subdomain)
         .join(ips, true())
         .where(scope.match(Subdomain.scan_id), condition)

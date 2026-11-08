@@ -279,3 +279,26 @@ async def test_an_address_names_as_many_web_assets_as_its_link_opens(estate, now
     )
     assert address.host_count == opened.total == 2
     assert "10.0.0.2" not in address.hosts
+
+
+async def test_a_host_count_equals_the_addresses_and_services_it_opens(estate, now):
+    scan = await _rich_scan(estate, now)
+    queries = [
+        "host:example",
+        "host:admin",
+        "host:example and port:22",
+        "host:example and is:sensitive",
+        "not host:admin",
+        "host:www or host:admin and is:new",
+    ]
+    for service, make in (
+        (PortService(estate.session), ServiceFilter),
+        (IpAddressService(estate.session), IpGroupFilter),
+    ):
+        counted = await service.counts(scan, queries, make())
+        assert counted.computed
+        for query in queries:
+            found = await service.search(scan, make(q=query, limit=1))
+            assert found.error is None, query
+            assert counted.counts[query] == found.total, query
+        assert counted.counts["host:admin"] > 0
