@@ -75,7 +75,6 @@ export interface ReportStyle {
 	cover_image: string;
 	watermark_text: string;
 	watermark_opacity: number;
-	link_urls: boolean;
 	justify: boolean;
 	hyphenate: boolean;
 }

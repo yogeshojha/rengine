@@ -374,7 +374,6 @@ class ReportStyle(BaseModel):
     cover_image: str = Field(default="", max_length=MAX_LOGO_BYTES)
     watermark_text: str = Field(default="", max_length=40)
     watermark_opacity: float = Field(default=0.05, ge=0.01, le=0.4)
-    link_urls: bool = True
     justify: bool = True
     hyphenate: bool = True
 
