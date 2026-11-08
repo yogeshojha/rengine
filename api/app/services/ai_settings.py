@@ -383,7 +383,6 @@ class AiSettingsService:
                 else None
             ),
         )
-        rates.store(row, await _model_rates(provider, model, base_url))
         self.session.add(row)
         await self._commit(row.name, flush=True)
         return row
@@ -395,7 +394,7 @@ class AiSettingsService:
             settings.ai_connection_id = row.id
             settings.updated_at = utc_now()
         await self._commit(row.name)
-        await self._server_price(row)
+        await self._price(row)
         return _read(row, in_use=settings.ai_connection_id == row.id, full=True)
 
     async def _change(self, row: AiConnection, data: AiConnectionUpdate) -> bool:
@@ -445,7 +444,7 @@ class AiSettingsService:
             row.last_test_message = None
         repriced = moved or model != row.model
         if repriced:
-            rates.store(row, await _model_rates(provider, model, base_url))
+            rates.store(row, None)
         row.provider = provider
         row.base_url = base_url or None
         row.model = model
@@ -461,7 +460,7 @@ class AiSettingsService:
         repriced = await self._change(row, data)
         await self._commit(row.name)
         if repriced:
-            await self._server_price(row)
+            await self._price(row)
         return _read(row, in_use=settings.ai_connection_id == row.id, full=True)
 
     async def delete_connection(self, connection_id: uuid.UUID) -> None:
@@ -478,6 +477,14 @@ class AiSettingsService:
         """Store today's price for the row's model."""
         await self.session.commit()
         rates.apply(row, await run_in_threadpool(rates.lookup, row))
+
+    async def _price(self, row: AiConnection) -> None:
+        """Store the model's price, then the price its server lists."""
+        rates.store(
+            row, await _model_rates(row.provider, row.model, row.base_url or "")
+        )
+        await self.session.commit()
+        await self._server_price(row)
 
     async def _server_price(self, row: AiConnection) -> None:
         """Store the price the row's server lists for its model."""
@@ -655,7 +662,7 @@ class AiSettingsService:
         settings.ai_enabled = True
         await self._commit(row.name)
         if repriced:
-            await self._server_price(row)
+            await self._price(row)
         return self._onboarding_read(settings, row)
 
     # ---------- tests ----------

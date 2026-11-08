@@ -312,10 +312,12 @@ class IssueTrackerService:
             stored = await self._row(data.tracker_id)
             same = stored.kind == spec.kind.value and stored.url == url
             config = _merge(stored.kind, open_config(stored) if same else {}, config)
+            await self.session.commit()
         return await _verify(spec.kind.value, url, _clean_config(spec, config))
 
     async def test(self, id: uuid.UUID) -> IssueTrackerTestResult:
         row = await self._row(id)
+        await self.session.commit()
         result = await _verify(row.kind, row.url, open_config(row))
         row.last_test_at = utc_now()
         row.last_test_ok = result.success
@@ -326,6 +328,7 @@ class IssueTrackerService:
     async def _remote(
         self, row: IssueTracker, fn_name: str, *args
     ) -> list[TrackerOption]:
+        await self.session.commit()
         client = tracker_client(row)
         try:
             options = await _run(client, getattr(client, fn_name), *args)
@@ -950,6 +953,7 @@ class IssueFilingService:
         tracker = await self.session.get(IssueTracker, row.tracker_id)
         if tracker is None or not tracker.is_active:
             return (await self._reads([row.id]))[0]
+        await self.session.commit()
         client = tracker_client(tracker)
         try:
             found = await _run(
