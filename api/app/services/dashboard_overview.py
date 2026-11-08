@@ -15,6 +15,7 @@ from sqlalchemy import (
     not_,
     or_,
     select,
+    text,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -101,6 +102,7 @@ from shared.models.vulnerability import (
 )
 from shared.models.whois import WhoisRecord
 from shared.services import scan_deltas
+from shared.services.asset_query import NO_JIT, lead_cache
 from shared.services.asset_query.predicates import (
     answered,
     cert_state,
@@ -182,14 +184,65 @@ class DashboardOverviewService:
     ) -> DashboardOverview:
         window = window_key(window)
         now = utc_now()
-        cutoff = window_since(window, now)
         series_cutoff = datetime.combine(
             (now - timedelta(days=SERIES_DAYS)).date(), time.min, tzinfo=UTC
         )
 
         scoped = targets
         targets, expires = await self._targets(project_id, scoped)
-        runs_by_target, runs_total = await self._runs(project_id, series_cutoff, scoped)
+        run_ids, runs_total = await self._run_ids(project_id, series_cutoff, scoped)
+        monitored = await self._monitored(project_id)
+        facets = lead_cache.fingerprint(
+            project_id,
+            window,
+            now.date().isoformat(),
+            sorted(map(str, scoped)) if scoped is not None else None,
+            runs_total,
+            sorted(
+                (str(t.id), t.target_value, t.target_type.value, str(expires.get(t.id)))
+                for t in targets
+            ),
+            sorted(map(str, monitored)),
+        )
+
+        async def build() -> DashboardOverview:
+            await self.session.execute(text(NO_JIT))
+            return await self._overview(
+                project_id,
+                window,
+                scoped,
+                (targets, expires),
+                (run_ids, runs_total),
+                monitored,
+            )
+
+        return await lead_cache.cached(
+            self.session,
+            name="dashboard_overview",
+            scans=tuple(run_ids),
+            facets=facets,
+            model=DashboardOverview,
+            build=build,
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+        )
+
+    async def _overview(
+        self,
+        project_id: UUID,
+        window: str,
+        scoped: Targets,
+        estate: tuple[list[Target], dict[UUID, datetime | None]],
+        runs: tuple[list[UUID], int],
+        monitored: set[UUID],
+    ) -> DashboardOverview:
+        now = utc_now()
+        cutoff = window_since(window, now)
+        series_cutoff = datetime.combine(
+            (now - timedelta(days=SERIES_DAYS)).date(), time.min, tzinfo=UTC
+        )
+        targets, expires = estate
+        run_ids, runs_total = runs
+        runs_by_target = await self._runs(run_ids)
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
@@ -242,7 +295,6 @@ class DashboardOverviewService:
         out.exposure = await self._exposure(service_ids, scans, names)
         await self._certs(out.certs, list(latest_cover[WEB].values()), now)
 
-        monitored = await self._monitored(project_id)
         out.targets_monitored = sum(1 for t in targets if t.id in monitored)
 
         self._items(out, targets, runs_by_target, expires, now)
@@ -331,7 +383,12 @@ class DashboardOverviewService:
         self, project_id: UUID, scoped: Targets = None
     ) -> tuple[list[Target], dict[UUID, datetime | None]]:
         query = (
-            select(Target, WhoisRecord.expiration_date)
+            select(
+                Target.id,
+                Target.target_value,
+                Target.target_type,
+                WhoisRecord.expiration_date,
+            )
             .join(WhoisRecord, WhoisRecord.id == Target.whois_record_id, isouter=True)
             .where(Target.project_id == project_id)
             .order_by(Target.target_value.asc())
@@ -341,14 +398,14 @@ class DashboardOverviewService:
         result = await self.session.execute(query)
         targets = []
         expires: dict[UUID, datetime | None] = {}
-        for target, expires_at in result.all():
+        for target in result.all():
             targets.append(target)
-            expires[target.id] = expires_at
+            expires[target.id] = target.expiration_date
         return targets, expires
 
-    async def _runs(
+    async def _run_ids(
         self, project_id: UUID, series_cutoff: datetime, scoped: Targets = None
-    ) -> tuple[dict[UUID, list[Scan]], int]:
+    ) -> tuple[list[UUID], int]:
         """The latest runs per target plus everything inside the series window."""
         in_scope = [Scan.project_id == project_id, census_only()]
         if scoped is not None:
@@ -367,19 +424,29 @@ class DashboardOverviewService:
             .where(*in_scope)
             .subquery()
         )
-        result = await self.session.execute(
-            select(Scan)
-            .join(ranked, ranked.c.id == Scan.id)
-            .where((ranked.c.rn <= RUNS_PER_TARGET) | (ranked.c.at >= series_cutoff))
-            .order_by(ordering.desc(), Scan.created_at.desc())
+        ids = await self.session.scalars(
+            select(ranked.c.id).where(
+                (ranked.c.rn <= RUNS_PER_TARGET) | (ranked.c.at >= series_cutoff)
+            )
         )
-        by_target: dict[UUID, list[Scan]] = defaultdict(list)
-        for scan in result.scalars().all():
-            by_target[scan.target_id].append(scan)
         total = await self.session.scalar(
             select(func.count()).select_from(Scan).where(*in_scope)
         )
-        return by_target, int(total or 0)
+        return list(ids.all()), int(total or 0)
+
+    async def _runs(self, run_ids: list[UUID]) -> dict[UUID, list[Scan]]:
+        by_target: dict[UUID, list[Scan]] = defaultdict(list)
+        if not run_ids:
+            return by_target
+        ordering = func.coalesce(Scan.started_at, Scan.created_at)
+        result = await self.session.execute(
+            select(Scan)
+            .where(Scan.id.in_(run_ids))
+            .order_by(ordering.desc(), Scan.created_at.desc())
+        )
+        for scan in result.scalars().all():
+            by_target[scan.target_id].append(scan)
+        return by_target
 
     async def _counts(self, scans: dict[UUID, Scan]) -> Counts:
         """Rows per scan and when its first row landed, per dimension."""
