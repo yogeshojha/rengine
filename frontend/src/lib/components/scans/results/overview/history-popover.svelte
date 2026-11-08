@@ -121,7 +121,7 @@
 			>
 				<span>Scan</span>
 				<span class="text-right">{nounTitle}</span>
-				<span class="hidden text-right sm:block">HTTP services</span>
+				<span class="hidden text-right sm:block">Web assets</span>
 				<span class="hidden text-right sm:block">IP addresses</span>
 				<span class="hidden text-right sm:block">Open ports</span>
 			</div>

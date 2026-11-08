@@ -232,7 +232,7 @@
 					}
 				: {
 						key: 'http',
-						label: 'HTTP services',
+						label: 'Web assets',
 						value: scan.http_assets_found,
 						tab: SVC.tab,
 						filter: 'is:http',
