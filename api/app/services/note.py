@@ -419,7 +419,11 @@ class NoteService:
             )
         if data.scan_id is not None:
             scan = await self.session.get(Scan, data.scan_id)
-            if scan is None or scan.project_id != project_id:
+            if (
+                scan is None
+                or scan.project_id != project_id
+                or scan.target_id != data.target_id
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail=_SCAN_NOT_FOUND
                 )
