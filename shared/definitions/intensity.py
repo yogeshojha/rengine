@@ -106,7 +106,7 @@ def tool_rate(
     base = PROFILES.get(intensity, _NORMAL).get(tool, (None, 1))[0]
     value = rate_override if rate_override is not None else base
     if value is None:
-        return None
+        return ceiling
     if ceiling is not None:
         value = min(value, ceiling)
     return _clamp(int(value), 1, MAX_RATE)
