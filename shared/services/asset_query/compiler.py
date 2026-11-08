@@ -209,8 +209,8 @@ _FLAG_BUILDERS = {
     "screenshot": lambda _ctx: Subdomain.screenshot_path.isnot(None),
     "important": lambda _ctx: Subdomain.is_important.is_(True),
     "wildcard": lambda _ctx: Subdomain.is_wildcard.is_(True),
-    "issue": lambda ctx: preds.issues(ctx.now, ctx.scope),
-    "sensitive": lambda ctx: preds.sensitive(ctx.scope),
+    "issue": lambda ctx: preds.issues(ctx.now, ctx.scope, ctx.held),
+    "sensitive": lambda ctx: preds.sensitive(ctx.scope, ctx.held),
     "http2": lambda ctx: preds.asset_match(
         ctx.scope, HttpAsset.supports_http2.is_(True)
     ),
@@ -407,10 +407,10 @@ _SUBDOMAIN_BUILDERS = {
     "cdn": lambda c, _ctx: cdn_match(Subdomain.cdn_name, Subdomain.is_cdn, c),
     "waf": lambda c, _ctx: _waf(c),
     "port": lambda c, ctx: preds.port_match(
-        number_match(Port.number, c, int_coerce(c)), ctx.scope
+        number_match(Port.number, c, int_coerce(c)), ctx.scope, ctx.held
     ),
     "service": lambda c, ctx: preds.port_match(
-        string_match(Port.service_name, c), ctx.scope
+        string_match(Port.service_name, c), ctx.scope, ctx.held
     ),
     "cert": _cert,
     "cert.expires": lambda c, ctx: date_match(

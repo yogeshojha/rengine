@@ -153,16 +153,32 @@ def cert_state(name: str, now: datetime):
     return false()
 
 
-def port_match(condition, scope: ScopeLike):
-    scope = scope_of(scope)
-    if not scope.ids:
-        return false()
+def _host_addresses(scope: QueryScope, held: dict | None):
+    """Each host of the scope beside each address it resolves to."""
+    if held is not None and "host_addresses" in held:
+        return held["host_addresses"]
     host = aliased(Subdomain)
     element = (
         func.json_array_elements_text(host.resolved_ips)
         .table_valued("value")
         .lateral("resolved_ip")
     )
+    pairs = (
+        select(host.id, host.scan_id, element.c.value.label("ip"))
+        .join(element, true())
+        .where(scope.match(host.scan_id))
+    )
+    if held is None:
+        return pairs.subquery("host_addresses")
+    held["host_addresses"] = pairs.cte("host_addresses").prefix_with("MATERIALIZED")
+    return held["host_addresses"]
+
+
+def port_match(condition, scope: ScopeLike, held: dict | None = None):
+    scope = scope_of(scope)
+    if not scope.ids:
+        return false()
+    pairs = _host_addresses(scope, held)
     # OFFSET 0 fences the ports set from the host join
     served = (
         select(Port.scan_id, Port.ip)
@@ -171,13 +187,11 @@ def port_match(condition, scope: ScopeLike):
         .subquery("served")
     )
     hosts = (
-        select(host.id)
-        .join(element, true())
+        select(pairs.c.id)
         .join(
             served,
-            and_(served.c.scan_id == host.scan_id, served.c.ip == element.c.value),
+            and_(served.c.scan_id == pairs.c.scan_id, served.c.ip == pairs.c.ip),
         )
-        .where(scope.match(host.scan_id))
         .subquery("served_hosts")
     )
     return exists(select(1).where(hosts.c.id == Subdomain.id))
@@ -339,11 +353,11 @@ def renders_like(column, value: int):
     return render_distance(column, value) <= SCREENSHOT_DISTANCE
 
 
-def sensitive(scope: ScopeLike):
-    return port_match(Port.number.in_(SENSITIVE_PORTS), scope)
+def sensitive(scope: ScopeLike, held: dict | None = None):
+    return port_match(Port.number.in_(SENSITIVE_PORTS), scope, held)
 
 
-def issues(now: datetime, scope: ScopeLike):
+def issues(now: datetime, scope: ScopeLike, held: dict | None = None):
     return or_(
         cert_state("expired", now),
         cert_state("expiring", now),
@@ -354,7 +368,7 @@ def issues(now: datetime, scope: ScopeLike):
             Subdomain.waf.is_(None),
             Subdomain.is_cdn.is_(False),
         ),
-        sensitive(scope),
+        sensitive(scope, held),
     )
 
 
