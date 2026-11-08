@@ -293,15 +293,10 @@
 	);
 	let filtered = $derived(endpointActiveFacetCount({ ...query, host: '' }) > 0 || !!query.search);
 	let chips = $derived(endpointQueryChips(query).filter((c) => !(inHost && c.id === 'host')));
-	const LENSES: { value: EndpointView; label: string; hint: string; icon: IconComponent }[] = [
-		{ value: 'hosts', label: 'Web assets', hint: 'Every web asset, ranked', icon: Network },
-		{
-			value: 'merged',
-			label: 'Across web assets',
-			hint: 'Paths merged across web assets',
-			icon: Layers
-		},
-		{ value: 'list', label: 'List', hint: 'One flat list', icon: Rows3 }
+	const LENSES: { value: EndpointView; label: string; icon: IconComponent }[] = [
+		{ value: 'hosts', label: 'Web assets', icon: Network },
+		{ value: 'merged', label: 'Across web assets', icon: Layers },
+		{ value: 'list', label: 'List', icon: Rows3 }
 	];
 	let hasProxy = $derived(facets.source.some((f) => f.value === EndpointSource.PROXY));
 	const oneFacet = (
@@ -1410,7 +1405,7 @@
 			aria-label="View"
 		>
 			{#each LENSES as lens (lens.value)}
-				<Hint text={lens.hint}>
+				<Hint text={lens.label}>
 					{#snippet child(props)}
 						<ToggleGroup.Item
 							{...props}
