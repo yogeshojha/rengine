@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pydantic import Field
+from sqlalchemy import distinct, func, select
 
 from mcp import links
 from mcp.context import ToolContext
@@ -11,6 +12,8 @@ from mcp.errors import ToolError
 from mcp.result import ToolResult
 from mcp.tools._scope import parse_id, project_for, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
+from shared.models.scan import Scan
+from shared.utils.text import counted
 from toolbox.base import cell, hero, table
 
 
@@ -83,7 +86,12 @@ class QueryAssets(Tool):
             if not query_scope:
                 msg = f"No settled scan in this project has produced {dim.noun_plural}."
                 raise ToolError(msg)
-            where = f"{len(query_scope.ids)} targets"
+            targets = await ctx.session.scalar(
+                select(func.count(distinct(Scan.target_id))).where(
+                    Scan.id.in_(query_scope.ids)
+                )
+            )
+            where = counted(targets or 0, "target")
             pivot = links.surface(ctx.ui_base_url, dim.tab, args.query)
 
         f = dim.build_filter(args.query, limit=args.limit, offset=args.offset)
