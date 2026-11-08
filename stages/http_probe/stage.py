@@ -128,7 +128,7 @@ class HttpProbeStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         net = self.net_options()
-        targets = self._build_targets()
+        targets, over_cap = self._build_targets()
         if not targets:
             return StageResult(counts={"http_assets": 0})
 
@@ -173,6 +173,11 @@ class HttpProbeStage(Stage):
             f"probed {len(targets)} host and port pairs, {count} answered HTTP"
         )
         warnings = []
+        if over_cap:
+            warnings.append(
+                f"{over_cap:,} host and port pairs over the {_MAX_TARGETS:,} cap "
+                "not probed."
+            )
         if stalled[0]:
             warnings.append(
                 f"httpx stalled and was stopped. {len(targets):,} host and port "
@@ -371,10 +376,10 @@ class HttpProbeStage(Stage):
         ordered = sorted(ports, key=lambda p: (p not in DEFAULT_WEB_PORTS, p))
         return ordered[:MAX_PORTS_PER_HOST]
 
-    def _build_targets(self) -> list[str]:
+    def _build_targets(self) -> tuple[list[str], int]:
         target_type = self.ctx.target_type
         if target_type == TargetType.URL.value:
-            return [self.ctx.target_value.strip()]
+            return [self.ctx.target_value.strip()], 0
 
         port_map = self._port_map()
         targets: list[str] = []
@@ -411,7 +416,7 @@ class HttpProbeStage(Stage):
                 )
         unique = list(dict.fromkeys(targets))
         random.Random(_SHUFFLE_SEED).shuffle(unique)  # noqa: S311
-        return unique[:_MAX_TARGETS]
+        return unique[:_MAX_TARGETS], max(0, len(unique) - _MAX_TARGETS)
 
     def _record_services(self) -> int:
         """Fold every live HTTP response back onto its port."""
