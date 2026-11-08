@@ -89,7 +89,9 @@ def _certificates(project_id: uuid.UUID, domain: str):
             HttpAsset.project_id == project_id,
             HttpAsset.tls_subject_dn.is_not(None),
             (HttpAsset.host == domain)
-            | HttpAsset.host.endswith(f".{domain}", autoescape=True),
+            | func.reverse(HttpAsset.host).startswith(
+                f".{domain}"[::-1], autoescape=True
+            ),
         )
         .limit(MAX_CERTIFICATE_ROWS)
     )
