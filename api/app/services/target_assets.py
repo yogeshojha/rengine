@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy import ColumnElement, Select, and_, func, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.definitions.target_assets import AssetSort, AssetState
 from shared.enums.scan import SCAN_OPEN_STATUSES
 from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
@@ -190,11 +191,11 @@ class TargetAssetService:
                     func.lower(func.coalesce(rolled.c.ip, "")).like(needle),
                 )
             )
-        if f.state == "current":
+        if f.state == AssetState.CURRENT:
             where.append(rolled.c.current.is_(True))
-        elif f.state == "gone":
+        elif f.state == AssetState.GONE:
             where.append(rolled.c.current.is_(False))
-        elif f.state == "new":
+        elif f.state == AssetState.NEW:
             where.append(rolled.c.is_new.is_(True))
         if f.live:
             where.append(rolled.c.status_code.isnot(None))
@@ -203,11 +204,11 @@ class TargetAssetService:
     @staticmethod
     def _ordered(query: Select, rolled, f: TargetAssetFilter) -> Select:
         columns = {
-            "name": rolled.c.name,
-            "first_seen": rolled.c.first_seen,
-            "last_seen": rolled.c.last_seen,
-            "scans": rolled.c.scan_count,
-            "status": rolled.c.status_code,
+            AssetSort.NAME: rolled.c.name,
+            AssetSort.FIRST_SEEN: rolled.c.first_seen,
+            AssetSort.LAST_SEEN: rolled.c.last_seen,
+            AssetSort.SCANS: rolled.c.scan_count,
+            AssetSort.STATUS: rolled.c.status_code,
         }
         column = columns.get(f.sort, rolled.c.name)
         direction = column.asc() if f.order == "asc" else column.desc()
