@@ -118,6 +118,7 @@
 	aria-label="Open {endpoint}"
 	onclick={() => onOpen(s)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onOpen(s);

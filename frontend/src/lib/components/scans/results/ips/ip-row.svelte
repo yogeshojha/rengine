@@ -124,6 +124,7 @@
 	aria-label="Open {g.ip}"
 	onclick={() => onOpen(g)}
 	onkeydown={(e) => {
+		if (e.target !== e.currentTarget) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
 			onOpen(g);
