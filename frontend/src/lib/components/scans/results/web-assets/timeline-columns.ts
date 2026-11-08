@@ -62,3 +62,12 @@ export function stripWidth(cells: number, px: number = CELL_PX): number {
 export function cellLeft(index: number, px: number = CELL_PX): number {
 	return index * (px + CELL_GAP_PX);
 }
+
+export function stepCell(key: string, current: number, count: number): number | null {
+	if (count === 0) return null;
+	if (key === 'ArrowLeft') return Math.max(0, current - 1);
+	if (key === 'ArrowRight') return Math.min(count - 1, current + 1);
+	if (key === 'Home') return 0;
+	if (key === 'End') return count - 1;
+	return null;
+}

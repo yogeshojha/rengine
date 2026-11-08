@@ -12,7 +12,7 @@
 	import { formatDateTime, formatMonthDay } from '$lib/utilities/dates';
 	import { screenshotUrl } from '$lib/utilities/media';
 	import { plural } from '$lib/utilities/strings';
-	import { CELL_PX, stripWidth } from './timeline-columns';
+	import { CELL_PX, stepCell, stripWidth } from './timeline-columns';
 
 	interface Props {
 		cells: RenderCell[];
@@ -61,6 +61,10 @@
 		return parts.join(' · ');
 	}
 
+	function announce(i: number): string {
+		return [when(i), verdict(i)].filter(Boolean).join(' · ');
+	}
+
 	// the capture this cell was compared with
 	function before(i: number): number {
 		for (let j = i - 1; j >= 0; j -= 1) if (CAPTURED_STATES.has(cells[j].state)) return j;
@@ -92,6 +96,42 @@
 		if (!el || !onPick) return;
 		e.stopPropagation();
 		onPick(Number(el.dataset.cell));
+	}
+
+	let cellEls = $state<HTMLElement[]>([]);
+	let focused = $state(false);
+
+	function focusCell(i: number) {
+		hovered = i;
+		anchor = cellEls[i] ?? null;
+		onHover?.(i);
+		open = true;
+	}
+	function enter() {
+		focused = true;
+		focusCell(hovered >= 0 ? hovered : last);
+	}
+	function exit() {
+		focused = false;
+		leave();
+	}
+	function key(e: KeyboardEvent) {
+		if ((e.key === 'Enter' || e.key === ' ') && onPick && hovered >= 0) {
+			e.preventDefault();
+			e.stopPropagation();
+			onPick(hovered);
+			return;
+		}
+		if (e.key === 'Escape' && open) {
+			e.stopPropagation();
+			open = false;
+			return;
+		}
+		const next = stepCell(e.key, hovered >= 0 ? hovered : last, cells.length);
+		if (next === null) return;
+		e.preventDefault();
+		e.stopPropagation();
+		focusCell(next);
 	}
 
 	function ring(i: number, state: RenderState): string {
@@ -139,19 +179,27 @@
 <Tooltip.Root bind:open disableHoverableContent>
 	<Tooltip.Trigger>
 		{#snippet child({ props })}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
 				{...props}
-				role="img"
+				role="slider"
+				tabindex={0}
 				aria-label={summary}
-				class="flex h-5 items-center gap-0.5"
+				aria-valuemin={0}
+				aria-valuemax={last}
+				aria-valuenow={hovered >= 0 ? hovered : last}
+				aria-valuetext={announce(hovered >= 0 ? hovered : last)}
+				class="flex h-5 items-center gap-0.5 rounded-[2px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				style="width: {stripWidth(cells.length)}px"
 				onmousemove={track}
-				onmouseleave={leave}
+				onmouseleave={() => !focused && leave()}
 				onclick={pick}
+				onfocus={enter}
+				onblur={exit}
+				onkeydown={key}
 			>
 				{#each cells as cell, i (i)}
 					<span
+						bind:this={cellEls[i]}
 						data-cell={i}
 						class="relative h-4 shrink-0 rounded-[2px] transition-[outline-color] {RENDER_CELL[
 							cell.state

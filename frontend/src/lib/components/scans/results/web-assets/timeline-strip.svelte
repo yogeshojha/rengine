@@ -11,7 +11,7 @@
 	import type { TimelineCell, TimelineScan } from '$lib/types/timeline';
 	import { formatDateTime } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
-	import { CELL_PX, stripWidth } from './timeline-columns';
+	import { CELL_PX, stepCell, stripWidth } from './timeline-columns';
 
 	interface Props {
 		cells: TimelineCell[];
@@ -82,6 +82,42 @@
 		onPick(Number(el.dataset.cell));
 	}
 
+	let cellEls = $state<HTMLElement[]>([]);
+	let focused = $state(false);
+
+	function focusCell(i: number) {
+		hovered = i;
+		anchor = cellEls[i] ?? null;
+		onHover?.(i);
+		open = true;
+	}
+	function enter() {
+		focused = true;
+		focusCell(hovered >= 0 ? hovered : last);
+	}
+	function exit() {
+		focused = false;
+		leave();
+	}
+	function key(e: KeyboardEvent) {
+		if ((e.key === 'Enter' || e.key === ' ') && onPick && hovered >= 0) {
+			e.preventDefault();
+			e.stopPropagation();
+			onPick(hovered);
+			return;
+		}
+		if (e.key === 'Escape' && open) {
+			e.stopPropagation();
+			open = false;
+			return;
+		}
+		const next = stepCell(e.key, hovered >= 0 ? hovered : last, cells.length);
+		if (next === null) return;
+		e.preventDefault();
+		e.stopPropagation();
+		focusCell(next);
+	}
+
 	function ring(i: number, state: WebAssetState): string {
 		if (hovered === i) return 'outline outline-offset-1 outline-foreground';
 		if (highlight === i && state !== WebAssetState.UNSEEN)
@@ -97,19 +133,27 @@
 <Tooltip.Root bind:open disableHoverableContent>
 	<Tooltip.Trigger>
 		{#snippet child({ props })}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
 				{...props}
-				role="img"
+				role="slider"
+				tabindex={0}
 				aria-label={summary}
-				class="flex h-5 items-center gap-0.5"
+				aria-valuemin={0}
+				aria-valuemax={last}
+				aria-valuenow={hovered >= 0 ? hovered : last}
+				aria-valuetext={tip(hovered >= 0 ? hovered : last)}
+				class="flex h-5 items-center gap-0.5 rounded-[2px] outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				style="width: {stripWidth(cells.length)}px"
 				onmousemove={track}
-				onmouseleave={leave}
+				onmouseleave={() => !focused && leave()}
 				onclick={pick}
+				onfocus={enter}
+				onblur={exit}
+				onkeydown={key}
 			>
 				{#each cells as cell, i (i)}
 					<span
+						bind:this={cellEls[i]}
 						data-cell={i}
 						class="relative h-4 shrink-0 rounded-[2px] transition-[outline-color] {STATE_CELL[
 							cell.state
