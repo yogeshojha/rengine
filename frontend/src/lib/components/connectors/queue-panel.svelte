@@ -440,7 +440,7 @@
 							{/if}
 							<button
 								type="button"
-								class="hover:text-primary min-w-0 truncate text-left font-mono text-xs leading-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+								class="hover:text-primary min-w-0 text-left font-mono text-xs leading-5 wrap-anywhere focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 								onclick={() => (openedId = row.id)}
 							>
 								{row.path}
@@ -452,7 +452,7 @@
 						{#if row.notices.length > 0 || row.title || (!host && hosts.length > 1)}
 							<div class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2">
 								{#if !host && hosts.length > 1}
-									<span class="text-muted-foreground min-w-0 truncate font-mono text-2xs"
+									<span class="text-muted-foreground min-w-0 font-mono text-2xs wrap-anywhere"
 										>{row.host}</span
 									>
 								{/if}
@@ -466,7 +466,8 @@
 									</Hint>
 								{/each}
 								{#if row.title}
-									<span class="text-muted-foreground/70 min-w-0 truncate text-2xs">{row.title}</span
+									<span class="text-muted-foreground/70 min-w-0 text-2xs wrap-anywhere"
+										>{row.title}</span
 									>
 								{/if}
 							</div>

@@ -126,7 +126,7 @@
 							{/snippet}
 						</Hint>
 					</div>
-					<p class="text-muted-foreground truncate font-mono text-xs">
+					<p class="text-muted-foreground font-mono text-xs wrap-anywhere">
 						{row.hostnames.join(', ')}
 					</p>
 					<p class="text-muted-foreground/70 text-2xs tabular-nums">
