@@ -41,7 +41,6 @@
 	);
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let coverage = $derived(spec ? surfaceStore.coverage(spec.key) : null);
-	// nothing scanned yet: one empty state instead of a toolbar of zeroes
 	let unscanned = $derived(coverage !== null && coverage.targets_covered === 0);
 
 	let visit = $state(0);

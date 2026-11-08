@@ -227,7 +227,7 @@
 		if (template) open = { ...open, auth: template.focus === 'auth', [template.focus]: true };
 	}
 
-	/** Open the sections that hold a value (or a problem); Authentication when none do. */
+	/** Open the sections that hold a value, else Authentication. */
 	function sectionsFor(d: Draft): Record<ContextFormSection, boolean> {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const set = new Set<string>(

@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { compile } from 'svelte/compiler';
 import { defineConfig, type Plugin } from 'vite';
 
-// vite-plugin-svelte 6.x serves raw .svelte source for `?type=style`. Fixed in 7.1.x, which needs Vite 8.
+// vite-plugin-svelte 6.x serves raw .svelte source for `?type=style`
 function svelteStyleCssLeakGuard(): Plugin {
 	return {
 		name: 'svelte-style-css-leak-guard',

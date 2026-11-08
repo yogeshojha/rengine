@@ -60,8 +60,7 @@
 	--success-foreground: oklch(0.985 0 0);
 	--warning: oklch(0.5 0.12 90);
 	--warning-foreground: oklch(0.985 0 0);
-	/* severity, mirrors shared/definitions/reports.py. Tailwind steps: red-700, orange-500,
-	   amber-400, sky-600, neutral-500; washes the 100 steps; inks 700 (amber 800, neutral 600) */
+	/* severity, mirrors shared/definitions/reports.py */
 	--sev-critical: #c10007;
 	--sev-critical-wash: #ffe2e2;
 	--sev-critical-ink: #c10007;
@@ -160,8 +159,7 @@
 	--success-foreground: oklch(0.205 0 0);
 	--warning: oklch(0.82 0.14 90);
 	--warning-foreground: oklch(0.205 0 0);
-	/* severity, dark paper. Tailwind steps: red-500, orange-400, amber-300, sky-400, neutral-500;
-	   inks the 400 steps; washes the ink at 12% over whatever surface holds the chip */
+	/* severity, dark paper */
 	--sev-critical: #fb2c36;
 	--sev-critical-wash: color-mix(in oklab, var(--sev-critical-ink) 12%, transparent);
 	--sev-critical-ink: #ff6467;
@@ -321,7 +319,7 @@
 		outline-color: var(--ring);
 	}
 
-	/* elements without their own focus style (links, clickable rows) still show a 3:1 ring */
+	/* default focus ring */
 	:focus-visible {
 		outline: 2px solid var(--ring);
 		outline-offset: 2px;
@@ -344,7 +342,7 @@
 		font-family: var(--font-sans);
 	}
 
-	/* layered so a heading's own font-* / tracking-* utilities win */
+	/* heading base */
 	h1,
 	h2,
 	h3,

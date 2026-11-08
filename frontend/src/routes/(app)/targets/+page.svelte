@@ -83,7 +83,6 @@
 			return Number.isFinite(parsed) ? parsed : undefined;
 		};
 		const list = (key: string) => (whole || params.has(key) ? params.getAll(key) : undefined);
-		// a stale or hand-edited link drops what isn't an id instead of failing the whole list
 		const ids = (key: string) => list(key)?.filter((v) => UUID_REGEX.test(v));
 		const size = n(params.get('size'));
 		return {
@@ -298,7 +297,6 @@
 	let rowIds = $derived(rows.map((t) => t.id).join(','));
 	let liveCount = $derived(rows.filter((t) => liveScans.isTargetLive(t.id)).length);
 	let loadFailed = $derived(!!targetsStore.loadError && rows.length === 0);
-	// a project with no targets at all: the empty state is the whole page
 	let emptyProject = $derived(
 		targetsStore.hasFetched &&
 			!loadFailed &&

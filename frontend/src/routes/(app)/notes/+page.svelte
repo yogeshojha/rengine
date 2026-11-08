@@ -272,7 +272,6 @@
 		setParam(NOTE_PARAM, note.id, true);
 	}
 
-	// facets with nothing to pick are hidden; past the first few, small screens fold them away
 	const INLINE_FACETS = 3;
 	let shownFacets = $derived(
 		NOTE_FACETS.filter(

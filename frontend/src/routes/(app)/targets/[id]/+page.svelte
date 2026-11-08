@@ -220,7 +220,6 @@
 	let showDns = $derived(!!target && dnsApplies(target.target_type));
 	let showBgp = $derived(!!target && bgpApplies(target.target_type));
 	let showStealer = $derived(!!target && infostealerApplies(target.target_type));
-	// a failed load is not "no data": keep the tabs and say what did not load
 	let detailFailed = $derived(!detail && !!detailError && !detailLoading);
 	let summaryFailed = $derived(!summary && !!summaryError && !summaryLoading);
 	let whoisStatus = $derived(detail?.whois_status ?? target?.whois_status ?? TaskStatus.PENDING);
@@ -387,7 +386,6 @@
 		if (activeTab === 'web-assets') webSeen = true;
 	});
 
-	// only once both loaded: a failed load must not rewrite the tab in the URL
 	$effect(() => {
 		if (target && detail && summary && !tabs.includes(activeTab)) setTab('overview');
 	});

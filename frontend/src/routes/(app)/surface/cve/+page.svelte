@@ -29,7 +29,6 @@
 		CVE_SORTS
 	} from '$lib/components/cve/columns';
 
-	// known exploited and ransomware narrow together; the evidence rungs widen each other
 	const FLAG_KEYS = ['kev', 'ransomware'];
 	const FLAGS = CVE_FILTERS.filter((f) => FLAG_KEYS.includes(f.key));
 	const EVIDENCE_OPTIONS = EVIDENCE_ORDER.map((rung) => ({
@@ -218,7 +217,6 @@
 	});
 	let flags = $derived(active.filter((k) => FLAG_KEYS.includes(k)));
 	let rungs = $derived(active.filter((k) => EVIDENCE_ORDER.includes(k)));
-	// no scan has reported software or run checks: nothing to list or filter yet
 	let unscanned = $derived(!!index && index.software_scans === 0 && index.finding_scans === 0);
 	let coverageLine = $derived(
 		index

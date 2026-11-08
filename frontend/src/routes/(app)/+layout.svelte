@@ -155,7 +155,6 @@
 
 	type Crumb = { label: string; href: string; pending?: boolean };
 
-	// an id crumb waits briefly for its page to name it; a page that fails to load never does
 	const CRUMB_WAIT_MS = 2500;
 	let crumbWaiting = $state(true);
 	$effect(() => {
@@ -190,7 +189,6 @@
 			return { label, href };
 		};
 
-		// sections come from the sidebar, so crumbs read the way the nav does
 		const nav = navTrail(sidebarNav.all, path);
 		const from = nav ? nav.depth - (nav.sibling ? 1 : 0) : 0;
 		const crumbs = [
@@ -203,8 +201,7 @@
 		return crumbs.filter((crumb, i) => i === 0 || crumb.label !== crumbs[i - 1].label);
 	});
 
-	// back links return to the page a page was opened from, named by its last crumb; Back and
-	// Forward keep the first answer
+	// back links
 	beforeNavigate(({ from, to, type }) => {
 		if (!from || !to || type === 'popstate' || from.url.pathname === to.url.pathname) return;
 		const here = breadcrumbs.at(-1);
