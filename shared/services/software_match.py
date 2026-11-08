@@ -43,6 +43,7 @@ from shared.services import locks
 from shared.services.asset_query.lead_cache import bump_sync
 from shared.utils.datetime import utc_now
 from shared.utils.software import (
+    MAX_VERSION,
     components_of,
     normalize_product,
     version_key,
@@ -416,6 +417,8 @@ def _gather(
             )
 
     for row in session.execute(text(_PORT_COMPONENTS), {"scan_id": str(scan_id)}):
+        if len(row.version or "") > MAX_VERSION:
+            continue
         key = version_key(row.version)
         if not key:
             continue
