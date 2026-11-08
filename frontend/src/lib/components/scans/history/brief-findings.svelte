@@ -129,7 +129,11 @@
 	</p>
 {:else if expected === 0}
 	<div class="flex items-center gap-3 px-1 py-6 text-sm text-muted-foreground">
-		<span>No critical or high findings.</span>
+		<span
+			>{historyPrefs.showMedium
+				? 'No critical, high or medium findings'
+				: 'No critical or high findings'}</span
+		>
 		{#if !historyPrefs.showMedium && (findings?.medium ?? 0) > 0}
 			<button
 				type="button"
