@@ -171,6 +171,7 @@ def write(
     *,
     scan: Scan,
     candidates: list[ConnectorCandidate],
+    bump: bool = True,
 ) -> UpsertResult:
     """Record the candidates as proxy-sourced endpoints of the scan."""
     target = session.get(Target, scan.target_id)
@@ -195,7 +196,7 @@ def write(
         default_scheme="http",
         policy=NoisePolicy.protected(),
     )
-    if result.created or result.updated:
+    if bump and (result.created or result.updated):
         bump_sync([scan.target_id])
     return result
 
@@ -206,6 +207,7 @@ def sync_target(
     connector: Connector,
     target_id: uuid.UUID,
     candidates: list[ConnectorCandidate],
+    bump: bool = True,
 ) -> UpsertResult | None:
     """Write into the covering scan. Defer while a census scan is running."""
     scan = covering_scan(session, connector.project_id, target_id, Endpoint, _DIMENSION)
@@ -213,7 +215,7 @@ def sync_target(
         if census_in_flight(session, connector.project_id, target_id):
             return None
         scan = browsing_run(session, connector, target_id)
-    return write(session, scan=scan, candidates=candidates)
+    return write(session, scan=scan, candidates=candidates, bump=bump)
 
 
 def replay(session: Session, scan: Scan) -> UpsertResult | None:

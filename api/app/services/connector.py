@@ -107,7 +107,7 @@ from shared.models.user import User
 from shared.models.vulnerability import Vulnerability
 from shared.redis import async_client
 from shared.services import proxy_sync
-from shared.services.asset_query import QuerySyntaxError
+from shared.services.asset_query import QuerySyntaxError, lead_cache
 from shared.services.asset_query.tokens import token
 from shared.services.credential_access import launch_refusal, may_use
 from shared.services.scan_resolve import redact_message, unseal_headers
@@ -505,15 +505,20 @@ class ConnectorService:
         for candidate in candidates:
             by_target.setdefault(candidate.target_id, []).append(candidate)
         recorded = 0
+        touched: set[uuid.UUID] = set()
         for target_id, rows in by_target.items():
             result = await self.session.run_sync(
                 proxy_sync.sync_target,
                 connector=row,
                 target_id=target_id,
                 candidates=rows,
+                bump=False,
             )
-            if result is not None:
+            if result is not None and (result.created or result.updated):
                 recorded += result.created + result.updated
+                touched.add(target_id)
+        if touched:
+            await lead_cache.bump(touched)
         return recorded
 
     async def _covered_targets(
