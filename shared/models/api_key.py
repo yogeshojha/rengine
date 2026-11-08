@@ -19,8 +19,6 @@ class APIKey(SQLModel, table=True):
     key_value: str = Field(max_length=1000)
     key_meta: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
     is_enabled: bool = Field(default=True)
-    usage_counter: int = Field(default=0)
-    last_used_at: datetime | None = Field(default=None)
     last_test_at: datetime | None = Field(default=None)
     last_test_ok: bool | None = Field(default=None)
     last_test_message: str | None = Field(default=None, max_length=500)
