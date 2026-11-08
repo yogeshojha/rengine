@@ -11,7 +11,6 @@
 		reason: string;
 		code?: string | null;
 		admin?: boolean;
-		/** Set when the AI status did not load: the card offers Retry instead of setup. */
 		onRetry?: () => void;
 		detail?: string | null;
 	}

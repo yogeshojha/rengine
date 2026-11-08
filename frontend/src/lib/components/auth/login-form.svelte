@@ -59,7 +59,6 @@
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		error = '';
-		// inline, like every other form, instead of the browser's required bubble
 		missing = { username: !username.trim(), password: !password };
 		if (missing.username || missing.password) {
 			(missing.username ? usernameEl : passwordEl)?.focus();
