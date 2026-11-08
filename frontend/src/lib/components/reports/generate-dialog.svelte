@@ -34,6 +34,7 @@
 	import { SELECT_NONE } from '$lib/constants';
 	import { ROUTES } from '$lib/config/routes';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { SEARCH_DEBOUNCE_MS } from '$lib/utilities/scan-status';
 	import { cn } from '$lib/utils.js';
 	import type { ScanRead } from '$lib/types/scan';
 	import type { Target } from '$lib/types/target';
@@ -98,6 +99,9 @@
 	const preview = $derived(reportCatalog.themes.find((t) => t.slug === theme));
 	const groups = $derived(reportCatalog.catalog?.groups ?? []);
 	const sectionCount = $derived(plan.enabledContentCount + plan.furniture.length);
+	const furnitureList = $derived(
+		new Intl.ListFormat('en', { type: 'conjunction' }).format(plan.furniture.map((s) => s.title))
+	);
 	const promoted = $derived(
 		plan.content.filter((s) => plan.enabled(s.name) && plan.launchFields(s.name).length)
 	);
@@ -221,10 +225,19 @@
 
 	$effect(() => {
 		void signature;
-		if (!open || !hasSubject) return;
+		if (!open || !hasSubject) {
+			estimating = false;
+			return;
+		}
 		const mine = ++estimateSeq;
 		estimating = true;
 		estimateError = null;
+		const timer = setTimeout(() => estimateNow(mine), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(timer);
+	});
+
+	function estimateNow(mine: number) {
+		if (mine !== estimateSeq) return;
 		reportsApi
 			.estimate(
 				projectId,
@@ -246,7 +259,7 @@
 			.finally(() => {
 				if (mine === estimateSeq) estimating = false;
 			});
-	});
+	}
 
 	let catalogRetrying = $state(false);
 
@@ -480,7 +493,7 @@
 							<span class="text-xs text-muted-foreground">
 								{sectionCount}
 								{sectionCount === 1 ? 'section' : 'sections'}{#if plan.furniture.length}
-									&nbsp;· includes cover, contents and reference{/if}
+									&nbsp;· includes {furnitureList}{/if}
 							</span>
 						</div>
 
@@ -643,6 +656,8 @@
 								<p class="text-sm font-medium">{preview.name}</p>
 								<p class="mt-0.5 text-xs text-muted-foreground">{preview.description}</p>
 							</div>
+						{:else if reportCatalog.catalog}
+							<p class="text-sm text-muted-foreground">Default theme</p>
 						{:else}
 							<Skeleton class="aspect-[1/1.414] w-full" />
 						{/if}
