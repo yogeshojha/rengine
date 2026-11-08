@@ -40,6 +40,7 @@ from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.services.schedule_timing import describe_schedule
 
 _MAX_RUNS = 25
+_STARTED = func.coalesce(Scan.started_at, Scan.created_at)
 
 
 class TargetSummaryService:
@@ -48,25 +49,16 @@ class TargetSummaryService:
         self.scans = ScanService(session)
 
     async def summary(self, target_id: UUID, project_id: UUID) -> TargetSummaryRead:
-        runs = await self._runs(target_id, project_id)
+        recent = await self._runs(target_id, project_id)
         summary = TargetSummaryRead(target_id=target_id)
-        if not runs:
+        if not recent:
             summary.monitoring = await self._monitoring(target_id, project_id)
             return summary
 
-        summary.scans_total = len(runs)
-        summary.scans_running = sum(1 for r in runs if r.status in SCAN_LIVE_STATUSES)
-        summary.scans_failed = sum(
-            1 for r in runs if r.status == ScanStatus.FAILED.value
-        )
-        summary.first_scan_at = _started(runs[-1])
-        completed = [r for r in runs if r.status == ScanStatus.COMPLETED.value]
-        summary.last_completed_at = completed[0].completed_at if completed else None
-
-        latest = await self.scans.get(runs[0].id, project_id)
+        await self._totals(summary, target_id, project_id)
+        latest = await self.scans.get(recent[0].id, project_id)
         summary.latest_scan = latest
 
-        recent = runs[:_MAX_RUNS]
         counts = await self._counts(recent)
         covered = await self._covered(recent, counts)
         summary.surface = self._surface(recent, covered, counts, latest)
@@ -82,17 +74,48 @@ class TargetSummaryService:
         summary.monitoring = await self._monitoring(target_id, project_id)
         return summary
 
+    @staticmethod
+    def _census(target_id: UUID, project_id: UUID) -> tuple:
+        return (
+            Scan.target_id == target_id,
+            Scan.project_id == project_id,
+            census_only(),
+        )
+
     async def _runs(self, target_id: UUID, project_id: UUID) -> list[Scan]:
         result = await self.session.execute(
             select(Scan)
-            .where(
-                Scan.target_id == target_id,
-                Scan.project_id == project_id,
-                census_only(),
-            )
-            .order_by(func.coalesce(Scan.started_at, Scan.created_at).desc())
+            .where(*self._census(target_id, project_id))
+            .order_by(_STARTED.desc())
+            .limit(_MAX_RUNS)
         )
         return list(result.scalars().all())
+
+    async def _totals(
+        self, summary: TargetSummaryRead, target_id: UUID, project_id: UUID
+    ) -> None:
+        census = self._census(target_id, project_id)
+        n = func.count()
+        total, running, failed, first = (
+            await self.session.execute(
+                select(
+                    n,
+                    n.filter(Scan.status.in_(SCAN_LIVE_STATUSES)),
+                    n.filter(Scan.status == ScanStatus.FAILED.value),
+                    func.min(_STARTED),
+                ).where(*census)
+            )
+        ).one()
+        summary.scans_total = int(total or 0)
+        summary.scans_running = int(running or 0)
+        summary.scans_failed = int(failed or 0)
+        summary.first_scan_at = first
+        summary.last_completed_at = await self.session.scalar(
+            select(Scan.completed_at)
+            .where(*census, Scan.status == ScanStatus.COMPLETED.value)
+            .order_by(_STARTED.desc())
+            .limit(1)
+        )
 
     async def _counts(self, runs: list[Scan]) -> dict[str, dict[UUID, int]]:
         """Rows this target's scans hold, per dimension."""
