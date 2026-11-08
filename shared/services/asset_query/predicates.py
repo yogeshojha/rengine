@@ -493,20 +493,31 @@ def secret_is_new(scope: ScopeLike):
 def vuln_suppressed(scope: ScopeLike):
     """A reviewer set this finding aside, or the finding it confirms."""
     scope = scope_of(scope)
+    target = _one_target(scope, Vulnerability.target_id)
     source = aliased(Vulnerability)
-    return exists(
-        select(1)
-        .select_from(VulnerabilityTriage)
-        .outerjoin(source, source.id == Vulnerability.replayed_from_id)
-        .where(
-            VulnerabilityTriage.target_id
-            == _one_target(scope, Vulnerability.target_id),
-            VulnerabilityTriage.fingerprint.in_(
-                [Vulnerability.fingerprint, func.coalesce(source.fingerprint, "")]
-            ),
+    own = exists(
+        select(1).where(
+            VulnerabilityTriage.target_id == target,
+            VulnerabilityTriage.fingerprint == Vulnerability.fingerprint,
             VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
         )
     )
+    confirmed = exists(
+        select(1)
+        .select_from(source)
+        .join(
+            VulnerabilityTriage,
+            and_(
+                VulnerabilityTriage.target_id == target,
+                VulnerabilityTriage.fingerprint == source.fingerprint,
+            ),
+        )
+        .where(
+            source.id == Vulnerability.replayed_from_id,
+            VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
+        )
+    )
+    return or_(own, confirmed)
 
 
 def _vuln_eligible(scope: QueryScope):
