@@ -7,7 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 from pydantic import Field as PydanticField
-from sqlalchemy import Column, Index, Text
+from sqlalchemy import Column, Index, Text, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from shared.definitions.connectors import (
@@ -64,6 +64,11 @@ class ConnectorCandidate(SQLModel, table=True):
     """One request shape captured by a connector."""
 
     __tablename__ = "connector_candidates"
+    __table_args__ = (
+        UniqueConstraint(
+            "connector_id", "signature", name="uq_connector_candidate_signature"
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
@@ -129,6 +134,9 @@ class ConnectorHost(SQLModel, table=True):
     """Every hostname a connector has reached."""
 
     __tablename__ = "connector_hosts"
+    __table_args__ = (
+        UniqueConstraint("connector_id", "host", name="uq_connector_host"),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     connector_id: uuid.UUID = Field(foreign_key="connectors.id", index=True)
