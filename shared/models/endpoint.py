@@ -30,7 +30,7 @@ class Endpoint(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("scan_id", "signature", name="uq_endpoint_scan_signature"),
         Index("ix_endpoints_scan_family", "scan_id", "family"),
-        Index("ix_endpoints_scan_host", "scan_id", "host"),
+        Index("ix_endpoints_scan_tree", "scan_id", "host", "dir_path", "path"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)

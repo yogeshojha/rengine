@@ -54,7 +54,8 @@ REGISTRANT_KEY = (
 )
 
 CREATED = (
-    ("ix_endpoints_scan_host", "endpoints (scan_id, host)"),
+    ("ix_endpoints_scan_tree", "endpoints (scan_id, host, dir_path, path)"),
+    ("ix_endpoints_sources_gin", "endpoints USING gin ((sources::jsonb))"),
     (
         "ix_subdomains_scan_title",
         "subdomains (scan_id, page_title) INCLUDE (target_id, is_excluded, http_status) "
