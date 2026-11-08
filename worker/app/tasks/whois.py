@@ -29,11 +29,13 @@ def _resolve_group(
     service: WhoisService,
     normalized_query: str,
     targets: list[Target],
+    *,
+    force: bool = False,
 ) -> tuple[int, int]:
     """Resolve one registry query and stamp its outcome on every target sharing it."""
     try:
         record = service.get_or_create_record_sync(
-            session, normalized_query, targets[0].target_type
+            session, normalized_query, targets[0].target_type, force=force
         )
     except WhoisNotApplicableError as exc:
         reason = str(exc)[:1000]
@@ -67,7 +69,7 @@ def _resolve_group(
     soft_time_limit=600,
     time_limit=900,
 )
-def perform_whois_lookups(target_ids: list[str]) -> dict:
+def perform_whois_lookups(target_ids: list[str], force: bool = False) -> dict:
     """WHOIS a batch of targets, deduped by normalized query value."""
     if not target_ids:
         return {"success": 0, "failed": 0, "total": 0}
@@ -102,7 +104,7 @@ def perform_whois_lookups(target_ids: list[str]) -> dict:
 
         for normalized_query, group_targets in query_groups.items():
             ok, failed = _resolve_group(
-                session, service, normalized_query, group_targets
+                session, service, normalized_query, group_targets, force=force
             )
             success_count += ok
             failed_count += failed

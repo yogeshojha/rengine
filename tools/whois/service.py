@@ -294,11 +294,16 @@ class WhoisService:
         return record
 
     def get_or_create_record_sync(
-        self, session: Session, normalized_query: str, target_type
+        self,
+        session: Session,
+        normalized_query: str,
+        target_type,
+        *,
+        force: bool = False,
     ) -> WhoisRecord:
         """Get cached record or perform lookup and store (sync)."""
         existing = self.get_cached_record_sync(session, normalized_query)
-        if existing:
+        if existing and not force and self._is_cache_fresh(existing):
             return existing
 
         session.execute(
@@ -306,7 +311,7 @@ class WhoisService:
             {"ns": WHOIS_LOCK_NAMESPACE, "q": normalized_query},
         )
         existing = self.get_cached_record_sync(session, normalized_query)
-        if existing:
+        if existing and not force and self._is_cache_fresh(existing):
             return existing
 
         response = self.do_lookup(normalized_query, target_type)
