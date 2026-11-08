@@ -93,7 +93,11 @@ class SubdomainProvider(ABC):
     def _opener(
         self, *handlers: urllib.request.BaseHandler
     ) -> urllib.request.OpenerDirector:
-        proxy = egress_proxy() if self.requires_key else self.ctx.proxy_url
+        proxy = (
+            egress_proxy()
+            if self.requires_key
+            else (self.ctx.proxy_url or egress_proxy())
+        )
         opener = urllib.request.build_opener(
             *handlers,
             urllib.request.ProxyHandler(

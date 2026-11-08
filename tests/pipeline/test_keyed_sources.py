@@ -32,6 +32,7 @@ from stages.subdomain.config import SubdomainConfig, tool_timeout
 from stages.subdomain.providers import ProviderContext, ProviderResult
 from stages.subdomain.providers import base as provider_base
 from stages.subdomain.providers.base import SourceStat
+from stages.subdomain.providers.ctfr import CtfrProvider
 from stages.subdomain.providers.netlas import NetlasProvider
 from stages.subdomain.providers.subfinder import (
     SubfinderProvider,
@@ -576,3 +577,10 @@ def test_a_keyed_source_takes_the_egress_proxy(monkeypatch):
         "http": "http://egress:3128",
         "https": "http://egress:3128",
     }
+
+
+def test_a_keyless_source_falls_back_to_the_egress_proxy(monkeypatch):
+    monkeypatch.setattr(provider_base, "egress_proxy", lambda: "http://egress:3128")
+    assert _proxies(CtfrProvider(_ctx())._opener())["https"] == "http://egress:3128"
+    scan = CtfrProvider(_ctx(proxy_url="http://burp:8080"))
+    assert _proxies(scan._opener())["https"] == "http://burp:8080"
