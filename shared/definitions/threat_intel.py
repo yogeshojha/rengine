@@ -7,6 +7,7 @@ from enum import StrEnum
 
 from shared.definitions.interest import TONE_INFO, TONE_WARNING
 from shared.definitions.ports import ServiceClass
+from shared.definitions.tone import Tone
 
 
 class FeedKind(StrEnum):
@@ -175,8 +176,6 @@ EXPLOITED_SIGNALS: tuple[str, ...] = (
     ExploitSignal.FRESH_EXPLOIT.value,
 )
 
-TONE_CRITICAL = "critical"
-
 
 @dataclass(frozen=True)
 class SignalSpec:
@@ -193,28 +192,28 @@ SIGNALS: tuple[SignalSpec, ...] = (
         "Known exploited",
         "Listed in CISA KEV.",
         40,
-        TONE_CRITICAL,
+        Tone.CRITICAL.value,
     ),
     SignalSpec(
         ExploitSignal.RANSOM_PATH.value,
         "Ransomware path",
         "Used in ransomware campaigns. The address exposes a remote access or database service.",
         35,
-        TONE_CRITICAL,
+        Tone.CRITICAL.value,
     ),
     SignalSpec(
         ExploitSignal.RANSOMWARE.value,
         "Used by ransomware",
         "Listed in CISA ransomware campaigns.",
         25,
-        TONE_CRITICAL,
+        Tone.CRITICAL.value,
     ),
     SignalSpec(
         ExploitSignal.FRESH_EXPLOIT.value,
         "Exploit published after the scan",
         "A public exploit was published after the scan that recorded this finding.",
         25,
-        TONE_CRITICAL,
+        Tone.CRITICAL.value,
     ),
     SignalSpec(
         ExploitSignal.OVERDUE.value,

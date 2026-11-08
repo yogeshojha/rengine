@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.definitions.tone import Tone
+
 MAX_SCORE = 100
 MAX_SIGNALS_PER_HOST = 8
 MAX_RULES = 200
@@ -76,9 +78,9 @@ class KindSpec:
     tone: str
 
 
-TONE_WARNING = "warning"
-TONE_INFO = "info"
-TONE_NEUTRAL = "neutral"
+TONE_WARNING = Tone.WARNING.value
+TONE_INFO = Tone.INFO.value
+TONE_NEUTRAL = Tone.NEUTRAL.value
 
 KINDS: tuple[KindSpec, ...] = (
     KindSpec(
@@ -269,7 +271,7 @@ BAND_LABELS: dict[str, str] = {
 }
 
 BAND_TONES: dict[str, str] = {
-    InterestBand.CRITICAL.value: "destructive",
+    InterestBand.CRITICAL.value: Tone.CRITICAL.value,
     InterestBand.HIGH.value: TONE_WARNING,
     InterestBand.NOTABLE.value: TONE_INFO,
 }

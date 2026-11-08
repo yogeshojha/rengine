@@ -7,6 +7,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, model_validator
 
+from shared.definitions.tone import Tone
+
 
 class ToolGroup(StrEnum):
     LOOKUP = "lookup"
@@ -50,15 +52,6 @@ class BlockKind(StrEnum):
     CODE = "code"
     NOTE = "note"
     IMAGE = "image"
-
-
-class Tone(StrEnum):
-    NEUTRAL = "neutral"
-    SUCCESS = "success"
-    WARNING = "warning"
-    CRITICAL = "critical"
-    INFO = "info"
-    MUTED = "muted"
 
 
 class RowAction(StrEnum):

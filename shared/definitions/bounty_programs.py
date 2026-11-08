@@ -10,6 +10,7 @@ from enum import Enum
 
 import validators
 
+from shared.definitions.tone import Tone
 from shared.enums.api_key import APIProvider
 from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
 from shared.utils.net import split_host_port
@@ -248,7 +249,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "New program",
         "A program appeared in the library",
         "list-plus",
-        "info",
+        Tone.INFO.value,
         actionable=True,
     ),
     EventSpec(
@@ -256,7 +257,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Scope added",
         "The program put a new asset in scope",
         "plus",
-        "info",
+        Tone.INFO.value,
         actionable=True,
     ),
     EventSpec(
@@ -264,7 +265,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Now in scope",
         "An asset the program excluded is now testable",
         "circle-check",
-        "info",
+        Tone.INFO.value,
         actionable=True,
     ),
     EventSpec(
@@ -272,7 +273,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Now out of scope",
         "The program moved this asset out of scope",
         "octagon-alert",
-        "warning",
+        Tone.WARNING.value,
         actionable=True,
     ),
     EventSpec(
@@ -280,7 +281,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Scope removed",
         "The program no longer lists this asset",
         "minus",
-        "warning",
+        Tone.WARNING.value,
         actionable=True,
     ),
     EventSpec(
@@ -288,7 +289,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Accepting reports",
         "The program reopened for submissions",
         "door-open",
-        "info",
+        Tone.INFO.value,
         actionable=True,
     ),
     EventSpec(
@@ -296,7 +297,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Now pays bounties",
         "The program moved from VDP to paying",
         "banknote",
-        "info",
+        Tone.INFO.value,
         actionable=True,
     ),
     EventSpec(
@@ -304,7 +305,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Went public",
         "A private program became public",
         "globe",
-        "muted",
+        Tone.MUTED.value,
         actionable=False,
     ),
     EventSpec(
@@ -312,7 +313,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Stopped accepting",
         "The program paused or closed submissions",
         "door-closed",
-        "muted",
+        Tone.MUTED.value,
         actionable=False,
     ),
     EventSpec(
@@ -320,7 +321,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Payout changed",
         "Minimum and maximum payout",
         "banknote",
-        "info",
+        Tone.INFO.value,
         actionable=False,
     ),
     EventSpec(
@@ -328,7 +329,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Rules changed",
         "Safe harbor or the 2FA requirement changed",
         "scroll-text",
-        "info",
+        Tone.INFO.value,
         actionable=False,
     ),
     EventSpec(
@@ -336,7 +337,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Asset bounty changed",
         "An asset's tier, bounty eligibility or severity cap changed",
         "badge-dollar-sign",
-        "info",
+        Tone.INFO.value,
         actionable=False,
     ),
     EventSpec(
@@ -344,7 +345,7 @@ EVENTS: tuple[EventSpec, ...] = (
         "Asset rules changed",
         "Testing instructions on one asset",
         "file-pen",
-        "info",
+        Tone.INFO.value,
         actionable=False,
     ),
 )
@@ -417,7 +418,8 @@ _SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
 
 def event_spec(kind: str) -> EventSpec:
     return EVENTS_BY_KIND.get(
-        kind, EventSpec(kind, kind, "", "circle-help", "muted", actionable=False)
+        kind,
+        EventSpec(kind, kind, "", "circle-help", Tone.MUTED.value, actionable=False),
     )
 
 
