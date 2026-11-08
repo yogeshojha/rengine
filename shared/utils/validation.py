@@ -225,14 +225,14 @@ def extract_asn_number(query: str) -> int:
 def validate_hex_color(color: str) -> str:
     color = color.strip()
     if not color.startswith("#"):
-        msg = "Color must start with #"
+        msg = "Color must start with #."
         raise ValueError(msg)
     if len(color) != HEX_COLOR_LENGTH:
-        msg = f"Color must be {HEX_COLOR_LENGTH} characters in the form #RRGGBB"
+        msg = f"Color must be {HEX_COLOR_LENGTH} characters in the form #RRGGBB."
         raise ValueError(msg)
     hex_pattern = r"^#[0-9A-Fa-f]{6}$"
     if not re.match(hex_pattern, color):
-        msg = "Color must use hexadecimal digits 0-9 and A-F"
+        msg = "Color must use hexadecimal digits 0-9 and A-F."
         raise ValueError(msg)
     return color.upper()
 

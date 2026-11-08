@@ -27,10 +27,10 @@ class NotificationMetadata(BaseModel):
             and not v.startswith("http://")
             and not v.startswith("https://")
         ):
-            msg = "URL must start with /, http:// or https://"
+            msg = "URL must start with /, http:// or https://."
             raise ValueError(msg)
         if len(v) > MAX_LINK_LENGTH:
-            msg = f"URL is longer than {MAX_LINK_LENGTH} characters"
+            msg = f"URL is longer than {MAX_LINK_LENGTH} characters."
             raise ValueError(msg)
         return v
 
