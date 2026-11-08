@@ -4,6 +4,7 @@ from reports.analysis.engine import build_issues
 from reports.base import RenderContext, Section
 from reports.config import SectionConfig, choice, flag, limit, multi
 from reports.registry import section as lookup_section
+from shared.definitions.ask import SECRET_TAGS
 from shared.definitions.compliance import FRAMEWORK_BY_KEY
 from shared.definitions.reports import MAX_EVIDENCE_CHARS, SectionGroup
 from shared.definitions.surface import SurfaceDimension
@@ -102,6 +103,8 @@ class FindingsDetailSection(Section):
             anchor = f"f-{index}-{issue.template_id.replace('/', '-')[:48]}"
             subs.append((issue.name, anchor))
             sample = issue.findings[0]
+            assets = issue.findings[: cfg.max_assets]
+            hide = _hides_values(issue.template_id, issue.tags)
             explainer = ""
             if full and budget > 0:
                 budget -= 1
@@ -112,7 +115,8 @@ class FindingsDetailSection(Section):
                     "anchor": anchor,
                     "full": full,
                     "sample": sample,
-                    "assets": issue.findings[: cfg.max_assets],
+                    "assets": assets,
+                    "details": [_detail(f, hide) for f in assets],
                     "more": max(0, issue.count - cfg.max_assets),
                     "explainer": explainer,
                     "controls": _controls(issue) if cfg.show_controls and full else [],
@@ -187,6 +191,17 @@ def _controls(issue) -> list[str]:
             )
         out.append(f"{escape(spec.name)} {escape(spec.version)}: " + " · ".join(parts))
     return out
+
+
+def _hides_values(template_id: str, tags) -> bool:
+    words = {t.lower() for t in tags} | set(template_id.lower().split("-"))
+    return bool(words & SECRET_TAGS)
+
+
+def _detail(finding, hide: bool) -> str:
+    if finding.extracted and not hide:
+        return mask_secrets(", ".join(finding.extracted[:2]))
+    return finding.asset_title or ""
 
 
 def _message(value: str | None) -> str:

@@ -41,7 +41,7 @@
     {% endif %}
 
     <h5>Affected</h5>
-    {% set detailed = row.assets | selectattr('asset_status') | list or row.assets | selectattr('extracted') | list or row.assets | selectattr('asset_title') | list %}
+    {% set detailed = row.assets | selectattr('asset_status') | list or row.details | select | list %}
     {% if detailed %}
     <table class="table table--fixed">
       <thead><tr><th style="width:58%">Location</th><th style="width:20mm">Status</th><th>Detail</th></tr></thead>
@@ -50,7 +50,7 @@
         <tr>
           <td class="wrap mono-break micro">{{ finding.matched_at|clip(140) }}{% if finding.is_new %} <span class="chip chip--accent">new</span>{% endif %}</td>
           <td class="micro">{{ finding.asset_status if finding.asset_status else '—' }}</td>
-          <td class="micro muted wrap">{{ (finding.extracted[:2]|join(', ') if finding.extracted else finding.asset_title)|clip(70) or '—' }}</td>
+          <td class="micro muted wrap">{{ row.details[loop.index0]|clip(70) or '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
