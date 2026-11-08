@@ -33,3 +33,22 @@ async def test_a_database_that_does_not_answer_is_a_503():
 
     assert response.status_code == 503
     assert response.json()["detail"] == database.DATABASE_UNAVAILABLE
+
+
+async def test_a_session_that_cannot_close_keeps_the_answer(monkeypatch):
+    class _Hung:
+        async def close(self):
+            raise TimeoutError
+
+    monkeypatch.setattr(database, "async_db_session", _Hung)
+    app = FastAPI()
+
+    @app.get("/done")
+    async def done(session: Annotated[object, Depends(database.get_session)]):
+        return {"ok": True}
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+        response = await client.get("/done")
+
+    assert response.status_code == 200

@@ -47,14 +47,19 @@ async_db_session = async_sessionmaker(
 
 
 async def get_session() -> AsyncSession:
-    async with async_db_session() as session:
+    session = async_db_session()
+    try:
+        yield session
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=DATABASE_UNAVAILABLE,
+        ) from exc
+    finally:
         try:
-            yield session
-        except TimeoutError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=DATABASE_UNAVAILABLE,
-            ) from exc
+            await session.close()
+        except TimeoutError:
+            logger.warning("database session close timed out")
 
 
 def pool_demand() -> int:
