@@ -15,7 +15,6 @@ from sqlalchemy import (
     func,
     or_,
     select,
-    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
@@ -64,6 +63,7 @@ from shared.models.vulnerability import (
     VulnerabilityCoverage,
     VulnerabilityTriage,
 )
+from shared.services.asset_query import element_counts
 from shared.services.asset_query import predicates as preds
 from shared.services.scan_scope import census_only, covers
 from shared.services.surface_query import vulnerabilities as surface_vulns
@@ -951,13 +951,17 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.WEB_ASSETS.value)
         if scan_id is None:
             return []
+        pairs = element_counts(
+            select(HttpAsset.host).where(HttpAsset.scan_id == scan_id),
+            HttpAsset.tech,
+            HttpAsset.host,
+        ).subquery()
+        hosts = func.count().label("c")
         rows = self.session.execute(
-            text(
-                "SELECT v AS value, count(DISTINCT a.host) AS c "
-                "FROM http_assets a, LATERAL jsonb_array_elements_text(cast(a.tech AS jsonb)) v "
-                "WHERE a.scan_id = :sid GROUP BY v ORDER BY c DESC, v ASC LIMIT 14"
-            ),
-            {"sid": str(scan_id)},
+            select(pairs.c.value, hosts)
+            .group_by(pairs.c.value)
+            .order_by(hosts.desc(), pairs.c.value.asc())
+            .limit(14)
         ).all()
         return [Facet(name=str(row[0]), count=int(row[1])) for row in rows]
 
