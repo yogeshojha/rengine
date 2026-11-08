@@ -4,7 +4,9 @@
 		ACTIONS_BODY,
 		ACTIONS_PIN,
 		columnCell,
+		DEFAULT_DENSITY,
 		rowPadding,
+		type Density,
 		type TableColumn
 	} from '$lib/components/scans/results/table/columns';
 
@@ -12,7 +14,7 @@
 		lead?: TableColumn[];
 		columns?: TableColumn[];
 		rows?: number;
-		density?: string;
+		density?: Density;
 		selectable?: boolean;
 		actions?: boolean;
 		header?: boolean;
@@ -22,7 +24,7 @@
 		lead = [],
 		columns = [],
 		rows = 8,
-		density = 'cozy',
+		density = DEFAULT_DENSITY,
 		selectable = false,
 		actions = true,
 		header = true

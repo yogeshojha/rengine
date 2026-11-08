@@ -40,6 +40,9 @@
 	import {
 		inPopover,
 		onControl,
+		asDensity,
+		DEFAULT_DENSITY,
+		type Density,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -235,7 +238,9 @@
 		initial.get('view') === RENDERS_VIEW ? renderFlagFrom(initial.get('flag')) : null
 	);
 	let renders = $state<RenderSearchResult | null>(null);
-	let density = $state<string>(readPref(STORAGE_KEYS.webAssetsDensity, 'cozy'));
+	let density = $state<Density>(
+		asDensity(readPref(STORAGE_KEYS.webAssetsDensity, DEFAULT_DENSITY))
+	);
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.webAssetsPageSize, RESULTS_PAGE_SIZE));
 	let onlyShots = $state(true);
 	let groupRenders = $state(false);

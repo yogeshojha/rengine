@@ -40,6 +40,7 @@
 		TARGET_COLUMN_LABELS,
 		targetPrefs
 	} from '$lib/components/targets/list/prefs.svelte';
+	import { asDensity } from '$lib/components/scans/results/table/columns';
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
 	import {
 		ENRICHMENT_LABELS,
@@ -827,10 +828,9 @@
 							<DropdownMenu.Label>Density</DropdownMenu.Label>
 							<DropdownMenu.RadioGroup
 								value={targetPrefs.density}
-								onValueChange={(v) =>
-									(targetPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
+								onValueChange={(v) => (targetPrefs.density = asDensity(v))}
 							>
-								<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
+								<DropdownMenu.RadioItem value="cozy">Comfortable</DropdownMenu.RadioItem>
 								<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
 							</DropdownMenu.RadioGroup>
 						</DropdownMenu.Content>

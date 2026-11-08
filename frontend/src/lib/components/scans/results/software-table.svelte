@@ -28,6 +28,9 @@
 	import ListHeader from './table/list-header.svelte';
 	import ResultsPagination from './table/results-pagination.svelte';
 	import {
+		asDensity,
+		DEFAULT_DENSITY,
+		type Density,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -115,7 +118,7 @@
 	let search = $state(initial.get('sw_q') ?? '');
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let sideLoaded = $state(false);
-	let density = $state<string>(readPref(STORAGE_KEYS.softwareDensity, 'cozy'));
+	let density = $state<Density>(asDensity(readPref(STORAGE_KEYS.softwareDensity, DEFAULT_DENSITY)));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.softwarePageSize, RESULTS_PAGE_SIZE));
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.softwareColumns, null));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(

@@ -23,6 +23,9 @@
 	import {
 		inPopover,
 		onControl,
+		asDensity,
+		DEFAULT_DENSITY,
+		type Density,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -179,7 +182,9 @@
 		readPref(STORAGE_KEYS.endpointsOutlineColumns, null)
 	);
 	let hostColumnsPref = $state<string[] | null>(readPref(STORAGE_KEYS.endpointsHostColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.endpointsDensity, 'cozy'));
+	let density = $state<Density>(
+		asDensity(readPref(STORAGE_KEYS.endpointsDensity, DEFAULT_DENSITY))
+	);
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.endpointsPageSize, RESULTS_PAGE_SIZE));
 	let view = $state<EndpointView>(
 		normalizeView(initial.get('ep_view') ?? readPref(STORAGE_KEYS.endpointsView, 'hosts'))

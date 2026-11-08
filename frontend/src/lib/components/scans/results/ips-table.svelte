@@ -23,6 +23,9 @@
 	import {
 		inPopover,
 		onControl,
+		asDensity,
+		DEFAULT_DENSITY,
+		type Density,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -124,7 +127,7 @@
 	let pendingIp = initial.get('ip');
 
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.ipsColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.ipsDensity, 'cozy'));
+	let density = $state<Density>(asDensity(readPref(STORAGE_KEYS.ipsDensity, DEFAULT_DENSITY)));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.ipsPageSize, RESULTS_PAGE_SIZE));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]

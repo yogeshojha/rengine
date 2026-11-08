@@ -18,7 +18,7 @@
 	import ExportsSheet from '../exports-sheet.svelte';
 	import TripwireButton from '$lib/components/tripwires/tripwire-button.svelte';
 	import SortMenu from './sort-menu.svelte';
-	import type { SortOption, TableColumn } from './columns';
+	import { asDensity, type Density, type SortOption, type TableColumn } from './columns';
 	import type { QueryGroupSpec } from '$lib/types/asset-query';
 
 	interface Props {
@@ -35,8 +35,8 @@
 		/** chosen columns with no room at this width */
 		folded?: string[];
 		onToggleColumn: (key: string) => void;
-		density: string;
-		onDensity: (d: string) => void;
+		density: Density;
+		onDensity: (d: Density) => void;
 		refreshing: boolean;
 		onRefresh: () => void;
 		projectId?: string;
@@ -157,7 +157,7 @@
 			{#if offersGroup || offersColumns}<DropdownMenu.Separator />{/if}
 			<DropdownMenu.Group>
 				<DropdownMenu.Label>Density</DropdownMenu.Label>
-				<DropdownMenu.RadioGroup value={density} onValueChange={onDensity}>
+				<DropdownMenu.RadioGroup value={density} onValueChange={(v) => onDensity(asDensity(v))}>
 					<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
 					<DropdownMenu.RadioItem value="cozy">Comfortable</DropdownMenu.RadioItem>
 				</DropdownMenu.RadioGroup>

@@ -142,10 +142,18 @@ export function onControl(target: EventTarget | null, row: string): boolean {
 	return !!control && !control.matches(row);
 }
 
-const ROW_PAD: Record<string, string> = { compact: 'py-2', cozy: 'py-3' };
+export const DENSITIES = ['compact', 'cozy'] as const;
+export type Density = (typeof DENSITIES)[number];
+export const DEFAULT_DENSITY: Density = 'cozy';
 
-export function rowPadding(density: string): string {
-	return ROW_PAD[density] ?? ROW_PAD.cozy;
+export function asDensity(value: unknown): Density {
+	return value === 'compact' ? 'compact' : DEFAULT_DENSITY;
+}
+
+const ROW_PAD: Record<Density, string> = { compact: 'py-2', cozy: 'py-3' };
+
+export function rowPadding(density: Density): string {
+	return ROW_PAD[density] ?? ROW_PAD[DEFAULT_DENSITY];
 }
 
 export function readPref<T>(key: string, fallback: T): T {

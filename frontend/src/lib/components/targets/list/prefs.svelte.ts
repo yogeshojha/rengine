@@ -1,5 +1,6 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
-import { readStored, writeStored, type Density } from '$lib/utilities/storage';
+import { readStored, writeStored } from '$lib/utilities/storage';
+import { asDensity, type Density } from '$lib/components/scans/results/table/columns';
 import { fitColumns } from './columns';
 
 export const TARGET_COLUMNS = [
@@ -26,9 +27,7 @@ function createTargetPrefs() {
 			.split(',')
 			.filter((c): c is TargetColumn => (TARGET_COLUMNS as readonly string[]).includes(c))
 	);
-	let density = $state<Density>(
-		readStored(STORAGE_KEYS.targetsDensity) === 'compact' ? 'compact' : 'comfortable'
-	);
+	let density = $state<Density>(asDensity(readStored(STORAGE_KEYS.targetsDensity)));
 	let width = $state(0);
 	const fitted = $derived(
 		fitColumns(

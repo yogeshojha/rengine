@@ -1,7 +1,8 @@
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
 import { Severity } from '$lib/config/vulnerabilities';
 import { briefTabs } from '$lib/utilities/brief-tabs.svelte';
-import { readStored, writeStored, type Density } from '$lib/utilities/storage';
+import { readStored, writeStored } from '$lib/utilities/storage';
+import { asDensity, type Density } from '$lib/components/scans/results/table/columns';
 
 export const HISTORY_COLUMNS = ['assets', 'change', 'engine', 'duration'] as const;
 export type HistoryColumn = (typeof HISTORY_COLUMNS)[number];
@@ -33,9 +34,7 @@ function createHistoryPrefs() {
 			.split(',')
 			.filter((c): c is HistoryColumn => (HISTORY_COLUMNS as readonly string[]).includes(c))
 	);
-	let density = $state<Density>(
-		readStored(STORAGE_KEYS.scansDensity) === 'compact' ? 'compact' : 'comfortable'
-	);
+	let density = $state<Density>(asDensity(readStored(STORAGE_KEYS.scansDensity)));
 	const severities = $derived<string[]>(showMedium ? [...SIGNAL, Severity.MEDIUM] : [...SIGNAL]);
 
 	return {

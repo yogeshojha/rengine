@@ -22,6 +22,9 @@
 	import {
 		inPopover,
 		onControl,
+		asDensity,
+		DEFAULT_DENSITY,
+		type Density,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -159,7 +162,7 @@
 	const initialSort = initial.get('svc_sort')?.split(':') ?? [];
 
 	let visiblePref = $state<string[] | null>(readPref(STORAGE_KEYS.servicesColumns, null));
-	let density = $state<string>(readPref(STORAGE_KEYS.servicesDensity, 'cozy'));
+	let density = $state<Density>(asDensity(readPref(STORAGE_KEYS.servicesDensity, DEFAULT_DENSITY)));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.servicesPageSize, RESULTS_PAGE_SIZE));
 	const TIMELINE = SERVICES_TIMELINE_VIEW;
 	const timelineOffered = () => !projectWide && census && Boolean(scanId);

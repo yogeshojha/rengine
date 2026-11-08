@@ -21,7 +21,7 @@
 
 	import * as Card from '$lib/components/ui/card';
 	import EmptyState from '$lib/components/empty-state.svelte';
-	import type { TableColumn } from '$lib/components/scans/results/table/columns';
+	import { asDensity, type TableColumn } from '$lib/components/scans/results/table/columns';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import { Button } from '$lib/components/ui/button';
@@ -808,10 +808,9 @@
 						<DropdownMenu.Label>Density</DropdownMenu.Label>
 						<DropdownMenu.RadioGroup
 							value={historyPrefs.density}
-							onValueChange={(v) =>
-								(historyPrefs.density = v === 'compact' ? 'compact' : 'comfortable')}
+							onValueChange={(v) => (historyPrefs.density = asDensity(v))}
 						>
-							<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
+							<DropdownMenu.RadioItem value="cozy">Comfortable</DropdownMenu.RadioItem>
 							<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
 						</DropdownMenu.RadioGroup>
 					</DropdownMenu.Content>

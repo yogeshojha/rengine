@@ -58,6 +58,7 @@
 	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { externalHref, openExternal } from '$lib/utilities/links';
+	import { DEFAULT_DENSITY } from '$lib/components/scans/results/table/columns';
 	import {
 		ALL_TAB,
 		PAID_TAB,
@@ -786,10 +787,10 @@
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Content align="end" class="w-44">
 							<DropdownMenu.RadioGroup
-								value={compact ? 'compact' : 'comfortable'}
+								value={compact ? 'compact' : DEFAULT_DENSITY}
 								onValueChange={(v) => (compact = v === 'compact')}
 							>
-								<DropdownMenu.RadioItem value="comfortable">Comfortable</DropdownMenu.RadioItem>
+								<DropdownMenu.RadioItem value={DEFAULT_DENSITY}>Comfortable</DropdownMenu.RadioItem>
 								<DropdownMenu.RadioItem value="compact">Compact</DropdownMenu.RadioItem>
 							</DropdownMenu.RadioGroup>
 						</DropdownMenu.Content>

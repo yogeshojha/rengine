@@ -40,6 +40,9 @@
 	import {
 		inPopover,
 		onControl,
+		asDensity,
+		DEFAULT_DENSITY,
+		type Density,
 		readPref,
 		rowPadding,
 		selectAllState,
@@ -234,7 +237,7 @@
 			: null
 	);
 	let strips = $state<FindingTimelineResult | null>(null);
-	let density = $state<string>(readPref(STORAGE_KEYS.vulnsDensity, 'cozy'));
+	let density = $state<Density>(asDensity(readPref(STORAGE_KEYS.vulnsDensity, DEFAULT_DENSITY)));
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.vulnsPageSize, RESULTS_PAGE_SIZE));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
