@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { STORAGE_KEYS } from '$lib/config/storage-keys';
+import { localPath } from '$lib/utilities/links';
 import type { Crumb } from './breadcrumbs.svelte';
 
 const KEY = STORAGE_KEYS.previousPage;
@@ -31,7 +32,9 @@ export const previousPage = {
 	},
 
 	of(pathname: string): Crumb | undefined {
-		return entries[pathname];
+		const crumb = entries[pathname];
+		const href = localPath(crumb?.href);
+		return crumb && href ? { ...crumb, href } : undefined;
 	},
 
 	clear() {

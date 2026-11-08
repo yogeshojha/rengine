@@ -15,7 +15,8 @@ const LINK_MODULES = [
 	/^\$lib\/config\/routes$/,
 	/(^|\/)scope-links$/,
 	/^\$lib\/api\//,
-	/^\$lib\/stores\/exports/
+	/^\$lib\/stores\/exports/,
+	/^\$lib\/stores\/previous-page/
 ];
 const LINK_ATTR = /^href$|Href$/;
 const UNWRAP = new Set([
