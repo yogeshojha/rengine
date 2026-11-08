@@ -691,6 +691,7 @@ class InterestReadService:
             ).scalars()
         }
 
+        await self.session.commit()
         with ledger.source("scan", scan.id):
             proposed = await propose_async(self.session, cfg, examples)
         out: list[RuleSuggestion] = []
