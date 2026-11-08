@@ -1,4 +1,4 @@
-import type { ScanActivityRead, ScanRead } from '$lib/types/scan';
+import type { ScanActivityRead, ScanActivityStatus, ScanRead } from '$lib/types/scan';
 import type { StageCatalogEntry } from '$lib/types/scan-engine';
 import type { LiveRun } from '$lib/stores/live-scans.svelte';
 import { activityRan, activitySummary, elapsedText } from '$lib/utilities/scan-status';
@@ -85,9 +85,11 @@ export interface StageRow extends StageStep {
 	error: string | null;
 }
 
-const ACTIVITY_STATE: Record<string, StageStepState | undefined> = {
+const ACTIVITY_STATE: Record<ScanActivityStatus, StageStepState> = {
+	pending: 'pending',
 	success: 'done',
 	partial: 'done',
+	skipped: 'done',
 	failed: 'failed',
 	aborted: 'failed',
 	running: 'running',
@@ -102,7 +104,7 @@ export function stageRows(
 	const byName = new Map(activities.map((a) => [a.name, a]));
 	return planned.map((s) => {
 		const a = byName.get(s.name);
-		let state: StageStepState = (a && ACTIVITY_STATE[a.status]) ?? 'pending';
+		let state: StageStepState = a ? (ACTIVITY_STATE[a.status] ?? 'pending') : 'pending';
 		if (run?.failed.includes(s.name)) state = 'failed';
 		else if (run?.done.includes(s.name) && state === 'pending') state = 'done';
 		else if (run?.stage?.name === s.name) state = 'running';
