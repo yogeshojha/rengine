@@ -103,6 +103,25 @@ def _without_secret_keys(source: str | None) -> str | None:
     return stripped
 
 
+def _yaml_error(exc: yaml.YAMLError) -> HTTPException:
+    mark = getattr(exc, "problem_mark", None)
+    detail = "Engine YAML is not valid."
+    if mark is not None:
+        detail = (
+            f"Engine YAML is not valid at line {mark.line + 1}, "
+            f"column {mark.column + 1}."
+        )
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+def _engine_error(exc: Exception) -> HTTPException:
+    detail = "Engine YAML does not describe an engine."
+    if isinstance(exc, ValidationError) and exc.errors():
+        field = ".".join(str(p) for p in exc.errors()[0]["loc"])
+        detail = f"Engine field {field} is not valid."
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
 def _validate_yaml_source(source: str | None) -> str | None:
     if source is None:
         return None
@@ -118,9 +137,7 @@ def _validate_yaml_source(source: str | None) -> str | None:
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
     except yaml.YAMLError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid YAML: {exc}"
-        ) from exc
+        raise _yaml_error(exc) from exc
     return _without_secret_keys(source)
 
 

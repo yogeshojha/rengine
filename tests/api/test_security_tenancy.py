@@ -10,6 +10,7 @@ from app.api.v1 import targets as targets_api
 from app.services.cloud_storage import CloudStorageService
 from app.services.domain_posture import DomainPostureService
 from app.services.lookalikes import LookalikeService
+from app.services.scan_engine import ScanEngineService
 from app.services.target_assets import TargetAssetService
 from app.services.target_scope import require_target
 from app.services.target_summary import TargetSummaryService
@@ -94,3 +95,21 @@ async def test_target_reads_refuse_a_target_of_another_project(estate):
     ]
     for call in calls:
         assert await _refused(call) == "Target not found."
+
+
+@pytest.mark.parametrize(
+    ("document", "detail"),
+    [
+        ("name: [1, 2]\nstages: 3\n", "Engine YAML does not describe an engine."),
+        ("name: x\n  bad: : :\n", "Engine YAML is not valid at line 2, column 6."),
+        ("- a\n", "Engine YAML must be a mapping."),
+        ("name: x\nintensity: [1]\n", "Engine field intensity is not valid."),
+    ],
+)
+async def test_an_engine_import_error_names_the_problem_alone(estate, document, detail):
+    with pytest.raises(HTTPException) as caught:
+        await ScanEngineService(estate.session).import_yaml(
+            estate.project_id, estate.user_id, document
+        )
+    assert caught.value.status_code == 400
+    assert caught.value.detail == detail

@@ -11,6 +11,7 @@ from app.services.scan_context import usage_counts
 from app.services.scan_engine.validation import (
     _MAX_YAML_LEN,
     _check_tool_options_access,
+    _engine_error,
     _full_stages,
     _mask_global_headers,
     _mask_tool_options,
@@ -22,6 +23,7 @@ from app.services.scan_engine.validation import (
     _validate_tool_options,
     _validate_yaml_source,
     _without_secret_keys,
+    _yaml_error,
 )
 from shared.definitions.default_engine import (
     DEFAULT_ENGINE_DESCRIPTION,
@@ -364,21 +366,18 @@ class ScanEngineService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
             ) from e
         except yaml.YAMLError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid YAML: {e}",
-            ) from e
+            raise _yaml_error(e) from e
 
         if not isinstance(data, dict):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="YAML must be a mapping",
+                detail="Engine YAML must be a mapping.",
             )
 
         if "name" not in data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="YAML must include a 'name' field",
+                detail="Engine YAML must include a name.",
             )
 
         unknown = [k for k in data if k not in _ENGINE_KEYS]
@@ -401,11 +400,8 @@ class ScanEngineService:
                 transport_overrides=dict(data.get("transport_overrides") or {}),
                 tool_options=dict(data.get("tool_options") or {}),
             )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid engine config: {e}",
-            ) from e
+        except (TypeError, ValueError) as e:
+            raise _engine_error(e) from e
 
         return await self.create(
             project_id, created_by, create_data, superuser=superuser
