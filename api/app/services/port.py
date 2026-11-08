@@ -289,22 +289,22 @@ class PortService:
     async def leads(self, scope: ScopeLike, f: ServiceFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
 
-        async def _build() -> QueryLeads:
+        async def _build(session: AsyncSession) -> QueryLeads:
             now = utc_now()
             d, base = self._scoped(scope, f, columns=lambda d: (d.c.id,))
             ctx = self._context(scope, d, now)
-            await self.session.execute(text(STATEMENT_TIMEOUT))
-            await self.session.execute(text(NO_JIT))
+            await session.execute(text(STATEMENT_TIMEOUT))
+            await session.execute(text(NO_JIT))
             try:
                 return await build_leads(
-                    self.session,
+                    session,
                     base,
                     SERVICE_QUERY.examples,
                     lambda q: compile_service_query(parse_query(q, SERVICE_QUERY), ctx),
                     filtered=f.has_facets(),
                 )
             except DBAPIError as exc:
-                await self.session.rollback()
+                await session.rollback()
                 logger.info("service leads failed", error=str(exc.orig))
                 return QueryLeads()
 
@@ -313,7 +313,8 @@ class PortService:
             dimension="services",
             scans=scope.ids,
             facets=lead_cache.facets_of(f),
-            build=_build,
+            build=lambda: _build(self.session),
+            rebuild=_build,
         )
 
     async def counts(

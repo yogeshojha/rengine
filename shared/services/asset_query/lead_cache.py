@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
@@ -34,6 +34,7 @@ _RELEASE = (
     "return redis.call('del', KEYS[1]) end return 0"
 )
 _GLOBAL_KEY = "rev:global"
+_REFRESHING: set[asyncio.Task] = set()
 
 _PAGING = {"page", "size", "limit", "offset", "sort", "direction", "order"}
 _IGNORED = {"q", *_PAGING}
@@ -112,6 +113,7 @@ async def cached[T: BaseModel](
     keep: Callable[[T], bool] = lambda _: True,
     ttl: int = TTL_SECONDS,
     live_ttl: int | None = LIVE_TTL_SECONDS,
+    rebuild: Callable[[AsyncSession], Awaitable[T]] | None = None,
 ) -> T:
     """One aggregate of a scope; a live scope is held for `live_ttl`, or not at all."""
     settled, targets = await _settled(session, scans)
@@ -137,6 +139,22 @@ async def cached[T: BaseModel](
             fallback = await _await_build(key, model, name)
         if fallback is not None:
             return fallback
+    elif stale_key and rebuild is not None and isinstance(session.bind, AsyncEngine):
+        stale = await _read(stale_key, model, name)
+        if stale is not None:
+            task = asyncio.create_task(
+                _refresh(
+                    session.bind,
+                    rebuild,
+                    keep,
+                    (key, stale_key, token),
+                    live_ttl,
+                    name,
+                )
+            )
+            _REFRESHING.add(task)
+            task.add_done_callback(_REFRESHING.discard)
+            return stale
     try:
         computed = await build()
         if getattr(computed, "error", None) is None and keep(computed):
@@ -147,6 +165,27 @@ async def cached[T: BaseModel](
     finally:
         if token is not None:
             await _release(key, token)
+
+
+async def _refresh[T: BaseModel](
+    bind: AsyncEngine,
+    rebuild: Callable[[AsyncSession], Awaitable[T]],
+    keep: Callable[[T], bool],
+    keys: tuple[str, str, str],
+    live_ttl: int,
+    name: str,
+) -> None:
+    key, stale_key, token = keys
+    try:
+        async with AsyncSession(bind, expire_on_commit=False) as session:
+            computed = await rebuild(session)
+        if getattr(computed, "error", None) is None and keep(computed):
+            await _write(key, computed, live_ttl, name)
+            await _write(stale_key, computed, STALE_TTL_SECONDS, name)
+    except Exception:
+        logger.warning("aggregate rebuild failed", name=name, exc_info=True)
+    finally:
+        await _release(key, token)
 
 
 async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
@@ -208,6 +247,7 @@ async def leads(
     scans: tuple[UUID, ...],
     facets: str,
     build: Callable[[], Awaitable[QueryLeads]],
+    rebuild: Callable[[AsyncSession], Awaitable[QueryLeads]] | None = None,
 ) -> QueryLeads:
     """The cached lead set for a scope."""
     return await cached(
@@ -218,4 +258,5 @@ async def leads(
         model=QueryLeads,
         build=build,
         keep=lambda computed: computed.computed,
+        rebuild=rebuild,
     )

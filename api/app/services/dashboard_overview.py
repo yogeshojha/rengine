@@ -205,9 +205,9 @@ class DashboardOverviewService:
             sorted(map(str, monitored)),
         )
 
-        async def build() -> DashboardOverview:
-            await self.session.execute(text(NO_JIT))
-            return await self._overview(
+        async def build(session: AsyncSession) -> DashboardOverview:
+            await session.execute(text(NO_JIT))
+            return await DashboardOverviewService(session)._overview(
                 project_id,
                 window,
                 scoped,
@@ -222,7 +222,8 @@ class DashboardOverviewService:
             scans=tuple(run_ids),
             facets=facets,
             model=DashboardOverview,
-            build=build,
+            build=lambda: build(self.session),
+            rebuild=build,
             ttl=lead_cache.SEARCH_TTL_SECONDS,
         )
 

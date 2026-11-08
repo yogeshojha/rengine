@@ -241,22 +241,22 @@ class IpAddressService:
     async def leads(self, scope: ScopeLike, f: IpGroupFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
 
-        async def _build() -> QueryLeads:
+        async def _build(session: AsyncSession) -> QueryLeads:
             now = utc_now()
             d, base = self._scoped(scope, f, columns=lambda d: (d.c.ip,))
             ctx = self._context(scope, d, now)
-            await self.session.execute(text(STATEMENT_TIMEOUT))
-            await self.session.execute(text(NO_JIT))
+            await session.execute(text(STATEMENT_TIMEOUT))
+            await session.execute(text(NO_JIT))
             try:
                 return await build_leads(
-                    self.session,
+                    session,
                     base,
                     IP_QUERY.examples,
                     lambda q: compile_ip_query(parse_query(q, IP_QUERY), ctx),
                     filtered=f.has_facets(),
                 )
             except DBAPIError as exc:
-                await self.session.rollback()
+                await session.rollback()
                 logger.info("address leads failed", error=str(exc.orig))
                 return QueryLeads()
 
@@ -265,7 +265,8 @@ class IpAddressService:
             dimension="ips",
             scans=scope.ids,
             facets=lead_cache.facets_of(f),
-            build=_build,
+            build=lambda: _build(self.session),
+            rebuild=_build,
         )
 
     async def counts(

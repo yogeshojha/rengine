@@ -227,21 +227,21 @@ class SecretService:
     async def leads(self, scope: ScopeLike, f: SecretFilter) -> QueryLeads:
         scope = QueryScope.of(scope)
 
-        async def build() -> QueryLeads:
+        async def build(session: AsyncSession) -> QueryLeads:
             ctx = self._context(scope, utc_now())
             base = surface_secrets.scoped(scope, f, columns=(Secret.id,))
-            await self.session.execute(text(STATEMENT_TIMEOUT))
-            await self.session.execute(text(NO_JIT))
+            await session.execute(text(STATEMENT_TIMEOUT))
+            await session.execute(text(NO_JIT))
             try:
                 return await build_leads(
-                    self.session,
+                    session,
                     base,
                     SECRET_QUERY.examples,
                     lambda q: compile_secret_query(parse_query(q, SECRET_QUERY), ctx),
                     filtered=bool(f.ids),
                 )
             except DBAPIError as exc:
-                await self.session.rollback()
+                await session.rollback()
                 logger.info("secret leads failed", error=str(exc.orig))
                 return QueryLeads()
 
@@ -250,7 +250,8 @@ class SecretService:
             dimension="secrets",
             scans=scope.ids,
             facets=lead_cache.facets_of(f),
-            build=build,
+            build=lambda: build(self.session),
+            rebuild=build,
         )
 
     async def groups(self, scope: ScopeLike, f: SecretFilter, key: str) -> QueryGroups:

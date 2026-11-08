@@ -442,22 +442,22 @@ class SubdomainService:
     ) -> QueryLeads:
         scope = QueryScope.of(scope)
 
-        async def _build() -> QueryLeads:
+        async def _build(session: AsyncSession) -> QueryLeads:
             now = utc_now()
             base = self._scoped(project_id, scope, f, now, columns=(Subdomain.id,))
-            await self.session.execute(text(STATEMENT_TIMEOUT))
-            await self.session.execute(text(NO_JIT))
+            await session.execute(text(STATEMENT_TIMEOUT))
+            await session.execute(text(NO_JIT))
             try:
                 ctx = QueryContext(scope=scope, now=now)
                 return await build_leads(
-                    self.session,
+                    session,
                     base,
                     HOST_QUERY.examples,
                     lambda q: compile_query(parse_query(q), ctx),
                     filtered=f.has_facets(),
                 )
             except DBAPIError as exc:
-                await self.session.rollback()
+                await session.rollback()
                 logger.info("search leads failed", error=str(exc.orig))
                 return QueryLeads()
 
@@ -466,7 +466,8 @@ class SubdomainService:
             dimension="web_assets",
             scans=scope.ids,
             facets=lead_cache.facets_of(f),
-            build=_build,
+            build=lambda: _build(self.session),
+            rebuild=_build,
         )
 
     async def seeds(

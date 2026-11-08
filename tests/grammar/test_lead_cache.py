@@ -211,3 +211,88 @@ async def test_an_unreachable_cache_instance_still_answers(estate, now, monkeypa
 
     assert first.total == second.total == 7
     assert build.calls == 2
+
+
+async def _expire_live(prefix: str) -> None:
+    keys = [
+        key
+        async for key in cache_client().scan_iter(match=f"live:{prefix}:*")
+        if not key.endswith(":stale")
+    ]
+    assert keys
+    await cache_client().delete(*keys)
+
+
+async def test_an_expired_live_copy_is_answered_stale_and_rebuilt_aside(
+    durable_estate, engine, now
+):
+    await durable_estate.scan(
+        "example.com", "live", at=now, status=ScanStatus.RUNNING.value
+    )
+    await durable_estate.session.commit()
+    maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    dimension = f"test-{durable_estate.project_id.hex[:8]}"
+    foreground = _Counter(9)
+    sessions: list[AsyncSession] = []
+
+    async def _rebuild(session: AsyncSession) -> QueryLeads:
+        sessions.append(session)
+        return _answer(11)
+
+    async def _read(build, rebuild=None) -> QueryLeads:
+        async with maker() as session:
+            return await lead_cache.leads(
+                session,
+                dimension=dimension,
+                scans=(durable_estate.scans["live"],),
+                facets='{"case":"aside"}',
+                build=build,
+                rebuild=rebuild,
+            )
+
+    first = await _read(_Counter(3))
+    await _expire_live(f"leads:{dimension}")
+    stale = await _read(foreground, _rebuild)
+    await asyncio.gather(*lead_cache._REFRESHING)
+    fresh = await _read(foreground, _rebuild)
+
+    assert (first.total, stale.total, fresh.total) == (3, 3, 11)
+    assert foreground.calls == 0
+    assert len(sessions) == 1
+    building = [k async for k in cache_client().scan_iter(match="building:*aside*")]
+    assert building == []
+
+
+async def test_a_rebuild_that_raises_releases_its_claim(durable_estate, engine, now):
+    await durable_estate.scan(
+        "example.com", "live", at=now, status=ScanStatus.RUNNING.value
+    )
+    await durable_estate.session.commit()
+    maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    dimension = f"test-{durable_estate.project_id.hex[:8]}"
+
+    async def _broken(_session: AsyncSession) -> QueryLeads:
+        msg = "build failed"
+        raise RuntimeError(msg)
+
+    async def _read(build, rebuild=None) -> QueryLeads:
+        async with maker() as session:
+            return await lead_cache.leads(
+                session,
+                dimension=dimension,
+                scans=(durable_estate.scans["live"],),
+                facets='{"case":"broken"}',
+                build=build,
+                rebuild=rebuild,
+            )
+
+    await _read(_Counter(3))
+    await _expire_live(f"leads:{dimension}")
+    stale = await _read(_Counter(9), _broken)
+    await asyncio.gather(*lead_cache._REFRESHING)
+    retry = _Counter(5)
+    again = await _read(retry)
+
+    assert stale.total == 3
+    assert again.total == 5
+    assert retry.calls == 1

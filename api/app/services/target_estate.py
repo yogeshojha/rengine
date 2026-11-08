@@ -263,6 +263,9 @@ class TargetEstateService:
             facets=str(project_id),
             model=ProjectEstate,
             build=lambda: self._project(project_id, covering),
+            rebuild=lambda session: TargetEstateService(session)._project(
+                project_id, covering
+            ),
         )
 
     async def _project(

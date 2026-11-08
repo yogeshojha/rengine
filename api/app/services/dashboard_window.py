@@ -53,6 +53,9 @@ class DashboardWindowService:
             facets=f"{project_id}|{window}|{picked}",
             model=DashboardWindowCounts,
             build=lambda: self._build(project_id, window, scopes),
+            rebuild=lambda session: DashboardWindowService(session)._build(
+                project_id, window, scopes
+            ),
             ttl=lead_cache.SEARCH_TTL_SECONDS,
         )
 
