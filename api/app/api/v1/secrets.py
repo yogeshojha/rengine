@@ -33,7 +33,9 @@ async def search_secrets(
     service: Annotated[SecretService, Depends(get_service)],
     scope: SecretScope,
     body: SecretFilter,
+    response: Response,
 ):
+    response.headers["Cache-Control"] = "no-store"
     return await lead_cache.cached(
         service.session,
         name="search:secrets",
