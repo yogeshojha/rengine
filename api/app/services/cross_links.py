@@ -167,7 +167,9 @@ class CrossLinkService:
             for value, carrier in await self._host_carriers(scope, column, crossing):
                 out[kind][value].append(carrier)
         for kind, column in _ASSET_COLUMNS.items():
-            values = _capped(held.get(kind, {}))
+            values = await self._asset_crossing(
+                scope, column, _capped(held.get(kind, {}))
+            )
             for value, carrier in await self._asset_carriers(scope, column, values):
                 out[kind][value].append(carrier)
         tracking = CorrelationKind.TRACKING.value
@@ -190,6 +192,20 @@ class CrossLinkService:
             )
             .group_by(column)
             .having(func.count(func.distinct(Subdomain.target_id)) >= MIN_TARGETS)
+        )
+        return {row[0] for row in rows.all()}
+
+    async def _asset_crossing(
+        self, scope: QueryScope, column, values: set[str]
+    ) -> set[str]:
+        """The web asset values more than one target carries."""
+        if not values:
+            return set()
+        rows = await self.session.execute(
+            select(column)
+            .where(scope.match(HttpAsset.scan_id), column.in_(values))
+            .group_by(column)
+            .having(func.count(func.distinct(HttpAsset.target_id)) >= MIN_TARGETS)
         )
         return {row[0] for row in rows.all()}
 
