@@ -43,7 +43,9 @@ def test_channel_levels_mirror():
     text = EVENTS.read_text()
     found = re.findall(r"\{ value: '([^']+)', label: '([^']+)' \}", text)
     assert found == [(level.value, level.label) for level in CHANNEL_LEVELS]
-    assert f"DEFAULT_CHANNEL_LEVEL = '{DEFAULT_CHANNEL_LEVEL}'" in text
+    assert re.search(
+        rf"DEFAULT_CHANNEL_LEVEL(?:: \w+)? = '{DEFAULT_CHANNEL_LEVEL}'", text
+    )
 
 
 def test_every_offered_event_is_one_the_product_sends():

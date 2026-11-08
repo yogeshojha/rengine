@@ -107,6 +107,9 @@ async def test_narrate_async_records_hits_and_calls_under_the_source(book, monke
         async def run_sync(self, fn):
             return fn(None)
 
+        async def commit(self):
+            return None
+
     task = AITask.RULE_SUGGESTION.value
     monkeypatch.setattr(cache, "lookup", lambda *_a, **_k: Hit())
     text = await cache.narrate_async(

@@ -21,7 +21,7 @@ from tools.httpx.parser import _redact_request
 pytestmark = pytest.mark.api
 
 _HEADERS = ["Authorization: Bearer real-token", "X-Env: staging"]
-_TOOLS = {"nuclei": "-header Authorization: Bearer real-token -etags intrusive"}
+_TOOLS = {"nuclei": "-itoken real-token -etags intrusive"}
 _CREDENTIALS = [
     "Proxy-Authorization",
     "X-Goog-Api-Key",

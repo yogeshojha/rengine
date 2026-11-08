@@ -119,9 +119,9 @@ async def _engine(durable_estate) -> tuple[ScanEngineService, uuid.UUID]:
         durable_estate.user_id,
         ScanEngineCreate(
             name="Keyed",
-            global_headers=[f"X-Auth: {CANARY}", "X-Env: staging"],
+            global_headers=[f"X-Auth: {CANARY}", "X-Env: canary-env"],
             tool_options={
-                "nuclei": f"-var apikey={CANARY}a --header=Authorization:{CANARY}b",
+                "nuclei": f"-var apikey={CANARY}a -itoken {CANARY}b",
                 "subfinder": f"-auth {CANARY}c",
             },
             yaml_source=f"name: Keyed\ntool_options:\n  nuclei: -itoken {CANARY}d\n",
@@ -140,7 +140,7 @@ async def test_a_member_reads_no_engine_secret(durable_estate):
     copy = await svc.duplicate(engine_id, pid, durable_estate.user_id)
     for shown in (read.model_dump_json(), listed[0].model_dump_json(), exported):
         assert CANARY not in shown
-        assert "staging" not in shown
+        assert "canary-env" not in shown
     assert read.tool_options == {"nuclei": MASK, "subfinder": MASK}
     assert read.global_headers == [f"X-Auth: {MASK}", f"X-Env: {MASK}"]
     assert CANARY not in copy.model_dump_json()
@@ -168,7 +168,7 @@ async def test_a_member_saving_masked_tool_args_keeps_them(durable_estate):
     )
     stored = await svc._get_or_404(engine_id, pid)
     assert stored.tool_options["subfinder"] == f"-auth {CANARY}c"
-    assert stored.global_headers == [f"X-Auth: {CANARY}", "X-Env: staging"]
+    assert stored.global_headers == [f"X-Auth: {CANARY}", "X-Env: canary-env"]
 
 
 async def test_engine_headers_and_tool_args_are_sealed_at_rest(durable_estate):

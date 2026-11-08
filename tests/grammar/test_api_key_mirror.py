@@ -89,7 +89,7 @@ def test_port_source_mirror():
     names = re.findall(r"PortSource\.(\w+)", passive.group(1))
     assert {PortSource[n].value for n in names} == PASSIVE_PORT_SOURCES
     for source in PortSource:
-        assert re.search(rf"\b{source.value}: '", text), (
+        assert re.search(rf"(\b{source.value}|PortSource\.{source.name}\]): '", text), (
             f"{source.value} has no label or help"
         )
 

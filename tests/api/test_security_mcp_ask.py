@@ -615,7 +615,10 @@ def _reader() -> ToolContext:
     ("name", "args"),
     [
         ("query_assets", {"dimension": "secrets"}),
-        ("group_assets", {"dimension": "secrets", "group_by": "value"}),
+        (
+            "group_assets",
+            {"dimension": "secrets", "group_by": "value", "target": "example.com"},
+        ),
     ],
 )
 async def test_mcp_refuses_secret_values(quiet, name, args):

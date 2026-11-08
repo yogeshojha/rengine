@@ -171,8 +171,12 @@ async def test_a_handoff_restores_the_run_credentials(estate, now):
     )
     service, row, _ = await _connector(estate)
     row.restore_credentials = True
+    owner = await estate.session.get(User, estate.user_id)
     await service.handoff(
-        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id])
+        row.id,
+        estate.project_id,
+        HandoffRequest(finding_ids=[finding.id]),
+        user=owner,
     )
     (sent,) = await service.take_actions(row)
     assert "Authorization: Bearer real-token" in sent.request

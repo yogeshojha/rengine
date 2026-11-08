@@ -137,7 +137,7 @@ async def test_a_member_cannot_import_tool_args(durable):
         ("nuclei", "-cdpe ws://127.0.0.1:9222", "-cdpe"),
         (
             "httpx",
-            "-ss -headless-options=--renderer-cmd-prefix=id",
+            "-fr -headless-options=--renderer-cmd-prefix=id",
             "-headless-options",
         ),
         ("dnsx", "-output /app/stages/registry.py", "-output"),
