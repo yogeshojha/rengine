@@ -123,7 +123,6 @@
 		</div>
 	</div>
 	{#if showTarget && trend}
-		<!-- the name gets the room first; the trend shows once the table is wide enough -->
 		<span class="hidden @6xl/scans:contents">
 			<TrendSpark points={trend.points} current={scan.id} {onJump} />
 		</span>

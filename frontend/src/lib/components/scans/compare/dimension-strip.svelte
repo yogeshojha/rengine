@@ -60,7 +60,6 @@
 	</ToggleGroup.Item>
 {/snippet}
 
-<!-- Two balanced rows of tiles until the strip is wide enough (72rem) for one. -->
 <div
 	class="@container overflow-hidden border-b"
 	style="--tiles: {tiles}; --tiles-half: {Math.ceil(tiles / 2)}"

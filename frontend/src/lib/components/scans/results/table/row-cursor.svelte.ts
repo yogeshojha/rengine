@@ -2,17 +2,13 @@ function inLayer(target: EventTarget | null): boolean {
 	return target instanceof Element && target.closest('[role=dialog], [role=alertdialog]') !== null;
 }
 
-/**
- * The keyboard row cursor the results tables share. The cursor is real focus: j/k move focus
- * between rows, focusing a row (Tab or click) moves the cursor, and a closing detail sheet
- * hands focus back to the row it last showed.
- */
+/** The keyboard row cursor the results tables share. */
 export class RowCursor {
 	index = $state(-1);
 	readonly #attr: string;
 	#root: HTMLElement | null = null;
 
-	/** `attr` is the attribute carrying each row's index, e.g. `data-row-index`. */
+	/** `attr` is the attribute carrying each row's index. */
 	constructor(attr: string) {
 		this.#attr = attr;
 	}
@@ -53,10 +49,7 @@ export class RowCursor {
 		if (i >= 0) this.index = i;
 	}
 
-	/**
-	 * j/k and the arrows move, Enter opens the cursor row, Esc clears.
-	 * Returns true when it handled the key.
-	 */
+	/** j/k and the arrows move, Enter opens the cursor row, Esc clears. */
 	keys(e: KeyboardEvent, count: number, open: (i: number) => void): boolean {
 		if (e.key === 'j' || e.key === 'ArrowDown') {
 			e.preventDefault();
@@ -67,7 +60,6 @@ export class RowCursor {
 		} else if (e.key === 'Enter' && this.index >= 0 && this.index < count) {
 			open(this.index);
 		} else if (e.key === 'Escape') {
-			// an Esc that closed a sheet or dialog has already handed focus back to the cursor row
 			if (!inLayer(e.target)) this.clear();
 		} else {
 			return false;

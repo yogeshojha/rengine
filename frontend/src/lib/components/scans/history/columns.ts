@@ -1,4 +1,4 @@
-// columns show by the table's own width (@container/scans), not the window's
+// column breakpoints read @container/scans
 export const COL = {
 	select: 'w-6 shrink-0',
 	target: 'min-w-[200px] max-w-[420px] flex-1',

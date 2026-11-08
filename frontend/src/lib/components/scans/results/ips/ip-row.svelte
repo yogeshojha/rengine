@@ -89,8 +89,7 @@
 
 	let ptr = $derived(g.ptr_hostnames ?? []);
 	let ports = $derived(g.ports ?? []);
-	// The w-44 ports column fits about 16 digits of port badges beside the "+N" trigger;
-	// show fewer when ports are long so the row stays on one line.
+	// port badge digits the w-44 column fits beside the +N trigger
 	const PORT_DIGITS = 16;
 	let shownPorts = $derived.by(() => {
 		let digits = 0;

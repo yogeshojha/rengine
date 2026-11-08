@@ -69,7 +69,7 @@
 		}
 		return shown;
 	});
-	// the menu keeps the suggestions it opened with, so its rows hold still while counts move
+	// menu rows pinned at open
 	let pinned = $state<FilterSuggestion[]>([]);
 	let menuSuggestions = $derived(
 		pinned.map((p) => suggestions.find((s) => s.query === p.query) ?? { ...p, count: null })

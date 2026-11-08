@@ -1,8 +1,7 @@
 <script lang="ts" module>
 	import { SurfaceDimension } from '$lib/config/surface';
 
-	// Titles that are a host, address or URL read best in mono; names (checks, software,
-	// secret kinds) read as prose.
+	// dimensions whose titles render in mono
 	const MONO_TITLE: ReadonlySet<string> = new Set([
 		SurfaceDimension.WEB_ASSETS,
 		SurfaceDimension.ENDPOINTS,

@@ -87,10 +87,7 @@ export function columnPx(col: TableColumn): number {
 	return Math.max(size.w, size.min);
 }
 
-/**
- * The chosen columns that fit beside the lead columns in `width` px, in order; the rest fold
- * away until there is room, like the targets list. 0 means not measured yet, so keep them all.
- */
+/** The chosen columns that fit beside the lead columns in `width` px; 0 is unmeasured. */
 export function fitColumns(
 	columns: TableColumn[],
 	width: number,
