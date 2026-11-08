@@ -69,7 +69,7 @@ class CveLookup(Tool):
     name = "cve"
     title = "CVE"
     description = (
-        "Exploitation likelihood, known-exploited status and published exploits."
+        "Exploitation likelihood, known exploited status and published exploits."
     )
     group = ToolGroup.INTEL.value
     icon = "shield-alert"
