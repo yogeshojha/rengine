@@ -1509,7 +1509,7 @@
 					loading={renderLoading}
 					failed={renderFailed}
 					onRetry={loadRenders}
-					onFilter={(token) => setQuery({ ...query, search: token })}
+					onFilter={(token) => setQuery({ ...query, search: appendToken(query.search, token) })}
 					onHost={openHost}
 				/>
 			{:else if view === 'gallery'}
