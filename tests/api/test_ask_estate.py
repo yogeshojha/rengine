@@ -655,7 +655,7 @@ async def test_a_filtered_scope_counts_rows_another_target_shares(estate, now):
 def test_a_scan_thread_holds_tools_that_read_other_runs():
     names = {t.name for t in estate_service.agent_tools(one_scan=True)}
     assert not names & ACROSS_RUNS
-    assert {t.name for t in estate_service.agent_tools()} | ACROSS_RUNS >= ACROSS_RUNS
+    assert ACROSS_RUNS.issubset({t.name for t in estate_service.agent_tools()})
     assert estate_service._withheld("what_changed", one_scan=True)
     assert estate_service._withheld("what_changed", one_scan=False) is None
 
