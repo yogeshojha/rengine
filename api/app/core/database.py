@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -8,6 +9,12 @@ from shared.definitions.channels import POOL_SIZE as CHANNELS_POOL_SIZE
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
+
+CONNECT_TIMEOUT_SECONDS = 10
+COMMAND_TIMEOUT_SECONDS = 30
+DATABASE_UNAVAILABLE = (
+    "The database did not respond. Check that the db service is running."
+)
 
 _server_settings = {"application_name": f"{APP_NAME}-api"}
 
@@ -25,7 +32,11 @@ engine = create_async_engine(
     pool_timeout=settings.DB_POOL_TIMEOUT,
     pool_recycle=settings.DB_POOL_RECYCLE,
     pool_pre_ping=True,
-    connect_args={"server_settings": _server_settings},
+    connect_args={
+        "server_settings": _server_settings,
+        "timeout": CONNECT_TIMEOUT_SECONDS,
+        "command_timeout": COMMAND_TIMEOUT_SECONDS,
+    },
 )
 
 async_db_session = async_sessionmaker(
@@ -37,7 +48,13 @@ async_db_session = async_sessionmaker(
 
 async def get_session() -> AsyncSession:
     async with async_db_session() as session:
-        yield session
+        try:
+            yield session
+        except TimeoutError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=DATABASE_UNAVAILABLE,
+            ) from exc
 
 
 def pool_demand() -> int:
