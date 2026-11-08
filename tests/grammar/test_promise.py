@@ -19,6 +19,7 @@ from shared.models.secret import SecretFilter
 from shared.models.software import SoftwareFilter
 from shared.models.subdomain import SubdomainFilter
 from shared.models.vulnerability import VulnerabilityFilter
+from shared.services.asset_query import compiler
 
 pytestmark = pytest.mark.grammar
 
@@ -302,3 +303,18 @@ async def test_a_host_count_equals_the_addresses_and_services_it_opens(estate, n
             assert found.error is None, query
             assert counted.counts[query] == found.total, query
         assert counted.counts["host:admin"] > 0
+
+
+async def test_a_short_word_matches_what_each_field_matches(estate, now, monkeypatch):
+    scan = await _rich_scan(estate, now)
+    service = SubdomainService(estate.session)
+    words = ["w", "ad", "ng", "10", "lo", "zz"]
+    short = {}
+    for word in words:
+        found = await service.search(estate.project_id, scan, SubdomainFilter(q=word))
+        short[word] = sorted(row.name for row in found.items)
+    monkeypatch.setattr(compiler, "TRIGRAM_MIN", 0)
+    for word in words:
+        found = await service.search(estate.project_id, scan, SubdomainFilter(q=word))
+        assert short[word] == sorted(row.name for row in found.items), word
+    assert short["ad"] == ["admin.example.com", "dead.example.com"]

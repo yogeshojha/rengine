@@ -41,6 +41,7 @@ from . import predicates as preds
 from .ast import Compare, Or, QuerySyntaxError, Term
 from .scope import QueryScope
 from .terms import (
+    TRIGRAM_MIN,
     cdn_match,
     date_match,
     folded_match,
@@ -489,6 +490,10 @@ def compile_term(term: Term, ctx: QueryContext):
     if not branches:
         return false()
     reach = ctx.scope.match(Subdomain.scan_id)
+    if len(term.value) < TRIGRAM_MIN:
+        return Subdomain.id.in_(
+            select(Subdomain.id).where(reach, or_(*branches)).correlate(None)
+        )
     reachable = union_all(
         *[
             select(Subdomain.id).where(reach, branch).correlate(None)

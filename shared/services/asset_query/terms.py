@@ -40,7 +40,7 @@ _FLIPPED = {Op.GT: Op.LT, Op.GTE: Op.LTE, Op.LT: Op.GT, Op.LTE: Op.GTE}
 _TRUTHY = {"yes", "true", "1", "any", "present"}
 _FALSY = {"no", "false", "0", "none", "absent"}
 _EMPTY_ARRAY = "[]"
-_TRIGRAM_MIN = 3
+TRIGRAM_MIN = 3
 
 
 def negate(expr):
@@ -80,10 +80,8 @@ def trigram_match(col, cmp: Compare):
     if cmp.op not in (Op.EQ, Op.NE):
         return string_match(col, cmp)
     lowered = [v.lower() for v in cmp.values]
-    parts = [
-        col.ilike(exact(v), escape="\\") for v in lowered if len(v) >= _TRIGRAM_MIN
-    ]
-    short = [v for v in lowered if len(v) < _TRIGRAM_MIN]
+    parts = [col.ilike(exact(v), escape="\\") for v in lowered if len(v) >= TRIGRAM_MIN]
+    short = [v for v in lowered if len(v) < TRIGRAM_MIN]
     if short:
         parts.append(func.lower(col).in_(short))
     matched = or_(*parts)
