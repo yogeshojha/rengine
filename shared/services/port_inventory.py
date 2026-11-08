@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 _CONSTRAINT = "uq_port_scan_ip_num_proto"
 _BATCH = 1000
+_TABLE = Port.__table__
 
 
 @dataclass
@@ -84,6 +85,42 @@ def _row(
     )
 
 
+def _upsert_statement(keep_source: bool):
+    statement = insert(_TABLE)
+    excluded = statement.excluded
+    stronger = _rank(excluded.source) >= _rank(_TABLE.c.source)
+    origin = (
+        _TABLE.c.source
+        if keep_source
+        else case((stronger, excluded.source), else_=_TABLE.c.source)
+    )
+    return statement.on_conflict_do_update(
+        constraint=_CONSTRAINT,
+        set_={
+            "state": case((stronger, excluded.state), else_=_TABLE.c.state),
+            "service_name": func.coalesce(excluded.service_name, _TABLE.c.service_name),
+            "service_class": case(
+                (
+                    excluded.service_class != ServiceClass.OTHER.value,
+                    excluded.service_class,
+                ),
+                else_=_TABLE.c.service_class,
+            ),
+            "source": origin,
+            "is_http": or_(_TABLE.c.is_http, excluded.is_http),
+            "tls": or_(_TABLE.c.tls, excluded.tls),
+            "product": func.coalesce(excluded.product, _TABLE.c.product),
+            "version": func.coalesce(excluded.version, _TABLE.c.version),
+            "banner": func.coalesce(excluded.banner, _TABLE.c.banner),
+            "cpe": case(
+                (func.json_array_length(excluded.cpe) > 0, excluded.cpe),
+                else_=_TABLE.c.cpe,
+            ),
+            "discovered_at": func.least(_TABLE.c.discovered_at, excluded.discovered_at),
+        },
+    )
+
+
 def upsert(
     session: Session,
     *,
@@ -120,45 +157,8 @@ def upsert(
         for obs in ordered
     ]
 
+    statement = _upsert_statement(keep_source)
     for start in range(0, len(rows), _BATCH):
-        statement = insert(Port).values(rows[start : start + _BATCH])
-        excluded = statement.excluded
-        stronger = _rank(excluded.source) >= _rank(Port.source)
-        origin = (
-            Port.source
-            if keep_source
-            else case((stronger, excluded.source), else_=Port.source)
-        )
-        session.execute(
-            statement.on_conflict_do_update(
-                constraint=_CONSTRAINT,
-                set_={
-                    "state": case((stronger, excluded.state), else_=Port.state),
-                    "service_name": func.coalesce(
-                        excluded.service_name, Port.service_name
-                    ),
-                    "service_class": case(
-                        (
-                            excluded.service_class != ServiceClass.OTHER.value,
-                            excluded.service_class,
-                        ),
-                        else_=Port.service_class,
-                    ),
-                    "source": origin,
-                    "is_http": or_(Port.is_http, excluded.is_http),
-                    "tls": or_(Port.tls, excluded.tls),
-                    "product": func.coalesce(excluded.product, Port.product),
-                    "version": func.coalesce(excluded.version, Port.version),
-                    "banner": func.coalesce(excluded.banner, Port.banner),
-                    "cpe": case(
-                        (func.json_array_length(excluded.cpe) > 0, excluded.cpe),
-                        else_=Port.cpe,
-                    ),
-                    "discovered_at": func.least(
-                        Port.discovered_at, excluded.discovered_at
-                    ),
-                },
-            )
-        )
+        session.execute(statement, rows[start : start + _BATCH])
     session.commit()
     return len(rows)

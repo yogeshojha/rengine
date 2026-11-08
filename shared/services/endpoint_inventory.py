@@ -383,16 +383,20 @@ def _changes(row: Endpoint, merged: _Merged, source: str, now: datetime) -> dict
     return scrub(changed)
 
 
+def _insert_statement():
+    table = Endpoint.__table__
+    return (
+        insert(table)
+        .on_conflict_do_nothing(constraint=_CONSTRAINT)
+        .returning(table.c.signature)
+    )
+
+
 def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
     """Insert inside a savepoint."""
     try:
         with session.begin_nested():
-            written = session.execute(
-                insert(Endpoint)
-                .values(rows)
-                .on_conflict_do_nothing(constraint=_CONSTRAINT)
-                .returning(Endpoint.signature)
-            )
+            written = session.execute(_insert_statement(), rows)
             return set(written.scalars().all()), 0
     except REFUSED_ROW:
         logger.warning("endpoint batch rejected, retrying row by row")
@@ -401,12 +405,7 @@ def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
     for row in rows:
         try:
             with session.begin_nested():
-                written = session.execute(
-                    insert(Endpoint)
-                    .values([row])
-                    .on_conflict_do_nothing(constraint=_CONSTRAINT)
-                    .returning(Endpoint.signature)
-                )
+                written = session.execute(_insert_statement(), [row])
                 created.update(written.scalars().all())
         except REFUSED_ROW:
             refused += 1
@@ -595,7 +594,7 @@ def _store_responses(session: Session, rows: list[dict]) -> int:
     rows.sort(key=lambda r: r["endpoint_id"])
     try:
         with session.begin_nested():
-            session.execute(_response_upsert(rows))
+            session.execute(_response_upsert(), rows)
         return 0
     except REFUSED_ROW:
         logger.warning("response batch refused, retrying row by row")
@@ -603,16 +602,17 @@ def _store_responses(session: Session, rows: list[dict]) -> int:
     for row in rows:
         try:
             with session.begin_nested():
-                session.execute(_response_upsert([row]))
+                session.execute(_response_upsert(), [row])
         except REFUSED_ROW:
             refused += 1
     return refused
 
 
-def _response_upsert(rows: list[dict]):
-    stmt = insert(EndpointResponse).values(rows)
+def _response_upsert():
+    table = EndpointResponse.__table__
+    stmt = insert(table)
     return stmt.on_conflict_do_update(
-        index_elements=[EndpointResponse.endpoint_id],
+        index_elements=[table.c.endpoint_id],
         set_={
             "scan_id": stmt.excluded.scan_id,
             "raw_response_header": stmt.excluded.raw_response_header,

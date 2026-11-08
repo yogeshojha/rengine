@@ -213,7 +213,7 @@ def _insert(session: Session, chunk: list[dict]) -> int:
     """Insert one chunk, dropping only the rows the database refuses."""
     try:
         with session.begin_nested():
-            return len(session.execute(_statement(chunk)).scalars().all())
+            return len(session.execute(_statement(), chunk).scalars().all())
     except REFUSED_ROW:
         if len(chunk) == 1:
             logger.warning("finding refused", fingerprint=chunk[0].get("fingerprint"))
@@ -222,12 +222,12 @@ def _insert(session: Session, chunk: list[dict]) -> int:
         return _insert(session, chunk[:half]) + _insert(session, chunk[half:])
 
 
-def _statement(chunk: list[dict]):
+def _statement():
+    table = Vulnerability.__table__
     return (
-        insert(Vulnerability)
-        .values(chunk)
+        insert(table)
         .on_conflict_do_nothing(constraint="uq_vuln_scan_fingerprint")
-        .returning(Vulnerability.id)
+        .returning(table.c.id)
     )
 
 

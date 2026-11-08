@@ -28,7 +28,7 @@ class _Refusing:
     def begin_nested(self):
         return nullcontext()
 
-    def execute(self, rows: list[dict]):
+    def execute(self, _statement, rows: list[dict]):
         if any(NUL in str(value) for row in rows for value in row.values()):
             raise self.error
         self.stored.extend(rows)
@@ -37,7 +37,7 @@ class _Refusing:
 
 @pytest.mark.parametrize("error", REFUSALS, ids=["psycopg", "asyncpg"])
 def test_a_refused_response_is_dropped_and_counted(monkeypatch, error):
-    monkeypatch.setattr(endpoint_inventory, "_response_upsert", lambda rows: rows)
+    monkeypatch.setattr(endpoint_inventory, "_response_upsert", lambda: None)
     session = _Refusing(error)
     kept, refused = uuid.uuid4(), uuid.uuid4()
     rows = [
@@ -51,7 +51,7 @@ def test_a_refused_response_is_dropped_and_counted(monkeypatch, error):
 
 @pytest.mark.parametrize("error", REFUSALS, ids=["psycopg", "asyncpg"])
 def test_a_refused_finding_is_dropped_and_the_rest_written(monkeypatch, error):
-    monkeypatch.setattr(vuln_inventory, "_statement", lambda chunk: chunk)
+    monkeypatch.setattr(vuln_inventory, "_statement", lambda: None)
     session = _Refusing(error)
     chunk = [{"fingerprint": f"fp{n}", "response": "ok"} for n in range(4)]
     chunk[2]["response"] = f"bad{NUL}"
