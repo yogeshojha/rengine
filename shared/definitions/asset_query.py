@@ -3249,7 +3249,7 @@ SECRET_FIELDS: tuple[QueryField, ...] = (
         type=FieldType.STRING,
         group="Secret",
         description="Identity of one value across scans and targets.",
-        example="fingerprint=3a9f…",
+        example="fingerprint:3a9f",
     ),
     QueryField(
         name="state",
