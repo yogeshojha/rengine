@@ -3,10 +3,14 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-MAX_ASSET_SEARCH = 200
+from shared.definitions.target_assets import (
+    ASSET_SORTS,
+    ASSET_STATES,
+    AssetSort,
+    AssetState,
+)
 
-ASSET_STATES: tuple[str, ...] = ("all", "current", "new", "gone")
-ASSET_SORTS: tuple[str, ...] = ("name", "first_seen", "last_seen", "scans", "status")
+MAX_ASSET_SEARCH = 200
 
 
 def _check_state(v: str) -> str:
@@ -48,9 +52,9 @@ class TargetAssetRow(BaseModel):
 class TargetAssetFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     search: str | None = Field(default=None, max_length=MAX_ASSET_SEARCH)
-    state: str = Field(default="all", max_length=10)
+    state: str = Field(default=AssetState.ALL.value, max_length=10)
     live: bool = False
-    sort: str = Field(default="name", max_length=20)
+    sort: str = Field(default=AssetSort.NAME.value, max_length=20)
     order: str = Field(default="asc", max_length=4)
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0, le=100_000_000)
