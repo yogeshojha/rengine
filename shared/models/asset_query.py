@@ -2,7 +2,13 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.definitions.asset_query import MAX_FACET_VALUE_LENGTH, MAX_QUERY_LENGTH
+from shared.definitions.ports import MAX_PORT
+from shared.utils.validation import MAX_ASN
+
+FacetValue = Annotated[str, Field(max_length=MAX_FACET_VALUE_LENGTH)]
+FacetPort = Annotated[int, Field(ge=0, le=MAX_PORT)]
+FacetAsn = Annotated[int, Field(ge=0, le=MAX_ASN)]
 
 
 class QueryFieldSpec(BaseModel):

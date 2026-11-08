@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.surface import MAX_SELECTED_ROWS
-from shared.models.asset_query import QueryError
+from shared.models.asset_query import FacetAsn, FacetPort, FacetValue, QueryError
 from shared.models.http_asset import HttpAssetRead
 from shared.models.ip_address import IpAddressRead
 from shared.models.port import PortRead
@@ -98,12 +98,12 @@ class IpGroupPage(BaseModel):
 class IpGroupFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
-    ids: list[str] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
-    exposure: list[str] = Field(default_factory=list, max_length=4)
-    asns: list[int] = Field(default_factory=list, max_length=100)
-    countries: list[str] = Field(default_factory=list, max_length=100)
-    ports: list[int] = Field(default_factory=list, max_length=200)
-    services: list[str] = Field(default_factory=list, max_length=200)
+    ids: list[FacetValue] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
+    exposure: list[FacetValue] = Field(default_factory=list, max_length=4)
+    asns: list[FacetAsn] = Field(default_factory=list, max_length=100)
+    countries: list[FacetValue] = Field(default_factory=list, max_length=100)
+    ports: list[FacetPort] = Field(default_factory=list, max_length=200)
+    services: list[FacetValue] = Field(default_factory=list, max_length=200)
     cdn: str = Field(default="any", max_length=10)
     alive: str = Field(default="any", max_length=10)
     version: int = Field(default=0, ge=0, le=6)
@@ -211,12 +211,12 @@ class ServiceFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = Field(default=None, max_length=MAX_QUERY_LENGTH)
     ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
-    classes: list[str] = Field(default_factory=list, max_length=10)
-    ports: list[int] = Field(default_factory=list, max_length=200)
-    services: list[str] = Field(default_factory=list, max_length=200)
-    sources: list[str] = Field(default_factory=list, max_length=10)
-    asns: list[int] = Field(default_factory=list, max_length=100)
-    countries: list[str] = Field(default_factory=list, max_length=100)
+    classes: list[FacetValue] = Field(default_factory=list, max_length=10)
+    ports: list[FacetPort] = Field(default_factory=list, max_length=200)
+    services: list[FacetValue] = Field(default_factory=list, max_length=200)
+    sources: list[FacetValue] = Field(default_factory=list, max_length=10)
+    asns: list[FacetAsn] = Field(default_factory=list, max_length=100)
+    countries: list[FacetValue] = Field(default_factory=list, max_length=100)
     cdn: str = Field(default="any", max_length=10)
     http: str = Field(default="any", max_length=10)
     sensitive: bool = False

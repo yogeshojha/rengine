@@ -72,6 +72,7 @@ from shared.definitions.vulnerabilities import (
 SECRET_SOURCE_KEYS: tuple[str, ...] = tuple(v.value for v in _SecretSource)
 
 MAX_QUERY_LENGTH = 2000
+MAX_FACET_VALUE_LENGTH = 500
 MAX_QUERY_NODES = 40
 MAX_FREE_TERMS = 8
 MAX_NUMBER = 2_147_483_647
