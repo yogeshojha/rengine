@@ -31,6 +31,6 @@ async def get_http_asset(
     detail = await service.get(asset_id, project_id)
     if detail is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="HTTP asset not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Web asset not found."
         )
     return detail
