@@ -105,6 +105,7 @@
 	let groupBy = $state<string>(initial.get('sec_group') ?? '');
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let sideLoaded = $state(false);
+	let sideFailed = $state(false);
 	let pageSize = $state<number>(readPref(STORAGE_KEYS.secretPageSize, RESULTS_PAGE_SIZE));
 	let sort = $state<{ key: string; dir: 1 | -1 }>(
 		initialSort[0]
@@ -177,6 +178,8 @@
 	$effect(() => writePref(STORAGE_KEYS.secretPageSize, pageSize));
 
 	let reqId = 0;
+	let groupReq = 0;
+	let sideReq = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 
 	function filterOf(): SecretFilter {
@@ -218,6 +221,7 @@
 	}
 
 	async function loadGroups() {
+		const mine = ++groupReq;
 		if (!groupBy || !ready) {
 			groupSet = null;
 			return;
@@ -225,13 +229,14 @@
 		groupLoading = true;
 		groupFailed = false;
 		try {
-			groupSet = await secretsApi.groups(projectId, scanId, groupBy, {
+			const result = await secretsApi.groups(projectId, scanId, groupBy, {
 				q: search.trim() || undefined
 			});
+			if (mine === groupReq) groupSet = result;
 		} catch {
-			groupFailed = true;
+			if (mine === groupReq) groupFailed = true;
 		} finally {
-			groupLoading = false;
+			if (mine === groupReq) groupLoading = false;
 		}
 	}
 
@@ -246,16 +251,21 @@
 
 	async function loadSide() {
 		if (!ready) return;
+		const mine = ++sideReq;
 		try {
 			const [f, c] = await Promise.all([
 				secretsApi.facets(projectId, scanId),
 				secretsApi.coverage(projectId, scanId)
 			]);
+			if (mine !== sideReq) return;
 			facets = f;
 			coverage = c;
 			sideLoaded = true;
+			sideFailed = false;
 			onScanTotal?.(c.secrets);
-		} catch {}
+		} catch {
+			if (mine === sideReq) sideFailed = true;
+		}
 	}
 
 	const live = new LiveRefresh(() => {
@@ -516,7 +526,17 @@
 		/>
 	</div>
 
-	<CoverageStrip {coverage} {projectWide} />
+	{#if sideFailed}
+		<div class="flex items-center gap-2 border-b px-4 py-2 text-xs">
+			<TriangleAlert class="size-3.5 shrink-0 text-warning" />
+			<span>Coverage not loaded</span>
+			<Button variant="ghost" size="sm" class="ml-auto h-7" onclick={() => void loadSide()}>
+				Retry
+			</Button>
+		</div>
+	{:else}
+		<CoverageStrip {coverage} {projectWide} />
+	{/if}
 
 	<FilterToolbar
 		facets={[]}
