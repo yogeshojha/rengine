@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi import HTTPException, status
 from sqlalchemy import Uuid, delete, select, tuple_
 
+from app.core.validation_errors import validation_detail
 from shared.definitions.surface import SurfaceDimension
 from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.http_asset import HttpAsset
@@ -57,7 +58,9 @@ def _spec(dimension: str) -> DeleteSpec:
     if spec is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Unknown dimension '{dimension}'.",
+            detail=validation_detail(
+                ["body", "dimension"], f"Unknown dimension '{dimension}'."
+            ),
         )
     return spec
 
@@ -67,8 +70,11 @@ def _column(spec: DeleteSpec, key: str | None):
     if name not in spec.keys:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Rows cannot be addressed by '{name}'. Expected one of "
-            f"{', '.join(spec.keys)}.",
+            detail=validation_detail(
+                ["body", "key"],
+                f"Rows cannot be addressed by '{name}'. Expected one of "
+                f"{', '.join(spec.keys)}.",
+            ),
         )
     return getattr(spec.model, name)
 
