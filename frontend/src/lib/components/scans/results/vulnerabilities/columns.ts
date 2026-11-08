@@ -18,7 +18,7 @@ export const VULN_LEAD_COLUMNS: TableColumn[] = [
 export const ISSUE_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'issue',
-		label: 'Weakness',
+		label: 'Check',
 		sort: 'risk',
 		width: 'min-w-0 flex-1 contain-inline-size sm:w-80 sm:flex-none'
 	}

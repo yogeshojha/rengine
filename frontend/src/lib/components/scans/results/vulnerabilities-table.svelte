@@ -476,8 +476,8 @@
 		return m;
 	});
 	let ranScan = $derived(overview?.ran ?? false);
-	let noun = $derived(isIssues ? 'weakness' : byCheck ? 'check' : VULN.noun);
-	let nounPlural = $derived(isIssues ? 'weaknesses' : byCheck ? 'checks' : VULN.nounPlural);
+	let noun = $derived(isIssues || byCheck ? 'check' : VULN.noun);
+	let nounPlural = $derived(isIssues || byCheck ? 'checks' : VULN.nounPlural);
 
 	$effect(() => writePref(STORAGE_KEYS.vulnsDensity, density));
 	$effect(() => writePref(STORAGE_KEYS.vulnsPageSize, pageSize));
@@ -1710,7 +1710,7 @@
 			lead={ISSUE_LEAD_COLUMNS}
 			columns={issueColumns}
 			{selectAllChecked}
-			selectAllLabel="Select all weaknesses on this page"
+			selectAllLabel="Select all checks on this page"
 			onSelectAll={toggleSelectAll}
 			sortKey={sort.key}
 			sortDir={sort.dir}
