@@ -9,7 +9,13 @@ from shared.definitions.correlation import (
 )
 from shared.models.subdomain import SubdomainFilter
 from shared.services.asset_query.renders import cluster, is_identity
-from shared.utils.imagehash import distance, hex_digest, to_signed, to_unsigned
+from shared.utils.imagehash import (
+    NearIndex,
+    distance,
+    hex_digest,
+    to_signed,
+    to_unsigned,
+)
 
 pytestmark = pytest.mark.grammar
 
@@ -56,6 +62,16 @@ def test_a_cluster_counts_every_hash_its_filter_would_reach():
 def test_a_blank_hash_never_becomes_a_representative():
     groups = cluster({0: 40, _PAGE: 2})
     assert [g.value for g in groups] == [_PAGE]
+
+
+def test_the_near_index_finds_what_a_full_scan_finds():
+    values = [_PAGE, _NEAR, _FAR, to_signed(0xFFFFFFFFFFFFFFFF), 0]
+    values += [_PAGE ^ (1 << bit) for bit in range(0, 64, 7)]
+    values += [to_signed(to_unsigned(_FAR) ^ (0b11 << bit)) for bit in range(0, 62, 9)]
+    index = NearIndex(values, SCREENSHOT_DISTANCE)
+    for value in values:
+        expected = {v for v in values if distance(value, v) <= SCREENSHOT_DISTANCE}
+        assert index.near(value) == expected
 
 
 def test_a_digest_round_trips():
