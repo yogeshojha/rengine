@@ -30,6 +30,7 @@
 		PORT_SOURCE_HELP,
 		PORT_SOURCE_LABELS,
 		SCAN_POLICY_LABELS,
+		SENSITIVE_LABEL,
 		SERVICE_CLASS_ICONS,
 		serviceClassLabel
 	} from '$lib/config/service-classes';
@@ -135,7 +136,7 @@
 						<Badge variant="secondary" class="font-normal">TLS</Badge>
 					{/if}
 					{#if s.is_sensitive}
-						<Badge variant="warning" class="font-normal">Sensitive</Badge>
+						<Badge variant="warning" class="font-normal">{SENSITIVE_LABEL}</Badge>
 					{/if}
 					{#if s.is_cdn}
 						<Badge variant="info" class="font-normal">{s.cdn_name ?? 'CDN'}</Badge>

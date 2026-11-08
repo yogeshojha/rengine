@@ -21,6 +21,7 @@
 	import VerbRail from './verb-rail.svelte';
 	import { SIGNAL_TONE_CLASS, signalSpec } from '$lib/config/compare';
 	import { surfaceSpec } from '$lib/config/surface';
+	import { SENSITIVE_LABEL } from '$lib/config/service-classes';
 	import { CHANGE_VERB, type ChangeRow } from '$lib/types/compare';
 
 	interface Props {
@@ -60,7 +61,7 @@
 				</Badge>
 			{/if}
 			{#if row.sensitive}
-				<Badge variant="warning" class="px-1.5 py-0 text-2xs">Sensitive</Badge>
+				<Badge variant="warning" class="px-1.5 py-0 text-2xs">{SENSITIVE_LABEL}</Badge>
 			{/if}
 
 			{#if row.verb !== CHANGE_VERB.UNCHANGED}

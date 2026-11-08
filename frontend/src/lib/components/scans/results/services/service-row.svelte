@@ -32,6 +32,7 @@
 		PASSIVE_PORT_SOURCES,
 		PORT_SOURCE_HELP,
 		PORT_SOURCE_LABELS,
+		SENSITIVE_HELP,
 		SERVICE_CLASS_FILL,
 		serviceClassLabel
 	} from '$lib/config/service-classes';
@@ -172,7 +173,7 @@
 							</span>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>An administrative or database port</Tooltip.Content>
+					<Tooltip.Content>{SENSITIVE_HELP}</Tooltip.Content>
 				</Tooltip.Root>
 			</span>
 

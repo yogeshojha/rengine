@@ -16,7 +16,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
-	import { isSensitivePort } from '$lib/config/service-classes';
+	import { isSensitivePort, SENSITIVE_HELP, SENSITIVE_LABEL } from '$lib/config/service-classes';
 	import { exactToken, filterToken, type IpGroupRead } from '$lib/utilities/scan-insights';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
@@ -226,9 +226,7 @@
 									{@render chip(
 										`${p.number}${p.service_name ? `/${p.service_name}` : ''}`,
 										`port:${p.number}`,
-										isSensitivePort(p.number)
-											? 'An administrative or database port'
-											: 'Filter by port',
+										isSensitivePort(p.number) ? SENSITIVE_HELP : 'Filter by port',
 										true,
 										isSensitivePort(p.number)
 									)}
@@ -237,7 +235,7 @@
 							{#if sensitivePorts.length}
 								<p class="flex items-center gap-1.5 text-xs text-warning">
 									<TriangleAlert class="size-3.5" />
-									Sensitive: {sensitivePorts.map((p) => p.number).join(', ')}
+									{SENSITIVE_LABEL}: {sensitivePorts.map((p) => p.number).join(', ')}
 								</p>
 							{/if}
 						{:else}

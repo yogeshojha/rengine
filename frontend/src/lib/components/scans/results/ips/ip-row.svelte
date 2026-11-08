@@ -27,7 +27,7 @@
 	import { stopProp } from '$lib/utilities';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { isPrivateIp } from '$lib/utilities/scan-correlation';
-	import { isSensitivePort } from '$lib/config/service-classes';
+	import { isSensitivePort, SENSITIVE_HELP, SENSITIVE_LABEL } from '$lib/config/service-classes';
 	import {
 		excludeToken,
 		exactToken,
@@ -204,11 +204,12 @@
 								class="flex h-5 shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 text-xs font-medium text-warning"
 								onclick={(e) => pivot(e, 'is:sensitive')}
 							>
-								<TriangleAlert class="size-3" /> Sensitive
+								<TriangleAlert class="size-3" />
+								{SENSITIVE_LABEL}
 							</button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>An administrative or database port is open</Tooltip.Content>
+					<Tooltip.Content>{SENSITIVE_HELP} is open</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 			<span class="hidden h-5 shrink-0 items-center sm:flex">

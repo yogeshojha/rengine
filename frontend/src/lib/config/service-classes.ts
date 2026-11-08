@@ -110,6 +110,9 @@ export const SENSITIVE_PORTS = new Set([
 	9042, 9092, 9160, 9200, 9300, 11211, 15672, 27017, 27018, 50000
 ]);
 
+export const SENSITIVE_LABEL = 'Sensitive';
+export const SENSITIVE_HELP = 'An administrative or database port';
+
 export function isSensitivePort(n: number): boolean {
 	return SENSITIVE_PORTS.has(n);
 }
