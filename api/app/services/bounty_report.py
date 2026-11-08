@@ -16,6 +16,7 @@ from shared.definitions.bounty_reports import (
     REPORT_STAGE_LABELS,
     REPORT_STATES,
     SETTLED_STATES,
+    SEVERE_REPORT_SEVERITIES,
     ReportSort,
     ReportStage,
     report_state,
@@ -253,8 +254,10 @@ class BountyReportService:
                 func.count().filter(_in_stage(ReportStage.OPEN.value)),
                 func.count().filter(_in_stage(ReportStage.RESOLVED.value)),
                 func.count().filter(_in_stage(ReportStage.CLOSED.value)),
-                func.count().filter(BountyReport.severity == "critical"),
-                func.count().filter(BountyReport.severity == "high"),
+                *(
+                    func.count().filter(BountyReport.severity == severity)
+                    for severity in SEVERE_REPORT_SEVERITIES
+                ),
                 func.count().filter(_paid(platform)),
                 func.max(BountyReport.submitted_at),
             )

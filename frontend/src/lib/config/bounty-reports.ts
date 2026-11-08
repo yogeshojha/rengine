@@ -25,8 +25,10 @@ export const REPORT_SEVERITY_KEY: Record<string, string> = {
 	none: Severity.INFO
 };
 
+export const SEVERE_REPORT_SEVERITIES = ['critical', 'high'];
+
 export const REPORT_SAVED_VIEWS: { label: string; states?: string[]; severities?: string[] }[] = [
-	{ label: 'Critical and high', severities: ['critical', 'high'] },
+	{ label: 'Critical and high', severities: SEVERE_REPORT_SEVERITIES },
 	{ label: 'Needs more info', states: ['needs-more-info'] },
 	{ label: 'Duplicates', states: ['duplicate'] },
 	{ label: 'Informative', states: ['informative'] }
