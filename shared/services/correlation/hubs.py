@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 _LABEL_MAX = 60
 _HASH_LABEL = 14
 _PLATFORM_SLACK = 40
+_MEMBER_BATCH = 10_000
 _MEMBER_COLUMNS = (
     Subdomain.id,
     Subdomain.name,
@@ -134,6 +135,7 @@ class CorrelationFinder:
 
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._known: dict[UUID, Member] = {}
 
     async def find(
         self,
@@ -316,7 +318,7 @@ class CorrelationFinder:
             elements = spec.elements()
             value = spec.value(elements).label("value")
             stmt = (
-                select(value, *_MEMBER_COLUMNS)
+                select(value, Subdomain.id)
                 .select_from(Subdomain)
                 .where(
                     scope.match(Subdomain.scan_id),
@@ -333,10 +335,9 @@ class CorrelationFinder:
                 stmt = stmt.where(holding)
             for condition in spec.conditions():
                 stmt = stmt.where(condition)
-            pairs = [
-                (str(row[0]), _member(row[1:]))
-                for row in (await self.session.execute(stmt)).all()
-            ]
+            rows = (await self.session.execute(stmt)).all()
+            known = await self._members({row[1] for row in rows})
+            pairs = [(str(key), known[identifier]) for key, identifier in rows]
         seen: set[tuple[str, UUID]] = set()
         for key, member in pairs:
             hub = by_value.get(key)
@@ -344,6 +345,17 @@ class CorrelationFinder:
                 continue
             seen.add((key, member.id))
             hub.members.append(member)
+
+    async def _members(self, ids: set[UUID]) -> dict[UUID, Member]:
+        missing = sorted(ids - self._known.keys())
+        for start in range(0, len(missing), _MEMBER_BATCH):
+            batch = missing[start : start + _MEMBER_BATCH]
+            for row in await self.session.execute(
+                select(*_MEMBER_COLUMNS).where(Subdomain.id.in_(batch))
+            ):
+                member = _member(row)
+                self._known[member.id] = member
+        return self._known
 
     async def _render_members(
         self, scope: QueryScope, drawn: set[str], clusters: list[RenderCluster]
