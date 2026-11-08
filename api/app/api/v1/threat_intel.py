@@ -88,7 +88,7 @@ async def sync(_current_user: CurrentSuperuser) -> SyncResult:
         feeds=[f.kind for f in FEEDS],
         detail=None
         if queued
-        else "The task queue did not accept the sync. Check the worker.",
+        else "Sync not queued. Check that the worker service is running.",
     )
 
 

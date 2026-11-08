@@ -119,7 +119,7 @@ async def _start(
             project_id=str(ctx.project_id) if ctx.project_id else None,
         )
         if not accepted:
-            fail(run, "The task queue did not accept the run.")
+            fail(run, "Run not queued. Check that the worker service is running.")
             await store.save(current_user.id, run)
         return run
 
