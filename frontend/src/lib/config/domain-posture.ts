@@ -37,12 +37,34 @@ export const DKIM_MIN_BITS = 1024;
 export const POSTURE_ANY = 'any';
 export const POSTURE_NONE = 'none';
 
+export enum SpfAll {
+	FAIL = 'fail',
+	SOFTFAIL = 'softfail',
+	NEUTRAL = 'neutral',
+	PASS = 'pass',
+	ABSENT = 'absent'
+}
+
+export enum DnssecState {
+	SIGNED = 'signed',
+	UNSIGNED = 'unsigned',
+	BROKEN = 'broken',
+	UNKNOWN = 'unknown'
+}
+
+export enum MtaStsMode {
+	ENFORCE = 'enforce',
+	TESTING = 'testing',
+	NONE = 'none',
+	UNREADABLE = 'unreadable'
+}
+
 export const SPF_ALL_LABELS: Record<string, string> = {
-	fail: '-all',
-	softfail: '~all',
-	neutral: '?all',
-	pass: '+all',
-	absent: 'no all'
+	[SpfAll.FAIL]: '-all',
+	[SpfAll.SOFTFAIL]: '~all',
+	[SpfAll.NEUTRAL]: '?all',
+	[SpfAll.PASS]: '+all',
+	[SpfAll.ABSENT]: 'no all'
 };
 
 export interface CheckSpec {
@@ -265,13 +287,13 @@ export const CHECK_ORDER: Record<string, number> = Object.fromEntries(
 	CHECKS.map((c, i) => [c.key, i])
 );
 export const SPOOFABLE_KEYS: string[] = [
-	'spf_missing',
-	'spf_any_sender',
-	'spf_lookup_limit',
-	'spf_multiple',
-	'dmarc_missing',
-	'dmarc_none',
-	'dmarc_subdomains_open'
+	PostureCheck.SPF_MISSING,
+	PostureCheck.SPF_ANY_SENDER,
+	PostureCheck.SPF_LOOKUP_LIMIT,
+	PostureCheck.SPF_MULTIPLE,
+	PostureCheck.DMARC_MISSING,
+	PostureCheck.DMARC_NONE,
+	PostureCheck.DMARC_SUBDOMAINS_OPEN
 ];
 
 export function checkLabel(key: string): string {
@@ -314,17 +336,17 @@ export const FACT_CHIP: Record<FactTone, string> = {
 };
 
 const SPF_TONE: Record<string, FactTone> = {
-	fail: 'good',
-	softfail: 'info',
-	neutral: 'info',
-	absent: 'info',
-	pass: 'warning'
+	[SpfAll.FAIL]: 'good',
+	[SpfAll.SOFTFAIL]: 'info',
+	[SpfAll.NEUTRAL]: 'info',
+	[SpfAll.ABSENT]: 'info',
+	[SpfAll.PASS]: 'warning'
 };
 const DNSSEC_TONE: Record<string, FactTone> = {
-	signed: 'good',
-	unsigned: 'info',
-	broken: 'warning',
-	unknown: 'muted'
+	[DnssecState.SIGNED]: 'good',
+	[DnssecState.UNSIGNED]: 'info',
+	[DnssecState.BROKEN]: 'warning',
+	[DnssecState.UNKNOWN]: 'muted'
 };
 
 export function zoneFacts(z: DomainPostureRead): ZoneFact[] {
@@ -355,7 +377,7 @@ export function zoneFacts(z: DomainPostureRead): ZoneFact[] {
 					: undefined
 		});
 	} else out.push({ key: 'dmarc', label: 'DMARC', value: 'none', tone: 'warning' });
-	if (checked.has('dkim_none_probed'))
+	if (checked.has(PostureCheck.DKIM_NONE_PROBED))
 		out.push(
 			z.dkim_selectors.length
 				? {
@@ -371,14 +393,17 @@ export function zoneFacts(z: DomainPostureRead): ZoneFact[] {
 				: { key: 'dkim', label: 'DKIM', value: 'not found', tone: 'info' }
 		);
 	if (z.null_mx) out.push({ key: 'mx', label: 'MX', value: 'null', tone: 'muted' });
-	else if (checked.has('mta_sts_missing') || checked.has('mta_sts_not_enforced'))
+	else if (
+		checked.has(PostureCheck.MTA_STS_MISSING) ||
+		checked.has(PostureCheck.MTA_STS_NOT_ENFORCED)
+	)
 		out.push(
 			z.mta_sts
 				? {
 						key: 'mta_sts',
 						label: 'MTA-STS',
 						value: z.mta_sts_mode ?? 'published',
-						tone: z.mta_sts_mode === 'enforce' ? 'good' : 'info'
+						tone: z.mta_sts_mode === MtaStsMode.ENFORCE ? 'good' : 'info'
 					}
 				: { key: 'mta_sts', label: 'MTA-STS', value: 'none', tone: 'info' }
 		);

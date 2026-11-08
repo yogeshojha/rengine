@@ -69,27 +69,34 @@ export const PASSIVE_PORT_SOURCES: ReadonlySet<string> = new Set([
 ]);
 
 export const PORT_SOURCE_LABELS: Record<string, string> = {
-	naabu: 'Port scan',
-	internetdb: 'External scanner',
-	http_probe: 'HTTP probe',
-	banner: 'Service banner',
-	seed: 'Seeded',
-	shodan: 'Shodan'
+	[PortSource.NAABU]: 'Port scan',
+	[PortSource.INTERNETDB]: 'External scanner',
+	[PortSource.HTTP_PROBE]: 'HTTP probe',
+	[PortSource.BANNER]: 'Service banner',
+	[PortSource.SEED]: 'Seeded',
+	[PortSource.SHODAN]: 'Shodan'
 };
 
 export const PORT_SOURCE_HELP: Record<string, string> = {
-	naabu: 'TCP connection completed by the port scan',
-	internetdb: 'Reported by an internet-wide scanner, not observed directly',
-	http_probe: 'Answered an HTTP request',
-	banner: 'Returned a service banner',
-	seed: 'Port named by a seeded URL',
-	shodan: 'Reported by Shodan, not observed directly'
+	[PortSource.NAABU]: 'TCP connection completed by the port scan',
+	[PortSource.INTERNETDB]: 'Reported by an internet-wide scanner, not observed directly',
+	[PortSource.HTTP_PROBE]: 'Answered an HTTP request',
+	[PortSource.BANNER]: 'Returned a service banner',
+	[PortSource.SEED]: 'Port named by a seeded URL',
+	[PortSource.SHODAN]: 'Reported by Shodan, not observed directly'
 };
 
+// mirrors shared/definitions/ports.py ScanPolicy
+export enum ScanPolicy {
+	FULL = 'full',
+	WEB = 'web',
+	SKIP = 'skip'
+}
+
 export const SCAN_POLICY_LABELS: Record<string, string> = {
-	full: 'Scanned in full',
-	web: 'Web ports only',
-	skip: 'Not scanned'
+	[ScanPolicy.FULL]: 'Scanned in full',
+	[ScanPolicy.WEB]: 'Web ports only',
+	[ScanPolicy.SKIP]: 'Not scanned'
 };
 
 export function serviceClassLabel(key: string | null | undefined): string {

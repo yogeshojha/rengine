@@ -160,39 +160,60 @@ export const VULN_STATE_KEYS: Record<string, string> = {
 export const SUPPRESSED_STATES: string[] = [VulnState.FALSE_POSITIVE, VulnState.ACCEPTED];
 
 // mirrors shared/definitions/vulnerabilities.py:Protocol
-export const HTTP_PROTOCOL = 'http';
+export enum Protocol {
+	HTTP = 'http',
+	NETWORK = 'network',
+	DNS = 'dns',
+	SSL = 'ssl',
+	FILE = 'file',
+	HEADLESS = 'headless',
+	JAVASCRIPT = 'javascript',
+	WEBSOCKET = 'websocket',
+	WHOIS = 'whois',
+	OTHER = 'other'
+}
+
+export const HTTP_PROTOCOL = Protocol.HTTP;
 
 export const PROTOCOL_LABELS: Record<string, string> = {
-	[HTTP_PROTOCOL]: 'HTTP',
-	network: 'Network',
-	dns: 'DNS',
-	ssl: 'TLS',
-	file: 'File',
-	headless: 'Browser',
-	javascript: 'JavaScript',
-	websocket: 'WebSocket',
-	whois: 'WHOIS',
-	other: 'Other'
+	[Protocol.HTTP]: 'HTTP',
+	[Protocol.NETWORK]: 'Network',
+	[Protocol.DNS]: 'DNS',
+	[Protocol.SSL]: 'TLS',
+	[Protocol.FILE]: 'File',
+	[Protocol.HEADLESS]: 'Browser',
+	[Protocol.JAVASCRIPT]: 'JavaScript',
+	[Protocol.WEBSOCKET]: 'WebSocket',
+	[Protocol.WHOIS]: 'WHOIS',
+	[Protocol.OTHER]: 'Other'
 };
 
 export const PROTOCOL_ICONS: Record<string, IconComponent> = {
-	http: Globe,
-	network: Plug,
-	dns: Network,
-	ssl: Lock,
-	file: FileText,
-	headless: Chrome,
-	javascript: Braces,
-	websocket: ScanLine,
-	whois: IdCard,
-	other: CircleHelp
+	[Protocol.HTTP]: Globe,
+	[Protocol.NETWORK]: Plug,
+	[Protocol.DNS]: Network,
+	[Protocol.SSL]: Lock,
+	[Protocol.FILE]: FileText,
+	[Protocol.HEADLESS]: Chrome,
+	[Protocol.JAVASCRIPT]: Braces,
+	[Protocol.WEBSOCKET]: ScanLine,
+	[Protocol.WHOIS]: IdCard,
+	[Protocol.OTHER]: CircleHelp
 };
 
+// mirrors shared/definitions/vulnerabilities.py:Scanner
+export enum Scanner {
+	NUCLEI = 'nuclei',
+	DALFOX = 'dalfox',
+	RENGINE = 'rengine',
+	MANUAL = 'manual'
+}
+
 export const SCANNER_LABELS: Record<string, string> = {
-	nuclei: 'Nuclei',
-	dalfox: 'Dalfox',
-	rengine: 'reNgine',
-	manual: 'Manual testing'
+	[Scanner.NUCLEI]: 'Nuclei',
+	[Scanner.DALFOX]: 'Dalfox',
+	[Scanner.RENGINE]: 'reNgine',
+	[Scanner.MANUAL]: 'Manual testing'
 };
 
 export const TEMPLATE_SET_ICONS: Record<string, IconComponent> = {

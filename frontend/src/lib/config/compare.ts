@@ -67,30 +67,77 @@ export interface SignalSpec {
 	tone: 'critical' | 'warning' | 'notice' | 'quiet';
 }
 
+// mirrors shared/definitions/compare.py:ChangeSignal
+export enum ChangeSignal {
+	KEV_APPEARED = 'kev_appeared',
+	CRITICAL_APPEARED = 'critical_appeared',
+	FINDING_APPEARED = 'finding_appeared',
+	SEVERITY_RAISED = 'severity_raised',
+	SENSITIVE_SERVICE_OPENED = 'sensitive_service_opened',
+	AUTH_DROPPED = 'auth_dropped',
+	SERVICE_OPENED = 'service_opened',
+	CERT_EXPIRED = 'cert_expired',
+	POSTURE_WEAKENED = 'posture_weakened',
+	WAF_GONE = 'waf_gone',
+	CDN_GONE = 'cdn_gone',
+	HOSTING_MOVED = 'hosting_moved',
+	HOST_WOKE = 'host_woke',
+	BODY_CHANGED = 'body_changed',
+	EXPOSED_HOST_APPEARED = 'exposed_host_appeared',
+	HOST_APPEARED = 'host_appeared',
+	ADDRESS_APPEARED = 'address_appeared',
+	ENDPOINT_APPEARED = 'endpoint_appeared',
+	ATTRIBUTES_CHANGED = 'attributes_changed',
+	FINDING_GONE = 'finding_gone',
+	SERVICE_CLOSED = 'service_closed',
+	HOST_GONE = 'host_gone',
+	ASSET_GONE = 'asset_gone'
+}
+
 export const SIGNAL: Record<string, SignalSpec> = {
-	kev_appeared: { label: 'Known exploited finding', icon: Flame, tone: 'critical' },
-	critical_appeared: { label: 'Critical or high finding', icon: ShieldAlert, tone: 'critical' },
-	finding_appeared: { label: 'New finding', icon: Bug, tone: 'warning' },
-	severity_raised: { label: 'Severity raised', icon: TrendingUp, tone: 'warning' },
-	sensitive_service_opened: { label: 'Sensitive service opened', icon: Plug, tone: 'critical' },
-	auth_dropped: { label: 'Authentication dropped', icon: LockOpen, tone: 'critical' },
-	service_opened: { label: 'Service opened', icon: DoorOpen, tone: 'notice' },
-	cert_expired: { label: 'Certificate expired', icon: FileBadge, tone: 'warning' },
-	posture_weakened: { label: 'Sender policy weakened', icon: MailWarning, tone: 'warning' },
-	waf_gone: { label: 'WAF no longer detected', icon: ShieldOff, tone: 'warning' },
-	cdn_gone: { label: 'No longer behind a CDN', icon: CloudOff, tone: 'notice' },
-	hosting_moved: { label: 'Hosting moved', icon: Move, tone: 'notice' },
-	host_woke: { label: 'Web asset started responding', icon: Power, tone: 'notice' },
-	body_changed: { label: 'Response body changed', icon: FileDiff, tone: 'notice' },
-	exposed_host_appeared: { label: 'New exposed web asset', icon: Eye, tone: 'warning' },
-	host_appeared: { label: 'New web asset', icon: Globe, tone: 'notice' },
-	address_appeared: { label: 'New address', icon: Network, tone: 'notice' },
-	endpoint_appeared: { label: 'New endpoint', icon: Waypoints, tone: 'notice' },
-	attributes_changed: { label: 'Details changed', icon: PencilLine, tone: 'quiet' },
-	finding_gone: { label: 'Finding gone', icon: CircleMinus, tone: 'quiet' },
-	service_closed: { label: 'Service closed', icon: DoorClosed, tone: 'quiet' },
-	host_gone: { label: 'Web asset gone', icon: CircleMinus, tone: 'quiet' },
-	asset_gone: { label: 'Gone', icon: CircleMinus, tone: 'quiet' }
+	[ChangeSignal.KEV_APPEARED]: { label: 'Known exploited finding', icon: Flame, tone: 'critical' },
+	[ChangeSignal.CRITICAL_APPEARED]: {
+		label: 'Critical or high finding',
+		icon: ShieldAlert,
+		tone: 'critical'
+	},
+	[ChangeSignal.FINDING_APPEARED]: { label: 'New finding', icon: Bug, tone: 'warning' },
+	[ChangeSignal.SEVERITY_RAISED]: { label: 'Severity raised', icon: TrendingUp, tone: 'warning' },
+	[ChangeSignal.SENSITIVE_SERVICE_OPENED]: {
+		label: 'Sensitive service opened',
+		icon: Plug,
+		tone: 'critical'
+	},
+	[ChangeSignal.AUTH_DROPPED]: {
+		label: 'Authentication dropped',
+		icon: LockOpen,
+		tone: 'critical'
+	},
+	[ChangeSignal.SERVICE_OPENED]: { label: 'Service opened', icon: DoorOpen, tone: 'notice' },
+	[ChangeSignal.CERT_EXPIRED]: { label: 'Certificate expired', icon: FileBadge, tone: 'warning' },
+	[ChangeSignal.POSTURE_WEAKENED]: {
+		label: 'Sender policy weakened',
+		icon: MailWarning,
+		tone: 'warning'
+	},
+	[ChangeSignal.WAF_GONE]: { label: 'WAF no longer detected', icon: ShieldOff, tone: 'warning' },
+	[ChangeSignal.CDN_GONE]: { label: 'No longer behind a CDN', icon: CloudOff, tone: 'notice' },
+	[ChangeSignal.HOSTING_MOVED]: { label: 'Hosting moved', icon: Move, tone: 'notice' },
+	[ChangeSignal.HOST_WOKE]: { label: 'Web asset started responding', icon: Power, tone: 'notice' },
+	[ChangeSignal.BODY_CHANGED]: { label: 'Response body changed', icon: FileDiff, tone: 'notice' },
+	[ChangeSignal.EXPOSED_HOST_APPEARED]: {
+		label: 'New exposed web asset',
+		icon: Eye,
+		tone: 'warning'
+	},
+	[ChangeSignal.HOST_APPEARED]: { label: 'New web asset', icon: Globe, tone: 'notice' },
+	[ChangeSignal.ADDRESS_APPEARED]: { label: 'New address', icon: Network, tone: 'notice' },
+	[ChangeSignal.ENDPOINT_APPEARED]: { label: 'New endpoint', icon: Waypoints, tone: 'notice' },
+	[ChangeSignal.ATTRIBUTES_CHANGED]: { label: 'Details changed', icon: PencilLine, tone: 'quiet' },
+	[ChangeSignal.FINDING_GONE]: { label: 'Finding gone', icon: CircleMinus, tone: 'quiet' },
+	[ChangeSignal.SERVICE_CLOSED]: { label: 'Service closed', icon: DoorClosed, tone: 'quiet' },
+	[ChangeSignal.HOST_GONE]: { label: 'Web asset gone', icon: CircleMinus, tone: 'quiet' },
+	[ChangeSignal.ASSET_GONE]: { label: 'Gone', icon: CircleMinus, tone: 'quiet' }
 };
 
 export const SIGNAL_TONE_CLASS: Record<SignalSpec['tone'], string> = {
@@ -101,7 +148,7 @@ export const SIGNAL_TONE_CLASS: Record<SignalSpec['tone'], string> = {
 };
 
 export function signalSpec(key: string): SignalSpec {
-	return SIGNAL[key] ?? SIGNAL.attributes_changed;
+	return SIGNAL[key] ?? SIGNAL[ChangeSignal.ATTRIBUTES_CHANGED];
 }
 
 /** Mirrors shared/definitions/compare.py:REFUSAL_REASON. */
