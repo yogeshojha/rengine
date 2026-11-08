@@ -335,7 +335,7 @@
 								<span class={touches ? 'font-semibold text-warning' : ''}>{top.reach}</span>
 								in
 								<span class="font-semibold"
-									>{projectLabel === 'Every project' ? 'every project' : projectLabel}</span
+									>{projectId === SELECT_NONE ? 'every project' : projectLabel}</span
 								>
 								<span class="text-muted-foreground">·</span>
 								{#if touches}
