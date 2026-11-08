@@ -28,8 +28,8 @@ class ContentDiscoveryConfig(StageConfig):
         default=20,
         ge=1,
         le=480,
-        title="Time budget (minutes)",
-        description="The run stops after this many minutes and reports partial coverage.",
+        title="Time budget (min)",
+        description="Stop after this many minutes. Web assets cut short are reported.",
     )
     max_hosts: int = advanced(
         25,
