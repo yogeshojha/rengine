@@ -106,6 +106,7 @@ class TargetEnrichmentStage(Stage):
                 self.session.add(target)
                 self.session.commit()
             except Exception as exc:
+                self.session.rollback()
                 logger.warning("in-scan DNS refresh failed for %s: %s", host, exc)
                 self._notes.append(f"DNS was not refreshed for {host}. {exc}")
         return len(lookup.records) if lookup else 0
@@ -135,6 +136,7 @@ class TargetEnrichmentStage(Stage):
                 self.session.add(target)
                 self.session.commit()
             except Exception as exc:
+                self.session.rollback()
                 logger.warning("in-scan WHOIS refresh failed: %s", exc)
                 self._notes.append(f"WHOIS was not refreshed. {exc}")
         return record is not None
