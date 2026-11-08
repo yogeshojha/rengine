@@ -15,8 +15,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import * as ToggleGroup from '$lib/components/ui/toggle-group';
-	import FacetedFilter from '$lib/components/scans/results/faceted-filter.svelte';
+	import FilterToolbar from '$lib/components/scans/results/table/filter-toolbar.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
@@ -162,8 +161,8 @@
 		rerun();
 	}
 
-	function setFlags(keys: string[]) {
-		active = [...keys, ...active.filter((k) => !FLAG_KEYS.includes(k))];
+	function toggleFlag(key: string) {
+		active = active.includes(key) ? active.filter((k) => k !== key) : [...active, key];
 		pageIndex = 0;
 		rerun();
 	}
@@ -294,27 +293,25 @@
 					</div>
 				</div>
 
-				<div class="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-					<ToggleGroup.Root
-						type="multiple"
-						value={flags}
-						onValueChange={setFlags}
-						variant="outline"
-						aria-label="Filters"
-					>
-						{#each FLAGS as filter (filter.key)}
-							<ToggleGroup.Item value={filter.key} class="h-9 px-3 text-sm font-normal">
-								{filter.label}
-							</ToggleGroup.Item>
-						{/each}
-					</ToggleGroup.Root>
-					<FacetedFilter
-						title="Evidence"
-						options={EVIDENCE_OPTIONS}
-						selected={rungs}
-						onChange={setEvidence}
-					/>
-					<div class="ml-auto flex items-center gap-2">
+				<FilterToolbar
+					facets={[
+						{
+							key: 'evidence',
+							label: 'Evidence',
+							options: EVIDENCE_OPTIONS,
+							selected: rungs,
+							onChange: setEvidence
+						}
+					]}
+					signals={FLAGS.map((filter) => ({
+						key: filter.key,
+						label: filter.label,
+						on: flags.includes(filter.key),
+						onToggle: () => toggleFlag(filter.key)
+					}))}
+					onClear={clearFilters}
+				>
+					{#snippet tools()}
 						<SortMenu sorts={CVE_SORTS} sortKey={sort.key} sortDir={sort.dir} {onSort} />
 						<Button
 							variant="outline"
@@ -325,8 +322,8 @@
 						>
 							<RefreshCw class="size-4 {refreshing ? 'animate-spin' : ''}" />
 						</Button>
-					</div>
-				</div>
+					{/snippet}
+				</FilterToolbar>
 
 				{#if loading}
 					<TableSkeleton lead={CVE_LEAD_COLUMNS} columns={CVE_COLUMNS} rows={6} />
