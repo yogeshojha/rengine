@@ -613,6 +613,20 @@ class EndpointService:
         self, scope: ScopeLike, f: EndpointFilter, mode: str
     ) -> EndpointTree:
         scope = QueryScope.of(scope)
+        return await lead_cache.cached(
+            self.session,
+            name="tree:endpoints",
+            scans=scope.ids,
+            facets=f"{mode}|{f.model_dump_json()}",
+            model=EndpointTree,
+            build=lambda: self._tree(scope, f, mode),
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
+
+    async def _tree(
+        self, scope: QueryScope, f: EndpointFilter, mode: str
+    ) -> EndpointTree:
         now = utc_now()
         base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
         base = self._apply_filter(base, f, scope)
