@@ -889,10 +889,21 @@ class SubdomainService:
             columns.append(
                 func.count().filter(preds.hygiene_applies(key)).label(f"a_{key}")
             )
+        rows = (
+            select(
+                Subdomain.http_status,
+                cast(Subdomain.hygiene_issues, JSONB).label("hygiene_issues"),
+                cast(Subdomain.hygiene_checked, JSONB).label("hygiene_checked"),
+            )
+            .where(*reach)
+            .cte("hygiene_rows")
+            .prefix_with("MATERIALIZED")
+        )
+        adapter = ClauseAdapter(rows, adapt_on_names=True)
         row = (
             (
                 await self.session.execute(
-                    select(*columns).select_from(Subdomain).where(*reach)
+                    select(*(adapter.traverse(c) for c in columns)).select_from(rows)
                 )
             )
             .one()
