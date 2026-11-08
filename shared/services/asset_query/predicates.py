@@ -79,14 +79,38 @@ def _one_target(scope: QueryScope, column):
     return select(Scan.target_id).where(Scan.id == single).scalar_subquery()
 
 
-def _per_scan(scope: QueryScope, column, build):
-    """A scan-level fact evaluated against each row's own scan."""
+def _baselined(scope: QueryScope, model):
+    """The scans of the scope whose target an earlier scan recorded rows of `model` for."""
+    scan = aliased(Scan)
+    earlier = aliased(model)
+    cutoff = (
+        select(func.min(model.discovered_at))
+        .where(model.scan_id == scan.id)
+        .correlate(scan)
+        .scalar_subquery()
+    )
+    held = (
+        select(literal(1))
+        .where(
+            earlier.target_id == scan.target_id,
+            earlier.scan_id != scan.id,
+            earlier.discovered_at < cutoff,
+        )
+        .limit(1)
+        .correlate(scan)
+        .scalar_subquery()
+    )
+    return select(scan.id).where(scan.id.in_(scope.ids), held.isnot(None))
+
+
+def _per_scan(scope: QueryScope, column, build, model):
+    """A row's own scan has a baseline."""
     single = scope.single
     if single is not None:
         return build(single)
     if not scope.ids:
         return false()
-    return or_(*[and_(column == sid, build(sid)) for sid in scope.ids])
+    return column.in_(_baselined(scope, model))
 
 
 def status_class(name: str):
@@ -123,6 +147,8 @@ def cert_state(name: str, now: datetime):
 
 
 def port_match(condition, scope: ScopeLike):
+    scope = scope_of(scope)
+
     def build(scan_id):
         addresses = (
             select(
@@ -135,7 +161,11 @@ def port_match(condition, scope: ScopeLike):
         )
         return json_has_any(Subdomain.resolved_ips, addresses)
 
-    return _per_scan(scope_of(scope), Subdomain.scan_id, build)
+    if scope.single is not None:
+        return build(scope.single)
+    if not scope.ids:
+        return false()
+    return or_(*[and_(Subdomain.scan_id == sid, build(sid)) for sid in scope.ids])
 
 
 def seen_earlier():
@@ -171,7 +201,7 @@ def _host_baseline(scan_id):
 def is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, Subdomain.scan_id, _host_baseline),
+        _per_scan(scope, Subdomain.scan_id, _host_baseline, Subdomain),
         not_(seen_earlier()),
     )
 
@@ -272,7 +302,7 @@ def _service_baseline(scan_id):
 def service_is_new(source, scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, source.c.scan_id, _service_baseline),
+        _per_scan(scope, source.c.scan_id, _service_baseline, Port),
         not_(service_seen_earlier(source, scope)),
     )
 
@@ -405,13 +435,13 @@ def vuln_has_baseline(scope: ScopeLike):
     scope = scope_of(scope)
     if not scope.ids:
         return false()
-    return or_(*[_vuln_baseline(sid) for sid in scope.ids])
+    return exists(_baselined(scope, Vulnerability))
 
 
 def vuln_is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, Vulnerability.scan_id, _vuln_baseline),
+        _per_scan(scope, Vulnerability.scan_id, _vuln_baseline, Vulnerability),
         not_(vuln_seen_earlier()),
     )
 
@@ -448,7 +478,7 @@ def _software_baseline(scan_id):
 def software_is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, SoftwareCve.scan_id, _software_baseline),
+        _per_scan(scope, SoftwareCve.scan_id, _software_baseline, SoftwareCve),
         not_(software_seen_earlier()),
     )
 
@@ -485,7 +515,7 @@ def _secret_baseline(scan_id):
 def secret_is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, Secret.scan_id, _secret_baseline),
+        _per_scan(scope, Secret.scan_id, _secret_baseline, Secret),
         not_(secret_seen_earlier()),
     )
 
@@ -715,7 +745,7 @@ def endpoint_baseline(scan_id):
 def endpoint_is_new(scope: ScopeLike):
     scope = scope_of(scope)
     return and_(
-        _per_scan(scope, Endpoint.scan_id, endpoint_baseline),
+        _per_scan(scope, Endpoint.scan_id, endpoint_baseline, Endpoint),
         not_(endpoint_seen_earlier()),
     )
 
