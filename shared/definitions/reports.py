@@ -307,8 +307,7 @@ DEFAULT_SEVERITY_COLORS: dict[str, str] = {
     Severity.UNKNOWN.value: "#737373",
 }
 
-# the same ramp restepped for dark paper: the UI's dark inks, since one value draws both the
-# mark and its label there
+# severity ramp for dark paper
 DARK_SEVERITY_COLORS: dict[str, str] = {
     Severity.CRITICAL.value: "#ff6467",
     Severity.HIGH.value: "#ff8904",
