@@ -389,8 +389,9 @@
 		{
 			key: 'screenshot',
 			label: 'With screenshot',
-			on: query.hasScreenshot,
-			onToggle: () => setQuery({ ...query, hasScreenshot: !query.hasScreenshot })
+			on: shotsOn,
+			onToggle: () => setShots(!shotsOn),
+			quiet: view === 'gallery'
 		}
 	]);
 	const leadSuggestions = createSuggestions({
@@ -966,6 +967,13 @@
 		query = q;
 		pageIndex = 0;
 	}
+	let shotsOn = $derived(query.hasScreenshot || (view === 'gallery' && onlyShots));
+	function setShots(next: boolean) {
+		if (view !== 'gallery') return setQuery({ ...query, hasScreenshot: next });
+		onlyShots = next;
+		if (!next && query.hasScreenshot) setQuery({ ...query, hasScreenshot: false });
+		else pageIndex = 0;
+	}
 	function setView(v: string) {
 		if (v === view) return;
 		const wasStrip = strips;
@@ -1330,11 +1338,8 @@
 		<div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-3 py-2">
 			{#if view === 'gallery'}
 				<Toggle
-					pressed={onlyShots}
-					onPressedChange={(v) => {
-						onlyShots = v;
-						pageIndex = 0;
-					}}
+					pressed={shotsOn}
+					onPressedChange={setShots}
 					variant="outline"
 					size="sm"
 					class="gap-2 text-xs font-normal"
