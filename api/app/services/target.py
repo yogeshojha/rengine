@@ -140,6 +140,13 @@ async def _queue(send: Callable[[list[str]], None], ids: list[str]) -> None:
         ) from exc
 
 
+def _bulk_targets(target_ids: list[UUID], project_id: UUID | None) -> Select:
+    query = select(Target).where(Target.id.in_(target_ids))
+    if project_id is not None:
+        query = query.where(Target.project_id == project_id)
+    return query
+
+
 @dataclass
 class BulkTargetResult:
     import_result: TargetImportResult
@@ -439,10 +446,13 @@ class TargetService:
         result = await self.session.execute(query.limit(limit))
         return list(result.scalars().all())
 
-    async def bulk_enrich(self, target_ids: list[UUID], kind: EnrichmentKind) -> int:
-        result = await self.session.execute(
-            select(Target).where(Target.id.in_(target_ids))
-        )
+    async def bulk_enrich(
+        self,
+        target_ids: list[UUID],
+        kind: EnrichmentKind,
+        project_id: UUID | None = None,
+    ) -> int:
+        result = await self.session.execute(_bulk_targets(target_ids, project_id))
         targets = list(result.scalars().all())
         eligible: list[Target] = []
 
@@ -490,11 +500,13 @@ class TargetService:
         return len(ids)
 
     async def bulk_add_tags(
-        self, target_ids: list[UUID], tag_names: list[str], user_id: str
+        self,
+        target_ids: list[UUID],
+        tag_names: list[str],
+        user_id: str,
+        project_id: UUID | None = None,
     ) -> int:
-        result = await self.session.execute(
-            select(Target).where(Target.id.in_(target_ids))
-        )
+        result = await self.session.execute(_bulk_targets(target_ids, project_id))
         targets = list(result.scalars().all())
         cache: dict[tuple, Tag] = {}
 
@@ -520,11 +532,13 @@ class TargetService:
         return len(targets)
 
     async def bulk_add_organizations(
-        self, target_ids: list[UUID], org_names: list[str], user_id: str
+        self,
+        target_ids: list[UUID],
+        org_names: list[str],
+        user_id: str,
+        project_id: UUID | None = None,
     ) -> int:
-        result = await self.session.execute(
-            select(Target).where(Target.id.in_(target_ids))
-        )
+        result = await self.session.execute(_bulk_targets(target_ids, project_id))
         targets = list(result.scalars().all())
         cache: dict[tuple, Organization] = {}
 
