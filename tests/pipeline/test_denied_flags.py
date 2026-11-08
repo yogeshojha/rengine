@@ -19,6 +19,18 @@ pytestmark = pytest.mark.pipeline
         ("httpx", "-path /proc/self/environ", "-path"),
         ("dnsx", "-w /proc/self/environ", "-w"),
         ("dnsx", "-wordlist /proc/self/environ", "-wordlist"),
+        ("nuclei", "-sresp", "-sresp"),
+        ("nuclei", "-store-resp", "-store-resp"),
+        ("nuclei", "-ut", "-ut"),
+        ("nuclei", "-update-templates", "-update-templates"),
+        ("nuclei", "-up", "-up"),
+        ("nuclei", "-update", "-update"),
+        ("httpx", "-sr", "-sr"),
+        ("httpx", "-store-response", "-store-response"),
+        ("httpx", "-ss", "-ss"),
+        ("httpx", "-screenshot", "-screenshot"),
+        ("katana", "-sr", "-sr"),
+        ("katana", "-store-response", "-store-response"),
     ],
 )
 def test_a_file_or_write_flag_is_denied(tool: str, args: str, flag: str):

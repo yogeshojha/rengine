@@ -196,6 +196,12 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "cdp-endpoint",
             "H",
             "header",
+            "sresp",
+            "store-resp",
+            "ut",
+            "update-templates",
+            "up",
+            "update",
         }
     ),
     "httpx": frozenset(
@@ -230,6 +236,10 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "rr",
             "request",
             "path",
+            "sr",
+            "store-response",
+            "ss",
+            "screenshot",
         }
     ),
     "katana": frozenset(
@@ -257,6 +267,8 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "chrome-ws-url",
             "H",
             "headers",
+            "sr",
+            "store-response",
         }
     ),
     "naabu": frozenset({"config", "o", "output", "nmap", "nmap-cli"}),
