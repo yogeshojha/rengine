@@ -80,6 +80,23 @@ def _one_target(scope: QueryScope, column):
     return select(Scan.target_id).where(Scan.id == single).scalar_subquery()
 
 
+def _held_before(earlier, target, scan_id, cutoff, *correlated):
+    """Another scan of the target recorded a row before the cutoff."""
+    first = (
+        select(literal(1))
+        .where(
+            earlier.target_id == target,
+            earlier.scan_id != scan_id,
+            earlier.discovered_at < cutoff,
+        )
+        .order_by(earlier.discovered_at)
+        .limit(1)
+    )
+    if correlated:
+        first = first.correlate(*correlated)
+    return first.scalar_subquery().isnot(None)
+
+
 def _baselined(scope: QueryScope, model):
     """The scans of the scope whose target an earlier scan recorded rows of `model` for."""
     scan = aliased(Scan)
@@ -90,18 +107,8 @@ def _baselined(scope: QueryScope, model):
         .correlate(scan)
         .scalar_subquery()
     )
-    held = (
-        select(literal(1))
-        .where(
-            earlier.target_id == scan.target_id,
-            earlier.scan_id != scan.id,
-            earlier.discovered_at < cutoff,
-        )
-        .limit(1)
-        .correlate(scan)
-        .scalar_subquery()
-    )
-    return select(scan.id).where(scan.id.in_(scope.ids), held.isnot(None))
+    held = _held_before(earlier, scan.target_id, scan.id, cutoff, scan)
+    return select(scan.id).where(scan.id.in_(scope.ids), held)
 
 
 def _per_scan(scope: QueryScope, column, build, model):
@@ -190,13 +197,7 @@ def _host_baseline(scan_id):
         .where(Subdomain.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
+    return _held_before(earlier, target, scan_id, cutoff)
 
 
 def is_new(scope: ScopeLike):
@@ -219,13 +220,7 @@ def _address_baseline(scan_id):
     """Whether an earlier scan of this target recorded any address."""
     earlier = aliased(IpAddress)
     target = select(Scan.target_id).where(Scan.id == scan_id).scalar_subquery()
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < _address_cutoff(scan_id),
-        )
-    )
+    return _held_before(earlier, target, scan_id, _address_cutoff(scan_id))
 
 
 def _address_seen_earlier(source, scan_id):
@@ -291,13 +286,7 @@ def _service_baseline(scan_id):
         .where(Port.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
+    return _held_before(earlier, target, scan_id, cutoff)
 
 
 def service_is_new(source, scope: ScopeLike):
@@ -423,13 +412,7 @@ def _vuln_baseline(scan_id):
         .where(Vulnerability.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
+    return _held_before(earlier, target, scan_id, cutoff)
 
 
 def vuln_has_baseline(scope: ScopeLike):
@@ -467,13 +450,7 @@ def _software_baseline(scan_id):
         .where(SoftwareCve.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
+    return _held_before(earlier, target, scan_id, cutoff)
 
 
 def software_is_new(scope: ScopeLike):
@@ -504,13 +481,7 @@ def _secret_baseline(scan_id):
         .where(Secret.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
+    return _held_before(earlier, target, scan_id, cutoff)
 
 
 def secret_is_new(scope: ScopeLike):
@@ -767,13 +738,7 @@ def endpoint_baseline(scan_id):
         .where(Endpoint.scan_id == scan_id)
         .scalar_subquery()
     )
-    return exists(
-        select(1).where(
-            earlier.target_id == target,
-            earlier.scan_id != scan_id,
-            earlier.discovered_at < cutoff,
-        )
-    )
+    return _held_before(earlier, target, scan_id, cutoff)
 
 
 def endpoint_is_new(scope: ScopeLike):
