@@ -23,7 +23,8 @@
 		GROUPING_LABELS,
 		Grouping,
 		MAX_FILE_CHECKS,
-		TRACKERS_BY_KIND
+		TRACKERS_BY_KIND,
+		shortKey
 	} from '$lib/config/issue-trackers';
 	import { ROUTES } from '$lib/config/routes';
 	import { plural, pluralLabel } from '$lib/utilities/strings';
@@ -284,7 +285,7 @@
 										<div class="text-sm leading-5 wrap-anywhere">{issue.title}</div>
 										<div class="text-2xs text-muted-foreground">
 											{#if issue.attach_to}
-												Added to <span class="font-mono">{issue.attach_to}</span> ·
+												Added to <span class="font-mono">{shortKey(issue.attach_to)}</span> ·
 											{/if}
 											{plural(issue.findings, 'location', 'locations')}
 										</div>
