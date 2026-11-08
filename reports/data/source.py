@@ -1121,21 +1121,12 @@ class ReportSource:
         columns = _KEY[dimension]
         labels = _LABEL[dimension]
 
-        def side(present: UUID, absent: UUID) -> tuple[list[str], int]:
+        def side(present: UUID, absent: UUID) -> list[str]:
             other = aliased(table)
             missing = ~exists().where(
                 other.scan_id == absent,
                 *[getattr(other, c.key) == c for c in columns],
             )
-            keys = (
-                select(*columns)
-                .where(table.scan_id == present, missing)
-                .distinct()
-                .subquery()
-            )
-            total = self.session.execute(
-                select(func.count()).select_from(keys)
-            ).scalar()
             rows = self.session.execute(
                 select(*columns, *labels)
                 .where(table.scan_id == present, missing)
@@ -1151,11 +1142,14 @@ class ReportSource:
                 )
                 for row in rows
             ]
-            return sorted(sample), int(total or 0)
+            return sorted(sample)
 
-        added, added_total = side(scan_id, previous.id)
-        gone, gone_total = side(previous.id, scan_id)
-        return (added, gone, added_total, gone_total)
+        pairs = [(previous.id, scan_id), (scan_id, previous.id)]
+        totals, fill = scan_deltas.retired(self.session, dimension, pairs)
+        self._store(fill)
+        added = side(scan_id, previous.id)
+        gone = side(previous.id, scan_id)
+        return (added, gone, totals[pairs[0]], totals[pairs[1]])
 
     def excluded(self) -> dict[str, list[str]]:
         config = (self.scan.execution_config or {}) if self.scan else {}
