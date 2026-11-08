@@ -504,6 +504,8 @@ class InvestigateService:
             ):
                 continue
             await self._launch(user, project_id, scan, inv, plan)
+            inv.updated_at = utc_now()
+            await self.session.commit()
         inv.updated_at = utc_now()
         await self.session.commit()
         return _read(inv, await _plans(self.session, inv.id))

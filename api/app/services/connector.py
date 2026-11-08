@@ -1478,9 +1478,9 @@ class ConnectorService:
                 .values(state=CandidateState.QUEUED.value, scan_id=scan.id)
             )
             scans.append(scan)
-        row.scans_launched += len(scans)
-        row.last_scan_at = utc_now()
-        await self.session.commit()
+            row.scans_launched += 1
+            row.last_scan_at = utc_now()
+            await self.session.commit()
         return scans
 
     # helpers --------------------------------------------------------------
