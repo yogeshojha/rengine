@@ -25,7 +25,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import PageHeader from '$lib/components/page-header.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import FilterChips from '$lib/components/scans/results/table/filter-chips.svelte';
 	import ReportRow from '$lib/components/reports/report-row.svelte';
@@ -553,14 +553,17 @@
 <GenerateDialog bind:open={generateOpen} {projectId} template={generateTemplate} />
 <ThemeUploadDialog bind:open={uploadOpen} />
 <FontUploadDialog bind:open={fontUploadOpen} />
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	open={pendingDelete !== null}
 	onOpenChange={(v) => {
 		if (!v) pendingDelete = null;
 	}}
 	title={`Delete ${pendingDelete?.kind ?? 'report'}`}
 	description={deleteDescription}
-	isDeleting={deleting}
+	loading={deleting}
 	onConfirm={confirmDelete}
 />
 

@@ -29,7 +29,7 @@
 	import PageHeader from '$lib/components/page-header.svelte';
 	import ContextListCard from '$lib/components/contexts/context-list-card.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import { contextFacets } from '$lib/components/contexts/context-summary';
 	import { CONTEXT_TEMPLATES, templateFacet } from '$lib/components/contexts/context-templates';
@@ -338,11 +338,14 @@
 	</Button>
 </SelectionDeleteBar>
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	bind:open={showDeleteDialog}
 	title="Delete context"
 	description={`Context ${contextToDelete?.name ?? ''} is removed.`}
-	{isDeleting}
+	loading={isDeleting}
 	onOpenChange={(open) => {
 		showDeleteDialog = open;
 		if (!open) contextToDelete = null;

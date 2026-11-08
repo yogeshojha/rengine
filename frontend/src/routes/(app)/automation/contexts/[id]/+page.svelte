@@ -30,7 +30,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
@@ -650,11 +650,14 @@
 </div>
 
 {#if !isNew}
-	<DeleteConfirmationDialog
+	<ConfirmDialog
+		destructive
+		confirmLabel="Delete"
+		loadingLabel="Deleting"
 		bind:open={showDeleteDialog}
 		title="Delete context"
 		description={`Context ${draft?.name ?? ''} is removed.`}
-		{isDeleting}
+		loading={isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={handleDelete}
 	/>

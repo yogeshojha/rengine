@@ -61,7 +61,6 @@
 	import { Kbd } from '$lib/components/ui/kbd';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
 	import TargetHeader from '$lib/components/targets/target-detail/target-header.svelte';
 	import GenerateReportDialog from '$lib/components/reports/generate-dialog.svelte';
@@ -1391,11 +1390,14 @@
 		onConfirm={confirmCancel}
 	/>
 
-	<DeleteConfirmationDialog
+	<ConfirmDialog
+		destructive
+		confirmLabel="Delete"
+		loadingLabel="Deleting"
 		bind:open={showDeleteDialog}
 		title="Delete target"
 		description="Target {target.target_value} and its scans and findings are removed."
-		{isDeleting}
+		loading={isDeleting}
 		onOpenChange={(open) => (showDeleteDialog = open)}
 		onConfirm={confirmDelete}
 	/>

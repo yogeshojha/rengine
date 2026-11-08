@@ -16,7 +16,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import PanelHead from '$lib/components/panel-head.svelte';
 	import { interestApi } from '$lib/api/interest';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
@@ -291,14 +291,17 @@
 	onSaved={saved}
 />
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	open={removing !== null}
 	onOpenChange={(v) => {
 		if (!v && !deleting) removing = null;
 	}}
 	title="Delete rule"
 	description="Rule {removingName} and its labels on flagged assets are removed."
-	isDeleting={deleting}
+	loading={deleting}
 	onConfirm={remove}
 />
 

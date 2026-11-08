@@ -20,7 +20,7 @@
 	import ScheduleListCard from '$lib/components/schedules/schedule-list-card.svelte';
 	import ScheduleModal from '$lib/components/schedules/schedule-modal.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import { scanSchedulesApi } from '$lib/api/scan-schedules';
 	import { SvelteSet } from 'svelte/reactivity';
 	import type { ScanScheduleRead } from '$lib/types/scan-schedule';
@@ -222,11 +222,14 @@
 <ScheduleModal bind:open={showModal} schedule={editing} onClose={() => (editing = null)} />
 
 {#if scheduleToDelete}
-	<DeleteConfirmationDialog
+	<ConfirmDialog
+		destructive
+		confirmLabel="Delete"
+		loadingLabel="Deleting"
 		bind:open={showDeleteDialog}
 		title="Delete schedule"
 		description={`Schedule ${scheduleToDelete.name} is removed.`}
-		{isDeleting}
+		loading={isDeleting}
 		onOpenChange={(open) => {
 			showDeleteDialog = open;
 			if (!open) scheduleToDelete = null;

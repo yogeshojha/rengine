@@ -18,7 +18,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import ArrowRight from '@lucide/svelte/icons/arrow-right';
 	import Inbox from '@lucide/svelte/icons/inbox';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import NotificationListItem from '$lib/components/layout/notification-list-item.svelte';
 	import NotificationDetailSheet from '$lib/components/layout/notification-detail-sheet.svelte';
 	import { beforeNavigate, goto } from '$app/navigation';
@@ -510,7 +510,8 @@
 	onOpen={openDetailTarget}
 />
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
 	bind:open={clearAllOpen}
 	title="Clear all notifications"
 	description={notificationStore.totalCount === 1
@@ -518,7 +519,7 @@
 		: `${notificationStore.totalCount} notifications are removed from this list.`}
 	confirmLabel="Clear all"
 	loadingLabel="Clearing"
-	isDeleting={clearing}
+	loading={clearing}
 	onOpenChange={(o) => (clearAllOpen = o)}
 	onConfirm={confirmClearAll}
 />

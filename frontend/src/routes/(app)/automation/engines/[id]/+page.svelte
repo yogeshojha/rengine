@@ -31,7 +31,7 @@
 	import * as ToggleGroup from '$lib/components/ui/toggle-group';
 	import Hint from '$lib/components/hint.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 
 	import EngineTopbar from '$lib/components/engines/engine-topbar.svelte';
@@ -953,11 +953,14 @@
 	{/if}
 </div>
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	bind:open={showDeleteDialog}
 	title="Delete engine"
 	description={`Engine ${draft?.name ?? ''} is removed.`}
-	{isDeleting}
+	loading={isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
 />

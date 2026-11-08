@@ -31,7 +31,7 @@
 	import NewEngineDialog from '$lib/components/engines/new-engine-dialog.svelte';
 	import ImportEngineDialog from '$lib/components/engines/import-engine-dialog.svelte';
 	import LaunchDialog from '$lib/components/scans/launch/launch-dialog.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import SelectionDeleteBar from '$lib/components/selection-delete-bar.svelte';
 	import { summarize } from '$lib/utilities/engine-summary';
 	import { downloadBlob } from '$lib/utilities/download';
@@ -413,11 +413,14 @@
 	</Button>
 </SelectionDeleteBar>
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	bind:open={showDeleteDialog}
 	title="Delete engine"
 	description={`Engine ${engineToDelete?.name ?? ''} is removed.`}
-	{isDeleting}
+	loading={isDeleting}
 	onOpenChange={(open) => {
 		showDeleteDialog = open;
 		if (!open) engineToDelete = null;

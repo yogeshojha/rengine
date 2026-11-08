@@ -50,7 +50,6 @@
 	import Keyboard from '@lucide/svelte/icons/keyboard';
 	import { forgetFindings } from '$lib/components/scans/history/findings';
 	import TargetEmptyState from '$lib/components/targets/target-empty-state.svelte';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import AddTargetModal from '$lib/components/modals/add-target-modal.svelte';
 	import ResultsPagination from '$lib/components/scans/results/table/results-pagination.svelte';
@@ -1026,11 +1025,14 @@
 	onOpenChange={(open) => (showScanHistoryModal = open)}
 />
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
+	confirmLabel="Delete"
+	loadingLabel="Deleting"
 	bind:open={showDeleteDialog}
 	title={deleteDialogTitle}
 	description={deleteDialogDescription}
-	{isDeleting}
+	loading={isDeleting}
 	onOpenChange={(open) => (showDeleteDialog = open)}
 	onConfirm={confirmDelete}
 />

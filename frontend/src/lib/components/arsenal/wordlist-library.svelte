@@ -11,7 +11,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Label } from '$lib/components/ui/label';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -343,7 +343,8 @@
 	}}
 />
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
 	open={!!removing}
 	onOpenChange={(value) => {
 		if (!value) removing = null;
@@ -352,6 +353,6 @@
 	description={`Wordlist ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Delete"
 	loadingLabel="Deleting"
-	isDeleting={deleting}
+	loading={deleting}
 	onConfirm={remove}
 />

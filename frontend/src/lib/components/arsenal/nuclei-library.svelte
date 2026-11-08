@@ -24,7 +24,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Switch } from '$lib/components/ui/switch';
-	import DeleteConfirmationDialog from '$lib/components/delete-confirmation-dialog.svelte';
+	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -793,7 +793,8 @@
 	}}
 />
 
-<DeleteConfirmationDialog
+<ConfirmDialog
+	destructive
 	open={!!removing}
 	onOpenChange={(value) => {
 		if (!value) removing = null;
@@ -802,7 +803,7 @@
 	description={`Check ${removing?.name ?? ''} and its file are removed.`}
 	confirmLabel="Delete"
 	loadingLabel="Deleting"
-	isDeleting={deleting}
+	loading={deleting}
 	onConfirm={remove}
 />
 
