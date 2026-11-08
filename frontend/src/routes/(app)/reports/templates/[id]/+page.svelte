@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Hint from '$lib/components/hint.svelte';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
@@ -267,9 +268,13 @@
 				{#snippet titleAside()}
 					{#if template.is_builtin}<Badge variant="outline">Default</Badge>{/if}
 					{#if dirty}
-						<span class="size-2 rounded-full bg-primary" role="status" title="Unsaved changes">
-							<span class="sr-only">Unsaved changes</span>
-						</span>
+						<Hint text="Unsaved changes">
+							{#snippet child(props)}
+								<span {...props} class="size-2 rounded-full bg-primary" role="status">
+									<span class="sr-only">Unsaved changes</span>
+								</span>
+							{/snippet}
+						</Hint>
 					{/if}
 					{#if !template.is_builtin}
 						<Popover.Root bind:open={renameOpen}>
