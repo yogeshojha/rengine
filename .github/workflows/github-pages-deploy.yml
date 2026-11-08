@@ -7,14 +7,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,7 +26,7 @@ jobs:
           node-version: '22'
 
       - name: Install marked (Markdown parser)
-        run: npm install --prefix /tmp/marked marked
+        run: npm install --ignore-scripts --prefix /tmp/marked marked@15.0.12
 
       - name: Convert README to HTML
         run: |
