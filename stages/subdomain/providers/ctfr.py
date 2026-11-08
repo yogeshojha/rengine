@@ -7,6 +7,7 @@ from shared.enums.subdomain import SubdomainSource
 from stages.subdomain.providers.base import SubdomainProvider
 
 _CRTSH_URL = "https://crt.sh/?q=%25.{domain}&output=json"
+_MAX_BYTES = 32 * 1024 * 1024
 
 
 class CtfrProvider(SubdomainProvider):
@@ -20,7 +21,13 @@ class CtfrProvider(SubdomainProvider):
         url = _CRTSH_URL.format(domain=self.ctx.domain)
         req = urllib.request.Request(url)  # noqa: S310
         with self._opener().open(req, timeout=self.ctx.timeout) as resp:
-            payload = resp.read().decode("utf-8", errors="replace")
+            raw = resp.read(_MAX_BYTES + 1)
+
+        payload = raw[:_MAX_BYTES].decode("utf-8", errors="replace")
+        if len(raw) > _MAX_BYTES:
+            payload = payload.rpartition("},")[0] + "}]"
+            self._cut = True
+            self._note = f"stopped reading at {_MAX_BYTES // (1024 * 1024)} MB"
 
         try:
             records = json.loads(payload)
