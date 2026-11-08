@@ -38,7 +38,12 @@ class Page:
 
 
 def read(response: httpx.Response) -> Page:
-    body = response.content[:BODY_CAP]
+    body = bytearray()
+    for chunk in response.iter_bytes():
+        body += chunk
+        if len(body) >= BODY_CAP:
+            break
+    body = bytes(body[:BODY_CAP])
     found = _TITLE.search(body)
     title = found.group(1).decode("utf-8", "replace").strip() if found else ""
     return Page(
@@ -113,7 +118,10 @@ class OriginConfirmer:
             headers["Host"] = host
             extensions["sni_hostname"] = host
         try:
-            return read(self._client.get(url, headers=headers, extensions=extensions))
+            with self._client.stream(
+                "GET", url, headers=headers, extensions=extensions
+            ) as response:
+                return read(response)
         except (httpx.HTTPError, httpx.InvalidURL) as exc:
             logger.debug("origin confirmation failed", url=url, error=str(exc))
             return None

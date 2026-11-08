@@ -17,6 +17,7 @@ logger = get_logger(__name__)
 _UNAUTHORISED = (401, 403)
 _SERVER_ERROR = 500
 _BODY_SAMPLE = 64 * 1024
+_BODY_CAP = 8 * 1024 * 1024
 
 
 class Verdict:
@@ -121,18 +122,26 @@ class SessionCheckStage(Stage):
         )
 
     def _get(self, client: httpx.Client, url: str, headers: dict) -> _Answer | None:
+        sample = bytearray()
+        length = 0
         try:
-            response = client.get(url, headers=headers or None)
+            with client.stream("GET", url, headers=headers or None) as response:
+                status = response.status_code
+                if status >= _SERVER_ERROR:
+                    return None
+                for chunk in response.iter_bytes():
+                    if len(sample) < _BODY_SAMPLE:
+                        sample += chunk[: _BODY_SAMPLE - len(sample)]
+                    length += len(chunk)
+                    if length >= _BODY_CAP:
+                        break
         except (httpx.HTTPError, ValueError) as e:
             logger.info("session check could not reach %s: %s", url, e)
             return None
-        if response.status_code >= _SERVER_ERROR:
-            return None
-        body = response.content[:_BODY_SAMPLE]
         return _Answer(
-            status=response.status_code,
-            digest=hashlib.sha256(body).hexdigest(),
-            length=len(response.content),
+            status=status,
+            digest=hashlib.sha256(bytes(sample)).hexdigest(),
+            length=length,
         )
 
     def _result(self, verdict: str, detail: str, url: str | None = None) -> StageResult:

@@ -122,25 +122,11 @@ class ApiSpecProvider(UrlProvider):
     ) -> EndpointObservation | None:
         if self.path_excluded(url):
             return None
-        self.throttle()
-        state.fetched += 1
-        host = urlsplit(url).hostname or ""
-        try:
-            with self.host_slot(host):
-                response = client.post(
-                    url,
-                    content=_INTROSPECTION,
-                    headers={"Content-Type": "application/json"},
-                )
-            self.host_observed(host, status=response.status_code)
-        except (httpx.HTTPError, ValueError):
-            self.host_observed(host, transport_error=True)
-            state.errors += 1
-            return None
-        if response.status_code >= _CLIENT_ERROR:
+        body = self._introspect(client, url, state)
+        if body is None:
             return None
         try:
-            schema = response.json().get("data", {}).get("__schema")
+            schema = json.loads(body).get("data", {}).get("__schema")
         except (ValueError, AttributeError, RecursionError):
             return None
         if not isinstance(schema, dict):
@@ -152,6 +138,37 @@ class ApiSpecProvider(UrlProvider):
             methods=["POST"],
             detail=(f"GraphQL endpoint, introspection enabled, {len(types)} types"),
         )
+
+    def _introspect(
+        self, client: httpx.Client, url: str, state: _State
+    ) -> bytes | None:
+        self.throttle()
+        state.fetched += 1
+        host = urlsplit(url).hostname or ""
+        body = bytearray()
+        try:
+            with (
+                self.host_slot(host),
+                client.stream(
+                    "POST",
+                    url,
+                    content=_INTROSPECTION,
+                    headers={"Content-Type": "application/json"},
+                ) as response,
+            ):
+                status = response.status_code
+                self.host_observed(host, status=status)
+                if status >= _CLIENT_ERROR:
+                    return None
+                for chunk in response.iter_bytes():
+                    body += chunk
+                    if len(body) > _MAX_BYTES:
+                        return None
+        except (httpx.HTTPError, ValueError):
+            self.host_observed(host, transport_error=True)
+            state.errors += 1
+            return None
+        return bytes(body)
 
 
 class _State:
