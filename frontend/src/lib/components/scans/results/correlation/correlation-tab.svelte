@@ -97,7 +97,7 @@
 	let hosts = $derived(graph?.hosts ?? []);
 	let sharing = $derived(new Set(hubs.flatMap((h) => h.members)).size);
 	$effect(() => {
-		if (graph) onTotal?.(sharing);
+		if (graph) onTotal?.(graph.truncated ? graph.shared_hosts : sharing);
 	});
 	let hidden = $derived(
 		(graph?.hubs ?? []).filter((h) => enabled.has(h.kind) && !visible(h)).length
@@ -176,7 +176,9 @@
 			{#if graph}
 				<p class="text-sm">
 					<b class="font-semibold tabular-nums">{sharing.toLocaleString()}</b> of
-					{plural(graph.estate_hosts, 'web asset', 'web assets')} share an identity
+					{graph.truncated
+						? plural(graph.total_hosts, 'graphed web asset', 'graphed web assets')
+						: plural(graph.estate_hosts, 'web asset', 'web assets')} share an identity
 					<span class="text-muted-foreground"
 						>· {plural(hubs.length, 'shared identity', 'shared identities')}{hidden
 							? ` · ${hidden.toLocaleString()} hidden`
