@@ -518,23 +518,35 @@ class IssueFilingService:
                 VulnerabilityTriage.state.in_(SUPPRESSED_STATES),
             )
         )
+        chosen = (
+            QueryScope.of(scope).match(Vulnerability.scan_id),
+            or_(*picks),
+            ~set_aside,
+        )
+        selected = int(
+            await self.session.scalar(
+                select(func.count()).select_from(
+                    select(Vulnerability.target_id, Vulnerability.fingerprint)
+                    .where(*chosen)
+                    .distinct()
+                    .subquery()
+                )
+            )
+            or 0
+        )
+        if selected > MAX_FILE_SELECTION:
+            return _TOO_MANY.format(n=selected, cap=MAX_FILE_SELECTION)
         rows = (
             await self.session.execute(
                 select(Vulnerability)
                 .options(*(defer(column) for column in _DEFERRED))
-                .where(
-                    QueryScope.of(scope).match(Vulnerability.scan_id),
-                    or_(*picks),
-                    ~set_aside,
-                )
+                .where(*chosen)
                 .order_by(Vulnerability.discovered_at.desc())
             )
         ).scalars()
         latest: dict[tuple[uuid.UUID, str], Vulnerability] = {}
         for row in rows:
             latest.setdefault((row.target_id, row.fingerprint), row)
-        if len(latest) > MAX_FILE_SELECTION:
-            return _TOO_MANY.format(n=len(latest), cap=MAX_FILE_SELECTION)
         return list(latest.values())
 
     async def _destinations(
