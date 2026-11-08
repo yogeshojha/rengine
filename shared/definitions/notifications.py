@@ -142,7 +142,7 @@ def _lead(target: str, d: ScanDeltas) -> _Lead:
         (
             "kev",
             d.kev,
-            ("known exploited vulnerability", "known exploited vulnerabilities"),
+            _noun(vuln, before="known exploited"),
             err,
             "vulnerabilities",
         ),
