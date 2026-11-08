@@ -57,8 +57,8 @@
 	{#if group.rows.length}
 		<dl class="flex flex-col gap-1.5">
 			{#each group.rows as row (row.key)}
-				<div class="group/row grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 text-sm leading-[1.4]">
-					<dt class="pt-px text-xs text-muted-foreground">{row.label}</dt>
+				<div class="group/row grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 text-sm leading-5">
+					<dt class="flex h-5 items-center text-xs text-muted-foreground">{row.label}</dt>
 					<dd class="flex min-w-0 flex-col wrap-anywhere {TONE[row.tone ?? 'neutral']}">
 						<span class="flex min-w-0 items-center gap-1.5">
 							{#if row.brand}

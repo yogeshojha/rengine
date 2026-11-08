@@ -108,8 +108,7 @@
 				{:else}
 					<div class="h-px w-full bg-border"></div>
 				{/if}
-				<span
-					class="mt-[3px] h-[3px] w-full rounded-full {m.awards ? 'bg-series' : 'bg-transparent'}"
+				<span class="mt-0.5 h-[3px] w-full rounded-full {m.awards ? 'bg-series' : 'bg-transparent'}"
 				></span>
 			</div>
 		{/each}

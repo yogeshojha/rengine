@@ -266,7 +266,7 @@
 		<RecordGroup label={title} mono={false} sub={record?.object_class || undefined}>
 			{#each facts as f (f.key)}
 				<div class="group {ROW}">
-					<span class="pt-px text-xs text-muted-foreground">{f.label}</span>
+					<span class="flex h-5 items-center text-xs text-muted-foreground">{f.label}</span>
 					<span
 						class="flex min-w-0 flex-col text-sm leading-5 {f.tone === 'bad'
 							? 'text-destructive'
@@ -294,7 +294,7 @@
 			{/each}
 			{#if descriptionLines.length}
 				<div class={ROW}>
-					<span class="pt-px text-xs text-muted-foreground">Description</span>
+					<span class="flex h-5 items-center text-xs text-muted-foreground">Description</span>
 					<span class="flex flex-col text-sm leading-5">
 						{#each descriptionLines as line, i (i)}<span class="wrap-anywhere">{line}</span>{/each}
 					</span>
@@ -347,7 +347,9 @@
 					<div
 						class="group grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 py-2 sm:grid-cols-[9rem_minmax(0,1fr)]"
 					>
-						<span class="pt-px text-xs text-muted-foreground">{ENTITY_ROLE_LABELS[role]}</span>
+						<span class="flex h-5 items-center text-xs text-muted-foreground"
+							>{ENTITY_ROLE_LABELS[role]}</span
+						>
 						<span class="flex min-w-0 flex-col gap-0.5 text-sm leading-5">
 							{#if entity.name || entity.handle}
 								<span class="font-medium wrap-anywhere">{entity.name || entity.handle}</span>

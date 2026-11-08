@@ -43,7 +43,7 @@
 >
 	<dl class="flex flex-col gap-1.5 text-sm">
 		<div class="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
-			<dt class="pt-px text-xs text-muted-foreground">Schedule</dt>
+			<dt class="flex h-5 items-center text-xs text-muted-foreground">Schedule</dt>
 			<dd class="flex min-w-0 flex-col">
 				{#if monitoring}
 					<span>{monitoring.cadence}</span>
@@ -61,7 +61,7 @@
 			</dd>
 		</div>
 		<div class="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
-			<dt class="pt-px text-xs text-muted-foreground">Runs</dt>
+			<dt class="flex h-5 items-center text-xs text-muted-foreground">Runs</dt>
 			<dd class="tabular-nums">
 				{summary.scans_total.toLocaleString()}{#if summary.first_scan_at}<span
 						class="text-muted-foreground"
@@ -70,7 +70,7 @@
 			</dd>
 		</div>
 		<div class="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
-			<dt class="pt-px text-xs text-muted-foreground">Seeds</dt>
+			<dt class="flex h-5 items-center text-xs text-muted-foreground">Seeds</dt>
 			<dd>
 				<label class="flex items-center gap-2">
 					<Switch
@@ -85,7 +85,7 @@
 			</dd>
 		</div>
 		<div class="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
-			<dt class="pt-px text-xs text-muted-foreground">New checks</dt>
+			<dt class="flex h-5 items-center text-xs text-muted-foreground">New checks</dt>
 			<dd>
 				<label class="flex items-center gap-2">
 					<Switch

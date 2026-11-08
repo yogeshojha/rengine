@@ -161,17 +161,14 @@
 					<span class="block font-medium text-foreground">{dayHeading(startedAt)}</span>
 					{formatClock(startedAt)}
 				</span>
-				<span class="relative flex justify-center">
+				<span class="flex flex-col items-center">
 					<span class="z-1 flex h-5 items-center"
 						><span
 							class="size-2.5 rounded-full border-2 {SCAN_STATUS_DOT[s.status]}"
 							aria-hidden="true"
 						></span></span
 					>
-					<span
-						class="absolute top-[17px] -bottom-1 left-1/2 border-l-2 border-dotted"
-						aria-hidden="true"
-					></span>
+					<span class="-mb-1 flex-1 border-l-2 border-dotted" aria-hidden="true"></span>
 				</span>
 				<span class="flex min-w-0 flex-col gap-1.5 pb-4.5">
 					<span class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
@@ -219,9 +216,11 @@
 					</span>
 					<span class="relative flex justify-center">
 						<span
-							class="absolute top-[9px] -left-[calc(1.25rem-1px)] w-[calc(0.625rem+1px)] border-t-2 border-dotted"
+							class="absolute top-0 -left-[calc(1.25rem-1px)] flex h-5 items-center"
 							aria-hidden="true"
-						></span>
+						>
+							<span class="w-[calc(0.625rem+1px)] border-t-2 border-dotted"></span>
+						</span>
 						<span class="z-1 flex h-5 items-center">
 							<span
 								class="size-2 rounded-full border-2 border-primary bg-background"

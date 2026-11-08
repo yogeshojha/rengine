@@ -254,7 +254,7 @@
 		<RecordGroup label="Routing" mono={false}>
 			{#each facts as f (f.key)}
 				<div class="group {ROW}">
-					<span class="pt-px text-xs text-muted-foreground">{f.label}</span>
+					<span class="flex h-5 items-center text-xs text-muted-foreground">{f.label}</span>
 					<span
 						class="flex min-w-0 flex-col text-sm leading-5 {f.tone === 'warn'
 							? 'text-warning'
