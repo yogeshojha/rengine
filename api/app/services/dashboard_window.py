@@ -64,15 +64,21 @@ class DashboardWindowService:
         out = DashboardWindowCounts(window=window, since=window_since(window, now))
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
+        web, out.targets_with_new_web_assets = await self._targets(
+            project_id, scopes[WEB], query, now
+        )
+        out.findings = await self._findings(project_id, scopes[VULNS], query, now)
+        found = {WEB: web, VULNS: sum(out.findings.values())}
         for key in SURFACE_ORDER:
-            count, capped = await self._count(project_id, key, scopes[key], query, now)
+            if key in found:
+                count, capped = min(found[key], COUNT_CAP), found[key] > COUNT_CAP
+            else:
+                count, capped = await self._count(
+                    project_id, key, scopes[key], query, now
+                )
             out.new.append(
                 DashboardWindowCount(key=key, query=query, count=count, capped=capped)
             )
-        out.findings = await self._findings(project_id, scopes[VULNS], query, now)
-        out.targets_with_new_web_assets = await self._targets(
-            project_id, scopes[WEB], query, now
-        )
         return out
 
     def _filtered(
@@ -122,15 +128,16 @@ class DashboardWindowService:
 
     async def _targets(
         self, project_id: UUID, scope: QueryScope, query: str, now: datetime
-    ) -> int:
+    ) -> tuple[int, int]:
+        """The new web assets and the targets they belong to."""
         if not scope:
-            return 0
+            return 0, 0
         rows = self._filtered(
             project_id, WEB, scope, query, now, columns=[Subdomain.target_id]
         ).statement.subquery()
-        return int(
-            await self.session.scalar(
-                select(func.count(func.distinct(rows.c.target_id)))
+        total, targets = (
+            await self.session.execute(
+                select(func.count(), func.count(func.distinct(rows.c.target_id)))
             )
-            or 0
-        )
+        ).one()
+        return int(total or 0), int(targets or 0)
