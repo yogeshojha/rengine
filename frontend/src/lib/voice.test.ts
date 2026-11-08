@@ -7,10 +7,12 @@ const ROOT = join(import.meta.dirname, '..');
 
 // ---------- tells ----------
 const REGISTER =
-	/\b(seamless(ly)?|robust|powerful|leverage|unlock|elevate|comprehensive|effortless(ly)?|supercharge|streamline|cutting-edge|best-in-class|empower|holistic|dive in|at a glance)\b/i;
+	/\b(seamless(ly)?|robust|powerful|leverage|unlock|elevate|comprehensive|effortless(ly)?|supercharge|streamline|cutting-edge|best-in-class|empower|holistic|dive in|at a glance|simply|just)\b/i;
 const ADDRESS = /\b(you|your|you're|we|we'll|our|let's|please)\b/i;
 const SCOPE_NARRATION =
 	/\b(in this project|across all targets|of each target|from the latest (scan|run|covering run))\b/i;
+const SORT_NARRATION =
+	/\b(sorted by|newest first|oldest first|latest first|most recent first|highest first)\b/i;
 const ENCODING = /\b(sized|tinted|coloured|colored|ranked|ordered|scaled|shaded) by\b/i;
 const RHETORICAL = /^(What|Where|Why|How|Who)\b/;
 const IMPERATIVE = /^(Leave|Pick|Tick|Press|Make sure|Please|Head|Go|Click|Hover)\b/;
@@ -113,6 +115,15 @@ describe('voice', () => {
 		const offenders = files.flatMap(({ name, text }) =>
 			[...descriptions(text), ...subtitles(text)]
 				.filter((s) => SCOPE_NARRATION.test(s))
+				.map((s) => `${name}: ${s}`)
+		);
+		expect(offenders).toEqual([]);
+	});
+
+	it('does not explain a sort the columns show', () => {
+		const offenders = files.flatMap(({ name, text }) =>
+			[...descriptions(text), ...subtitles(text)]
+				.filter((s) => SORT_NARRATION.test(s))
 				.map((s) => `${name}: ${s}`)
 		);
 		expect(offenders).toEqual([]);
