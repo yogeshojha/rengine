@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from uuid import UUID
 
@@ -22,6 +23,7 @@ from shared.definitions.surface import (
     SurfaceDimension,
 )
 from shared.enums.scan import SCAN_LIVE_STATUSES, ScanScope, ScanStatus
+from shared.models.asset_query import QueryGroups
 from shared.models.endpoint import Endpoint
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
@@ -39,6 +41,37 @@ from shared.utils.datetime import utc_now
 
 class _Count(BaseModel):
     n: int = 0
+
+
+async def cached_groups(
+    session: AsyncSession,
+    *,
+    dimension: str,
+    scope: QueryScope,
+    facets: str,
+    key: str,
+    build: Callable[[], Awaitable[QueryGroups | None]],
+) -> QueryGroups:
+    """A grouped view through the aggregate cache; a build that failed returns None and is not kept."""
+    failed: list[bool] = []
+
+    async def _build() -> QueryGroups:
+        grouped = await build()
+        if grouped is None:
+            failed.append(True)
+            return QueryGroups(dimension=key)
+        return grouped
+
+    return await lead_cache.cached(
+        session,
+        name=f"groups:{dimension}",
+        scans=scope.ids,
+        facets=f"{key}|{facets}",
+        model=QueryGroups,
+        build=_build,
+        keep=lambda _: not failed,
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+    )
 
 
 TABLES = {

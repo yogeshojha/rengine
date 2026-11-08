@@ -34,6 +34,7 @@ from app.services.endpoint_tree import (
     build_tree,
     status_bucket,
 )
+from app.services.surface_scope import cached_groups
 from app.services.target_names import target_names
 from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, ENDPOINT_QUERY
 from shared.definitions.endpoints import (
@@ -598,6 +599,18 @@ class EndpointService:
         self, scope: ScopeLike, f: EndpointFilter, key: str
     ) -> QueryGroups:
         scope = QueryScope.of(scope)
+        return await cached_groups(
+            self.session,
+            dimension=SurfaceDimension.ENDPOINTS.value,
+            scope=scope,
+            facets=lead_cache.filter_of(f),
+            key=key,
+            build=lambda: self._groups(scope, f, key),
+        )
+
+    async def _groups(
+        self, scope: QueryScope, f: EndpointFilter, key: str
+    ) -> QueryGroups | None:
         now = utc_now()
         base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
         base = self._apply_filter(base, f, scope)
@@ -607,7 +620,14 @@ class EndpointService:
             return QueryGroups(dimension=key)
         if predicate is not None:
             base = base.where(predicate)
-        return await build_endpoint_groups(self.session, base, key)
+        await self.session.execute(text(STATEMENT_TIMEOUT))
+        await self.session.execute(text(NO_JIT))
+        try:
+            return await build_endpoint_groups(self.session, base, key)
+        except DBAPIError as exc:
+            await self.session.rollback()
+            logger.info("endpoint groups failed", error=str(exc.orig))
+            return None
 
     async def tree(
         self, scope: ScopeLike, f: EndpointFilter, mode: str

@@ -23,6 +23,7 @@ from app.services.cross_links import CrossLinkService
 from app.services.http_asset import HttpAssetService
 from app.services.ip_address import IpAddressService
 from app.services.port import PortService
+from app.services.surface_scope import cached_groups
 from app.services.target_names import target_names
 from shared.definitions import domain_posture as posture_defs
 from shared.definitions import hygiene as hygiene_defs
@@ -41,6 +42,7 @@ from shared.definitions.correlation import (
 )
 from shared.definitions.interest import TONE_INFO, TONE_WARNING
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
+from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import SEVERITY_ORDER
 from shared.logging import get_logger
 from shared.models.asset_query import (
@@ -491,8 +493,20 @@ class SubdomainService:
     async def groups(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter, key: str
     ) -> QueryGroups:
-        now = utc_now()
         scope = QueryScope.of(scope)
+        return await cached_groups(
+            self.session,
+            dimension=SurfaceDimension.WEB_ASSETS.value,
+            scope=scope,
+            facets=f"{project_id}|{lead_cache.filter_of(f)}",
+            key=key,
+            build=lambda: self._groups(project_id, scope, f, key),
+        )
+
+    async def _groups(
+        self, project_id: UUID, scope: QueryScope, f: SubdomainFilter, key: str
+    ) -> QueryGroups | None:
+        now = utc_now()
         base = self._scoped(project_id, scope, f, now, columns=(Subdomain.id,))
         try:
             node = parse_query(f.q)
@@ -508,7 +522,7 @@ class SubdomainService:
         except DBAPIError as exc:
             await self.session.rollback()
             logger.info("search groups failed", error=str(exc.orig))
-            return QueryGroups(dimension=key)
+            return None
 
     async def renders(
         self, project_id: UUID, scope: ScopeLike, f: SubdomainFilter

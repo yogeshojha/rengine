@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.surface_scope import baselined_targets
+from app.services.surface_scope import baselined_targets, cached_groups
 from app.services.target_names import target_names
 from shared.definitions import ai_services as ai_defs
 from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, SERVICE_QUERY
@@ -28,6 +28,7 @@ from shared.definitions.ports import (
     describe,
     service_label,
 )
+from shared.definitions.surface import SurfaceDimension
 from shared.logging import get_logger
 from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
 from shared.models.port import Port, PortRead
@@ -351,6 +352,18 @@ class PortService:
 
     async def groups(self, scope: ScopeLike, f: ServiceFilter, key: str) -> QueryGroups:
         scope = QueryScope.of(scope)
+        return await cached_groups(
+            self.session,
+            dimension=SurfaceDimension.SERVICES.value,
+            scope=scope,
+            facets=lead_cache.filter_of(f),
+            key=key,
+            build=lambda: self._groups(scope, f, key),
+        )
+
+    async def _groups(
+        self, scope: QueryScope, f: ServiceFilter, key: str
+    ) -> QueryGroups | None:
         now = utc_now()
         d, base = self._scoped(scope, f)
         try:
@@ -368,7 +381,7 @@ class PortService:
         except DBAPIError as exc:
             await self.session.rollback()
             logger.info("service groups failed", error=str(exc.orig))
-            return QueryGroups(dimension=key)
+            return None
 
     async def ai(self, scope: ScopeLike) -> AiSummary:
         """Services carrying each AI service, and the models those services listed."""

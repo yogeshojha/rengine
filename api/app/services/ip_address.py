@@ -13,9 +13,11 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.port import PortService
+from app.services.surface_scope import cached_groups
 from app.services.target_names import target_names
 from shared.definitions.asset_query import ALL_TAB, COUNT_CAP, IP_EXPOSURE, IP_QUERY
 from shared.definitions.ports import port_interest
+from shared.definitions.surface import SurfaceDimension
 from shared.logging import get_logger
 from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
 from shared.models.ip_address import IpAddress, IpAddressRead
@@ -302,6 +304,18 @@ class IpAddressService:
 
     async def groups(self, scope: ScopeLike, f: IpGroupFilter, key: str) -> QueryGroups:
         scope = QueryScope.of(scope)
+        return await cached_groups(
+            self.session,
+            dimension=SurfaceDimension.IPS.value,
+            scope=scope,
+            facets=lead_cache.filter_of(f),
+            key=key,
+            build=lambda: self._groups(scope, f, key),
+        )
+
+    async def _groups(
+        self, scope: QueryScope, f: IpGroupFilter, key: str
+    ) -> QueryGroups | None:
         now = utc_now()
         d, base = self._scoped(scope, f)
         try:
@@ -319,7 +333,7 @@ class IpAddressService:
         except DBAPIError as exc:
             await self.session.rollback()
             logger.info("address groups failed", error=str(exc.orig))
-            return QueryGroups(dimension=key)
+            return None
 
     async def facets(self, scope: ScopeLike) -> IpFacets:
         scope = QueryScope.of(scope)

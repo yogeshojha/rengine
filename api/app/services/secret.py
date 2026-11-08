@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.baseline import new_row_ids
 from app.services.facets import column_facet
+from app.services.surface_scope import cached_groups
 from app.services.target_names import target_names
 from shared.definitions.asset_query import COUNT_CAP, SECRET_QUERY
 from shared.definitions.secrets import (
@@ -22,6 +23,7 @@ from shared.definitions.secrets import (
     STATE_LABELS,
     STATE_ORDER,
 )
+from shared.definitions.surface import SurfaceDimension
 from shared.definitions.vulnerabilities import CoverageStatus
 from shared.logging import get_logger
 from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
@@ -253,6 +255,18 @@ class SecretService:
 
     async def groups(self, scope: ScopeLike, f: SecretFilter, key: str) -> QueryGroups:
         scope = QueryScope.of(scope)
+        return await cached_groups(
+            self.session,
+            dimension=SurfaceDimension.SECRETS.value,
+            scope=scope,
+            facets=lead_cache.filter_of(f),
+            key=key,
+            build=lambda: self._groups(scope, f, key),
+        )
+
+    async def _groups(
+        self, scope: QueryScope, f: SecretFilter, key: str
+    ) -> QueryGroups | None:
         now = utc_now()
         base = select(Secret.id).where(scope.match(Secret.scan_id))
         try:
@@ -270,7 +284,7 @@ class SecretService:
         except DBAPIError as exc:
             await self.session.rollback()
             logger.info("secret groups failed", error=str(exc.orig))
-            return QueryGroups(dimension=key)
+            return None
         if key == "value":
             for group in grouped.groups:
                 group.label = masked_value(group.label)
