@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from enum import StrEnum
 
+from shared.definitions.threat_intel import BANDS_BY_KEY
+
 
 class DashboardWindow(StrEnum):
     WEEK = "7d"
@@ -73,8 +75,8 @@ class QueueTier(StrEnum):
 
 
 TIER_ORDER: tuple[str, ...] = tuple(t.value for t in QueueTier)
-TIER_ACT_EPSS = 0.088
-TIER_ATTEND_EPSS = 0.01
+TIER_ACT_EPSS = BANDS_BY_KEY["likely"].floor
+TIER_ATTEND_EPSS = BANDS_BY_KEY["possible"].floor
 
 
 # (key, label, lower bound in days, upper bound in days); None is open

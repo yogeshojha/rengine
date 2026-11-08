@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.definitions.threat_intel import BANDS_BY_KEY
+
 CVE_ID = re.compile(r"^CVE-\d{4}-\d{4,7}$", re.IGNORECASE)
 
 MAX_TEMPLATE_BYTES = 512_000
@@ -396,7 +398,7 @@ WEAK_MATCHER_PATHS: frozenset[str] = frozenset(
 KEV_TAG = "kev"
 VKEV_TAG = "vkev"
 
-EPSS_HIGH = 0.5
+EPSS_HIGH = BANDS_BY_KEY["very_likely"].floor
 
 
 def is_kev(tags: list[str] | tuple[str, ...] | None) -> bool:
