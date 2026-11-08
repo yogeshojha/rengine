@@ -35,6 +35,7 @@
 	import { WatchCadence, type Watch, type WatchPreview } from '$lib/types/watch';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { plural } from '$lib/utilities/strings';
+	import { PASSIVE_INTENSITY } from '$lib/types/scan-engine';
 
 	interface Props {
 		program: Pick<BountyProgram, 'name' | 'handle' | 'platform' | 'platform_label'>;
@@ -122,7 +123,7 @@
 		const w = existing;
 		engineId = w?.engine_id ?? SELECT_NONE;
 		cadence = w?.cadence ?? WatchCadence.Weekly;
-		passiveOnly = w?.intensity === 'passive';
+		passiveOnly = w?.intensity === PASSIVE_INTENSITY;
 		runNow = !isEdit;
 		rateLimit = w
 			? w.rate_limit === null
@@ -202,8 +203,8 @@
 			engine_id: engineId === SELECT_NONE ? null : engineId,
 			cadence,
 			intensity: passiveOnly
-				? 'passive'
-				: existing && existing.intensity !== 'passive'
+				? PASSIVE_INTENSITY
+				: existing && existing.intensity !== PASSIVE_INTENSITY
 					? existing.intensity
 					: null,
 			rate_limit: rateValue,

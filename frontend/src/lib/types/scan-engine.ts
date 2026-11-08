@@ -4,6 +4,7 @@ export type Intensity = 'passive' | 'normal' | 'aggressive';
 
 export const INTENSITIES: readonly Intensity[] = ['passive', 'normal', 'aggressive'] as const;
 export const DEFAULT_INTENSITY: Intensity = 'normal';
+export const PASSIVE_INTENSITY: Intensity = 'passive';
 export const CUSTOM_INTENSITY = 'custom';
 
 export const INTENSITY_LABELS: Record<string, string> = {

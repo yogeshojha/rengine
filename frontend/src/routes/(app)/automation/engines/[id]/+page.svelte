@@ -66,7 +66,7 @@
 		StageConfig,
 		TransportOverrides
 	} from '$lib/types/scan-engine';
-	import { hasCustomTransport } from '$lib/types/scan-engine';
+	import { hasCustomTransport, PASSIVE_INTENSITY } from '$lib/types/scan-engine';
 	import type { PreviewPhase } from '$lib/types/scan';
 	import {
 		engineToYaml,
@@ -237,7 +237,7 @@
 	}
 
 	function blockedByIntensity(stageName: string): boolean {
-		if (parsed?.intensity !== ('passive' satisfies Intensity)) return false;
+		if (parsed?.intensity !== PASSIVE_INTENSITY) return false;
 		const stage = engineCatalogStore.stage(stageName);
 		return Boolean(stage?.touches_target && !stage?.passive_capable);
 	}

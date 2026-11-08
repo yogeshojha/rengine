@@ -4,9 +4,9 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { cn } from '$lib/utils';
-	import { PASSIVE_INTENSITY } from '$lib/config/intensity';
 	import {
 		DEFAULT_INTENSITY,
+		PASSIVE_INTENSITY,
 		phaseLabel,
 		type StageCatalogEntry,
 		type StageConfig
