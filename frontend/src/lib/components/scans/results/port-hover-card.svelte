@@ -75,9 +75,13 @@
 		untrack(() => {
 			if (requested) return;
 			requested = true;
+			errored = false;
 			load()
 				.then((list) => (rows = list.filter((r) => r.port === port)))
-				.catch(() => (errored = true));
+				.catch(() => {
+					errored = true;
+					requested = false;
+				});
 		});
 	});
 </script>
