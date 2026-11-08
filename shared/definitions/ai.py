@@ -107,7 +107,14 @@ class ModelSpec:
     recommended: bool = False
     cache_read_per_mtok: float | None = None
     cache_write_per_mtok: float | None = None
+    default: bool = False
 
+    def __post_init__(self) -> None:
+        if self.default and not self.note:
+            object.__setattr__(self, "note", DEFAULT_MODEL_NOTE)
+
+
+DEFAULT_MODEL_NOTE = "Default model."
 
 _ANTHROPIC = AIProvider.ANTHROPIC.value
 _OPENAI = AIProvider.OPENAI.value
@@ -123,8 +130,8 @@ MODELS: tuple[ModelSpec, ...] = (
         1_000_000,
         True,
         True,
-        "Default model.",
         recommended=True,
+        default=True,
         cache_read_per_mtok=0.2,
         cache_write_per_mtok=5.0,
     ),
@@ -259,8 +266,8 @@ MODELS: tuple[ModelSpec, ...] = (
         2.0,
         10.0,
         1_050_000,
-        note="Default model.",
         recommended=True,
+        default=True,
         cache_read_per_mtok=0.1,
         cache_write_per_mtok=2.5,
     ),
@@ -293,8 +300,8 @@ MODELS: tuple[ModelSpec, ...] = (
         0.75,
         3.75,
         1_048_576,
-        note="Default model.",
         recommended=True,
+        default=True,
         cache_read_per_mtok=0.075,
     ),
     ModelSpec(
@@ -332,10 +339,10 @@ def model_spec(model_id: str) -> ModelSpec | None:
 
 
 DEFAULT_MODEL: dict[str, str] = {
-    AIProvider.ANTHROPIC.value: "claude-opus-5-5",
-    AIProvider.OPENAI.value: "gpt-6.1-sol",
-    AIProvider.GOOGLE.value: "gemini-3.8-flash",
-    AIProvider.OPENAI_COMPATIBLE.value: "",
+    provider.value: next(
+        (m.id for m in MODELS if m.provider == provider.value and m.default), ""
+    )
+    for provider in AIProvider
 }
 
 PROVIDER_LABELS: dict[str, str] = {
