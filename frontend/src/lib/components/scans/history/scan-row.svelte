@@ -87,6 +87,7 @@
 	let highlight = $state<string | null>(null);
 	let compact = $derived(historyPrefs.density === 'compact');
 	let started = $derived(scan.started_at ?? scan.created_at);
+	const PAUSE_COST = 'Running stages restart on resume.';
 	let compareRefusal = $derived(scan.is_first_scan ? REFUSAL.NO_EARLIER_RUN : null);
 </script>
 
@@ -211,7 +212,13 @@
 					{#if scan.status === 'paused'}
 						<DropdownMenu.Item onSelect={onResume}><Play /> Resume</DropdownMenu.Item>
 					{:else if scan.status === 'running'}
-						<DropdownMenu.Item onSelect={onPause}><Pause /> Pause</DropdownMenu.Item>
+						<Hint text={PAUSE_COST} side="left">
+							{#snippet child(props)}
+								<div {...props}>
+									<DropdownMenu.Item onSelect={onPause}><Pause /> Pause</DropdownMenu.Item>
+								</div>
+							{/snippet}
+						</Hint>
 					{/if}
 					{#if open}
 						<DropdownMenu.Item onSelect={onCancel}><Ban /> Cancel</DropdownMenu.Item>
@@ -252,7 +259,7 @@
 						{/snippet}
 					</Hint>
 					{#if scan.status === 'running'}
-						<Hint text="Running stages restart on resume.">
+						<Hint text={PAUSE_COST}>
 							{#snippet child(props)}
 								<Button
 									{...props}
