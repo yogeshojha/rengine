@@ -10,6 +10,7 @@ from mcp.capabilities import CAPABILITY_ORDER, Capability
 from mcp.tools import Tool, discover
 
 COMMAND_RE = re.compile(r"^[a-z][a-z0-9]{1,15}$")
+_READ_ONLY = frozenset({Capability.READ.value, Capability.PLAN.value})
 
 
 class ToolRegistrationError(RuntimeError):
@@ -41,7 +42,7 @@ class ToolSpec:
             "description": self.description,
             "inputSchema": self.schema,
             "annotations": {
-                "readOnlyHint": self.capability == Capability.READ.value,
+                "readOnlyHint": self.capability in _READ_ONLY,
                 "destructiveHint": self.destructive,
             },
         }
