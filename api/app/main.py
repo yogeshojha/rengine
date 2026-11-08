@@ -21,6 +21,7 @@ from app.core.validation_errors import validation_error_handler
 from app.utils.helpers import create_initial_admin
 from shared.config import APP_NAME, APP_VERSION
 from shared.logging import get_logger, setup_logging
+from shared.services.scan_scope import covering_stages
 from shared.utils.crypto import SecretDecryptionError
 
 setup_logging(level=settings.LOG_LEVEL)
@@ -36,6 +37,7 @@ async def lifespan(_app: FastAPI):
         ai_ledger.install()
         await create_initial_admin()
         await check_capacity()
+        covering_stages()
         await redis_sse_bridge.start()
     except Exception as e:
         logger.exception("Failed to initialize the application: %s", e)
