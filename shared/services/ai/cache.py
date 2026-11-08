@@ -15,7 +15,7 @@ from shared.definitions.ai import CACHE_VERSION
 from shared.logging import get_logger
 from shared.models.ai import AiNarrative
 from shared.services.ai import ledger
-from shared.services.ai.client import AIResult, AIUsage, complete
+from shared.services.ai.client import AIResult, AIUsage, complete, scrub_error
 from shared.services.ai.config import AIConfig
 from shared.services.ai.ledger import CallRecord
 from shared.utils.datetime import utc_now
@@ -111,7 +111,9 @@ def narrate(
     try:
         result = complete(cfg, system=system, prompt=prompt, task=task)
     except Exception as exc:
-        logger.warning("ai narration failed", task=task, error=str(exc)[:200])
+        logger.warning(
+            "ai narration failed", task=task, error=scrub_error(str(exc), cfg)
+        )
         if usage is not None:
             usage.failed(task, exc)
         return None
@@ -155,7 +157,9 @@ async def narrate_async(
             complete, cfg, system=system, prompt=prompt, task=task
         )
     except Exception as exc:
-        logger.warning("ai narration failed", task=task, error=str(exc)[:200])
+        logger.warning(
+            "ai narration failed", task=task, error=scrub_error(str(exc), cfg)
+        )
         return None
 
     if not result.text:
