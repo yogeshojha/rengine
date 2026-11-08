@@ -35,6 +35,22 @@ FUZZABLE_CLASSES: frozenset[str] = frozenset(
     }
 )
 _OK = 200
+_REQUEST_COLUMNS = (
+    Endpoint.id,
+    Endpoint.url,
+    Endpoint.scheme,
+    Endpoint.host,
+    Endpoint.port,
+    Endpoint.path,
+    Endpoint.dir_path,
+    Endpoint.shape,
+    Endpoint.params,
+    Endpoint.methods,
+    Endpoint.param_count,
+    Endpoint.endpoint_class,
+    Endpoint.status_code,
+    Endpoint.variants,
+)
 _GONE = frozenset({404, 410})
 _LIVE_DIR = frozenset(range(200, 400)) | frozenset({401, 403})
 
@@ -166,14 +182,14 @@ def build_requests(
         return plan
 
     rows = session.execute(
-        select(Endpoint)
+        select(*_REQUEST_COLUMNS)
         .where(
             Endpoint.scan_id == scan_id,
             Endpoint.is_probed.is_(True),
             Endpoint.status_code.is_not(None),
         )
         .order_by(Endpoint.host, Endpoint.path, Endpoint.url)
-    ).scalars()
+    )
 
     chosen: dict[tuple, tuple[Origin, Endpoint]] = {}
     dirs: dict[tuple[str, str], Origin] = {}
