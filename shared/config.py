@@ -73,18 +73,21 @@ class BaseAppSettings(BaseSettings):
         )
 
     @property
-    def database_url_async(self) -> str:
+    def _postgres_location(self) -> str:
+        user = quote(self.POSTGRES_USER, safe="")
+        password = quote(self.POSTGRES_PASSWORD, safe="")
         return (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"{user}:{password}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
     @property
+    def database_url_async(self) -> str:
+        return f"postgresql+asyncpg://{self._postgres_location}"
+
+    @property
     def database_url_sync(self) -> str:
-        return (
-            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        )
+        return f"postgresql://{self._postgres_location}"
 
     # every outbound call that is not scan traffic: intel feeds, RDAP, RIPEstat
     EGRESS_PROXY_URL: str = ""
