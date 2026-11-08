@@ -220,7 +220,7 @@
 								style="background-color: {color}"
 							>
 								{#if selectedColor === color}
-									<Check class="size-3 text-white" />
+									<Check class="size-3 text-primary-foreground" />
 								{/if}
 							</ToggleGroup.Item>
 						{/each}
