@@ -194,6 +194,8 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "headless-options",
             "cdpe",
             "cdp-endpoint",
+            "H",
+            "header",
         }
     ),
     "httpx": frozenset(
@@ -225,6 +227,9 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "asset-id",
             "ho",
             "headless-options",
+            "rr",
+            "request",
+            "path",
         }
     ),
     "katana": frozenset(
@@ -250,6 +255,8 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "headless-options",
             "cwu",
             "chrome-ws-url",
+            "H",
+            "headers",
         }
     ),
     "naabu": frozenset({"config", "o", "output", "nmap", "nmap-cli"}),
@@ -265,7 +272,9 @@ DENIED_FLAGS: dict[str, frozenset[str]] = {
             "request",
         }
     ),
-    "dnsx": frozenset({"o", "output", "ot", "output-template", "auth"}),
+    "dnsx": frozenset(
+        {"o", "output", "ot", "output-template", "auth", "w", "wordlist"}
+    ),
     "tlsx": frozenset(
         {
             "config",
