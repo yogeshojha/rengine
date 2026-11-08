@@ -149,7 +149,6 @@ class CancelScan(Tool):
                 "scan_id": str(result.id),
                 "status": result.status,
                 "engine": result.engine_name,
-                "kept": _found(result),
             },
             pivot=links.scan(ctx.ui_base_url, result.id),
             blocks=[hero(headline, sub=short_id(result.id))],
