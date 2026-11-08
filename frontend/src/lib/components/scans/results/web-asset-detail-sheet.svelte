@@ -115,7 +115,7 @@
 	import { COVERAGE_STATUS_LABELS } from '$lib/config/vulnerabilities';
 	import { formatDateTime, formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import { writeClipboard } from '$lib/utilities/clipboard';
-	import { hostPort } from '$lib/utilities/net';
+	import { hostPort, splitHostPort } from '$lib/utilities/net';
 	import { externalHref } from '$lib/utilities/links';
 	import { plural } from '$lib/utilities/strings';
 
@@ -722,7 +722,9 @@
 															class="font-mono hover:text-primary"
 															onclick={() => {
 																const rep = surface.representative_value ?? '';
-																const host = rep.replace(/^https?:\/\//, '').replace(/:\d+$/, '');
+																const [host] = splitHostPort(
+																	rep.replace(/^https?:\/\//, '').split('/')[0]
+																);
 																onPivot?.(host);
 															}}>{surface.representative_value}</button
 														>
