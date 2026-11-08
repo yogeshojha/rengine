@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
 
 from app.api.deps import (
     StreamUser,
@@ -77,16 +78,23 @@ async def event_stream(
         )
 
     owner = str(current_user.id)
-    if sse_manager.owner_at_capacity(owner):
+    if not sse_manager.claim(owner):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many event streams for this user.",
         )
+    started = False
+
+    def settle() -> None:
+        if not started:
+            sse_manager.release(owner)
 
     async def generate():
+        nonlocal started
         loop = asyncio.get_running_loop()
         deadline = loop.time() + HEARTBEAT_SECONDS
-        async with sse_manager.stream(validated, owner) as queue:
+        started = True
+        async with sse_manager.stream(validated, owner, claimed=True) as queue:
             try:
                 while True:
                     if await request.is_disconnected():
@@ -117,5 +125,8 @@ async def event_stream(
                 pass
 
     return StreamingResponse(
-        generate(), media_type="text/event-stream", headers=STREAM_HEADERS
+        generate(),
+        media_type="text/event-stream",
+        headers=STREAM_HEADERS,
+        background=BackgroundTask(settle),
     )

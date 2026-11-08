@@ -43,6 +43,20 @@ class SSEManager:
     def owner_at_capacity(self, owner: str) -> bool:
         return self._owner_streams.get(owner, 0) >= MAX_STREAMS_PER_OWNER
 
+    def claim(self, owner: str) -> bool:
+        """Take one of the owner's stream slots; False when none is left."""
+        if self.owner_at_capacity(owner):
+            return False
+        self._owner_streams[owner] = self._owner_streams.get(owner, 0) + 1
+        return True
+
+    def release(self, owner: str) -> None:
+        left = self._owner_streams.get(owner, 1) - 1
+        if left > 0:
+            self._owner_streams[owner] = left
+        else:
+            self._owner_streams.pop(owner, None)
+
     async def subscribe(self, queue: asyncio.Queue, channels: list[str]) -> None:
         async with self._lock:
             queue_id = id(queue)
@@ -94,17 +108,15 @@ class SSEManager:
 
     @asynccontextmanager
     async def stream(
-        self, channels: list[str], owner: str | None = None
+        self, channels: list[str], owner: str | None = None, *, claimed: bool = False
     ) -> AsyncIterator[asyncio.Queue]:
         if self.at_capacity():
             msg = "Maximum SSE connections reached"
             raise ConnectionError(msg)
-        if owner is not None and self.owner_at_capacity(owner):
+        if owner is not None and not claimed and not self.claim(owner):
             msg = "Maximum SSE connections reached for the owner"
             raise ConnectionError(msg)
 
-        if owner is not None:
-            self._owner_streams[owner] = self._owner_streams.get(owner, 0) + 1
         queue: asyncio.Queue = asyncio.Queue(maxsize=100)
         try:
             await self.subscribe(queue, channels)
@@ -112,11 +124,7 @@ class SSEManager:
         finally:
             await self.unsubscribe(queue)
             if owner is not None:
-                left = self._owner_streams.get(owner, 1) - 1
-                if left > 0:
-                    self._owner_streams[owner] = left
-                else:
-                    self._owner_streams.pop(owner, None)
+                self.release(owner)
 
     async def _deliver(self, message: str, subscribers: set[asyncio.Queue]) -> int:
         dead: set[asyncio.Queue] = set()
