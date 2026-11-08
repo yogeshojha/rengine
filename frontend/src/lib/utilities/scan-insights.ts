@@ -96,7 +96,7 @@ export const STATUS_CLASS_TABS: { key: string; label: string }[] = [
 
 export const WEB_ASSET_SORTS: { key: string; label: string }[] = [
 	{ key: 'status', label: 'Status' },
-	{ key: 'name', label: 'Host' },
+	{ key: 'name', label: 'Web asset' },
 	{ key: 'title', label: 'Title' },
 	{ key: 'ip', label: 'IP' },
 	{ key: 'cert', label: 'Cert' },
