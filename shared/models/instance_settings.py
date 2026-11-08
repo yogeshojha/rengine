@@ -57,7 +57,7 @@ class InstanceSettings(SQLModel, table=True):
     cert_recheck_enabled: bool = Field(default=False)
     infostealer_lookups: bool = Field(default=True)
     source_ip_lookups: bool = Field(default=True)
-    # reNgine replays a known-exploited finding's own check at finalize, no approval
+    # replay KEV findings at finalize
     investigate_replay_kev: bool = Field(default=False)
     bounty_sync_interval: str = Field(default=DEFAULT_SYNC_INTERVAL, max_length=16)
     bounty_synced_at: datetime | None = Field(default=None)
