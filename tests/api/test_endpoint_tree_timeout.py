@@ -52,7 +52,7 @@ async def test_a_tree_read_past_the_timeout_answers_with_an_error():
 async def test_leaves_and_gone_past_the_timeout_answer_with_an_error(read):
     session = _Session(_CancelledError())
     found = await getattr(EndpointService(session), read)(
-        uuid.uuid4(), EndpointFilter(q='"' * 40)
+        uuid.uuid4(), EndpointFilter(q="portal")
     )
     assert found.error is not None
     assert found.error.message == "The search timed out."
