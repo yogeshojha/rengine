@@ -236,7 +236,7 @@ class NotificationChannelService:
             msg = f"Invalid provider. Must be one of {', '.join(PROVIDERS)}."
             raise _bad(msg)
         config = {k: v for k, v in (data.config or {}).items() if v is not None}
-        _validate_config(data.provider, config)
+        await asyncio.to_thread(_validate_config, data.provider, config)
 
         channel = NotificationChannel(
             name=data.name,
@@ -268,7 +268,7 @@ class NotificationChannelService:
             if _server_moved(channel.provider, stored, incoming):
                 stored = {}
             merged = _merge_config(channel.provider, stored, incoming)
-            _validate_config(channel.provider, merged)
+            await asyncio.to_thread(_validate_config, channel.provider, merged)
             channel.config_encrypted = encrypt_secret(json.dumps(merged))
 
         channel.updated_at = utc_now()
@@ -298,7 +298,7 @@ class NotificationChannelService:
             if isinstance(value, str) and MASK in value:
                 msg = f"'{field}' carries a masked value. Enter the value again."
                 raise _bad(msg)
-        _validate_config(provider, config)
+        await asyncio.to_thread(_validate_config, provider, config)
         ok, reason = await asyncio.to_thread(
             send_one, provider, config, _test_message(provider.capitalize())
         )
