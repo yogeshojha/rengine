@@ -93,7 +93,7 @@ def prepare(items, *, include_static: bool, ingest_tools: list[str]) -> Batch:
         if tool is None or tool not in allowed:
             batch.rejected += 1
             continue
-        parsed = parse_url(strip_control(item.url or ""))
+        parsed = parse_url(redact_message(strip_control(item.url or "")) or "")
         if parsed is None:
             batch.rejected += 1
             continue
