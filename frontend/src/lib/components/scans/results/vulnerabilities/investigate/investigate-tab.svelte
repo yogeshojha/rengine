@@ -163,7 +163,7 @@
 				action === 'approve'
 					? await investigateApi.approve(projectId, ids)
 					: await investigateApi.decline(projectId, ids);
-			toast.success(action === 'approve' ? 'Approved. The check runs now.' : 'Declined');
+			toast.success(action === 'approve' ? 'Check approved' : 'Check declined');
 		} catch (e) {
 			toast.error((e as Error).message);
 		} finally {
@@ -354,7 +354,7 @@
 					{investigation ? 'Investigate again' : 'Investigate'}
 				</Button>
 				{#if !investigation}
-					<span class="text-xs text-muted-foreground">No verdict yet.</span>
+					<span class="text-xs text-muted-foreground">No verdict</span>
 				{/if}
 			</div>
 		{/if}

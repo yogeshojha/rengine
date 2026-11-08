@@ -189,7 +189,7 @@
 	<span class="flex items-center gap-1.5 px-2 py-1">
 		<span class="h-3 w-3 rounded-[3px] {CHECK_CELL[CheckState.NOT_IN_LIBRARY]}" aria-hidden="true"
 		></span>
-		Check not in the library yet
+		Not in the library
 	</span>
 	<span class="flex items-center gap-1.5 px-2 py-1">
 		<span class="h-3 w-3 rounded-[3px] {CHECK_CELL[CheckState.NOT_TESTED]}" aria-hidden="true"
