@@ -372,9 +372,10 @@ def check(
         tripwire.last_fired_at = now
         if not was_fired:
             tripwire.fired_count += 1
+    session.flush()
+    tripwire_id, scan_id, run_id = tripwire.id, scan.id, run.id
     session.commit()
     if result.fired and act is not None:
-        tripwire_id, scan_id, run_id = tripwire.id, scan.id, run.id
         outcomes = act(session, tripwire, run, scan, result.fired)
         run = _record_outcomes(session, tripwire_id, scan_id, run_id, outcomes)
     return run
