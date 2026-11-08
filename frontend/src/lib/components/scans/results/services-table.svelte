@@ -204,6 +204,16 @@
 	];
 	let flagTabs = $derived(mode === ServiceTimelineMode.PORT ? PORT_TABS : ADDRESS_TABS);
 	let flagCounts = $derived(strips && !strips.error ? strips.counts : null);
+	let stripCount = $derived(
+		strips ? (strips.mode === ServiceTimelineMode.PORT ? strips.ports : strips.addresses).length : 0
+	);
+	let pageNoun = $derived(
+		!timeline
+			? { noun: SVC.noun, plural: SVC.nounPlural }
+			: mode === ServiceTimelineMode.PORT
+				? { noun: 'port', plural: 'ports' }
+				: { noun: IP.noun, plural: IP.nounPlural }
+	);
 	let timelineSorts = $derived(mode === ServiceTimelineMode.PORT ? PORT_SORTS : ADDRESS_SORTS);
 	let flagHelp = $derived(
 		timelineFlag
@@ -242,7 +252,8 @@
 
 	let selected = $state<Service | null>(null);
 	let drawerOpen = $state(false);
-	const rows = new RowCursor('data-service-row-index');
+	const ROW_ATTR = 'data-row-index';
+	const rows = new RowCursor(ROW_ATTR);
 	let shortcutsOpen = $state(false);
 	let queryBar = $state<ReturnType<typeof QueryBar> | null>(null);
 	let pendingSelect: 'first' | 'last' | null = null;
@@ -800,9 +811,13 @@
 			shortcutsOpen = true;
 			return;
 		}
-		if (!items.length) return;
-		if (e.key === 'Enter' && onControl(e.target, '[data-service-row-index]')) return;
-		rows.keys(e, items.length, (i) => open(items[i]));
+		const count = timeline ? stripCount : items.length;
+		if (!count) return;
+		if (e.key === 'Enter') {
+			if (onControl(e.target, `[${ROW_ATTR}]`)) return;
+			if (timeline && e.target instanceof Element && e.target.closest(`[${ROW_ATTR}]`)) return;
+		}
+		rows.keys(e, count, (i) => (timeline ? rows.row(i)?.click() : open(items[i])));
 	}
 
 	let rescanBusy = $state(false);
@@ -1012,7 +1027,7 @@
 		/>
 	{/if}
 
-	{#if loading && items.length === 0 && !groupBy}
+	{#if loading && items.length === 0 && !groupBy && !(timeline && strips)}
 		<ScrollArea orientation="horizontal">
 			<TableSkeleton lead={SERVICE_LEAD_COLUMNS} columns={shownColumns} {density} selectable />
 		</ScrollArea>
@@ -1135,8 +1150,8 @@
 			capped={totalCapped}
 			page={pageIndex}
 			{pageSize}
-			noun={SVC.noun}
-			plural={SVC.nounPlural}
+			noun={pageNoun.noun}
+			plural={pageNoun.plural}
 			onPage={(p) => (pageIndex = p)}
 			onPageSize={(s) => {
 				pageSize = s;

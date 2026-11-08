@@ -114,7 +114,7 @@
 	class="group flex cursor-pointer items-center gap-3 px-4 transition-colors {pad} {tone}"
 	role="button"
 	tabindex={0}
-	data-service-row-index={index}
+	data-row-index={index}
 	aria-label="Open {endpoint}"
 	onclick={() => onOpen(s)}
 	onkeydown={(e) => {
