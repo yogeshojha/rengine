@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Hint from '$lib/components/hint.svelte';
 	import { scopeClause, useScopedRoutes } from './scope-links';
 	import * as HoverCard from '$lib/components/ui/hover-card';
 	import { ROUTES } from '$lib/config/routes';
@@ -83,9 +84,13 @@
 							{#if !r.live}<span class="block h-4 w-0.5 rounded-sm bg-border"></span>{/if}
 						</span>
 						<span class="flex min-w-0 flex-col items-center border-x px-2 text-center">
-							<span class="max-w-full truncate text-xs font-semibold" title={r.target_value}
-								>{r.target_value}</span
-							>
+							<Hint text={r.target_value}>
+								{#snippet child(props)}
+									<span {...props} class="max-w-full truncate text-xs font-semibold"
+										>{r.target_value}</span
+									>
+								{/snippet}
+							</Hint>
 							{#if r.actionable || !settled}
 								<span
 									class="flex flex-wrap items-center justify-center gap-x-1 text-2xs text-muted-foreground"
@@ -136,11 +141,15 @@
 			<HoverCard.Content class="w-64 p-3" side="top" align="center">
 				<div class="flex flex-col gap-2.5 text-xs">
 					<div class="flex items-baseline justify-between gap-2">
-						<a
-							href={ROUTES.target(r.target_id)}
-							title={r.target_value}
-							class="truncate text-sm font-semibold hover:text-primary">{r.target_value}</a
-						>
+						<Hint text={r.target_value}>
+							{#snippet child(props)}
+								<a
+									{...props}
+									href={ROUTES.target(r.target_id)}
+									class="truncate text-sm font-semibold hover:text-primary">{r.target_value}</a
+								>
+							{/snippet}
+						</Hint>
 						<span class="shrink-0 text-2xs text-muted-foreground">
 							{#if r.last_at}{relativeTime(
 									r.last_at

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Hint from '$lib/components/hint.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { STORAGE_KEYS } from '$lib/config/storage-keys';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -98,9 +99,13 @@
 					aria-current={active ? 'true' : undefined}
 				>
 					<Check class={active ? 'opacity-100' : 'opacity-0'} />
-					<span class="min-w-0 truncate {active ? 'font-medium' : ''}" title={view.name}
-						>{view.name}</span
-					>
+					<Hint text={view.name}>
+						{#snippet child(props)}
+							<span {...props} class="min-w-0 truncate {active ? 'font-medium' : ''}"
+								>{view.name}</span
+							>
+						{/snippet}
+					</Hint>
 				</DropdownMenu.Item>
 			{/each}
 			<DropdownMenu.Separator />
@@ -116,7 +121,11 @@
 							onSelect={() => (pendingDelete = view)}
 							aria-label="Delete view {view.name}"
 						>
-							<span class="min-w-0 truncate" title={view.name}>{view.name}</span>
+							<Hint text={view.name}>
+								{#snippet child(props)}
+									<span {...props} class="min-w-0 truncate">{view.name}</span>
+								{/snippet}
+							</Hint>
 						</DropdownMenu.Item>
 					{/each}
 				</DropdownMenu.SubContent>

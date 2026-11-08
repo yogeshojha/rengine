@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Hint from '$lib/components/hint.svelte';
 	import Play from '@lucide/svelte/icons/play';
 	import Ban from '@lucide/svelte/icons/ban';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -120,12 +121,13 @@
 		</div>
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<div class="flex flex-wrap items-center gap-2">
-				<h1
-					class="min-w-0 truncate font-mono text-2xl font-semibold tracking-tight"
-					title={target.target_value}
-				>
-					{target.target_value}
-				</h1>
+				<Hint text={target.target_value}>
+					{#snippet child(props)}
+						<h1 {...props} class="min-w-0 truncate font-mono text-2xl font-semibold tracking-tight">
+							{target.target_value}
+						</h1>
+					{/snippet}
+				</Hint>
 				<Badge variant="outline" class="font-normal text-muted-foreground">
 					{targetTypeLabel(target.target_type)}
 				</Badge>

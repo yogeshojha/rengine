@@ -101,35 +101,53 @@
 	>
 		<div role="cell" class={RCOL.report}>
 			<div class="flex min-w-0 items-center gap-1.5">
-				<span class="truncate text-sm font-medium" title={report.title}>{report.title}</span>
+				<Hint text={report.title}>
+					{#snippet child(props)}
+						<span {...props} class="truncate text-sm font-medium">{report.title}</span>
+					{/snippet}
+				</Hint>
 			</div>
 			<div
 				class="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-2xs text-muted-foreground"
 			>
 				<span class="font-mono">#{report.external_id}</span>
 				{#if report.weakness}
-					<span class="truncate" title={report.weakness}>{report.weakness}</span>
+					<Hint text={report.weakness}>
+						{#snippet child(props)}
+							<span {...props} class="truncate">{report.weakness}</span>
+						{/snippet}
+					</Hint>
 				{/if}
 				{#if report.asset_identifier}
-					<span class="truncate font-mono" title={report.asset_identifier}
-						>{report.asset_identifier}</span
-					>
+					<Hint text={report.asset_identifier}>
+						{#snippet child(props)}
+							<span {...props} class="truncate font-mono">{report.asset_identifier}</span>
+						{/snippet}
+					</Hint>
 				{/if}
-				<span class="truncate md:hidden" title={programName}>{programName}</span>
+				<Hint text={programName}>
+					{#snippet child(props)}
+						<span {...props} class="truncate md:hidden">{programName}</span>
+					{/snippet}
+				</Hint>
 			</div>
 		</div>
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
 		<div role="cell" class={RCOL.program} onclick={(e) => e.stopPropagation()}>
 			{#if programHref}
-				<a
-					href={programHref}
-					target={report.program_in_hub ? undefined : '_blank'}
-					rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
-					class="block truncate text-sm hover:text-primary"
-					title={programName}
-				>
-					{programName}
-				</a>
+				<Hint text={programName}>
+					{#snippet child(props)}
+						<a
+							{...props}
+							href={programHref}
+							target={report.program_in_hub ? undefined : '_blank'}
+							rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
+							class="block truncate text-sm hover:text-primary"
+						>
+							{programName}
+						</a>
+					{/snippet}
+				</Hint>
 				<button
 					type="button"
 					class="flex max-w-full items-center gap-1 truncate font-mono text-2xs text-muted-foreground hover:text-foreground"
@@ -255,7 +273,11 @@
 									<span class="size-[7px] rounded-full" style="background: {s.tone}"></span>
 								</span>
 								<span class="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm">
-									<span class="truncate" title={s.label}>{s.label}</span>
+									<Hint text={s.label}>
+										{#snippet child(props)}
+											<span {...props} class="truncate">{s.label}</span>
+										{/snippet}
+									</Hint>
 									<span class="shrink-0 font-mono text-2xs text-muted-foreground">
 										{formatShortDate(s.at!)}
 									</span>
@@ -275,13 +297,17 @@
 					{#if report.program_handle}
 						<div class="flex min-w-0 flex-col">
 							{#if programHref}
-								<a
-									href={programHref}
-									target={report.program_in_hub ? undefined : '_blank'}
-									rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
-									class="truncate text-sm font-medium hover:text-primary"
-									title={programName}>{programName}</a
-								>
+								<Hint text={programName}>
+									{#snippet child(props)}
+										<a
+											{...props}
+											href={programHref}
+											target={report.program_in_hub ? undefined : '_blank'}
+											rel={report.program_in_hub ? undefined : 'noopener noreferrer'}
+											class="truncate text-sm font-medium hover:text-primary">{programName}</a
+										>
+									{/snippet}
+								</Hint>
 							{/if}
 							<span class="font-mono text-2xs text-muted-foreground">@{report.program_handle}</span>
 						</div>
@@ -321,24 +347,32 @@
 						{#if report.weakness}
 							<dt class="text-muted-foreground">Weakness</dt>
 							<dd class="min-w-0">
-								<button
-									type="button"
-									class="truncate text-left hover:text-primary"
-									title={report.weakness}
-									onclick={() => onSearch(report.weakness!)}>{report.weakness}</button
-								>
+								<Hint text={report.weakness}>
+									{#snippet child(props)}
+										<button
+											{...props}
+											type="button"
+											class="truncate text-left hover:text-primary"
+											onclick={() => onSearch(report.weakness!)}>{report.weakness}</button
+										>
+									{/snippet}
+								</Hint>
 							</dd>
 						{/if}
 						{#if report.asset_identifier}
 							<dt class="text-muted-foreground">Asset</dt>
 							<dd class="flex min-w-0 items-center gap-1">
-								<button
-									type="button"
-									class="truncate text-left font-mono text-xs hover:text-primary"
-									title={report.asset_identifier}
-									onclick={() => onSearch(report.asset_identifier!)}
-									>{report.asset_identifier}</button
-								>
+								<Hint text={report.asset_identifier}>
+									{#snippet child(props)}
+										<button
+											{...props}
+											type="button"
+											class="truncate text-left font-mono text-xs hover:text-primary"
+											onclick={() => onSearch(report.asset_identifier!)}
+											>{report.asset_identifier}</button
+										>
+									{/snippet}
+								</Hint>
 								<CopyButton value={report.asset_identifier} class="shrink-0" />
 							</dd>
 						{/if}

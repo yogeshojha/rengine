@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Hint from '$lib/components/hint.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -74,16 +75,20 @@
 							{@const TypeIcon = TARGET_TYPE_ICONS_COMPACT[item.target_type]}
 							<TypeIcon class="size-3.5 shrink-0 text-muted-foreground" />
 						{/if}
-						<code
-							class="min-w-0 truncate font-mono text-sm {kind === 'invalid'
-								? 'text-destructive'
-								: kind === 'skipped'
-									? 'text-muted-foreground'
-									: ''}"
-							title={item.target_value}
-						>
-							{item.target_value}
-						</code>
+						<Hint text={item.target_value}>
+							{#snippet child(props)}
+								<code
+									{...props}
+									class="min-w-0 truncate font-mono text-sm {kind === 'invalid'
+										? 'text-destructive'
+										: kind === 'skipped'
+											? 'text-muted-foreground'
+											: ''}"
+								>
+									{item.target_value}
+								</code>
+							{/snippet}
+						</Hint>
 						{#if item.target_type}
 							<span class="shrink-0 text-xs text-muted-foreground">
 								{formatTargetType(item.target_type)}

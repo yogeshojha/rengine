@@ -166,12 +166,16 @@
 		<div role="cell" class="{TCOL.target} flex items-start gap-3">
 			<div class="min-w-0 flex-1">
 				<div class="flex min-w-0 items-center gap-1.5">
-					<a
-						href={ROUTES.target(target.id)}
-						class="truncate font-mono text-sm font-medium hover:text-primary"
-						title={target.target_value}
-						onclick={stopProp}>{target.target_value}</a
-					>
+					<Hint text={target.target_value}>
+						{#snippet child(props)}
+							<a
+								{...props}
+								href={ROUTES.target(target.id)}
+								class="truncate font-mono text-sm font-medium hover:text-primary"
+								onclick={stopProp}>{target.target_value}</a
+							>
+						{/snippet}
+					</Hint>
 					<CopyButton value={target.target_value} class="shrink-0 transition-opacity {REVEAL_SM}" />
 				</div>
 				{#if editing}
@@ -199,7 +203,11 @@
 							{formatTargetType(target.target_type)}
 						</span>
 						{#if target.display_name && target.display_name !== target.target_value}
-							<span class="truncate" title={target.display_name}>{target.display_name}</span>
+							<Hint text={target.display_name}>
+								{#snippet child(props)}
+									<span {...props} class="truncate">{target.display_name}</span>
+								{/snippet}
+							</Hint>
 						{/if}
 						{#if targetPrefs.folded('run')}
 							{#if run}
@@ -289,7 +297,11 @@
 				{:else if loaded}
 					<span class="text-xs leading-6 text-muted-foreground">Not scanned</span>
 				{:else if failed}
-					<span class="text-xs leading-6 text-muted-foreground" title="Runs not loaded">—</span>
+					<Hint text="Runs not loaded">
+						{#snippet child(props)}
+							<span {...props} class="text-xs leading-6 text-muted-foreground">—</span>
+						{/snippet}
+					</Hint>
 				{:else}
 					<Skeleton class="h-6 w-24 rounded-md" />
 					<Skeleton class="h-3 w-12" />

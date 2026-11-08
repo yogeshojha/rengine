@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Hint from '$lib/components/hint.svelte';
 	import BadgeCheck from '@lucide/svelte/icons/badge-check';
 	import BadgeX from '@lucide/svelte/icons/badge-x';
 	import BadgeMinus from '@lucide/svelte/icons/badge-minus';
@@ -127,9 +128,11 @@
 							{:else}
 								<BadgeMinus class="size-3.5 shrink-0 text-muted-foreground" />
 							{/if}
-							<code class="truncate font-mono text-xs" title={result.target_value}
-								>{result.target_value}</code
-							>
+							<Hint text={result.target_value}>
+								{#snippet child(props)}
+									<code {...props} class="truncate font-mono text-xs">{result.target_value}</code>
+								{/snippet}
+							</Hint>
 						</div>
 
 						{#if result.error && activeTab !== 'imported'}

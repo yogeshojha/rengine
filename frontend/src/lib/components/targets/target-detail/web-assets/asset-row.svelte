@@ -66,15 +66,19 @@
 <div class="group flex items-center gap-3 px-4 py-2.5 transition-colors {rowTone(false, false)}">
 	<div class="flex flex-col gap-0.5 {HOST_COL.width}">
 		<div class="flex min-w-0 items-center gap-1.5">
-			<a
-				href={scanHref}
-				title={asset.name}
-				class="truncate font-mono text-sm {asset.current
-					? ''
-					: 'text-muted-foreground line-through decoration-muted-foreground/40'} hover:text-primary"
-			>
-				<HighlightText text={asset.name} terms={[term]} />
-			</a>
+			<Hint text={asset.name}>
+				{#snippet child(props)}
+					<a
+						{...props}
+						href={scanHref}
+						class="truncate font-mono text-sm {asset.current
+							? ''
+							: 'text-muted-foreground line-through decoration-muted-foreground/40'} hover:text-primary"
+					>
+						<HighlightText text={asset.name} terms={[term]} />
+					</a>
+				{/snippet}
+			</Hint>
 			{#if asset.is_new}
 				<Hint text="First seen in the latest scan">
 					{#snippet child(props)}
@@ -107,9 +111,13 @@
 			{/if}
 		</div>
 		{#if asset.cname}
-			<span class="truncate font-mono text-xs text-muted-foreground" title={asset.cname}
-				>→ {asset.cname}</span
-			>
+			<Hint text={asset.cname}>
+				{#snippet child(props)}
+					<span {...props} class="truncate font-mono text-xs text-muted-foreground"
+						>→ {asset.cname}</span
+					>
+				{/snippet}
+			</Hint>
 		{/if}
 	</div>
 
@@ -131,18 +139,22 @@
 	</div>
 
 	{#if shown.has('title')}
-		<div
-			class="hidden {grow('title')} {width(
-				'title'
-			)} truncate text-sm text-muted-foreground sm:block"
-			title={asset.title || undefined}
-		>
-			{#if asset.title}
-				<HighlightText text={asset.title} terms={[term]} />
-			{:else}
-				—
-			{/if}
-		</div>
+		<Hint text={asset.title || undefined}>
+			{#snippet child(props)}
+				<div
+					{...props}
+					class="hidden {grow('title')} {width(
+						'title'
+					)} truncate text-sm text-muted-foreground sm:block"
+				>
+					{#if asset.title}
+						<HighlightText text={asset.title} terms={[term]} />
+					{:else}
+						—
+					{/if}
+				</div>
+			{/snippet}
+		</Hint>
 	{/if}
 
 	{#if shown.has('tech')}
