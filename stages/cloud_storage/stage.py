@@ -105,7 +105,7 @@ class CloudStorageStage(Stage):
         self.emit_progress(
             f"checking {counted(len(found.items), 'bucket name')} across cloud providers"
         )
-        buckets, partial = self._probe(found.items)
+        buckets, unanswered = self._probe(found.items)
 
         stored = cloud_storage.replace_rows(
             self.session,
@@ -124,6 +124,11 @@ class CloudStorageStage(Stage):
         warnings = []
         if found.capped:
             warnings.append(f"Candidate names capped at {MAX_CANDIDATES:,}.")
+        if unanswered:
+            warnings.append(
+                f"{counted(unanswered, 'bucket name')} not checked after a throttled "
+                "or failed request."
+            )
         return StageResult(
             counts={
                 "candidates": len(found.items),
@@ -131,7 +136,7 @@ class CloudStorageStage(Stage):
                 "cloud_buckets_open": opened,
             },
             warnings=warnings,
-            partial=partial or found.capped,
+            partial=bool(unanswered) or found.capped,
         )
 
     def _hostnames(self) -> list[str]:
@@ -189,24 +194,24 @@ class CloudStorageStage(Stage):
             urls=[str(u) for u in flat_urls if u],
         )
 
-    def _probe(self, items: list[Candidate]) -> tuple[list[Bucket], bool]:
+    def _probe(self, items: list[Candidate]) -> tuple[list[Bucket], int]:
         rate = min(self.transport.rate or PROBE_RATE_CAP, PROBE_RATE_CAP)
         workers = min(max(self.transport.threads, 1), PROBE_THREAD_CAP)
         gate = _Gate(rate)
         client = cloud_storage.client(self.net_options().proxy_url, PROBE_TIMEOUT)
         buckets: list[Bucket] = []
-        partial = False
+        unanswered = 0
         lock = threading.Lock()
 
-        def one(candidate: Candidate) -> list[Bucket]:
+        def one(candidate: Candidate) -> list[Bucket] | None:
             gate.wait()
             try:
                 return cloud_storage.probe(client, candidate)
             except ThrottledError:
                 gate.back_off()
-                return []
+                return None
             except httpx.HTTPError:
-                return []
+                return None
 
         with client, ThreadPoolExecutor(max_workers=workers) as pool:
             step = workers * 4
@@ -214,5 +219,8 @@ class CloudStorageStage(Stage):
                 self._check_abort()
                 for result in pool.map(one, items[start : start + step]):
                     with lock:
-                        buckets.extend(result)
-        return buckets, partial
+                        if result is None:
+                            unanswered += 1
+                        else:
+                            buckets.extend(result)
+        return buckets, unanswered
