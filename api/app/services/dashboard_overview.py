@@ -274,7 +274,7 @@ class DashboardOverviewService:
     async def discovery(self, project_id: UUID) -> DashboardDiscovery:
         """Registrable domains the estate names that are not targets."""
         estate = await TargetEstateService(self.session).for_project(project_id)
-        out = DashboardDiscovery()
+        out = DashboardDiscovery(untracked=estate.untracked)
         candidates = [
             d for d in estate.domains if d.state == EstateTriageState.OPEN.value
         ]
@@ -282,7 +282,7 @@ class DashboardOverviewService:
             out.domains.append(
                 DashboardDiscoveredDomain(
                     domain=d.domain,
-                    hostname_count=sum(s.count for s in d.signals),
+                    signals=d.signals,
                     sources=[
                         DashboardDiscoverySource(
                             target_id=src.target_id,

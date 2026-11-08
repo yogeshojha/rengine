@@ -1,4 +1,5 @@
 import type { ScanStatus } from './scan';
+import type { EstateSignal } from './estate';
 import type { SeverityCount } from '$lib/utilities/vulns';
 import type { ActivityKind, ActivityTone, QueueTier } from '$lib/config/dashboard';
 
@@ -319,11 +320,12 @@ export interface DashboardDiscoverySource {
 
 export interface DashboardDiscoveredDomain {
 	domain: string;
-	hostname_count: number;
+	signals: EstateSignal[];
 	sources: DashboardDiscoverySource[];
 }
 
 export interface DashboardDiscovery {
+	untracked: number;
 	domains: DashboardDiscoveredDomain[];
 }
 

@@ -10,7 +10,11 @@
 	import { EXPIRING_DAYS, STALE_DAYS } from '$lib/config/dashboard';
 	import { MS_PER_DAY, relativeTime } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
-	import type { DashboardDiscovery, DashboardOverview } from '$lib/types/dashboard';
+	import type {
+		DashboardDiscoveredDomain,
+		DashboardDiscovery,
+		DashboardOverview
+	} from '$lib/types/dashboard';
 
 	interface Props {
 		overview: DashboardOverview;
@@ -62,15 +66,24 @@
 	let domains = $derived(
 		(discovery?.domains ?? []).filter((d) => d.sources.some((s) => inScope.has(s.target_id)))
 	);
+	let listed = $derived(discovery?.domains.length ?? 0);
+	let filtered = $derived(domains.length < listed);
+	let capped = $derived((discovery?.untracked ?? 0) > listed);
+	function evidence(d: DashboardDiscoveredDomain): string | null {
+		const s = d.signals[0];
+		if (!s) return null;
+		return s.detail ? `${s.label} ${s.detail}` : s.label;
+	}
 	let discoveryRows = $derived.by<SheetRow[]>(() =>
 		domains.map((d) => {
 			const source = d.sources[0];
 			const on =
 				d.sources.length > 1 ? plural(d.sources.length, 'target', 'targets') : source?.target_value;
+			const why = evidence(d);
 			return {
 				key: d.domain,
 				primary: d.domain,
-				secondary: `${plural(d.hostname_count, 'hostname', 'hostnames')} on certificates of ${on}`,
+				secondary: why ? `${why} · ${on}` : on,
 				action: {
 					label: 'Add target',
 					loadingLabel: 'Adding',
@@ -92,6 +105,7 @@
 		count: number;
 		detail: string | null;
 		tone: string | null;
+		more?: boolean;
 		open: () => void;
 	}
 	let unscheduled = $derived(overview.targets.filter((t) => !t.monitored).map((t) => t.id));
@@ -158,15 +172,22 @@
 						}))
 					})
 			});
-		const leads = domains.length;
+		const leads = filtered ? domains.length : (discovery?.untracked ?? 0);
 		if (leads > 0)
 			out.push({
 				key: 'leads',
 				label: 'Candidate targets',
 				count: leads,
-				detail: 'named on certificates',
+				detail: 'untracked domains',
 				tone: null,
-				open: () => show({ kind: 'discovery', title: 'Candidate targets', rows: [] })
+				more: filtered && capped,
+				open: () =>
+					show({
+						kind: 'discovery',
+						title: 'Candidate targets',
+						description: filtered ? undefined : shownOf(domains.length, leads, 'domain', 'domains'),
+						rows: []
+					})
 			});
 		if (unscheduled.length)
 			out.push({
@@ -213,7 +234,7 @@
 						{t.label}
 					</span>
 					<span class="text-lg leading-none font-semibold tracking-tight tabular-nums">
-						{t.count.toLocaleString()}
+						{t.count.toLocaleString()}{t.more ? '+' : ''}
 					</span>
 					{#if t.detail}<span class="text-2xs text-muted-foreground">{t.detail}</span>{/if}
 				</button>

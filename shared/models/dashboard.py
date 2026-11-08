@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from shared.definitions.dashboard import ActivityTone, QueueTier
+from shared.models.estate import EstateSignal
 from shared.models.vulnerability import SeverityCount
 
 
@@ -241,11 +242,12 @@ class DashboardDiscoverySource(BaseModel):
 
 class DashboardDiscoveredDomain(BaseModel):
     domain: str
-    hostname_count: int = 0
+    signals: list[EstateSignal] = Field(default_factory=list)
     sources: list[DashboardDiscoverySource] = Field(default_factory=list)
 
 
 class DashboardDiscovery(BaseModel):
+    untracked: int = 0
     domains: list[DashboardDiscoveredDomain] = Field(default_factory=list)
 
 
