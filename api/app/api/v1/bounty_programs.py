@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.capability import require_capability
@@ -28,6 +28,7 @@ from shared.definitions.bounty_programs import (
 )
 from shared.definitions.bounty_reports import REPORT_STAGE_LABELS, REPORT_STATES
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS, CAP_PROGRAM_WATCHES
+from shared.definitions.watch import MAX_ALERT_QUERY
 from shared.models.bounty_program import (
     BountyEventRead,
     BountyImportRequest,
@@ -254,7 +255,7 @@ async def list_programs(
     platform: str | None = Query(None, description="Platform key"),
     platforms: Annotated[list[str] | None, Query()] = None,
     sources: Annotated[list[str] | None, Query()] = None,
-    q: str | None = Query(None),
+    q: str | None = Query(None, max_length=200),
     state: str | None = Query(None, description="public or private"),
     submission: str | None = Query(None, description="open, paused or closed"),
     bounty: bool | None = Query(None),
@@ -289,7 +290,7 @@ async def list_programs(
 
 
 class AlertQueryCheck(BaseModel):
-    query: str = ""
+    query: str = Field(default="", max_length=MAX_ALERT_QUERY)
 
 
 @router.post("/watches/validate-query")

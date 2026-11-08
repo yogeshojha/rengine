@@ -60,7 +60,7 @@ def note_filter(
         list[str] | None, Query(description="Review state of a triage reason")
     ] = None,
     search: Annotated[
-        str | None, Query(description="Text in the body or title")
+        str | None, Query(description="Text in the body or title", max_length=200)
     ] = None,
 ) -> NoteFilter:
     return NoteFilter(

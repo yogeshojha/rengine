@@ -13,6 +13,7 @@ from app.core.database import get_session
 from app.core.ratelimit import record_failure, too_many_attempts
 from app.services.connector import ConnectorError, ConnectorService
 from connectors import auth
+from shared.definitions.endpoints import MAX_HOST_LENGTH
 from shared.models.connector import (
     ActionRead,
     AddTargetRequest,
@@ -269,12 +270,12 @@ async def candidates(
     _current_user: CurrentUser,
     service: Service,
     project_id: ProjectId,
-    state: str | None = None,
-    host: str | None = None,
-    notice: str | None = None,
+    state: Annotated[str | None, Query(max_length=40)] = None,
+    host: Annotated[str | None, Query(max_length=MAX_HOST_LENGTH)] = None,
+    notice: Annotated[str | None, Query(max_length=40)] = None,
     flagged: bool | None = None,
-    search: str | None = None,
-    page: int = 1,
+    search: Annotated[str | None, Query(max_length=200)] = None,
+    page: Annotated[int, Query(ge=1, le=10000)] = 1,
 ):
     return await service.candidates(
         connector_id,

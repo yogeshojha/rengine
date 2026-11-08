@@ -150,7 +150,8 @@ async def list_scans(
         list[str] | None, Query(description="Filter by engine name")
     ] = None,
     search: Annotated[
-        str | None, Query(description="Search target, engine or context")
+        str | None,
+        Query(description="Search target, engine or context", max_length=200),
     ] = None,
     sort_by: Annotated[ScanSortKey, Query(description="Sort field")] = "started",
     sort_dir: Annotated[ScanSortDir, Query(description="Sort direction")] = "desc",

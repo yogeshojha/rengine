@@ -12,6 +12,7 @@ from app.core.database import get_session
 from app.services.interest import InterestError, InterestReadService, catalog
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import resolve_targets
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.surface import SurfaceDimension
 from shared.models.interest import (
     BulkDismissRequest,
@@ -111,7 +112,7 @@ async def delete_rule(
 async def preview_rule(
     session: SessionDep,
     _user: CurrentUser,
-    query: Annotated[str, Body(embed=True)],
+    query: Annotated[str, Body(embed=True, max_length=MAX_QUERY_LENGTH)],
     scan_id: Annotated[UUID | None, Query()] = None,
 ) -> RulePreview:
     return await InterestReadService(session).preview(query, scan_id)

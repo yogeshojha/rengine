@@ -29,14 +29,18 @@ async def list_cves(
     q: Annotated[str, Query(max_length=MAX_QUERY, description="CVE filter")] = "",
     page: Annotated[int, Query(ge=1)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = DEFAULT_PAGE_SIZE,
-    sort: Annotated[str, Query(description="Sort key")] = "rank",
+    sort: Annotated[str, Query(description="Sort key", max_length=40)] = "rank",
     dir: Annotated[
         str, Query(pattern="^(asc|desc)$", description="Sort direction")
     ] = "desc",
-    severity: Annotated[str | None, Query(description="Severity")] = None,
+    severity: Annotated[
+        str | None, Query(description="Severity", max_length=40)
+    ] = None,
     kev: Annotated[bool, Query(description="On the CISA KEV list")] = False,
     ransomware: Annotated[bool, Query(description="Used by ransomware")] = False,
-    evidence: Annotated[list[str], Query(description="Evidence rung")] = [],  # noqa: B006
+    evidence: Annotated[
+        list[str], Query(description="Evidence rung", max_length=8)
+    ] = [],  # noqa: B006
 ):
     return await service.index(
         project_id,

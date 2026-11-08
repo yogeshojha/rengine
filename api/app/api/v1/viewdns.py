@@ -1,11 +1,12 @@
 from typing import Annotated, NoReturn
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.core.ratelimit import record_failure, too_many_attempts
+from shared.definitions.endpoints import MAX_HOST_LENGTH
 from shared.models.user import User
 from tools.viewdns.models import CachedCount, CachedCountsRequest, ViewDNSCacheRead
 from tools.viewdns.service import (
@@ -46,7 +47,7 @@ def _raise_lookup(e: ViewDNSError) -> NoReturn:
 
 @router.get("/reverse-ip/{host}", response_model=ViewDNSCacheRead | None)
 async def reverse_ip(
-    host: str,
+    host: Annotated[str, Path(max_length=MAX_HOST_LENGTH)],
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
     cached_only: bool = Query(False, description="Return cached data only"),
@@ -61,7 +62,7 @@ async def reverse_ip(
 
 @router.get("/reverse-ns/{nameserver}", response_model=ViewDNSCacheRead | None)
 async def reverse_ns(
-    nameserver: str,
+    nameserver: Annotated[str, Path(max_length=MAX_HOST_LENGTH)],
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
     cached_only: bool = Query(False, description="Return cached data only"),
@@ -78,7 +79,9 @@ async def reverse_ns(
 async def reverse_whois(
     _current_user: CurrentUser,
     service: Annotated[ViewDNSService, Depends(get_viewdns_service)],
-    q: str = Query(..., min_length=1, description="Email, domain, name or company"),
+    q: str = Query(
+        ..., min_length=1, max_length=500, description="Email, domain, name or company"
+    ),
     cached_only: bool = Query(False, description="Return cached data only"),
 ):
     if not cached_only:

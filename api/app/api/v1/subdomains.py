@@ -12,6 +12,7 @@ from app.services.hosting import HostingService
 from app.services.render_timeline import RenderTimelineService
 from app.services.subdomain import SubdomainService
 from app.services.timeline import TimelineService
+from shared.definitions.endpoints import MAX_HOST_LENGTH
 from shared.models.asset_query import (
     QueryCountRequest,
     QueryCounts,
@@ -267,7 +268,9 @@ async def subdomain_correlation(
     service: Annotated[SubdomainService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     scope: WebAssetScope,
-    name: Annotated[str, Query(description="Web asset name")],
+    name: Annotated[
+        str, Query(description="Web asset name", max_length=MAX_HOST_LENGTH)
+    ],
 ):
     return await service.correlation(project_id=project_id, scope=scope, name=name)
 

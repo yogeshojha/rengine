@@ -147,7 +147,7 @@ async def get_target_counts(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
     project_slug: Annotated[str, Query(description="Filter by project slug")],
-    search: Annotated[str | None, Query()] = None,
+    search: Annotated[str | None, Query(max_length=200)] = None,
     organization_ids: Annotated[list[UUID] | None, Query()] = None,
     tag_ids: Annotated[list[UUID] | None, Query()] = None,
     signal: Annotated[SignalName | None, Query()] = None,
@@ -181,7 +181,8 @@ async def get_target_stats(
     service: Annotated[TargetService, Depends(get_target_service)],
     project_slug: Annotated[str, Query(description="Filter by project slug")],
     search: Annotated[
-        str | None, Query(description="Search by target value or display name")
+        str | None,
+        Query(description="Search by target value or display name", max_length=200),
     ] = None,
     organization_ids: Annotated[
         list[UUID] | None, Query(description="Filter by organization IDs")
@@ -207,7 +208,7 @@ async def list_matching_target_ids(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
     project_slug: Annotated[str, Query(description="Filter by project slug")],
-    search: Annotated[str | None, Query()] = None,
+    search: Annotated[str | None, Query(max_length=200)] = None,
     organization_ids: Annotated[list[UUID] | None, Query()] = None,
     tag_ids: Annotated[list[UUID] | None, Query()] = None,
     target_type: Annotated[TargetType | None, Query()] = None,
@@ -307,7 +308,8 @@ async def list_targets(
         str | None, Query(description="Filter by project slug")
     ] = None,
     search: Annotated[
-        str | None, Query(description="Search by target value or display name")
+        str | None,
+        Query(description="Search by target value or display name", max_length=200),
     ] = None,
     organization_ids: Annotated[
         list[UUID] | None, Query(description="Filter by organization IDs")

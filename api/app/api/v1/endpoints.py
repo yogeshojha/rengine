@@ -9,6 +9,8 @@ from app.api.scope import EndpointScope
 from app.core.database import get_session
 from app.services.endpoint import EndpointService
 from app.services.endpoint_structure import EndpointStructureService
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.definitions.endpoints import MAX_HOST_LENGTH
 from shared.models.asset_query import (
     QueryCountRequest,
     QueryCounts,
@@ -102,7 +104,7 @@ async def endpoint_groups(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
     scope: EndpointScope,
-    group_by: Annotated[str, Query(description="Group dimension")],
+    group_by: Annotated[str, Query(description="Group dimension", max_length=40)],
     body: EndpointFilter,
 ):
     return await service.groups(scope, body, group_by)
@@ -164,7 +166,9 @@ async def endpoint_facets(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
     scope: EndpointScope,
-    q: Annotated[str | None, Query(description="Query string")] = None,
+    q: Annotated[
+        str | None, Query(description="Query string", max_length=MAX_QUERY_LENGTH)
+    ] = None,
 ):
     return await lead_cache.cached(
         service.session,
@@ -181,7 +185,9 @@ async def endpoint_summary(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
     scope: EndpointScope,
-    host: Annotated[str | None, Query(description="Host name")] = None,
+    host: Annotated[
+        str | None, Query(description="Host name", max_length=MAX_HOST_LENGTH)
+    ] = None,
 ):
     return await lead_cache.cached(
         service.session,

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from shared.definitions.endpoints import MAX_HOST_LENGTH
 from shared.enums.target import TargetType
 from shared.enums.whois import WhoisLookupType
 from shared.http import egress_proxy
@@ -303,7 +304,7 @@ async def correlate_by_registrant(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    name: Annotated[str, Query(description="Registrant name")],
+    name: Annotated[str, Query(description="Registrant name", max_length=500)],
     project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
 ):
     records = await service.find_by_registrant(session, name)
@@ -322,7 +323,7 @@ async def correlate_by_registrar(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    name: Annotated[str, Query(description="Registrar name")],
+    name: Annotated[str, Query(description="Registrar name", max_length=500)],
     project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
 ):
     records = await service.find_by_registrar(session, name)
@@ -341,7 +342,9 @@ async def correlate_by_network(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
-    cidr: Annotated[str, Query(description="Network CIDR such as 8.8.8.0/24")],
+    cidr: Annotated[
+        str, Query(description="Network CIDR such as 8.8.8.0/24", max_length=64)
+    ],
     project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
 ):
     records = await service.find_by_network(session, cidr)
@@ -361,7 +364,11 @@ async def correlate_by_nameserver(
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
     ns: Annotated[
-        str, Query(description="Nameserver host name such as ns1.google.com")
+        str,
+        Query(
+            description="Nameserver host name such as ns1.google.com",
+            max_length=MAX_HOST_LENGTH,
+        ),
     ],
     project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
 ):
