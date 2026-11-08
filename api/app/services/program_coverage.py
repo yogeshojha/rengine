@@ -38,9 +38,10 @@ def scope_values(hosts: set[str]) -> list[str]:
     return sorted(out)
 
 
-def scope_match(host: str, scopes: list) -> tuple[object | None, bool]:
+def scope_match(host: str, scopes: list, plan=None) -> tuple[object | None, bool]:
     """The scope entry this host sits under, and whether the program excludes it."""
-    plan = plan_scope(scopes)
+    if plan is None:
+        plan = plan_scope(scopes)
     item = next((i for i in plan.items if i.matches(host)), None)
     if item is None:
         return None, False
@@ -82,12 +83,19 @@ class ProgramCoverageService:
         if not clean:
             return {}
         programs, scopes_by_program = await self._load(clean)
+        plans = {
+            program.id: plan_scope(scopes_by_program.get(program.id, []))
+            for program in programs
+        }
         best: dict[str, ProgramMatch] = {}
         for host in clean:
             matches: list[ProgramMatch] = []
             for program in programs:
                 match = self._match_scopes(
-                    program, host, scopes_by_program.get(program.id, [])
+                    program,
+                    host,
+                    scopes_by_program.get(program.id, []),
+                    plans[program.id],
                 )
                 if match is not None:
                     matches.append(match)
@@ -138,8 +146,10 @@ class ProgramCoverageService:
             scopes_by_program.setdefault(row.program_id, []).append(row)
         return programs, scopes_by_program
 
-    def _match_scopes(self, program, host: str, scopes: list) -> ProgramMatch | None:
-        scope, excluded = scope_match(host, scopes)
+    def _match_scopes(
+        self, program, host: str, scopes: list, plan=None
+    ) -> ProgramMatch | None:
+        scope, excluded = scope_match(host, scopes, plan)
         if scope is None:
             return None
         return ProgramMatch(
