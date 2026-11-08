@@ -76,7 +76,7 @@ async def create_organization(
 
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
         )
 
     normalized_name = organization_in.name.strip().lower()
@@ -90,7 +90,7 @@ async def create_organization(
     if existing_org.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An organization with this name exists in this project",
+            detail="An organization with this name exists in this project.",
         )
 
     organization = Organization(
@@ -108,7 +108,7 @@ async def create_organization(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An organization with this name exists in this project",
+            detail="An organization with this name exists in this project.",
         ) from e
     await session.refresh(organization)
     return organization
@@ -132,7 +132,7 @@ async def update_organization(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An organization with this name exists in this project",
+            detail="An organization with this name exists in this project.",
         ) from e
     counts = await target_counts(session, TargetOrganization.organization_id, [org.id])
     return _read(org, counts)

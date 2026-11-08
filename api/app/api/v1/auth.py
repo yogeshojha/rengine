@@ -109,7 +109,7 @@ async def require_current_password(user: User, password: str | None) -> None:
     if not password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is required",
+            detail="Current password is required.",
         )
     key = reauth_key(user)
     await too_many_attempts(key, limit=REAUTH_FAILURE_LIMIT, fail_closed=True)
@@ -118,7 +118,7 @@ async def require_current_password(user: User, password: str | None) -> None:
         logger.warning("password confirmation failed", user=str(user.id))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Current password is incorrect",
+            detail="Current password is incorrect.",
         )
     await clear_failures(key)
 
@@ -204,7 +204,7 @@ async def login(
         logger.warning("login failed", username=login_data.username, address=address)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect username or password.",
             headers=BEARER_HEADERS,
         )
 
@@ -212,7 +212,7 @@ async def login(
         logger.warning("login refused for inactive account", user=str(user.id))
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive",
+            detail="Account is inactive.",
         )
 
     await clear_failures(account_key)
@@ -241,7 +241,7 @@ async def refresh_access_token(
     if not refresh_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token not found",
+            detail="Refresh token not found.",
             headers=BEARER_HEADERS,
         )
 
@@ -249,14 +249,14 @@ async def refresh_access_token(
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
+            detail="Invalid or expired refresh token.",
             headers=BEARER_HEADERS,
         )
 
     if payload.get("type") != TOKEN_TYPE_REFRESH:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token type",
+            detail="Invalid token type.",
             headers=BEARER_HEADERS,
         )
 
@@ -267,14 +267,14 @@ async def refresh_access_token(
         logger.warning("revoked refresh token presented", user=str(user.id))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token has been revoked",
+            detail="Refresh token has been revoked.",
             headers=BEARER_HEADERS,
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive",
+            detail="Account is inactive.",
         )
 
     new_access_token = create_access_token(str(user.id))
@@ -359,7 +359,7 @@ async def change_username(
     if existing_user and existing_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username is taken",
+            detail="Username is taken.",
         )
 
     previous = current_user.username
@@ -373,7 +373,7 @@ async def change_username(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username is taken",
+            detail="Username is taken.",
         ) from e
     logger.info(
         "username changed",

@@ -170,7 +170,7 @@ async def login_2fa(
     if payload is None or payload.get("type") != TOKEN_TYPE_MFA:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired MFA token",
+            detail="Invalid or expired MFA token.",
             headers=BEARER_HEADERS,
         )
 
@@ -178,7 +178,7 @@ async def login_2fa(
     if await is_token_revoked(jti):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="MFA token has been used",
+            detail="MFA token has been used.",
             headers=BEARER_HEADERS,
         )
 
@@ -200,7 +200,7 @@ async def login_2fa(
         logger.warning("second factor refused", user=str(user.id))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid verification code",
+            detail="Invalid verification code.",
         )
 
     await clear_failures(OTP_FAILURE_KEY.format(user_id=user.id))

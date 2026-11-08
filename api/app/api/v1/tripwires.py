@@ -89,7 +89,7 @@ async def get_run(
 ) -> TripwireRunRead:
     row = await service.run(run_id, project_id)
     if row is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Check not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Check not found.")
     return row
 
 

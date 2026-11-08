@@ -196,7 +196,7 @@ async def get_vulnerability(
     found = await service.get(scope, vulnerability_id)
     if found is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found."
         )
     return found
 
@@ -224,6 +224,6 @@ async def triage_vulnerability(
     result = await service.triage(scope, fingerprint, body, current_user.id)
     if result is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Finding not found."
         )
     return result

@@ -245,6 +245,6 @@ async def get_endpoint(
     row = await service.detail(scan_id, endpoint_id)
     if row is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found."
         )
     return row

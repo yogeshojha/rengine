@@ -130,7 +130,7 @@ async def _get(session: AsyncSession, wordlist_id: UUID) -> Wordlist:
     row = await session.get(Wordlist, wordlist_id)
     if row is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Wordlist not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Wordlist not found."
         )
     return row
 

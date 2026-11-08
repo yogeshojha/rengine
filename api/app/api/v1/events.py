@@ -59,7 +59,7 @@ async def event_stream(
     if not requested:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one channel is required",
+            detail="At least one channel is required.",
         )
 
     validated = validate_channels(requested)
@@ -67,13 +67,13 @@ async def event_stream(
     if not validated:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No valid channels in request",
+            detail="No valid channels in request.",
         )
 
     if sse_manager.at_capacity():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Too many event streams",
+            detail="Too many event streams.",
         )
 
     owner = str(current_user.id)

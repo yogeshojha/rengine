@@ -27,11 +27,11 @@ async def get_screenshot(
     candidate = (MEDIA_ROOT / path).resolve()
     if not candidate.is_relative_to(MEDIA_ROOT):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid path"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid path."
         )
     media_type = _TYPES.get(candidate.suffix.lower())
     if media_type is None or not candidate.is_file():
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Screenshot not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Screenshot not found."
         )
     return FileResponse(candidate, media_type=media_type)

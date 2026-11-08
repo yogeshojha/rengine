@@ -35,7 +35,7 @@ async def get_user_summary(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
+            detail="User not found.",
         )
     return user
 
@@ -114,7 +114,7 @@ async def update_user(
     user = await session.get(User, user_id)
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
         )
     if data.is_active is not None:
         user.is_active = data.is_active
@@ -145,13 +145,13 @@ async def delete_user(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user ID",
+            detail="Invalid user ID.",
         ) from e
 
     if uuid_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The signed-in account cannot be deleted",
+            detail="The signed-in account cannot be deleted.",
         )
 
     result = await session.execute(select(User).where(User.id == uuid_id))
@@ -160,7 +160,7 @@ async def delete_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
+            detail="User not found.",
         )
 
     username = user.username

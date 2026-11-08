@@ -35,7 +35,7 @@ async def get_token_from_request(
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
+            detail="Not authenticated.",
             headers=BEARER_HEADERS,
         )
 
@@ -47,14 +47,14 @@ async def resolve_user(token: str, session: AsyncSession) -> User:
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Invalid or expired token.",
             headers=BEARER_HEADERS,
         )
 
     if payload.get("type") != TOKEN_TYPE_ACCESS:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token type",
+            detail="Invalid token type.",
             headers=BEARER_HEADERS,
         )
 
@@ -62,7 +62,7 @@ async def resolve_user(token: str, session: AsyncSession) -> User:
     if jti and await is_token_revoked(jti):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has been revoked",
+            detail="Token has been revoked.",
             headers=BEARER_HEADERS,
         )
 
@@ -75,7 +75,7 @@ async def user_for_payload(payload: dict, session: AsyncSession) -> User:
     if not user_id_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
+            detail="Invalid token payload.",
             headers=BEARER_HEADERS,
         )
 
@@ -84,7 +84,7 @@ async def user_for_payload(payload: dict, session: AsyncSession) -> User:
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID in token",
+            detail="Invalid user ID in token.",
             headers=BEARER_HEADERS,
         ) from e
 
@@ -94,7 +94,7 @@ async def user_for_payload(payload: dict, session: AsyncSession) -> User:
         if not isinstance(issued, int) or issued < cutoff:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked",
+                detail="Token has been revoked.",
                 headers=BEARER_HEADERS,
             )
 
@@ -102,7 +102,7 @@ async def user_for_payload(payload: dict, session: AsyncSession) -> User:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="User not found.",
             headers=BEARER_HEADERS,
         )
     return user
@@ -112,7 +112,7 @@ def ensure_active(user: User) -> User:
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive",
+            detail="Account is inactive.",
         )
     return user
 
@@ -144,7 +144,7 @@ async def get_current_superuser(
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Administrator access is required",
+            detail="Administrator access is required.",
         )
     return current_user
 

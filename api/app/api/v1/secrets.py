@@ -98,7 +98,7 @@ async def get_secret(
     detail = await service.detail(scope, secret_id)
     if detail is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Secret not found."
         )
     response.headers["Cache-Control"] = "no-store"
     return detail

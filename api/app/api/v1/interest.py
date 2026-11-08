@@ -43,7 +43,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 async def _scan(session: AsyncSession, scan_id: UUID) -> Scan:
     scan = await session.get(Scan, scan_id)
     if scan is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found.")
     return scan
 
 
@@ -91,7 +91,7 @@ async def update_rule(
     except InterestError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if rule is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Rule not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Rule not found.")
     await asyncio.to_thread(dispatch_interest_refresh, str(project_id))
     return rule
 
@@ -182,7 +182,7 @@ async def dismiss(
 ) -> None:
     target = await session.get(Target, payload.target_id)
     if target is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found.")
     await InterestReadService(session).dismiss(
         target_id=payload.target_id,
         project_id=target.project_id,
@@ -208,7 +208,7 @@ async def dismiss_many(
         ).all()
     )
     if wanted - targets.keys():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found.")
     count = await InterestReadService(session).dismiss_many(
         [
             (row.target_id, targets[row.target_id], row.host, row.kind or "")
@@ -246,4 +246,4 @@ async def restore_dismissal(
     dismissal_id: Annotated[UUID, Path()],
 ) -> None:
     if not await InterestReadService(session).restore(dismissal_id):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dismissal not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Dismissal not found.")

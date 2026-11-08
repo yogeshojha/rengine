@@ -92,7 +92,7 @@ async def mark_notification_as_read(
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found",
+            detail="Notification not found.",
         )
 
     return {"success": True, "message": "Notification marked as read"}
@@ -128,7 +128,7 @@ async def delete_notification(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found",
+            detail="Notification not found.",
         )
 
 

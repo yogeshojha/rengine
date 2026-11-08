@@ -71,7 +71,7 @@ async def create_tag(
 
     if not project:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
         )
 
     normalized_name = tag_in.name.lower()
@@ -85,7 +85,7 @@ async def create_tag(
     if existing_tag.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A tag with this name exists in this project",
+            detail="A tag with this name exists in this project.",
         )
 
     tag = Tag(
@@ -101,7 +101,7 @@ async def create_tag(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A tag with this name exists in this project",
+            detail="A tag with this name exists in this project.",
         ) from e
     await session.refresh(tag)
     return tag
@@ -125,7 +125,7 @@ async def update_tag(
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A tag with this name exists in this project",
+            detail="A tag with this name exists in this project.",
         ) from e
     counts = await target_counts(session, TargetTag.tag_id, [tag.id])
     return _read(tag, counts)
