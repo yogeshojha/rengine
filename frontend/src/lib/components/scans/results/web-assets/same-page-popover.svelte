@@ -23,17 +23,24 @@
 	let open = $state(false);
 	let hosts = $state<string[] | null>(null);
 	let errored = $state(false);
+	let req = 0;
 
 	$effect(() => {
 		void title;
+		++req;
 		hosts = null;
 		errored = false;
 	});
 	$effect(() => {
 		if (!open || hosts || errored) return;
+		const my = req;
 		load()
-			.then((h) => (hosts = h))
-			.catch(() => (errored = true));
+			.then((h) => {
+				if (my === req) hosts = h;
+			})
+			.catch(() => {
+				if (my === req) errored = true;
+			});
 	});
 
 	function pick(h: string) {
