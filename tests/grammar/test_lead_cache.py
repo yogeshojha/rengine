@@ -14,6 +14,18 @@ from shared.services.asset_query import lead_cache
 
 pytestmark = pytest.mark.grammar
 
+_TEST_KEYS = ("*leads:test-*", "*test-page-*")
+
+
+@pytest.fixture(autouse=True)
+async def _forget_test_keys():
+    yield
+    for client in (cache_client(), async_client()):
+        for pattern in _TEST_KEYS:
+            keys = [key async for key in client.scan_iter(match=pattern)]
+            if keys:
+                await client.delete(*keys)
+
 
 def _answer(total: int) -> QueryLeads:
     return QueryLeads(
