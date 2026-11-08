@@ -14,6 +14,7 @@ export interface SecretRead {
 	state: string;
 	state_label: string;
 	is_secret: boolean;
+	/** masked on the list, full on the detail */
 	value: string;
 	subject: string | null;
 	meta: Record<string, unknown>;

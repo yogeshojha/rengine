@@ -352,9 +352,13 @@
 	}
 	$effect(() => onPopSearch(restoreUrl));
 
+	function valuesLabel(n: number): string {
+		return n === 1 ? 'sightings of this value' : `${n.toLocaleString()} values`;
+	}
+
 	let hideOptions = $derived([
 		{
-			label: hideLabel([...new Set(selection.rows().map((r) => r.value.split('\n')[0]))], 'values'),
+			label: valuesLabel(new Set(selection.rows().map((r) => r.fingerprint)).size),
 			tokens: () => [
 				...new Set(selection.rows().map((r) => excludeToken('fingerprint', r.fingerprint)))
 			]
@@ -642,10 +646,7 @@
 	dimension={SurfaceDimension.SECRETS}
 	{projectId}
 	{scanId}
-	copy={[
-		{ label: 'values', values: () => selection.rows().map((r) => r.value) },
-		{ label: 'URLs', values: () => [...new Set(selection.rows().map((r) => r.url))] }
-	]}
+	copy={[{ label: 'URLs', values: () => [...new Set(selection.rows().map((r) => r.url))] }]}
 	hide={hideOptions}
 	onHide={(tokens) => {
 		onQuery(appendTokens(search, tokens));

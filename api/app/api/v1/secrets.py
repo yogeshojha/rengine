@@ -16,7 +16,6 @@ from shared.models.secret import (
     SecretFilter,
     SecretPage,
 )
-from shared.services.asset_query import lead_cache
 
 router = APIRouter(prefix="/secrets", tags=["secrets"])
 
@@ -36,16 +35,7 @@ async def search_secrets(
     response: Response,
 ):
     response.headers["Cache-Control"] = "no-store"
-    return await lead_cache.cached(
-        service.session,
-        name="search:secrets",
-        scans=scope.ids,
-        facets=body.model_dump_json(),
-        model=SecretPage,
-        build=lambda: service.search(scope, body),
-        keep=lambda page: page.error is None,
-        live_ttl=None,
-    )
+    return await service.search(scope, body)
 
 
 @router.post("/search/counts", response_model=QueryCounts)
@@ -83,7 +73,9 @@ async def secret_groups(
     scope: SecretScope,
     group_by: Annotated[str, Query(description="Group dimension key", max_length=40)],
     body: SecretFilter,
+    response: Response,
 ):
+    response.headers["Cache-Control"] = "no-store"
     return await service.groups(scope, body, group_by)
 
 

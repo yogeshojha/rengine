@@ -1,21 +1,17 @@
 <script lang="ts">
-	import { REVEAL_SM, REVEAL, rowTone } from '$lib/components/scans/results/table/columns';
+	import { REVEAL, rowTone } from '$lib/components/scans/results/table/columns';
 	import NewBadge from '$lib/components/new-badge.svelte';
 	import { excludeToken } from '$lib/utilities/scan-insights';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
-	import Copy from '@lucide/svelte/icons/copy';
 	import Globe from '@lucide/svelte/icons/globe';
-	import { toast } from 'svelte-sonner';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import CopyButton from '$lib/components/copy-button.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Hint from '$lib/components/hint.svelte';
 	import HighlightText from '../table/highlight-text.svelte';
-	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { relativeTime } from '$lib/utilities/dates';
 	import { pluralLabel } from '$lib/utilities/strings';
 	import { stopProp } from '$lib/utilities';
@@ -59,10 +55,6 @@
 			[WEB.queryParam]: `name="${row.host}"`
 		})
 	);
-
-	async function copyValue() {
-		if (await writeClipboard(row.value)) toast.success('Value copied');
-	}
 </script>
 
 <div
@@ -98,7 +90,6 @@
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-2">
 			<span class="truncate font-mono text-sm">{firstLine}</span>
-			<CopyButton value={row.value} class="shrink-0 transition-opacity {REVEAL_SM}" />
 		</div>
 		<div class="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
 			{#if row.is_new}
@@ -159,14 +150,14 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="{SECRET_WIDTHS.actions} items-center" onclick={stopProp}>
 		{#if onFilter}
-			<Hint text="Hide all {firstLine}">
+			<Hint text="Hide all sightings of this value">
 				{#snippet child(props)}
 					<Button
 						{...props}
 						variant="ghost"
 						size="icon"
 						class="hidden size-7 transition-opacity {REVEAL} sm:inline-flex"
-						aria-label="Hide all {firstLine}"
+						aria-label="Hide all sightings of this value"
 						onclick={(e) => {
 							e.stopPropagation();
 							onFilter?.(excludeToken('fingerprint', row.fingerprint));
@@ -195,9 +186,6 @@
 				<DropdownMenu.Item onclick={() => onOpen(row)} class="gap-2">
 					<ExternalLink class="h-4 w-4" /> Open
 				</DropdownMenu.Item>
-				<DropdownMenu.Item onclick={copyValue} class="gap-2">
-					<Copy class="h-4 w-4" /> Copy value
-				</DropdownMenu.Item>
 				{#if onFilter}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item
@@ -205,7 +193,7 @@
 						class="gap-2"
 					>
 						<EyeOff class="h-4 w-4" />
-						<span class="truncate">Hide all {firstLine}</span>
+						<span class="truncate">Hide all sightings of this value</span>
 					</DropdownMenu.Item>
 					<DropdownMenu.Item
 						onclick={() => onFilter?.(excludeToken('secret', row.kind))}

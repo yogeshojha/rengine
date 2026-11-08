@@ -3,6 +3,8 @@
 	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
 	import Braces from '@lucide/svelte/icons/braces';
 	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
+	import KeyRound from '@lucide/svelte/icons/key-round';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import Info from '@lucide/svelte/icons/info';
 	import * as Sheet from '$lib/components/ui/sheet';
@@ -15,6 +17,7 @@
 	import SheetTop from '../sheet-top.svelte';
 	import SheetBar from '../sheet-bar.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
+	import { MASK } from '$lib/constants';
 	import { contextLang, metaLabel } from '$lib/utilities/secrets';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
@@ -36,7 +39,19 @@
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	const SEC = SURFACE[SurfaceDimension.SECRETS];
 
+	const MASK_PREFIX = 4;
+
 	let contentEl = $state<HTMLElement | null>(null);
+	let revealedId = $state<string | null>(null);
+
+	let revealed = $derived(!!row && revealedId === row.id);
+	let masked = $derived.by(() => {
+		const line = (row?.value ?? '').split('\n')[0];
+		return `${line.slice(0, Math.min(MASK_PREFIX, Math.floor(line.length / 4)))}${MASK}`;
+	});
+	let shownContext = $derived(
+		row?.context && !revealed ? row.context.split(row.value).join(masked) : (row?.context ?? '')
+	);
 
 	let lang = $derived(contextLang(row?.context));
 	let assetHref = $derived(
@@ -89,14 +104,36 @@
 
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-6 px-5 py-4">
-					<CodeBlock
-						code={row.value}
-						lang="text"
-						label="Value"
-						numbers={false}
-						wrap={true}
-						maxLines={12}
-					/>
+					<section class="flex flex-col gap-2.5">
+						<div class="flex items-center justify-between gap-2">
+							<SectionHead icon={KeyRound} title="Value" />
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => (revealedId = revealed ? null : (row?.id ?? null))}
+							>
+								{#if revealed}
+									<EyeOff class="size-3.5" /> Hide
+								{:else}
+									<Eye class="size-3.5" /> Reveal
+								{/if}
+							</Button>
+						</div>
+						{#if revealed}
+							<CodeBlock
+								code={row.value}
+								lang="text"
+								label="Value"
+								numbers={false}
+								wrap={true}
+								maxLines={12}
+							/>
+						{:else}
+							<div class="rounded-lg border px-3.5 py-2.5 font-mono text-xs break-all">
+								{masked}
+							</div>
+						{/if}
+					</section>
 
 					{#if claims.length}
 						<section class="flex flex-col gap-2.5">
@@ -118,14 +155,14 @@
 						<section class="flex flex-col gap-2.5">
 							<SectionHead icon={FileCode} title="Context" />
 							<CodeBlock
-								code={row.context}
+								code={shownContext}
 								{lang}
 								label={row.source_label}
 								maxLines={8}
 								maxHeight="24rem"
 								wrap={false}
 								numbers={false}
-								marks={[row.value]}
+								marks={[revealed ? row.value : masked]}
 							/>
 						</section>
 					{/if}

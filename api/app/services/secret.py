@@ -56,12 +56,20 @@ from shared.services.asset_query import (
     secret_is_new,
     syntax_error,
 )
+from shared.services.scan_resolve import MASK
 from shared.services.surface_query import secrets as surface_secrets
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
 
 _FACET_LIMIT = 20
+MASK_PREFIX = 4
+
+
+def masked_value(value: str) -> str:
+    """The first line's opening characters followed by MASK."""
+    line = value.split("\n", 1)[0]
+    return f"{line[: min(MASK_PREFIX, len(line) // 4)]}{MASK}"
 
 
 class SecretService:
@@ -131,12 +139,18 @@ class SecretService:
                     row,
                     target_value=names.get(row.target_id),
                     is_new=row.id in new_ids,
+                    masked=True,
                 )
             )
         return page
 
     def _to_read(
-        self, row: Secret, *, target_value: str | None, is_new: bool
+        self,
+        row: Secret,
+        *,
+        target_value: str | None,
+        is_new: bool,
+        masked: bool = False,
     ) -> SecretRead:
         spec = DETECTORS_BY_KEY.get(row.kind)
         return SecretRead(
@@ -153,7 +167,7 @@ class SecretService:
             state=row.state,
             state_label=STATE_LABELS.get(row.state, row.state),
             is_secret=row.is_secret,
-            value=row.value,
+            value=masked_value(row.value) if masked else row.value,
             subject=row.subject,
             meta=dict(row.meta or {}),
             host=row.host,
@@ -252,11 +266,15 @@ class SecretService:
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
         try:
-            return await build_secret_groups(self.session, base, key)
+            grouped = await build_secret_groups(self.session, base, key)
         except DBAPIError as exc:
             await self.session.rollback()
             logger.info("secret groups failed", error=str(exc.orig))
             return QueryGroups(dimension=key)
+        if key == "value":
+            for group in grouped.groups:
+                group.label = masked_value(group.label)
+        return grouped
 
     async def counts(self, scope: ScopeLike, queries: list[str]) -> QueryCounts:
         scope = QueryScope.of(scope)
