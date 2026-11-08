@@ -813,7 +813,7 @@ def reconcile(session: Session, watch: ProgramWatch, *, initial: bool = False) -
         return {"skipped": "program missing"}
     plan = plan_scope(scopes_of(session, program.id))
     if not plan.items and watch.watch_items and not initial:
-        watch.last_error = "The program scope came back empty. Watch items kept."
+        watch.last_error = "Program scope is empty. Watch items kept."
         session.commit()
         return {"skipped": "empty scope"}
     targets, created = _ensure_targets(session, plan, watch)
