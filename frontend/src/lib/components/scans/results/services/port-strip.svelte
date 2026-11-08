@@ -1,6 +1,11 @@
 <script lang="ts">
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { AddressState, Observation, SERVICE_OBSERVATION_LABELS } from '$lib/config/timeline';
+	import {
+		AddressState,
+		HATCH,
+		Observation,
+		SERVICE_OBSERVATION_LABELS
+	} from '$lib/config/timeline';
 	import type { PortCell, TimelineScan } from '$lib/types/timeline';
 	import { formatDateTime } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
@@ -27,9 +32,6 @@
 	let summary = $derived(
 		`${label}: up to ${plural(peak, 'address')} across ${plural(cells.length, 'scan')}`
 	);
-
-	const HATCH =
-		'bg-[repeating-linear-gradient(135deg,var(--fill-hatch)_0_2px,transparent_2px_5px)]';
 
 	// the fill darkens with the share of the peak
 	function fill(cell: PortCell): string {
