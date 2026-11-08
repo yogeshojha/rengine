@@ -27,7 +27,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, defer
 
 from app.services import scan_deltas as stored_deltas
 from app.services.proxy import ProxyService
@@ -1624,7 +1624,11 @@ class ScanService:
         activity_id: UUID | None = None,
     ) -> list[ScanCommandRead]:
         await self._get_scan(scan_id, project_id)
-        query = select(ScanCommand).where(ScanCommand.scan_id == scan_id)
+        query = (
+            select(ScanCommand)
+            .options(defer(ScanCommand.output))
+            .where(ScanCommand.scan_id == scan_id)
+        )
         if activity_id is not None:
             query = query.where(ScanCommand.activity_id == activity_id)
         rows = (
