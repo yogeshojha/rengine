@@ -94,7 +94,7 @@ export const TIER_LABELS: Record<string, string> = {
 	[Tier.ONE_REQUEST]: 'One-request checks',
 	[Tier.UNIVERSAL]: 'Universal checks',
 	[Tier.MATCHED]: 'Checks for detected software',
-	[Tier.BLIND]: 'Known-exploited sweep',
+	[Tier.BLIND]: 'Known exploited sweep',
 	[Tier.OAST]: 'Out-of-band checks',
 	[Tier.DEEP]: 'Remaining checks',
 	[Tier.SERVICES]: 'TLS and network checks',
@@ -109,7 +109,7 @@ export const TIER_HELP: Record<string, string> = {
 	[Tier.UNIVERSAL]: 'Checks for any web server. One web asset per origin.',
 	[Tier.MATCHED]: 'Checks for the software the web asset was seen running.',
 	[Tier.BLIND]:
-		'Known-exploited and severe checks on every origin, within a request budget sized to the time left.',
+		'Known exploited and severe checks on every origin, within a request budget sized to the time left.',
 	[Tier.OAST]: 'Checks that report through a callback to an external server.',
 	[Tier.DEEP]:
 		"Every remaining software-specific check. Runs last and does not count toward an origin's coverage.",

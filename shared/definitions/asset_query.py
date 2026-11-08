@@ -195,7 +195,7 @@ FLAGS: dict[str, str] = {
     "http2": "Negotiated HTTP/2",
     "redirect": "Final URL differs from the probed URL",
     "vulnerable": "A vulnerability scan reported a finding on it",
-    "kev": "A known-exploited weakness was found on it",
+    "kev": "A known exploited finding is on it",
     "exposed": "Flagged as an exposure by a rule, a correlation or AI",
 }
 
@@ -1188,7 +1188,7 @@ IP_FLAGS: dict[str, str] = {
     "v4": "IPv4 address",
     "v6": "IPv6 address",
     "vulnerable": "A vulnerability scan reported a finding on it",
-    "kev": "A known-exploited weakness was found on it",
+    "kev": "A known exploited finding is on it",
 }
 
 IP_EXPOSURE: dict[str, str] = {
@@ -1530,7 +1530,7 @@ SERVICE_FLAGS: dict[str, str] = {
     "v4": "IPv4 address",
     "v6": "IPv6 address",
     "vulnerable": "A vulnerability scan reported a finding on it",
-    "kev": "A known-exploited weakness was found on it",
+    "kev": "A known exploited finding is on it",
 }
 
 SERVICE_FIELDS: tuple[QueryField, ...] = (
@@ -2453,7 +2453,7 @@ ENDPOINT_FLAGS: dict[str, str] = {
     "root": "The site root",
     "titled": "Has a page title",
     "vulnerable": "A vulnerability scan reported a finding on it",
-    "kev": "A known-exploited weakness was found on it",
+    "kev": "A known exploited finding is on it",
 }
 
 ENDPOINT_FIELDS: tuple[QueryField, ...] = (
