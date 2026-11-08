@@ -1014,7 +1014,11 @@
 		}
 	}
 	function openScanTimeline(id: string) {
-		void goto(ROUTES.results(WEB.tab, id, { view }));
+		const params: Record<string, string> = { view };
+		if (timelineWindow !== DEFAULT_TIMELINE_WINDOW) params.window = String(timelineWindow);
+		const flag = view === TIMELINE_VIEW ? timelineFlag : view === RENDERS_VIEW ? renderFlag : null;
+		if (flag) params.flag = flag;
+		void goto(ROUTES.results(WEB.tab, id, params));
 	}
 	function toggleHygiene(key: string) {
 		const on = query.hygiene.includes(key);
