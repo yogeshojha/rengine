@@ -98,11 +98,23 @@ class FindingsDetailSection(Section):
         rows = []
         subs: list[tuple[str, str]] = []
         budget = ctx.spec.narrative.max_explained_issues
+        evidence = (
+            ctx.data.evidence(
+                [
+                    i.findings[0].id
+                    for i in issues
+                    if rank.get(i.severity, len(SEVERITY_ORDER)) <= cut
+                ]
+            )
+            if cfg.show_evidence or cfg.show_curl
+            else {}
+        )
         for index, issue in enumerate(issues):
             full = rank.get(issue.severity, len(SEVERITY_ORDER)) <= cut
             anchor = f"f-{index}-{issue.template_id.replace('/', '-')[:48]}"
             subs.append((issue.name, anchor))
             sample = issue.findings[0]
+            request, response, curl = evidence.get(sample.id, (None, None, None))
             assets = issue.findings[: cfg.max_assets]
             hide = _hides_values(issue.template_id, issue.tags)
             explainer = ""
@@ -120,15 +132,13 @@ class FindingsDetailSection(Section):
                     "more": max(0, issue.count - cfg.max_assets),
                     "explainer": explainer,
                     "controls": _controls(issue) if cfg.show_controls and full else [],
-                    "request": _clip(_message(sample.request), cfg.evidence_chars)
+                    "request": _clip(_message(request), cfg.evidence_chars)
                     if cfg.show_evidence and full
                     else "",
-                    "response": _clip(_message(sample.response), cfg.evidence_chars)
+                    "response": _clip(_message(response), cfg.evidence_chars)
                     if cfg.show_evidence and full
                     else "",
-                    "curl": _clip(
-                        mask_secrets(redact_credentials(sample.curl or "")), 600
-                    )
+                    "curl": _clip(mask_secrets(redact_credentials(curl or "")), 600)
                     if cfg.show_curl and full
                     else "",
                 }

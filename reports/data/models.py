@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from uuid import UUID
 
 
 @dataclass
@@ -41,12 +42,10 @@ class Finding:
     is_kev: bool = False
     is_new: bool = False
     extracted: list[str] = field(default_factory=list)
-    request: str | None = None
-    response: str | None = None
-    curl: str | None = None
     screenshot: str | None = None
     asset_title: str | None = None
     asset_status: int | None = None
+    id: UUID | None = None
 
 
 @dataclass

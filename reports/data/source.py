@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy import and_, case, cast, distinct, exists, false, func, select, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session, aliased, defer
 
 from reports.data.models import (
     Address,
@@ -70,6 +70,12 @@ _TABLE = {
     _DIM.VULNERABILITIES.value: Vulnerability,
     _DIM.SECRETS.value: Secret,
 }
+_BODIES = (
+    Vulnerability.request,
+    Vulnerability.response,
+    Vulnerability.curl_command,
+    Vulnerability.interaction,
+)
 _KEY = {
     _DIM.WEB_ASSETS.value: (Subdomain.name,),
     _DIM.IPS.value: (IpAddress.ip,),
@@ -353,6 +359,7 @@ class ReportSource:
             return []
         rows = self.session.execute(
             select(Vulnerability, self._is_new(_DIM.VULNERABILITIES.value))
+            .options(*(defer(c, raiseload=True) for c in _BODIES))
             .where(Vulnerability.scan_id == scan_id, self._not_suppressed())
             .order_by(
                 surface_vulns.severity_rank(),
@@ -368,6 +375,7 @@ class ReportSource:
             asset = assets.get(row.host or "")
             out.append(
                 Finding(
+                    id=row.id,
                     template_id=row.template_id,
                     name=row.template_name,
                     severity=row.severity,
@@ -386,15 +394,21 @@ class ReportSource:
                     is_kev=row.is_kev,
                     is_new=new,
                     extracted=[str(v) for v in (row.extracted_results or [])],
-                    request=row.request,
-                    response=row.response,
-                    curl=row.curl_command,
                     screenshot=asset[0] if asset else None,
                     asset_title=asset[1] if asset else None,
                     asset_status=asset[2] if asset else None,
                 )
             )
         return out
+
+    def evidence(self, ids: list[UUID]) -> dict[UUID, tuple]:
+        """Request, response and curl command of the named findings."""
+        if not ids:
+            return {}
+        rows = self.session.execute(
+            select(Vulnerability.id, *_BODIES[:3]).where(Vulnerability.id.in_(ids))
+        ).all()
+        return {row[0]: tuple(row[1:]) for row in rows}
 
     def _asset_context(self, hosts: set[str]) -> dict[str, tuple]:
         if not hosts:
