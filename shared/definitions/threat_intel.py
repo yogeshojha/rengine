@@ -32,6 +32,8 @@ FEED_STATUS_LABELS: dict[str, str] = {
     FeedStatus.SYNCING.value: "Downloading",
 }
 
+STALE_INTEL_DAYS = 2
+
 
 @dataclass(frozen=True)
 class FeedSpec:

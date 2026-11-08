@@ -17,6 +17,7 @@ from shared.definitions.threat_intel import (
     FEED_STATUS_LABELS,
     FEEDS,
     SIGNALS_BY_KIND,
+    STALE_INTEL_DAYS,
     VULNX_PROVIDER,
     ExploitSignal,
     FeedStatus,
@@ -50,8 +51,6 @@ from shared.services.asset_query import (
 )
 from shared.services.threat_intel import feed_status
 from shared.utils.datetime import utc_now
-
-STALE_INTEL_DAYS = 2
 
 _CHANGE_KINDS = (
     ExploitSignal.KEV.value,
