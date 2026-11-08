@@ -7,11 +7,12 @@ from urllib.parse import SplitResult, urlsplit
 from shared.definitions.ports import SCHEME_PORTS
 
 _URL_QUERY = re.compile(r"(https?://[^\s'\"?#]+)\?[^\s'\"#]*", re.IGNORECASE)
+_URL_USERINFO = re.compile(r"://[^/@\s]+@")
 
 
 def redact_url_queries(text: str) -> str:
-    """Drop the query string of every URL in a message."""
-    return _URL_QUERY.sub(r"\1?…", text)
+    """Drop the credentials and the query string of every URL in a message."""
+    return _URL_QUERY.sub(r"\1?…", _URL_USERINFO.sub("://", text))
 
 
 def is_registry_routable(value: str) -> bool:
