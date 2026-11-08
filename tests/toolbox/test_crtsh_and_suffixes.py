@@ -21,7 +21,7 @@ from tools.viewdns.client import (
     ViewDNSRejectedError,
 )
 
-SECRET = "f3282d0fdbe57be6244e5f8f20bed9ecd680b922"
+SECRET = "viewdns-test-key-" + "0" * 23
 
 SUFFIXES = [
     ("uber.com", "uber.com"),
