@@ -32,13 +32,13 @@ def get_celery_client() -> Celery:
     return _celery_client
 
 
-def dispatch_whois_lookups(target_ids: list[str]) -> None:
+def dispatch_whois_lookups(target_ids: list[str], *, force: bool = False) -> None:
     if not target_ids:
         return
     logger.info("Dispatching WHOIS lookups for %d targets", len(target_ids))
     get_celery_client().send_task(
         "app.tasks.whois.perform_whois_lookups",
-        kwargs={"target_ids": target_ids},
+        kwargs={"target_ids": target_ids, "force": force},
         queue=DEFAULT_QUEUE,
     )
 

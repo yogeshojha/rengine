@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import csv
+import functools
 import io
 import itertools
 import logging
@@ -490,7 +491,7 @@ class TargetService:
         ids = [str(t.id) for t in eligible]
         if ids:
             if kind == EnrichmentKind.WHOIS:
-                await _queue(dispatch_whois_lookups, ids)
+                await _queue(functools.partial(dispatch_whois_lookups, force=True), ids)
             elif kind == EnrichmentKind.DNS:
                 await _queue(dispatch_dns_lookups, ids)
             elif kind == EnrichmentKind.INFOSTEALER:
@@ -1153,7 +1154,9 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        await _queue(dispatch_whois_lookups, [str(target.id)])
+        await _queue(
+            functools.partial(dispatch_whois_lookups, force=True), [str(target.id)]
+        )
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
