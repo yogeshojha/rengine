@@ -47,7 +47,7 @@ x-chromium-sandbox: &chromium-sandbox
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
     logging: *logging
     shm_size: ${POSTGRES_SHM_SIZE:-1gb}
     environment:
@@ -89,7 +89,7 @@ services:
       start_period: 60s
 
   redis:
-    image: redis:8-alpine
+    image: redis:8.10-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
     logging: *logging
     volumes:
       - redis_data:/data
@@ -114,7 +114,7 @@ services:
 
   # cached aggregates, evicted under memory pressure
   cache:
-    image: redis:8-alpine
+    image: redis:8.10-alpine@sha256:71885d8cc6e42f2bc0aa2eb853bfc4be200b5108a46ac50e117ae1df0531fb80
     logging: *logging
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
@@ -361,7 +361,7 @@ services:
       - api
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.11-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

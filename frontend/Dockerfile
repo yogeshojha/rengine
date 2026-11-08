@@ -1,4 +1,4 @@
-FROM node:22-slim AS build
+FROM node:22.23-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d AS build
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build && npm prune --omit=dev
 # Production
 ##################################################################
 
-FROM node:22-slim AS production
+FROM node:22.23-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d AS production
 
 ENV NODE_ENV=production \
     PORT=3000
