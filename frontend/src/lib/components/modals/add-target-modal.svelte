@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleX from '@lucide/svelte/icons/circle-x';
-	import X from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { Spinner } from '$lib/components/ui/spinner';
 	import { Input } from '$lib/components/ui/input';
@@ -10,6 +9,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -44,7 +44,6 @@
 	let { open = $bindable(), initialValue = '' }: Props = $props();
 
 	let targetInput = $state<HTMLInputElement | null>(null);
-	let showDiscardConfirm = $state(false);
 	let targetValue = $state('');
 	let displayName = $state('');
 	let isValidating = $state(false);
@@ -266,30 +265,13 @@
 			selectedTags.length > 0
 	);
 
-	function handleOpenChange(isOpen: boolean) {
-		if (isOpen) {
-			open = true;
-			return;
+	const guard = new DiscardGuard(
+		() => isDirty,
+		() => {
+			resetForm();
+			open = false;
 		}
-		if (isDirty) return;
-		resetForm();
-		open = false;
-	}
-
-	function requestClose() {
-		if (isDirty) {
-			showDiscardConfirm = true;
-			return;
-		}
-		resetForm();
-		open = false;
-	}
-
-	function confirmDiscard() {
-		showDiscardConfirm = false;
-		resetForm();
-		open = false;
-	}
+	);
 
 	$effect(() => {
 		const projectSlug = projectsStore.activeProject?.slug;
@@ -318,25 +300,14 @@
 	);
 </script>
 
-<Dialog.Root {open} onOpenChange={handleOpenChange}>
+<Dialog.Root bind:open={() => open, (next) => (next ? (open = true) : guard.close())}>
 	<Dialog.Content
-		showCloseButton={false}
-		interactOutsideBehavior={isDirty ? 'ignore' : 'close'}
-		escapeKeydownBehavior={isDirty ? 'ignore' : 'close'}
 		onOpenAutoFocus={(e) => {
 			e.preventDefault();
 			targetInput?.focus();
 		}}
 		class="grid h-[min(90vh,52rem)] grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-lg"
 	>
-		<button
-			type="button"
-			onclick={requestClose}
-			class="ring-offset-background focus:ring-ring absolute end-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
-			aria-label="Close"
-		>
-			<X class="size-4" />
-		</button>
 		<Dialog.Header class="border-b px-6 py-4">
 			<Dialog.Title>Add target</Dialog.Title>
 			<Dialog.Description>Domain, IP address, CIDR range, URL or ASN.</Dialog.Description>
@@ -477,7 +448,12 @@
 					<OrgIcon class="size-4" />
 					Domains by organization
 				</Button>
-				<Button type="button" variant="outline" onclick={requestClose} disabled={isSubmitting}>
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => guard.close()}
+					disabled={isSubmitting}
+				>
 					Cancel
 				</Button>
 				<LoadingButton
@@ -494,9 +470,7 @@
 </Dialog.Root>
 
 <UnsavedChangesDialog
-	bind:open={showDiscardConfirm}
-	title="Discard changes"
-	description="Unsaved changes are discarded."
-	onOpenChange={(o) => (showDiscardConfirm = o)}
-	onConfirm={confirmDiscard}
+	open={guard.asking}
+	onOpenChange={(next) => (guard.asking = next)}
+	onConfirm={guard.discard}
 />
