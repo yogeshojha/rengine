@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.core.validation_errors import validation_detail
 from app.services.infostealer import InfostealerService
 from app.services.target_filters import (
     SignalName,
@@ -1134,7 +1135,10 @@ class TargetService:
         if target.target_type not in HOSTNAME_TARGET_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="DNS lookup applies to domain and URL targets only.",
+                detail=validation_detail(
+                    ["path", "target_id"],
+                    "DNS lookup applies to domain and URL targets only.",
+                ),
             )
 
         target.dns_status = TaskStatus.PENDING
@@ -1178,7 +1182,10 @@ class TargetService:
         if target.target_type not in HOSTNAME_TARGET_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Infostealer lookup applies to domain and URL targets only.",
+                detail=validation_detail(
+                    ["path", "target_id"],
+                    "Infostealer lookup applies to domain and URL targets only.",
+                ),
             )
 
         target.infostealer_status = TaskStatus.PENDING
@@ -1201,7 +1208,10 @@ class TargetService:
         if target.target_type not in NETWORK_TARGET_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="BGP enrichment applies to IP, IP range and ASN targets only.",
+                detail=validation_detail(
+                    ["path", "target_id"],
+                    "BGP enrichment applies to IP, IP range and ASN targets only.",
+                ),
             )
 
         target.bgp_status = TaskStatus.PENDING
