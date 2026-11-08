@@ -135,7 +135,7 @@
 						{...props}
 						class="shrink-0 rounded border border-warning/30 px-1 text-2xs font-medium text-warning"
 					>
-						tz changed
+						Timezone changed
 					</span>
 				{/snippet}
 			</Hint>
