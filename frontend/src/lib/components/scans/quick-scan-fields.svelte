@@ -9,6 +9,14 @@
 	import { scanContextsStore } from '$lib/stores/scan-contexts.svelte';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
+	import CredentialLock from '$lib/components/scans/launch/credential-lock.svelte';
+	import {
+		CONTEXT_NOUN,
+		ENGINE_NOUN,
+		credentialLaunchRefusal,
+		launchLocked
+	} from '$lib/config/launch';
 	import { NO_CONTEXT_LABEL } from '$lib/types/scan-context';
 	import { SELECT_NONE } from '$lib/constants';
 	import {
@@ -48,6 +56,10 @@
 	let projectId = $derived(projectsStore.activeProject?.id ?? null);
 	let presets = $derived(engineCatalogStore.presets);
 	let engines = $derived(scanEnginesStore.engines);
+	let usableEngines = $derived(engines.filter((e) => !launchLocked(e, auth.user)));
+	let usableContexts = $derived(
+		scanContextsStore.contexts.filter((c) => !launchLocked(c, auth.user))
+	);
 	let catalogReady = $derived(engineCatalogStore.hasFetched || !!engineCatalogStore.error);
 	let enginesReady = $derived(
 		(scanEnginesStore.fetchedProjectId === projectId || !!scanEnginesStore.error) &&
@@ -65,7 +77,7 @@
 		if (!s) return false;
 		return s.kind === 'recipe'
 			? presets.some((p) => p.name === s.preset)
-			: engines.some((e) => e.id === s.engineId);
+			: usableEngines.some((e) => e.id === s.engineId);
 	});
 	let armedNow = $derived(enabled && !error && ready && selectionValid);
 	let pendingNow = $derived(enabled && !error && !armedNow);
@@ -107,8 +119,8 @@
 	$effect(() => {
 		if (!enabled || !ready) return;
 		const currentPresets = presets;
-		const currentEngines = engines;
-		const contexts = scanContextsStore.contexts;
+		const currentEngines = usableEngines;
+		const contexts = usableContexts;
 		untrack(() => {
 			if (!selectionValid) {
 				const prefs = readQuickScanPrefs(currentPresets);
@@ -179,8 +191,14 @@
 									<Select.Group>
 										<Select.Label>Scan engines</Select.Label>
 										{#each engines as engine (engine.id)}
-											<Select.Item value="engine:{engine.id}" label={engine.name}>
+											{@const locked = launchLocked(engine, auth.user)}
+											<Select.Item value="engine:{engine.id}" label={engine.name} disabled={locked}>
 												{engine.name}
+												{#if locked}
+													<CredentialLock
+														reason={credentialLaunchRefusal(ENGINE_NOUN, engine.name)}
+													/>
+												{/if}
 											</Select.Item>
 										{/each}
 									</Select.Group>
@@ -198,7 +216,15 @@
 									{NO_CONTEXT_LABEL}
 								</Select.Item>
 								{#each scanContextsStore.contexts as context (context.id)}
-									<Select.Item value={context.id} label={context.name}>{context.name}</Select.Item>
+									{@const locked = launchLocked(context, auth.user)}
+									<Select.Item value={context.id} label={context.name} disabled={locked}>
+										{context.name}
+										{#if locked}
+											<CredentialLock
+												reason={credentialLaunchRefusal(CONTEXT_NOUN, context.name)}
+											/>
+										{/if}
+									</Select.Item>
 								{/each}
 							</Select.Content>
 						</Select.Root>
