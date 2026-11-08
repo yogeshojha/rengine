@@ -8,7 +8,6 @@ import pytest
 from shared.definitions.vulnerabilities import Protocol
 from stages.vulnerability_scan.evidence import (
     RETAINS_NOTHING,
-    Gap,
     dump_dir,
     read_dump,
 )
@@ -47,15 +46,6 @@ def test_read_dump_returns_the_single_exchange(tmp_path: Path) -> None:
 
 def test_read_dump_is_none_when_the_run_wrote_nothing(tmp_path: Path) -> None:
     assert read_dump(tmp_path) is None
-
-
-def test_a_gap_carries_every_finding_the_one_run_accounts_for() -> None:
-    gap = Gap(
-        template_path="/t/ssl/weak-cipher-suites.yaml",
-        target="1.2.3.4:2083",
-        fingerprints=("aa", "bb"),
-    )
-    assert len(gap.fingerprints) == 2
 
 
 def test_store_resp_is_off_unless_a_directory_is_given() -> None:

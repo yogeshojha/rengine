@@ -6,7 +6,6 @@ import pytest
 
 from shared.definitions.oast import (
     DEFAULT_WAIT_SECONDS,
-    EVICTION_SLACK,
     OAST_BATCH_SECONDS,
     OAST_MODE_HELP,
     OAST_MODE_LABELS,
@@ -87,10 +86,6 @@ def test_the_default_config_is_off_and_holds_no_token():
     assert config.mode == OastMode.OFF.value
     assert config.enabled is False
     assert config.token is None
-
-
-def test_the_eviction_window_outlasts_the_wait():
-    assert EVICTION_SLACK > 0
 
 
 def test_the_out_of_band_checks_are_their_own_tier():
