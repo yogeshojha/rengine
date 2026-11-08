@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy import func, select
 
+from app.core.validation_errors import validation_detail
 from shared.definitions.exports import (
     BUNDLE,
     BUNDLE_LABEL,
@@ -39,7 +40,9 @@ def _check_filters(dimension: str, filters: dict) -> None:
         field = ".".join(str(part) for part in exc.errors()[0]["loc"]) or "filters"
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Export filter {field} is not valid.",
+            detail=validation_detail(
+                ["body", "filters"], f"Export filter {field} is not valid."
+            ),
         ) from None
 
 
