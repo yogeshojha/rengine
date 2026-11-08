@@ -25,6 +25,7 @@ class Identity:
     detail: Callable[[Any], str]
     seed: Callable[[Any], str | None]
     seed_kind: str
+    key_columns: Callable[[Any], list]
     severity: Callable[[Any], str | None] = lambda _r: None
 
 
@@ -57,6 +58,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(r.http_status, r.page_title),
         seed=lambda r: _host_seed(r.name),
         seed_kind=SeedKind.HOST.value,
+        key_columns=lambda _s: [Subdomain.name],
     ),
     SurfaceDimension.ENDPOINTS.value: Identity(
         columns=lambda _s: [
@@ -70,6 +72,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(r.status_code),
         seed=lambda r: r.url or None,
         seed_kind=SeedKind.URL.value,
+        key_columns=lambda _s: [Endpoint.signature],
     ),
     SurfaceDimension.SERVICES.value: Identity(
         columns=lambda d: [
@@ -84,6 +87,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(r.service_name, r.product),
         seed=lambda r: r.ip or None,
         seed_kind=SeedKind.ADDRESS.value,
+        key_columns=lambda d: [d.c.ip, d.c.port, d.c.protocol],
     ),
     SurfaceDimension.IPS.value: Identity(
         columns=lambda d: [d.c.ip, d.c.asn_org, d.c.country],
@@ -92,6 +96,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(r.asn_org, r.country),
         seed=lambda r: r.ip or None,
         seed_kind=SeedKind.ADDRESS.value,
+        key_columns=lambda d: [d.c.ip],
     ),
     SurfaceDimension.VULNERABILITIES.value: Identity(
         columns=lambda _s: [
@@ -106,6 +111,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(r.severity, r.host or r.ip),
         seed=lambda r: r.host or r.ip or None,
         seed_kind=SeedKind.HOST.value,
+        key_columns=lambda _s: [Vulnerability.fingerprint],
         severity=lambda r: r.severity,
     ),
     SurfaceDimension.SOFTWARE.value: Identity(
@@ -123,6 +129,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(f"{r.name} {r.version}".strip(), r.host or r.ip),
         seed=lambda r: r.host or r.ip or None,
         seed_kind=SeedKind.HOST.value,
+        key_columns=lambda _s: [SoftwareCve.fingerprint],
         severity=lambda r: r.severity,
     ),
     SurfaceDimension.SECRETS.value: Identity(
@@ -132,6 +139,7 @@ IDENTITIES: dict[str, Identity] = {
         detail=lambda r: _text(r.host),
         seed=lambda r: _host_seed(r.host),
         seed_kind=SeedKind.HOST.value,
+        key_columns=lambda _s: [Secret.fingerprint],
     ),
 }
 

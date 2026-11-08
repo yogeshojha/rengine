@@ -87,12 +87,21 @@ def covered(session: Session, scan: Scan, dimension: str) -> bool:
     )
 
 
-def _built(dimension: str, query: str, scan_id: uuid.UUID, project_id: uuid.UUID, now):
+def _built(
+    dimension: str,
+    query: str,
+    scan_id: uuid.UUID,
+    project_id: uuid.UUID,
+    now,
+    *,
+    keys: bool = False,
+):
     q = for_dimension(dimension)
     ident = identity(dimension)
     f = q.filter_model.model_validate({"q": query or None})
     scope = QueryScope((scan_id,), project_id=project_id)
-    columns = ident.columns if q.takes_source else ident.columns(None)
+    picked = ident.key_columns if keys else ident.columns
+    columns = picked if q.takes_source else picked(None)
     built = q.filtered(scope, f, now, project_id=project_id, columns=columns)
     return q, f, scope, built
 
@@ -127,6 +136,24 @@ def rows_of(
         )
         for row in session.execute(stmt)
     ]
+
+
+def keys_of(
+    session: Session,
+    *,
+    dimension: str,
+    query: str,
+    scan_id: uuid.UUID,
+    project_id: uuid.UUID,
+    now: datetime,
+    limit: int,
+) -> set[str]:
+    """The identity keys of the rows the query matches, in no order."""
+    _q, _f, _scope, built = _built(
+        dimension, query, scan_id, project_id, now, keys=True
+    )
+    ident = identity(dimension)
+    return {ident.key(row) for row in session.execute(built.statement.limit(limit))}
 
 
 def count_of(
@@ -180,7 +207,7 @@ def evaluate(
     rows = rows[:cap]
 
     if fire_on == FireOn.BECOMES_TRUE.value:
-        before = rows_of(
+        held = keys_of(
             session,
             dimension=dimension,
             query=query,
@@ -189,11 +216,10 @@ def evaluate(
             now=now,
             limit=cap + 1,
         )
-        if len(before) > cap:
+        if len(held) > cap:
             if strict:
                 return Evaluation(CheckStatus.ERROR.value, detail=TOO_MANY_ROWS)
             capped = True
-        held = {r.key for r in before}
         fired = [r for r in rows if r.key not in held and r.key not in marks]
         matched = len(rows)
     else:
@@ -433,6 +459,7 @@ __all__ = [
     "covered",
     "evaluate",
     "in_scope",
+    "keys_of",
     "previous_scan",
     "rows_of",
     "validate_query",
