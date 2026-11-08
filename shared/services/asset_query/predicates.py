@@ -18,6 +18,7 @@ from sqlalchemy import (
     or_,
     select,
     true,
+    tuple_,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import BIT, INET, JSONB
@@ -48,7 +49,7 @@ from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 
 from .scope import QueryScope, ScopeLike, scope_of
-from .terms import array_elements, json_has, json_has_any
+from .terms import array_elements, json_has, json_has_any, negate
 
 HTTP_OK = 200
 HTTP_REDIRECT = 300
@@ -710,6 +711,39 @@ def vuln_state(scope: ScopeLike):
         .scalar_subquery(),
         VulnState.OPEN.value,
     )
+
+
+def _scope_targets(scope: QueryScope):
+    if scope.single is not None:
+        return VulnerabilityTriage.target_id == _one_target(scope, None)
+    if not scope.ids:
+        return true()
+    return VulnerabilityTriage.target_id.in_(
+        select(Scan.target_id).where(Scan.id.in_(scope.ids))
+    )
+
+
+def _decided(scope: QueryScope, condition):
+    """A triage row of the finding's target and fingerprint meets the condition."""
+    return tuple_(Vulnerability.target_id, Vulnerability.fingerprint).in_(
+        select(VulnerabilityTriage.target_id, VulnerabilityTriage.fingerprint).where(
+            _scope_targets(scope), condition
+        )
+    )
+
+
+def vuln_triaged(scope: ScopeLike):
+    """A reviewer moved the finding off open."""
+    return _decided(scope_of(scope), VulnerabilityTriage.state != VulnState.OPEN.value)
+
+
+def vuln_state_in(scope: ScopeLike, states):
+    """The review decision is one of the states, open when nobody has decided."""
+    scope = scope_of(scope)
+    states = list(states)
+    if VulnState.OPEN.value in states:
+        return negate(_decided(scope, VulnerabilityTriage.state.not_in(states)))
+    return _decided(scope, VulnerabilityTriage.state.in_(states))
 
 
 def endpoint_seen_earlier():

@@ -20,7 +20,6 @@ from shared.definitions.evidence import Evidence
 from shared.definitions.vulnerabilities import (
     EPSS_HIGH,
     SUPPRESSED_STATES,
-    VulnState,
 )
 from shared.models.http_asset import HttpAsset
 from shared.models.ip_address import IpAddress
@@ -97,18 +96,17 @@ _FLAG_BUILDERS = {
     "cdn": lambda ctx: _asset(
         and_(ctx.scope.match(HttpAsset.scan_id), HttpAsset.is_cdn.is_(True))
     ),
-    "triaged": lambda ctx: preds.vuln_state(ctx.scope) != VulnState.OPEN.value,
-    "open": lambda ctx: preds.vuln_state(ctx.scope) == VulnState.OPEN.value,
-    "suppressed": lambda ctx: preds.vuln_state(ctx.scope).in_(SUPPRESSED_STATES),
+    "triaged": lambda ctx: preds.vuln_triaged(ctx.scope),
+    "open": lambda ctx: negate(preds.vuln_triaged(ctx.scope)),
+    "suppressed": lambda ctx: preds.vuln_state_in(ctx.scope, SUPPRESSED_STATES),
     "ticketed": lambda ctx: preds.vuln_ticketed(ctx.scope),
     "verified": lambda ctx: preds.vuln_verified(ctx.scope),
 }
 
 
 def _state_match(cmp: Compare, ctx: VulnQueryContext):
-    state = preds.vuln_state(ctx.scope)
     values = [v.lower().replace("-", "_").replace(" ", "_") for v in cmp.values]
-    matched = state.in_(values)
+    matched = preds.vuln_state_in(ctx.scope, values)
     return negate(matched) if cmp.op is Op.NE else matched
 
 

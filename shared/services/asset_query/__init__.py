@@ -38,7 +38,9 @@ from .predicates import (
     vuln_is_new,
     vuln_seen_earlier,
     vuln_state,
+    vuln_state_in,
     vuln_suppressed,
+    vuln_triaged,
 )
 from .schema import build_schema
 from .scope import QueryScope, ScopeLike
@@ -102,5 +104,7 @@ __all__ = [
     "vuln_is_new",
     "vuln_seen_earlier",
     "vuln_state",
+    "vuln_state_in",
     "vuln_suppressed",
+    "vuln_triaged",
 ]
