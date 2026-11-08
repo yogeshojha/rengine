@@ -226,7 +226,9 @@
 									{@render chip(
 										`${p.number}${p.service_name ? `/${p.service_name}` : ''}`,
 										`port:${p.number}`,
-										isSensitivePort(p.number) ? 'Sensitive service' : 'Filter by port',
+										isSensitivePort(p.number)
+											? 'An administrative or datastore port'
+											: 'Filter by port',
 										true,
 										isSensitivePort(p.number)
 									)}

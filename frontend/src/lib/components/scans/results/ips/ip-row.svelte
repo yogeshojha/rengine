@@ -205,11 +205,11 @@
 								class="flex h-5 shrink-0 items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 text-xs font-medium text-warning"
 								onclick={(e) => pivot(e, 'is:sensitive')}
 							>
-								<TriangleAlert class="size-3" /> sensitive
+								<TriangleAlert class="size-3" /> Sensitive
 							</button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>An admin or database port is open</Tooltip.Content>
+					<Tooltip.Content>An administrative or datastore port is open</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 			<span class="hidden h-5 shrink-0 items-center sm:flex">

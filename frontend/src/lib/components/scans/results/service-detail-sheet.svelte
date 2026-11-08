@@ -135,7 +135,7 @@
 						<Badge variant="secondary" class="font-normal">TLS</Badge>
 					{/if}
 					{#if s.is_sensitive}
-						<Badge variant="warning" class="font-normal">Sensitive port</Badge>
+						<Badge variant="warning" class="font-normal">Sensitive</Badge>
 					{/if}
 					{#if s.is_cdn}
 						<Badge variant="info" class="font-normal">{s.cdn_name ?? 'CDN'}</Badge>

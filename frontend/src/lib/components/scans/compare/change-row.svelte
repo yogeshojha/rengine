@@ -61,7 +61,7 @@
 				</Badge>
 			{/if}
 			{#if row.sensitive}
-				<Badge variant="warning" class="px-1.5 py-0 text-2xs">sensitive</Badge>
+				<Badge variant="warning" class="px-1.5 py-0 text-2xs">Sensitive</Badge>
 			{/if}
 
 			{#if row.verb !== CHANGE_VERB.UNCHANGED}
