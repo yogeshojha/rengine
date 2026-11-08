@@ -6,7 +6,6 @@ from typing import Any
 
 from sqlalchemy import cast, func, literal, or_
 from sqlalchemy.dialects.postgresql import INET
-from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
 from shared.definitions.asset_query import SERVICE_FLAGS, SERVICE_QUERY, Op
@@ -24,6 +23,7 @@ from .terms import (
     folded_match,
     int_coerce,
     json_array_match,
+    json_has_any,
     negate,
     number_match,
     string_match,
@@ -62,11 +62,9 @@ def _ai(cmp: Compare, ctx: ServiceQueryContext):
     keys = [v for v in values if v not in AI_CATEGORIES]
     parts = []
     if keys:
-        parts.append(func.jsonb_exists_any(services, pg_array(keys)))
+        parts.append(json_has_any(services, keys))
     if categories:
-        parts.append(
-            func.jsonb_exists_any(ctx.source.c.ai_categories, pg_array(categories))
-        )
+        parts.append(json_has_any(ctx.source.c.ai_categories, categories))
     matched = or_(*parts)
     return negate(matched) if cmp.op is Op.NE else matched
 

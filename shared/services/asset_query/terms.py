@@ -172,9 +172,25 @@ def element_counts(rows, col, *keys, distinct: bool = True):
     )
 
 
+def _as_jsonb(value):
+    return value if isinstance(value.type, JSONB) else cast(value, JSONB)
+
+
+def json_has_any(value, items):
+    """The JSON array holds any of the items, as the `?|` operator."""
+    if isinstance(items, (list, tuple, set, frozenset)):
+        items = pg_array(list(items))
+    return _as_jsonb(value).has_any(items)
+
+
+def json_has(value, key):
+    """The JSON array holds the key, as the `?` operator."""
+    return _as_jsonb(value).has_key(key)
+
+
 def json_array_match(col, cmp: Compare):
     if cmp.op is Op.EQ:
-        return func.jsonb_exists_any(cast(col, JSONB), pg_array(list(cmp.values)))
+        return json_has_any(col, list(cmp.values))
     if cmp.op in (Op.RE, Op.NRE):
         element = (
             func.jsonb_array_elements_text(cast(col, JSONB))

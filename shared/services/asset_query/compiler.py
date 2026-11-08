@@ -17,7 +17,6 @@ from sqlalchemy import (
     union_all,
 )
 from sqlalchemy.dialects.postgresql import INET, JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.ai_services import CATEGORY_LABELS as AI_CATEGORIES
 from shared.definitions.asset_query import FLAGS, HOST_QUERY, FieldType, Op
@@ -46,6 +45,8 @@ from .terms import (
     folded_match,
     int_coerce,
     json_array_match,
+    json_has,
+    json_has_any,
     negate,
     number_match,
     scaled_coerce,
@@ -93,7 +94,7 @@ def _ip(cmp: Compare):
         if cidr is not None:
             branches.append(_within(str(cidr)))
         elif cmp.op is Op.EQ or IPV4_RE.match(raw):
-            branches.append(func.jsonb_exists(cast(Subdomain.resolved_ips, JSONB), raw))
+            branches.append(json_has(Subdomain.resolved_ips, raw))
         else:
             branches.append(preds.ip_text().ilike(like(raw), escape="\\"))
     matched = or_(*branches)
@@ -327,7 +328,7 @@ def _ai(cmp: Compare, ctx: QueryContext):
     keys = [v for v in values if v not in AI_CATEGORIES]
     parts = []
     if keys:
-        parts.append(func.jsonb_exists_any(services, pg_array(keys)))
+        parts.append(json_has_any(services, keys))
     if categories:
         parts.append(
             preds.asset_match(ctx.scope, HttpAsset.ai_category.in_(categories))

@@ -3,8 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import and_, cast, func, or_
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import and_, or_
 
 from shared.definitions.asset_query import SOFTWARE_FLAGS, SOFTWARE_QUERY, Op
 from shared.definitions.evidence import Evidence
@@ -20,6 +19,7 @@ from .terms import (
     date_match,
     float_coerce,
     int_coerce,
+    json_has,
     negate,
     number_match,
     string_match,
@@ -38,10 +38,7 @@ LIKELY_EPSS = BANDS_BY_KEY["likely"].floor
 
 
 def _caveat(cmp: Compare, _ctx: SoftwareQueryContext):
-    branches = [
-        func.jsonb_exists(cast(SoftwareCve.caveats, JSONB), raw.lower())
-        for raw in cmp.values
-    ]
+    branches = [json_has(SoftwareCve.caveats, raw.lower()) for raw in cmp.values]
     matched = or_(*branches)
     return negate(matched) if cmp.op is Op.NE else matched
 
@@ -60,12 +57,8 @@ _FLAG_BUILDERS = {
     "overdue": _overdue,
     "likely": lambda _ctx: SoftwareCve.epss_score >= LIKELY_EPSS,
     "firm": lambda _ctx: SoftwareCve.confidence == Confidence.HIGH.value,
-    "conditional": lambda _ctx: func.jsonb_exists(
-        cast(SoftwareCve.caveats, JSONB), Caveat.CONDITIONAL.value
-    ),
-    "backport": lambda _ctx: func.jsonb_exists(
-        cast(SoftwareCve.caveats, JSONB), Caveat.BACKPORT.value
-    ),
+    "conditional": lambda _ctx: json_has(SoftwareCve.caveats, Caveat.CONDITIONAL.value),
+    "backport": lambda _ctx: json_has(SoftwareCve.caveats, Caveat.BACKPORT.value),
     "fingerprinted": lambda _ctx: (
         SoftwareCve.version_source == VersionSource.FINGERPRINT.value
     ),

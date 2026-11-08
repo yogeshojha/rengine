@@ -5,7 +5,6 @@ from datetime import datetime
 
 from sqlalchemy import and_, cast, false, func, or_, select, union_all
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.asset_query import ENDPOINT_FLAGS, ENDPOINT_QUERY, FieldType, Op
 from shared.definitions.endpoints import (
@@ -24,6 +23,7 @@ from .terms import (
     date_match,
     int_coerce,
     json_array_match,
+    json_has_any,
     negate,
     number_match,
     scaled_coerce,
@@ -47,7 +47,7 @@ class EndpointQueryContext:
 
 
 def _has_any(column, names: list[str]):
-    return func.jsonb_exists_any(cast(column, JSONB), pg_array(names))
+    return json_has_any(column, names)
 
 
 _FLAG_BUILDERS = {

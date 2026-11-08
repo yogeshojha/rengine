@@ -48,7 +48,7 @@ from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 
 from .scope import QueryScope, ScopeLike, scope_of
-from .terms import array_elements
+from .terms import array_elements, json_has, json_has_any
 
 HTTP_OK = 200
 HTTP_REDIRECT = 300
@@ -133,7 +133,7 @@ def port_match(condition, scope: ScopeLike):
             .where(Port.scan_id == scan_id, condition)
             .scalar_subquery()
         )
-        return func.jsonb_exists_any(cast(Subdomain.resolved_ips, JSONB), addresses)
+        return json_has_any(Subdomain.resolved_ips, addresses)
 
     return _per_scan(scope_of(scope), Subdomain.scan_id, build)
 
@@ -577,7 +577,7 @@ def _corroborated_ids(scope: QueryScope):
                 scope.match(SoftwareCve.scan_id),
                 SoftwareCve.host.isnot(None),
                 SoftwareCve.host == eligible.c.host,
-                func.jsonb_exists(cast(eligible.c.cve_ids, JSONB), SoftwareCve.cve),
+                json_has(eligible.c.cve_ids, SoftwareCve.cve),
             ),
         )
     )
@@ -727,7 +727,7 @@ def endpoint_vuln(scope: ScopeLike, condition=None):
 
 def endpoint_source(*names: str):
     """The endpoint carries at least one of these discovery sources."""
-    return func.jsonb_exists_any(cast(Endpoint.sources, JSONB), pg_array(list(names)))
+    return json_has_any(Endpoint.sources, list(names))
 
 
 def endpoint_linked():
@@ -810,16 +810,16 @@ def hygiene(values: list[str]):
         else:
             keys.add(value)
     if keys:
-        parts.append(func.jsonb_exists_any(issues, pg_array(sorted(keys))))
+        parts.append(json_has_any(issues, sorted(keys)))
     return or_(*parts) if parts else false()
 
 
 def hygiene_check(key: str):
-    return func.jsonb_exists(cast(Subdomain.hygiene_issues, JSONB), key)
+    return json_has(Subdomain.hygiene_issues, key)
 
 
 def hygiene_applies(key: str):
-    return func.jsonb_exists(cast(Subdomain.hygiene_checked, JSONB), key)
+    return json_has(Subdomain.hygiene_checked, key)
 
 
 # ---------- domain posture ----------
@@ -848,16 +848,16 @@ def posture(values: list[str]):
         else:
             keys.add(value)
     if keys:
-        parts.append(func.jsonb_exists_any(issues, pg_array(sorted(keys))))
+        parts.append(json_has_any(issues, sorted(keys)))
     return or_(*parts) if parts else false()
 
 
 def posture_check(key: str):
-    return func.jsonb_exists(cast(Subdomain.posture_issues, JSONB), key)
+    return json_has(Subdomain.posture_issues, key)
 
 
 def posture_applies(key: str):
-    return func.jsonb_exists(cast(Subdomain.posture_checked, JSONB), key)
+    return json_has(Subdomain.posture_checked, key)
 
 
 def resolved_by(scope: QueryScope, ip, condition):
