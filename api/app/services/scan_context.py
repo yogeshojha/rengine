@@ -156,30 +156,28 @@ def _validate_list_caps(name: str, items: list) -> None:
 
 def _validate_auth_type(auth_type: str) -> None:
     if auth_type not in AUTH_TYPES:
-        msg = f"Invalid auth_type. Must be one of {', '.join(AUTH_TYPES)}."
+        msg = "Choose an authentication type."
         raise _bad(msg)
 
 
 def _validate_http_protocol(proto: str) -> None:
     if proto not in HTTP_PROTOCOLS:
-        msg = f"Invalid http_protocol. Must be one of {', '.join(HTTP_PROTOCOLS)}."
+        msg = "Choose an HTTP protocol."
         raise _bad(msg)
 
 
 def _validate_multiplier(name: str, value: float) -> None:
     if value not in MULTIPLIERS:
-        msg = (
-            f"Invalid {name}. Must be one of {', '.join(str(m) for m in MULTIPLIERS)}."
-        )
+        msg = f"{name} must be one of {', '.join(str(m) for m in MULTIPLIERS)}."
         raise _bad(msg)
 
 
 def _validate_rate(name: str, value: int) -> None:
     if not isinstance(value, int) or isinstance(value, bool):
-        msg = f"Invalid {name}. Must be an integer between {_MIN_RATE} and {_MAX_RATE}."
+        msg = f"{name} must be a whole number from {_MIN_RATE} to {_MAX_RATE}."
         raise _bad(msg)
     if value < _MIN_RATE or value > _MAX_RATE:
-        msg = f"Invalid {name}. Must be between {_MIN_RATE} and {_MAX_RATE}."
+        msg = f"{name} must be from {_MIN_RATE} to {_MAX_RATE}."
         raise _bad(msg)
 
 
@@ -187,13 +185,16 @@ def _validate_per_tool(overrides: dict) -> None:
     for tool, val in (overrides or {}).items():
         allowed = rate_tools()
         if tool not in allowed:
-            msg = f"Invalid per-tool rate key '{tool}'. Must be one of {', '.join(allowed)}."
+            msg = (
+                f"Rate limit for {tool} is not supported. "
+                f"Supported tools: {', '.join(allowed)}."
+            )
             raise _bad(msg)
-        _validate_rate(f"per_tool_rate_overrides[{tool}]", val)
+        _validate_rate(f"{tool} rate limit", val)
 
 
 def _validate_paths(paths: list) -> None:
-    _validate_list_caps("excluded_paths", paths)
+    _validate_list_caps("Excluded paths", paths)
     for p in paths or []:
         if not isinstance(p, str) or not p.startswith("/"):
             msg = f"Excluded path '{p}' must start with '/'."
@@ -208,7 +209,7 @@ def _validate_paths(paths: list) -> None:
 
 
 def _validate_ips(ips: list) -> None:
-    _validate_list_caps("excluded_ips", ips)
+    _validate_list_caps("Excluded IPs", ips)
     for ip in ips or []:
         try:
             ipaddress.ip_network(ip, strict=False)
@@ -306,7 +307,7 @@ def _apply_auth_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
 def _apply_extra_headers_update(ctx: ScanContext, data: ScanContextUpdate) -> None:
     if data.extra_headers is None:
         return
-    _validate_list_caps("extra_headers", data.extra_headers)
+    _validate_list_caps("Extra headers", data.extra_headers)
     incoming = [h.model_dump() for h in data.extra_headers]
     _validate_extra_headers(incoming)
     ctx.extra_headers = restore_masked_headers(incoming, ctx.extra_headers)
@@ -335,18 +336,16 @@ class ScanContextService:
 
         _validate_auth_type(auth_type)
         _validate_http_protocol(data.http_protocol)
-        _validate_multiplier("thread_multiplier", data.thread_multiplier)
-        _validate_multiplier("timeout_multiplier", data.timeout_multiplier)
+        _validate_multiplier("Thread multiplier", data.thread_multiplier)
+        _validate_multiplier("Timeout multiplier", data.timeout_multiplier)
         if data.global_rate_limit_override is not None:
-            _validate_rate(
-                "global_rate_limit_override", data.global_rate_limit_override
-            )
+            _validate_rate("Rate limit", data.global_rate_limit_override)
         _validate_per_tool(data.per_tool_rate_overrides)
         _validate_paths(data.excluded_paths)
         _validate_ips(data.excluded_ips)
-        _validate_exclusion_patterns("excluded_subdomains", data.excluded_subdomains)
-        _validate_subdomains("included_subdomains", data.included_subdomains)
-        _validate_list_caps("extra_headers", data.extra_headers)
+        _validate_exclusion_patterns("Excluded subdomains", data.excluded_subdomains)
+        _validate_subdomains("Included subdomains", data.included_subdomains)
+        _validate_list_caps("Extra headers", data.extra_headers)
         _validate_auth_fields(auth.model_dump())
         _validate_extra_headers([h.model_dump() for h in data.extra_headers])
         await self._validate_proxy_id(data.proxy_id)
@@ -438,15 +437,13 @@ class ScanContextService:
             _validate_http_protocol(data.http_protocol)
             ctx.http_protocol = data.http_protocol
         if data.thread_multiplier is not None:
-            _validate_multiplier("thread_multiplier", data.thread_multiplier)
+            _validate_multiplier("Thread multiplier", data.thread_multiplier)
             ctx.thread_multiplier = data.thread_multiplier
         if data.timeout_multiplier is not None:
-            _validate_multiplier("timeout_multiplier", data.timeout_multiplier)
+            _validate_multiplier("Timeout multiplier", data.timeout_multiplier)
             ctx.timeout_multiplier = data.timeout_multiplier
         if data.global_rate_limit_override is not None:
-            _validate_rate(
-                "global_rate_limit_override", data.global_rate_limit_override
-            )
+            _validate_rate("Rate limit", data.global_rate_limit_override)
             ctx.global_rate_limit_override = data.global_rate_limit_override
         if data.per_tool_rate_overrides is not None:
             _validate_per_tool(data.per_tool_rate_overrides)
@@ -459,11 +456,11 @@ class ScanContextService:
             ctx.excluded_ips = list(data.excluded_ips)
         if data.excluded_subdomains is not None:
             _validate_exclusion_patterns(
-                "excluded_subdomains", data.excluded_subdomains
+                "Excluded subdomains", data.excluded_subdomains
             )
             ctx.excluded_subdomains = list(data.excluded_subdomains)
         if data.included_subdomains is not None:
-            _validate_subdomains("included_subdomains", data.included_subdomains)
+            _validate_subdomains("Included subdomains", data.included_subdomains)
             ctx.included_subdomains = list(data.included_subdomains)
         if data.follow_redirects_override is not None:
             ctx.follow_redirects_override = data.follow_redirects_override
@@ -557,7 +554,7 @@ class ScanContextService:
         if ctx is None or ctx.project_id != project_id:
             return
         if rate is not None:
-            _validate_rate("global_rate_limit_override", rate)
+            _validate_rate("Rate limit", rate)
         ctx.global_rate_limit_override = rate
         ctx.updated_at = utc_now()
         await self.session.flush()

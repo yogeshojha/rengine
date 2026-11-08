@@ -60,6 +60,15 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     NotificationProvider.CUSTOM.value: ("apprise_url",),
 }
 
+_FIELD_LABELS: dict[str, str] = {
+    "webhook_url": "webhook URL",
+    "chat_id": "chat ID",
+    "smtp_host": "SMTP host",
+    "username": "SMTP username",
+    "password": "SMTP password",
+    "to_email": "recipient address",
+    "apprise_url": "Apprise URL",
+}
 _URL_FIELDS = {"webhook_url", "apprise_url"}
 _UNTAILED_FIELDS = {"password"}
 _EMAIL_SERVER_FIELDS = ("smtp_host", "smtp_port", "username")
@@ -85,7 +94,7 @@ def _validate_config(provider: str, config: dict) -> None:
         if not isinstance(value, str | int) or (
             isinstance(value, str) and not value.strip()
         ):
-            msg = f"{provider} config requires a non-empty '{field}'."
+            msg = f"Enter the {_FIELD_LABELS.get(field, field)}."
             raise _bad(msg)
     if provider == NotificationProvider.CUSTOM.value:
         _validate_custom_url(str(config.get("apprise_url", "")))
