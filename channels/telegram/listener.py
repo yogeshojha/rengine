@@ -27,6 +27,7 @@ CONFIG_REFRESH_SECONDS = 5.0
 MAX_BACKOFF_SECONDS = 120
 UNAUTHORIZED_PAUSE_SECONDS = 60
 PRIVATE = "private"
+MAX_PENDING = DISPATCH_SLOTS * 32
 
 
 class TelegramChannel(Channel):
@@ -226,6 +227,9 @@ class TelegramListener:
         return 0.0
 
     def _spawn(self, inbound: Inbound) -> None:
+        if len(self._tasks) >= MAX_PENDING:
+            logger.warning("update dropped", chat=inbound.external_id)
+            return
         task = asyncio.create_task(self._dispatch(inbound))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
