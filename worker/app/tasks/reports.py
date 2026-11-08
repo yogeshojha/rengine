@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded
 from sqlalchemy import func
 
 from app.database import get_sync_session
@@ -36,6 +37,13 @@ from shared.utils.slug import generate_slug
 
 logger = get_logger(__name__)
 
+SOFT_TIME_LIMIT = 1800
+HARD_TIME_LIMIT = SOFT_TIME_LIMIT + 120
+TIMED_OUT = (
+    f"The report did not finish within {SOFT_TIME_LIMIT // 60} minutes. "
+    "Reduce the rows or screenshots shown and generate it again."
+)
+
 
 def _root(report_id: UUID) -> Path:
     path = Path(REPORT_ROOT) / str(report_id)
@@ -43,7 +51,13 @@ def _root(report_id: UUID) -> Path:
     return path
 
 
-@shared_task(bind=True, name="app.tasks.reports.generate", max_retries=0)
+@shared_task(
+    bind=True,
+    name="app.tasks.reports.generate",
+    max_retries=0,
+    soft_time_limit=SOFT_TIME_LIMIT,
+    time_limit=HARD_TIME_LIMIT,
+)
 def generate_report(self, report_id: str) -> dict:
     started = time.monotonic()
 
@@ -98,19 +112,23 @@ def generate_report(self, report_id: str) -> dict:
             )
             return {"status": report.status, "pages": output.pages, "files": len(files)}
 
+        except SoftTimeLimitExceeded:
+            _fail(session, report_id, TIMED_OUT, round(time.monotonic() - started, 2))
+            logger.warning("report timed out", report_id=report_id)
+            return {"status": ReportStatus.FAILED.value}
         except Exception as exc:
-            _fail(session, report_id, exc, round(time.monotonic() - started, 2))
+            _fail(session, report_id, str(exc), round(time.monotonic() - started, 2))
             logger.exception("report failed", report_id=report_id)
             raise
 
 
-def _fail(session, report_id: str, exc: Exception, seconds: float) -> None:
+def _fail(session, report_id: str, error: str, seconds: float) -> None:
     session.rollback()
     report = session.get(Report, UUID(report_id))
     if report is None:
         return
     report.status = ReportStatus.FAILED.value
-    report.error = str(exc)[:2000]
+    report.error = error[:2000]
     report.step = "Failed"
     report.completed_at = utc_now()
     report.duration_seconds = seconds
