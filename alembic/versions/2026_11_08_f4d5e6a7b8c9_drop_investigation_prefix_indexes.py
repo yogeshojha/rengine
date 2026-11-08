@@ -1,7 +1,7 @@
 """drop investigation indexes covered by a composite index or constraint
 
-Revision ID: e3c4d5f6a7b8
-Revises: d2b3c4e5f6a7
+Revision ID: f4d5e6a7b8c9
+Revises: e3c4d5f6a7b8
 Create Date: 2026-11-08
 """
 
@@ -9,8 +9,8 @@ from collections.abc import Sequence
 
 from alembic import op
 
-revision: str = "e3c4d5f6a7b8"
-down_revision: str | None = "d2b3c4e5f6a7"
+revision: str = "f4d5e6a7b8c9"
+down_revision: str | None = "e3c4d5f6a7b8"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
