@@ -166,7 +166,7 @@ class ExportService:
             scan = await self.session.get(Scan, data.scan_id)
             if scan is None or scan.project_id != project_id:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found."
                 )
             target = await self.session.get(Target, scan.target_id)
             return ExportScope.SCAN.value, target.target_value if target else label
@@ -174,7 +174,7 @@ class ExportService:
             target = await self.session.get(Target, data.target_id)
             if target is None or target.project_id != project_id:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Target not found"
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Target not found."
                 )
             return ExportScope.TARGET.value, target.target_value
         project = await self.session.get(Project, project_id)
@@ -184,7 +184,7 @@ class ExportService:
         row = await self.session.get(Export, export_id)
         if row is None or row.project_id != project_id:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Export not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Export not found."
             )
         return row
 

@@ -78,6 +78,11 @@ def _platform_label(platform: str) -> str:
     return spec.label if spec else platform
 
 
+def _bad_interval(value: str) -> str:
+    choices = ", ".join(i.value for i in SyncInterval)
+    return f"Sync interval {value} not recognised. Choose one of {choices}."
+
+
 EMPTY_COUNTS = {"in_scope_count": 0, "out_of_scope_count": 0, "importable_count": 0}
 
 
@@ -202,20 +207,20 @@ class BountyProgramService:
         if settings is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Instance settings not found",
+                detail="Instance settings not found.",
             )
         if data.sync_interval is not None:
             if data.sync_interval not in {i.value for i in SyncInterval}:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Unknown sync interval: {data.sync_interval}",
+                    detail=_bad_interval(data.sync_interval),
                 )
             settings.bounty_sync_interval = data.sync_interval
         if data.feed_interval is not None:
             if data.feed_interval not in {i.value for i in SyncInterval}:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Unknown sync interval: {data.feed_interval}",
+                    detail=_bad_interval(data.feed_interval),
                 )
             settings.bounty_feed_interval = data.feed_interval
         stored = dict(settings.bounty_settings or {})
@@ -226,7 +231,10 @@ class BountyProgramService:
             if unknown:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Unknown change kinds: {', '.join(sorted(unknown))}",
+                    detail=(
+                        f"Change kinds {', '.join(sorted(unknown))} not recognised. "
+                        f"Choose from {', '.join(NOTIFIABLE_EVENTS)}."
+                    ),
                 )
             stored["notify_events"] = sorted(set(data.notify_events))
         settings.bounty_settings = stored
@@ -470,7 +478,7 @@ class BountyProgramService:
         program = row.scalar_one_or_none()
         if not program:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Program not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Program not found."
             )
         return program
 
@@ -733,6 +741,6 @@ class BountyProgramService:
         if platform not in PLATFORMS_BY_KEY:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Unknown platform: {platform}",
+                detail=f"Platform {platform} not found.",
             )
         return platform

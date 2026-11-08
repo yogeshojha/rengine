@@ -79,11 +79,11 @@ def _bad(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
 
-_TRACKER_MISSING = "Issue tracker not found"
-_ROUTE_MISSING = "Route not found"
-_ISSUE_MISSING = "Issue not found"
-_PROJECT_MISSING = "Project not found"
-_TARGET_MISSING = "Target not found"
+_TRACKER_MISSING = "Issue tracker not found."
+_ROUTE_MISSING = "Route not found."
+_ISSUE_MISSING = "Issue not found."
+_PROJECT_MISSING = "Project not found."
+_TARGET_MISSING = "Target not found."
 _NOT_RETRYABLE = "Retry applies to issues that were not filed."
 
 
