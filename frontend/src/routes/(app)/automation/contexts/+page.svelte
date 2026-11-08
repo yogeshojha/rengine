@@ -181,7 +181,7 @@
 
 <div class="flex flex-col gap-6">
 	<PageHeader
-		title="Scan contexts"
+		title={routeLabels.contexts}
 		description="Credentials, rate limits, scope rules and proxy settings for a scan"
 	>
 		{#snippet actions()}

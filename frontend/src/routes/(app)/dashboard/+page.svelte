@@ -244,7 +244,7 @@
 		<div class="flex min-w-0 flex-col gap-1.5">
 			<span class="font-mono text-2xs tracking-wide text-muted-foreground uppercase">
 				{activeProject?.name ??
-					'Dashboard'}{#if overview}{` · ${plural(overview.targets_total, 'target', 'targets')} · ${days} days`}{/if}
+					routeLabels.dashboard}{#if overview}{` · ${plural(overview.targets_total, 'target', 'targets')} · ${days} days`}{/if}
 			</span>
 			{#if overview && !firstRun && headline}
 				<h1 class="max-w-[34ch] text-2xl leading-tight font-semibold tracking-tight text-balance">
@@ -282,13 +282,13 @@
 					</span>
 				</h1>
 			{:else if headlinePending}
-				<h1 class="sr-only">Dashboard</h1>
+				<h1 class="sr-only">{routeLabels.dashboard}</h1>
 				<div class="flex flex-col gap-1" aria-hidden="true">
 					<Skeleton class="h-7 w-[28rem] max-w-full" />
 					<Skeleton class="h-7 w-64 max-w-full" />
 				</div>
 			{:else}
-				<h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
+				<h1 class="text-2xl font-semibold tracking-tight">{routeLabels.dashboard}</h1>
 			{/if}
 		</div>
 		{#if activeProject && !firstRun}

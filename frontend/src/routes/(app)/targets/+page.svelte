@@ -722,7 +722,7 @@
 {/snippet}
 
 <div class="flex flex-col gap-4">
-	<h1 class="sr-only">Targets</h1>
+	<h1 class="sr-only">{routeLabels.targets}</h1>
 
 	{#if projectsStore.activeProject}
 		<ProjectEstateTray

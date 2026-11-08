@@ -252,7 +252,7 @@
 
 <div class="flex flex-col gap-6">
 	<PageHeader
-		title="Scan engines"
+		title={routeLabels.engines}
 		description="Stage selection and settings for a scan{stageCount
 			? ` · ${stageCount} stages available`
 			: ''}"

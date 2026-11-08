@@ -162,7 +162,7 @@
 <svelte:head><title>{pageTitle(routeLabels.scans)}</title></svelte:head>
 
 <div class="flex flex-col gap-4">
-	<h1 class="sr-only">Scans</h1>
+	<h1 class="sr-only">{routeLabels.scans}</h1>
 	<ScanHistoryTable
 		targetId={targetFilter}
 		targetIds={targetFilters}
