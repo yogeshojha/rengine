@@ -85,6 +85,7 @@ from shared.services.vuln_templates import (
     selection_predicate,
 )
 from shared.utils.datetime import utc_now
+from shared.utils.net import host_port
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -1005,7 +1006,7 @@ def _check_state(
 
 def _host_key(row: Sighting) -> str:
     host = row.host or row.ip or ""
-    return f"{host}:{row.port}" if row.port and host else host
+    return host_port(host, row.port) if row.port and host else host
 
 
 def _locator(row: Sighting) -> Locator:
