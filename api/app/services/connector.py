@@ -218,7 +218,7 @@ class ConnectorService:
             )
         )
         if existing is not None:
-            msg = f"{spec.title} is already connected to this project."
+            msg = f"{spec.title} is connected to this project."
             raise ConnectorError(msg)
         secret, token_hash, prefix = auth.mint()
         row = Connector(
