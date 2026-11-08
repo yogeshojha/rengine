@@ -97,7 +97,7 @@ Twenty-six tools. Arguments in **bold** are required.
 | `pause_scan` | launch | scan, target |
 | `resume_scan` | launch | scan, target |
 | `cancel_scan` | launch | scan, target |
-| `record_triage` | write | **target**, **fingerprint**, **state**, note |
+| `record_triage` | write | **target**, **fingerprint**, **state**, reason |
 | `add_target` | write | **targets**, project_id, tags, organizations |
 | `update_target` | write | **target**, display_name, tags, organizations |
 | `delete_target` | write | **target**, confirm |

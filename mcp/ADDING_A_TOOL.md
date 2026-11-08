@@ -132,7 +132,8 @@ raise ToolError(
 )
 ```
 
-Any other exception is logged and returned as `<title> failed: <message>`.
+Any other exception is logged and returned as `<title> did not complete. Error type: <type>.`,
+with the message left out. An `HTTPException` with a string detail returns that detail.
 `ToolError` is the right type wherever the caller can act on the message.
 
 ## Working with result dimensions
