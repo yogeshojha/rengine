@@ -265,9 +265,9 @@ final class Sink {
                     + Settings.INGEST_PATH + ".";
         }
         if (code == TOO_MANY_REQUESTS) {
-            return "reNgine is rate limiting this address.";
+            return "Rate limited. Retry in a minute.";
         }
-        return "reNgine returned " + code + ".";
+        return "Request refused with HTTP " + code + ".";
     }
 
     private static String summarise(String responseBody) {
@@ -313,8 +313,8 @@ final class Sink {
     /** A connection failure as a sentence. */
     static String explain(Exception e) {
         if (e instanceof SSLHandshakeException) {
-            return "The certificate was rejected. Accept a self-signed certificate "
-                    + "if reNgine serves one.";
+            return "Certificate rejected. Accept a self-signed certificate "
+                    + "when the server uses one.";
         }
         if (e instanceof SSLException) {
             return "TLS failed. Check that the endpoint serves HTTPS.";
