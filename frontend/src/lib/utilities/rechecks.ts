@@ -6,10 +6,9 @@ import type {
 	RescanSchema,
 	SeedSelection
 } from '$lib/types/recheck';
-import type { ScanStatus } from '$lib/types/scan';
 import { isLiveStatus } from '$lib/utilities/scan-status';
 
-export const isRecheckLive = (r: Recheck): boolean => isLiveStatus(r.status as ScanStatus);
+export const isRecheckLive = (r: Recheck): boolean => isLiveStatus(r.status);
 
 export const recheckFailed = (r: Recheck): boolean => r.status === 'failed';
 

@@ -1,8 +1,10 @@
 import { Capability, type CapabilityKey } from '$lib/config/capabilities';
+import type { MessageLevel } from '$lib/types/message-level';
+import type { NotificationType } from '$lib/types/notification';
 
 // mirrors shared/definitions/notification_events.py
 export interface ChannelEvent {
-	type: string;
+	type: NotificationType;
 	label: string;
 	hint: string;
 	capability: CapabilityKey | null;
@@ -53,10 +55,10 @@ export const CHANNEL_EVENTS: ChannelEvent[] = [
 	}
 ];
 
-export const DEFAULT_CHANNEL_EVENTS: string[] = CHANNEL_EVENTS.map((event) => event.type);
+export const DEFAULT_CHANNEL_EVENTS: NotificationType[] = CHANNEL_EVENTS.map((event) => event.type);
 
 export interface ChannelLevel {
-	value: string;
+	value: MessageLevel;
 	label: string;
 }
 
@@ -66,7 +68,7 @@ export const CHANNEL_LEVELS: ChannelLevel[] = [
 	{ value: 'error', label: 'Errors only' }
 ];
 
-export const DEFAULT_CHANNEL_LEVEL = 'info';
+export const DEFAULT_CHANNEL_LEVEL: MessageLevel = 'info';
 
 export function channelEventsFor(has: (capability: CapabilityKey) => boolean): ChannelEvent[] {
 	return CHANNEL_EVENTS.filter((event) => !event.capability || has(event.capability));

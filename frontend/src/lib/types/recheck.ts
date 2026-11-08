@@ -1,4 +1,4 @@
-import type { ScanRead } from '$lib/types/scan';
+import type { ScanRead, ScanStatus } from '$lib/types/scan';
 
 export type RecheckTone = 'up' | 'down' | 'neutral';
 
@@ -20,7 +20,7 @@ export interface Recheck {
 	changed: boolean;
 	changes: RecheckChange[];
 	created_at: string;
-	status: string;
+	status: ScanStatus;
 	stage_titles: string[];
 	duration_seconds: number | null;
 }
