@@ -266,17 +266,28 @@ def reap_stalled() -> dict:
                 _abandon(session, scan)
                 abandoned.append(str(scan.id))
                 continue
+            seen = scan.run_epoch
+            locked = session.get(
+                Scan, scan.id, with_for_update=True, populate_existing=True
+            )
+            if (
+                locked is None
+                or locked.status != ScanStatus.RUNNING.value
+                or locked.run_epoch != seen
+            ):
+                session.commit()
+                continue
             logger.warning(
                 "scan %s stalled with no task in flight, resuming at level %s",
-                scan.id,
+                locked.id,
                 level,
             )
-            scan.run_epoch = epoch = (scan.run_epoch or 0) + 1
+            locked.run_epoch = epoch = (locked.run_epoch or 0) + 1
             session.commit()
             build_canvas(
-                str(scan.id), epoch, start_level=level, done=done
+                str(locked.id), epoch, start_level=level, done=done
             ).apply_async()
-            resumed.append(str(scan.id))
+            resumed.append(str(locked.id))
     return {"resumed": resumed, "abandoned": abandoned, "requeued": requeued}
 
 
