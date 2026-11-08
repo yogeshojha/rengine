@@ -204,6 +204,7 @@
 						activeId={run?.id ?? null}
 						onOpen={replay}
 						onClear={clearHistory}
+						onRetry={() => toolbox.loadHistory()}
 					/>
 				{/if}
 			</aside>
@@ -260,6 +261,7 @@
 							class="border-t-0"
 							onOpen={replay}
 							onClear={clearHistory}
+							onRetry={() => toolbox.loadHistory()}
 						/>
 						{#if !hasRecent}
 							<EmptyState compact title="No recent runs" class="m-4" />

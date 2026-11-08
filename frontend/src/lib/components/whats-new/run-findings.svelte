@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import { EVIDENCE_LABELS, Evidence } from '$lib/config/evidence';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import SeverityMark from '$lib/components/scans/results/vulnerabilities/severity-mark.svelte';
@@ -23,23 +24,36 @@
 	let total = $state(0);
 	let failed = $state(false);
 
-	$effect(() => {
-		const scan = scanId;
+	let req = 0;
+
+	function load(scan: string) {
+		const my = ++req;
 		items = null;
 		failed = false;
 		vulnerabilitiesApi
 			.search(projectId, scan, { ...findingsFilter([], LIMIT), q: NEW_FINDINGS_QUERY })
 			.then((res) => {
-				if (scan !== scanId) return;
+				if (my !== req) return;
 				items = res.items;
 				total = res.total;
 			})
-			.catch(() => (failed = true));
+			.catch(() => {
+				if (my === req) failed = true;
+			});
+	}
+
+	$effect(() => {
+		load(scanId);
 	});
 </script>
 
 {#if failed}
-	<p class="text-xs text-muted-foreground">Findings not loaded.</p>
+	<div class="flex items-center gap-2 text-xs text-muted-foreground">
+		<span>Findings not loaded.</span>
+		<Button variant="outline" size="sm" class="h-6 px-2 text-xs" onclick={() => load(scanId)}>
+			Retry
+		</Button>
+	</div>
 {:else if items === null}
 	<div class="flex flex-col gap-1.5" aria-busy="true">
 		{#each { length: Math.min(count, 4) } as _, i (i)}

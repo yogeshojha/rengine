@@ -340,7 +340,18 @@
 								class="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
 							>
 								<AlertTriangle class="h-3.5 w-3.5 shrink-0" />
-								{targetsError}
+								<span class="min-w-0 flex-1">{targetsError}</span>
+								{#if projectsStore.activeProject}
+									{@const slug = projectsStore.activeProject.slug}
+									<Button
+										variant="outline"
+										size="sm"
+										class="h-6 px-2 text-xs"
+										onclick={() => loadTargets(slug)}
+									>
+										Retry
+									</Button>
+								{/if}
 							</div>
 						{:else}
 							<MultiSelectCombobox

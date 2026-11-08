@@ -16,6 +16,7 @@
 		class?: string;
 		onOpen: (run: ToolRun) => void;
 		onClear: () => Promise<void>;
+		onRetry?: () => void;
 	}
 
 	let {
@@ -25,7 +26,8 @@
 		error = null,
 		class: className,
 		onOpen,
-		onClear
+		onClear,
+		onRetry
 	}: Props = $props();
 
 	let confirming = $state(false);
@@ -58,7 +60,14 @@
 
 {#if !shown.length && error}
 	<div class={cn('shrink-0 border-t p-2', className)}>
-		<p class="px-2 py-1 text-2xs text-muted-foreground">Recent runs not loaded.</p>
+		<div class="flex items-center gap-2 px-2 py-1 text-2xs text-muted-foreground">
+			<span>Recent runs not loaded.</span>
+			{#if onRetry}
+				<Button variant="ghost" size="sm" class="h-5 px-1.5 text-2xs" onclick={() => onRetry()}>
+					Retry
+				</Button>
+			{/if}
+		</div>
 	</div>
 {:else if shown.length}
 	<div class={cn('shrink-0 border-t p-2', className)}>
