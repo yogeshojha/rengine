@@ -2,7 +2,7 @@ from sqlalchemy import select
 
 from app.celery import celery_app
 from app.database import get_sync_session
-from shared.definitions.notifications import ENRICHMENT_FAILED
+from shared.enums.target import ENRICHMENT_FAILED
 from shared.enums.task_status import TaskStatus
 from shared.http import egress_proxy
 from shared.logging import get_logger

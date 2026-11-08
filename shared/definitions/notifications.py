@@ -29,7 +29,6 @@ def _more(total: int, shown: int) -> list[str]:
     return [f"and {total - shown:,} more"] if total > shown else []
 
 
-ENRICHMENT_FAILED = "The lookup did not complete. Check the worker log."
 MAX_LINK_LENGTH = 500
 
 

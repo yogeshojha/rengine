@@ -4,7 +4,7 @@ from celery import shared_task
 from sqlalchemy import select
 
 from app.database import get_sync_session
-from shared.definitions.notifications import ENRICHMENT_FAILED
+from shared.enums.target import ENRICHMENT_FAILED
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target

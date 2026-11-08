@@ -18,3 +18,6 @@ class EnrichmentKind(StrEnum):
     DNS = "dns"
     BGP = "bgp"
     INFOSTEALER = "infostealer"
+
+
+ENRICHMENT_FAILED = "The lookup did not complete. Check the worker log."

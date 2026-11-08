@@ -11,7 +11,7 @@ from shared.definitions.infostealer import (
     NOT_APPLICABLE_REASON,
     REQUEST_SPACING,
 )
-from shared.definitions.notifications import ENRICHMENT_FAILED
+from shared.enums.target import ENRICHMENT_FAILED
 from shared.enums.task_status import TaskStatus
 from shared.logging import get_logger
 from shared.models.target import Target
