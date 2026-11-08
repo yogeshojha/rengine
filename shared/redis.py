@@ -8,6 +8,7 @@ import redis.asyncio as aioredis
 from shared.config import base_settings
 
 CACHE_TIMEOUT_SECONDS = 3.0
+STATE_TIMEOUT_SECONDS = 5.0
 
 _async: aioredis.Redis | None = None
 _sync: redis.Redis | None = None
@@ -17,14 +18,24 @@ _cache: aioredis.Redis | None = None
 def async_client() -> aioredis.Redis:
     global _async  # noqa: PLW0603
     if _async is None:
-        _async = aioredis.from_url(base_settings().redis_url, decode_responses=True)
+        _async = aioredis.from_url(
+            base_settings().redis_url,
+            decode_responses=True,
+            socket_connect_timeout=STATE_TIMEOUT_SECONDS,
+            socket_timeout=STATE_TIMEOUT_SECONDS,
+        )
     return _async
 
 
 def sync_client() -> redis.Redis:
     global _sync  # noqa: PLW0603
     if _sync is None:
-        _sync = redis.from_url(base_settings().redis_url, decode_responses=True)
+        _sync = redis.from_url(
+            base_settings().redis_url,
+            decode_responses=True,
+            socket_connect_timeout=STATE_TIMEOUT_SECONDS,
+            socket_timeout=STATE_TIMEOUT_SECONDS,
+        )
     return _sync
 
 
