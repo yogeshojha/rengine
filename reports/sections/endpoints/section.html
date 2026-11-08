@@ -1,4 +1,4 @@
-<p class="block muted small">{{ total|num }} of {{ all_endpoints|num }} endpoints{% if notable_only %} carry an administrative, authentication, API or debug marker{% endif %}.</p>
+<p class="block muted small">{{ total|num }} of {{ all_endpoints|num }} {{ all_endpoints|plural('endpoint') }}{% if notable_only %} {{ 'carries' if total == 1 else 'carry' }} an administrative, authentication, API or debug marker{% endif %}.</p>
 <table class="table table--fixed">
   <thead><tr><th style="width:44mm">Host</th><th>Path</th><th class="num" style="width:14mm">Status</th><th style="width:30mm">Marker</th>{% if show_params %}<th style="width:34mm">Parameters</th>{% endif %}</tr></thead>
   <tbody>

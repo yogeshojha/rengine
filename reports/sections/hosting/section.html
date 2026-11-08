@@ -7,7 +7,7 @@
   <div class="chips" style="margin-top:1.6mm">
     {% for row in fronting %}{% if row.count %}<span class="chip"><span style="display:inline-block;width:6px;height:6px;border-radius:2px;background:{{ ctx.hue(row.hue) }}"></span>&nbsp;{{ row.label }} {{ row.count|num }}</span>{% endif %}{% endfor %}
   </div>
-  {% if waf %}<p class="micro faint" style="margin-top:1.4mm">{{ waf|num }} assets report a web application firewall.</p>{% endif %}
+  {% if waf %}<p class="micro faint" style="margin-top:1.4mm">{{ waf|num }} {{ waf|plural('asset') }} {{ 'reports' if waf == 1 else 'report' }} a web application firewall.</p>{% endif %}
 </div>
 {% endif %}
 

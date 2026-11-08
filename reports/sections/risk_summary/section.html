@@ -29,7 +29,7 @@
   </div>
 </div>
 {% endif %}
-{% if kev %}<p class="small block">{{ kev|num }} of the ranked weaknesses are on the CISA Known Exploited Vulnerabilities catalogue.</p>{% endif %}
+{% if kev %}<p class="small block">{{ kev|num }} of the ranked weaknesses {{ 'is' if kev == 1 else 'are' }} on the CISA Known Exploited Vulnerabilities catalogue.</p>{% endif %}
 
 {% if risks %}
 <div class="sub">

@@ -1,4 +1,4 @@
-<p class="block muted small">{{ total|num }} addresses across {{ networks|num }} networks and {{ countries|num }} countries.</p>
+<p class="block muted small">{{ total|num }} {{ total|plural('address', 'es') }} across {{ networks|num }} {{ networks|plural('network') }} and {{ countries|num }} {{ 'country' if countries == 1 else 'countries' }}.</p>
 <table class="table table--fixed">
   <thead>
     <tr>

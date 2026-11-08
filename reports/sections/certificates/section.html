@@ -1,4 +1,4 @@
-<p class="block muted small">{{ total|num }} certificates were observed. {{ expired|num }} have expired, {{ expiring|num }} expire within {{ window }} days and {{ self_signed|num }} are self signed.</p>
+<p class="block muted small">{{ total|num }} {{ total|plural('certificate') }} {{ 'was' if total == 1 else 'were' }} observed. {{ expired|num }} {{ 'has' if expired == 1 else 'have' }} expired, {{ expiring|num }} {{ 'expires' if expiring == 1 else 'expire' }} within {{ window }} days and {{ self_signed|num }} {{ 'is' if self_signed == 1 else 'are' }} self signed.</p>
 {% if clean %}
 <div class="callout callout--quiet">No certificate has expired, is expiring within {{ window }} days, or is self signed.</div>
 {% else %}

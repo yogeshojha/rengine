@@ -218,7 +218,12 @@ def _caveats(source: ReportSource) -> list[Caveat]:
         out.append(
             Caveat(
                 kind="suppressed",
-                text=f"{source.suppressed_count} findings marked accepted or false positive are excluded.",
+                text=(
+                    f"{source.suppressed_count} "
+                    f"{'finding' if source.suppressed_count == 1 else 'findings'} "
+                    f"marked accepted or false positive "
+                    f"{'is' if source.suppressed_count == 1 else 'are'} excluded."
+                ),
             )
         )
     excluded = source.excluded()
@@ -274,7 +279,9 @@ def _headline(brief: ReportBrief) -> str:
         c["dimension"] for c in brief.coverage if c["covered"]
     }:
         return "No actionable weaknesses were identified in the checks that ran."
-    return f"{brief.counts.get(_DIM.WEB_ASSETS.value, 0):,} web assets were catalogued."
+    catalogued = brief.counts.get(_DIM.WEB_ASSETS.value, 0)
+    noun = "web asset was" if catalogued == 1 else "web assets were"
+    return f"{catalogued:,} {noun} catalogued."
 
 
 def build_brief(source: ReportSource) -> ReportBrief:

@@ -1,4 +1,4 @@
-<p class="block muted small">{{ evaluated|num }} web assets were evaluated. {{ warning|num }} fail a warning-level check, {{ info|num }} fail an informational check and {{ clean|num }} pass every applicable check.{% if pending %} {{ pending|num }} web assets are not yet evaluated.{% endif %}</p>
+<p class="block muted small">{{ evaluated|num }} {{ evaluated|plural('web asset') }} {{ 'was' if evaluated == 1 else 'were' }} evaluated. {{ warning|num }} {{ 'fails' if warning == 1 else 'fail' }} a warning-level check, {{ info|num }} {{ 'fails' if info == 1 else 'fail' }} an informational check and {{ clean|num }} {{ 'passes' if clean == 1 else 'pass' }} every applicable check.{% if pending %} {{ pending|num }} {{ pending|plural('web asset') }} {{ 'is' if pending == 1 else 'are' }} not yet evaluated.{% endif %}</p>
 <table class="table table--fixed">
   <thead><tr><th>Check</th><th style="width:24mm">Group</th><th class="num" style="width:18mm">Failing</th><th class="num" style="width:20mm">Applicable</th><th style="width:30mm">Share</th></tr></thead>
   <tbody>
