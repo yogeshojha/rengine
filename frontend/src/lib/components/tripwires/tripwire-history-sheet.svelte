@@ -61,6 +61,7 @@
 	let expanded = $state<string | null>(null);
 	let loadedFor = $state<string | null>(null);
 	let pinned = $state<TripwireRun | null>(null);
+	let seq = 0;
 
 	let spec = $derived(tripwire ? dimensionSpec(tripwire.dimension) : null);
 	let verb = $derived(tripwire ? (FIRE_ON_VERB[tripwire.fire_on as FireOn] ?? 'fired') : 'fired');
@@ -116,6 +117,7 @@
 	}
 
 	async function load(id: string) {
+		const mine = ++seq;
 		loading = true;
 		failed = false;
 		try {
@@ -124,14 +126,16 @@
 				page,
 				size: PAGE_SIZE
 			});
+			if (mine !== seq) return;
 			runs = res.items;
 			total = res.total;
 		} catch {
+			if (mine !== seq) return;
 			runs = [];
 			total = 0;
 			failed = true;
 		} finally {
-			loading = false;
+			if (mine === seq) loading = false;
 		}
 	}
 
