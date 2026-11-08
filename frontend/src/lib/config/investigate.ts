@@ -119,7 +119,7 @@ export const REFUSAL_HELP: Record<string, string> = {
 	[RefusalReason.CALLBACK]:
 		'The check proves itself through a callback listener that is not configured.',
 	[RefusalReason.CREDENTIALS]: 'The check authenticates against the target.',
-	[RefusalReason.OUT_OF_SCOPE]: 'The host does not sit under the finding’s target.',
+	[RefusalReason.OUT_OF_SCOPE]: "The host does not sit under the finding's target.",
 	[RefusalReason.REQUESTS]: 'The check sends more requests than a replay allows.',
 	[RefusalReason.BUDGET]: 'The investigation reached its request budget.'
 };
