@@ -291,13 +291,17 @@ check_resources() {
   if [ "$BUILD" -eq 1 ] && [ $((MEM_GB + swap_gb)) -lt 8 ] && [ "$FORCE" -eq 0 ]; then
     die "$MEM_GB GB memory and $swap_gb GB swap found. --build needs 8 GB of the two together. Add swap, or --force overrides."
   fi
-  local parent free_mb
+  local parent docker_root dir free_mb
   parent="$(dirname "$RENGINE_HOME")"
   [ -d "$parent" ] || parent="/"
-  free_mb="$(df -Pm "$parent" 2>/dev/null | awk 'NR==2 {print $4}')"
-  if [ -n "$free_mb" ] && [ "$free_mb" -lt 10240 ] && [ "$FORCE" -eq 0 ]; then
-    die "$((free_mb / 1024)) GB disk free on $parent. 10 GB is the minimum, 25 GB is recommended. --force overrides."
-  fi
+  docker_root="$(docker info -f '{{.DockerRootDir}}' 2>/dev/null || true)"
+  for dir in "$parent" "$docker_root"; do
+    [ -n "$dir" ] && [ -d "$dir" ] || continue
+    free_mb="$(df -Pm "$dir" 2>/dev/null | awk 'NR==2 {print $4}')"
+    if [ -n "$free_mb" ] && [ "$free_mb" -lt 10240 ] && [ "$FORCE" -eq 0 ]; then
+      die "$((free_mb / 1024)) GB disk free on $dir. 10 GB is the minimum, 25 GB is recommended. --force overrides."
+    fi
+  done
   if [ "$MEM_GB" -lt 8 ]; then TIER=small
   elif [ "$MEM_GB" -lt 16 ]; then TIER=medium
   else TIER=large; fi
