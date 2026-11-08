@@ -273,7 +273,9 @@ class OrgDomains(Tool):
         if not answers:
             error = next(r for r in results if isinstance(r, BaseException))
             reason = str(error) if isinstance(error, CrtShError) else "crt.sh failed."
-            logger.warning("org_domains crt.sh failed", error=reason)
+            logger.warning(
+                "org_domains crt.sh failed", error=reason, kind=type(error).__name__
+            )
             sources.certificates = reason
             return
 
