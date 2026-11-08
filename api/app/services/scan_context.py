@@ -37,6 +37,7 @@ from shared.services.scan_resolve import (
 )
 from shared.services.scope_filter import looks_like_domain, pattern_hazard
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 from stages.registry import rate_tools
 
 _AUTH_KEEP = {
@@ -494,8 +495,8 @@ class ScanContextService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    f"'{ctx.name}' is in use by {running} running "
-                    f"scan{'s' if running != 1 else ''}. Cancel them first."
+                    f"Scan context {ctx.name} has {counted(running, 'unfinished scan')}. "
+                    f"Cancel {'it' if running == 1 else 'them'} before deleting."
                 ),
             )
         usage = (await _usage_for(self.session, [ctx.id]))[ctx.id]

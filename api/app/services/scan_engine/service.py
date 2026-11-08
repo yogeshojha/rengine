@@ -45,6 +45,7 @@ from shared.services.credential_access import (
     plain_tool_options,
 )
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 from shared.utils.yaml_safe import DocumentTooLargeError, load_document
 
 _ENGINE_KEYS = frozenset(
@@ -280,8 +281,8 @@ class ScanEngineService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=(
-                    f"'{engine.name}' is in use by {running} running "
-                    f"scan{'s' if running != 1 else ''}. Cancel them first."
+                    f"Engine {engine.name} has {counted(running, 'unfinished scan')}. "
+                    f"Cancel {'it' if running == 1 else 'them'} before deleting."
                 ),
             )
         usage = (await _usage_for(self.session, [engine.id]))[engine.id]
