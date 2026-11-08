@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Container, Iterable
 from uuid import UUID
 
 from sqlalchemy import delete, select, text
@@ -77,15 +77,17 @@ def replace_rows(session: Session, scan_id: UUID, rows: Iterable[DomainPosture])
     return len(rows)
 
 
-def zone_of(name: str, zones: Iterable[str]) -> str | None:
+def zone_of(name: str, zones: Container[str]) -> str | None:
     """The longest zone the name sits under."""
     host = name.strip().lower().rstrip(".")
-    best: str | None = None
-    for zone in zones:
-        under = host == zone or host.endswith("." + zone)
-        if under and (best is None or len(zone) > len(best)):
-            best = zone
-    return best
+    while host:
+        if host in zones:
+            return host
+        dot = host.find(".")
+        if dot < 0:
+            return None
+        host = host[dot + 1 :]
+    return None
 
 
 _CLEAR_SQL = text(
