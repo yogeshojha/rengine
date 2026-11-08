@@ -91,9 +91,7 @@
 					{#if row.vendor}<span class="text-xs text-muted-foreground">{row.vendor}</span>{/if}
 				</SheetTop>
 				<Sheet.Title class="min-w-0 truncate text-base font-medium">{row.kind_label}</Sheet.Title>
-				<Sheet.Description class="truncate font-mono text-xs" title={row.url}
-					>{row.url}</Sheet.Description
-				>
+				<Sheet.Description class="font-mono text-xs break-all">{row.url}</Sheet.Description>
 			</Sheet.Header>
 
 			<SheetBar>
