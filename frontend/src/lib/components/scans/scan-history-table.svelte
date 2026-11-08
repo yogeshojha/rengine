@@ -20,7 +20,6 @@
 	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 
 	import * as Card from '$lib/components/ui/card';
-	import * as Empty from '$lib/components/ui/empty';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import type { TableColumn } from '$lib/components/scans/results/table/columns';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
@@ -927,28 +926,17 @@
 			</div>
 		</ScrollArea>
 	{:else if scans.length === 0 && filtered}
-		<Empty.Root class="py-16">
-			<Empty.Header><Empty.Title>No runs match</Empty.Title></Empty.Header>
-			<Empty.Content>
-				<Button size="sm" variant="outline" onclick={clearAll}>
-					<X class="size-4" /> Clear filters
-				</Button>
-			</Empty.Content>
-		</Empty.Root>
+		<EmptyState compact title="No runs match" class="border-0 bg-transparent py-16">
+			<Button size="sm" variant="outline" onclick={clearAll}>
+				<X class="size-4" /> Clear filters
+			</Button>
+		</EmptyState>
 	{:else if scans.length === 0}
-		<Empty.Root class="py-16">
-			<Empty.Header>
-				<Empty.Media variant="icon" class="size-14 rounded-2xl bg-muted text-muted-foreground/60">
-					<History />
-				</Empty.Media>
-				<Empty.Title>No scans</Empty.Title>
-			</Empty.Header>
+		<EmptyState compact icon={History} title="No scans" class="border-0 bg-transparent py-16">
 			{#if onLaunch}
-				<Empty.Content>
-					<Button size="sm" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
-				</Empty.Content>
+				<Button size="sm" onclick={onLaunch}><Plus class="size-4" /> New scan</Button>
 			{/if}
-		</Empty.Root>
+		</EmptyState>
 	{:else}
 		<ScrollArea orientation="horizontal" class="@container/scans">
 			<div class="w-full min-w-[720px]" role="table" aria-label="Scans" {@attach cursor.track}>
