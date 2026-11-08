@@ -23,9 +23,11 @@ async function unreached<T>(run: () => Promise<T>): Promise<T> {
 
 async function timedFetch(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
 	try {
-		return await unreached(() => fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) }));
+		const timeout = AbortSignal.timeout(timeoutMs);
+		const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+		return await unreached(() => fetch(url, { ...init, signal }));
 	} catch (e) {
-		if (isTimeout(e)) throw new Error(NO_RESPONSE);
+		if (isTimeout(e) && !init.signal?.aborted) throw new Error(NO_RESPONSE);
 		throw e;
 	}
 }
@@ -276,6 +278,8 @@ class ApiClient {
 				cut = buffer.indexOf('\n\n');
 			}
 		}
+		buffer += decoder.decode();
+		if (buffer.trim()) emitFrame(buffer, onFrame);
 	}
 
 	/** The response itself, refreshed once on a 401, for bodies that are not JSON. */
@@ -304,12 +308,18 @@ class ApiClient {
 		return (await this.raw(endpoint)).arrayBuffer();
 	}
 
-	post<T>(endpoint: string, data?: unknown, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
+	post<T>(
+		endpoint: string,
+		data?: unknown,
+		timeoutMs = REQUEST_TIMEOUT_MS,
+		signal?: AbortSignal
+	): Promise<T> {
 		return this.request<T>(
 			endpoint,
 			{
 				method: 'POST',
-				body: data !== undefined ? JSON.stringify(data) : undefined
+				body: data !== undefined ? JSON.stringify(data) : undefined,
+				signal
 			},
 			false,
 			timeoutMs
@@ -320,23 +330,26 @@ class ApiClient {
 		return this.request<T>(endpoint, { method: 'POST', body });
 	}
 
-	put<T>(endpoint: string, data: unknown): Promise<T> {
+	put<T>(endpoint: string, data: unknown, signal?: AbortSignal): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'PUT',
-			body: JSON.stringify(data)
+			body: JSON.stringify(data),
+			signal
 		});
 	}
 
-	patch<T>(endpoint: string, data: unknown): Promise<T> {
+	patch<T>(endpoint: string, data: unknown, signal?: AbortSignal): Promise<T> {
 		return this.request<T>(endpoint, {
 			method: 'PATCH',
-			body: JSON.stringify(data)
+			body: JSON.stringify(data),
+			signal
 		});
 	}
 
-	delete<T>(endpoint: string): Promise<T> {
+	delete<T>(endpoint: string, signal?: AbortSignal): Promise<T> {
 		return this.request<T>(endpoint, {
-			method: 'DELETE'
+			method: 'DELETE',
+			signal
 		});
 	}
 }
