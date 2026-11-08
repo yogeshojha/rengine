@@ -101,6 +101,7 @@ from shared.services.asset_query import (
 from shared.services.asset_query import predicates as preds
 from shared.services.asset_query.renders import cluster, is_identity
 from shared.services.correlation import CorrelationFinder, values_carried
+from shared.services.correlation.kinds import KINDS
 from shared.services.surface_query import web_assets as surface_hosts
 from shared.utils.datetime import utc_now
 from shared.utils.imagehash import hex_digest
@@ -1000,16 +1001,17 @@ class SubdomainService:
         if not subject:
             return []
         assets = (
-            (
-                await self.session.execute(
-                    select(HttpAsset).where(
-                        scope.match(HttpAsset.scan_id), HttpAsset.host == name
-                    )
-                )
+            await self.session.execute(
+                select(
+                    *[
+                        getattr(HttpAsset, attr)
+                        for attr in dict.fromkeys(
+                            spec.attr for spec in KINDS.values() if spec.asset
+                        )
+                    ]
+                ).where(scope.match(HttpAsset.scan_id), HttpAsset.host == name)
             )
-            .scalars()
-            .all()
-        )
+        ).all()
         wanted = values_carried(subject, assets)
         if not wanted:
             return []
