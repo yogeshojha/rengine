@@ -86,13 +86,13 @@ export function formatShortDate(date: string | Date, utc = false): string {
 	});
 }
 
-/** `Oct 25`, in the viewer's zone. */
-/** month and day inside the current year, with the year beyond it */
+/** Month and day inside the current year, with the year beyond it. */
 export function formatDayOrDate(date: string | Date, now: Date = new Date()): string {
 	const d = new Date(date);
 	return d.getFullYear() === now.getFullYear() ? formatMonthDay(d) : formatShortDate(d);
 }
 
+/** `Oct 25`, in the viewer's zone. */
 export function formatMonthDay(date: string | Date): string {
 	return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

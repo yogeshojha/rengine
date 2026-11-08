@@ -206,7 +206,6 @@ function createTargetsStore() {
 					organizationsSlug !== projectSlug ||
 					tagsSlug !== projectSlug;
 
-				// the list decides the page; the strip, tabs and facets may fail on their own
 				const extras = Promise.allSettled([
 					targetsApi.getStats(baseFilters),
 					targetsApi.getCounts(countFilters(projectSlug)),
