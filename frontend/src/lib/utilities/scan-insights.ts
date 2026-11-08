@@ -198,10 +198,6 @@ export function appendToken(search: string, token: string): string {
 	return [...parts, token].join(' ');
 }
 
-export function hasToken(search: string, token: string): boolean {
-	return tokenize(search).includes(token);
-}
-
 const AND_WORDS = new Set(['and', '&&']);
 const OR_WORDS_ALL = new Set(['or', '||']);
 const CONNECTORS = new Set([...AND_WORDS, ...OR_WORDS_ALL]);

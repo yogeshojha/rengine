@@ -1,18 +1,8 @@
 import { HighlightStyle } from '@codemirror/language';
-import { RangeSetBuilder, type Extension, type Text } from '@codemirror/state';
-import {
-	Decoration,
-	EditorView,
-	ViewPlugin,
-	type DecorationSet,
-	type ViewUpdate
-} from '@codemirror/view';
 import {
 	TAG_KINDS,
 	KIND_VARS,
 	KIND_WEIGHTS,
-	highlight,
-	type CodeLang,
 	type CodeLine,
 	type TokenKind
 } from './code-highlight';
@@ -68,42 +58,4 @@ export function tokenRanges(lines: CodeLine[], length: number): TokenRange[] | n
 		}
 	});
 	return at === length ? out : null;
-}
-
-const MARKS = new Map<TokenKind, Decoration>();
-
-function mark(kind: TokenKind): Decoration {
-	let found = MARKS.get(kind);
-	if (!found) MARKS.set(kind, (found = Decoration.mark({ class: `t-${kind}` })));
-	return found;
-}
-
-function decorate(doc: Text, lang: CodeLang): DecorationSet {
-	const text = doc.toString();
-	const ranges = tokenRanges(highlight(text, lang), text.length);
-	if (!ranges) return Decoration.none;
-	const builder = new RangeSetBuilder<Decoration>();
-	for (const range of ranges) builder.add(range.from, range.to, mark(range.kind));
-	return builder.finish();
-}
-
-const tokenTheme = EditorView.theme(
-	Object.fromEntries(Object.entries(TOKEN_STYLES).map(([kind, style]) => [`.t-${kind}`, style]))
-);
-
-/** Colours the document with the same tokens code-block.svelte renders. */
-export function codeTokens(lang: CodeLang): Extension {
-	const plugin = ViewPlugin.fromClass(
-		class {
-			decorations: DecorationSet;
-			constructor(view: EditorView) {
-				this.decorations = decorate(view.state.doc, lang);
-			}
-			update(update: ViewUpdate) {
-				if (update.docChanged) this.decorations = decorate(update.state.doc, lang);
-			}
-		},
-		{ decorations: (value) => value.decorations }
-	);
-	return [plugin, tokenTheme];
 }

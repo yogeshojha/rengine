@@ -105,10 +105,6 @@ export function forgetBriefs(): void {
 }
 
 export const askApi = {
-	brief(subject: AskSubject): Promise<AskBrief> {
-		return askBriefs.get(subject);
-	},
-
 	threads(subject: AskSubject): Promise<AskThread[]> {
 		const query = new URLSearchParams({
 			target_id: subject.targetId,

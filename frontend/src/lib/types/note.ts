@@ -1,5 +1,3 @@
-import { VULN_STATES, VulnState } from '$lib/config/vulnerabilities';
-
 export type NoteStatus = 'open' | 'resolved';
 
 export const NOTE_STATUSES: NoteStatus[] = ['open', 'resolved'];
@@ -14,7 +12,6 @@ export const MAX_NOTE_BODY = 20000;
 export const MAX_NOTE_TAGS = 20;
 export const MAX_NOTE_TAG_CHARS = 32;
 export const NOTE_TAG_PUNCTUATION = '._-:';
-export const NOTE_ASSET_SEPARATOR = ':';
 
 export enum NoteSubject {
 	TARGET = 'target',
@@ -25,8 +22,6 @@ export const NOTE_SUBJECT_LABELS: Record<NoteSubject, string> = {
 	[NoteSubject.TARGET]: 'Targets',
 	[NoteSubject.SCAN]: 'Scans'
 };
-
-export const TRIAGE_REASON_STATES: string[] = VULN_STATES.filter((s) => s !== VulnState.OPEN);
 
 export interface Note {
 	id: string;
