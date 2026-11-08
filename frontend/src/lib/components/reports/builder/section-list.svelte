@@ -59,6 +59,12 @@
 	function setEntry(index: number, changes: Partial<SectionEntry>) {
 		sections = sections.map((entry, i) => (i === index ? { ...entry, ...changes } : entry));
 	}
+	function needs(requires: string[]): string {
+		return requires
+			.map((d) => SURFACE[d as SurfaceDimension]?.nounPlural)
+			.filter(Boolean)
+			.join(', ');
+	}
 </script>
 
 <div class="space-y-3">
@@ -117,17 +123,11 @@
 							<span class="truncate text-sm font-medium">
 								{entry.title || spec?.title || entry.section}
 							</span>
-							{#if spec?.requires.length}
-								<Badge variant="outline" class="text-2xs">
-									needs {spec.requires
-										.map(
-											(d) => SURFACE[d as SurfaceDimension]?.nounPlural ?? d.replaceAll('_', ' ')
-										)
-										.join(', ')}
-								</Badge>
+							{#if spec && needs(spec.requires)}
+								<Badge variant="outline" class="text-2xs">Needs {needs(spec.requires)}</Badge>
 							{/if}
 							{#if !spec}
-								<Badge variant="destructive" class="text-2xs">unknown</Badge>
+								<Badge variant="destructive" class="text-2xs">Unknown section</Badge>
 							{/if}
 						</div>
 						{#if spec}
