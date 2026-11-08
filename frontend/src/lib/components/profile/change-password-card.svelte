@@ -99,6 +99,7 @@
 					<Input
 						id="current-password"
 						type={showCurrentPassword ? 'text' : 'password'}
+						autocomplete="current-password"
 						bind:value={currentPassword}
 						disabled={isChangingPassword}
 						class="pr-10"
@@ -126,6 +127,7 @@
 					<Input
 						id="new-password"
 						type={showNewPassword ? 'text' : 'password'}
+						autocomplete="new-password"
 						bind:value={newPassword}
 						disabled={isChangingPassword}
 						class="pr-10"
@@ -158,6 +160,7 @@
 					<Input
 						id="confirm-password"
 						type={showConfirmPassword ? 'text' : 'password'}
+						autocomplete="new-password"
 						bind:value={confirmPassword}
 						disabled={isChangingPassword}
 						class="pr-10"
