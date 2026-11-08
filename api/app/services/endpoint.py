@@ -714,6 +714,18 @@ class EndpointService:
     async def hosts(self, scope: ScopeLike, f: EndpointFilter) -> HostPage:
         """One row per host, ranked."""
         scope = QueryScope.of(scope)
+        return await lead_cache.cached(
+            self.session,
+            name="tree:hosts",
+            scans=scope.ids,
+            facets=f.model_dump_json(),
+            model=HostPage,
+            build=lambda: self._hosts(scope, f),
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
+
+    async def _hosts(self, scope: QueryScope, f: EndpointFilter) -> HostPage:
         now = utc_now()
         base = select(Endpoint.id).where(scope.match(Endpoint.scan_id))
         base = self._apply_filter(base, f, scope)
@@ -725,49 +737,27 @@ class EndpointService:
             base = base.where(predicate)
         reach = _Reach(scope, base, f.has_facets() or predicate is not None)
         agg, substantive = self._host_aggregate(reach)
-        if f.hide_root_only:
-            agg = agg.having(substantive > 0)
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
-        per_host = (
-            select(
-                Endpoint.host,
-                func.count().label("n"),
-                substantive.label("substantive"),
-            )
-            .select_from(reach.source)
-            .where(reach.limit)
-            .group_by(Endpoint.host)
-            .subquery()
-        )
-        totals = (
-            await self.session.execute(
-                select(
-                    func.count(per_host.c.host),
-                    func.sum(per_host.c.n),
-                    func.count().filter(per_host.c.substantive == 0),
-                )
-            )
-        ).one()
-        root_only = int(totals[2] or 0) if f.hide_root_only else 0
-        fresh = (
-            select(Endpoint.host.label("host"), func.count().label("n"))
-            .select_from(reach.source)
-            .where(reach.limit, endpoint_is_new(scope))
-            .group_by(Endpoint.host)
-            .subquery("fresh")
-        )
-        rolled = agg.subquery("rolled")
-        ranked = select(rolled, func.coalesce(fresh.c.n, 0).label("fresh")).select_from(
-            rolled.outerjoin(fresh, fresh.c.host == rolled.c.host)
-        )
+        by_fresh = f.sort == "new"
+        ranked = self._host_ranked(scope, reach, agg, substantive, f)
         size = max(1, min(f.size, _HOST_PAGE_MAX))
         offset = max(0, (max(f.page, 1) - 1) * size)
         ordered = (
             ranked.order_by(*self._host_order(ranked, f)).limit(size).offset(offset)
         )
         rows = (await self.session.execute(ordered)).all()
+        if rows:
+            totals = (rows[0].hosts_all, rows[0].endpoints_all, rows[0].root_all)
+        else:
+            totals = await self._host_totals(reach, substantive)
+        root_only = int(totals[2] or 0) if f.hide_root_only else 0
         names = [r.host for r in rows]
+        fresh_by_host = (
+            {r.host: int(r.fresh) for r in rows}
+            if by_fresh
+            else await self._host_fresh(scope, reach, names)
+        )
         folders = await self._host_folders(reach, names)
         interests = await self._host_values(reach, names, Endpoint.interest)
         sources = await self._host_values(reach, names, Endpoint.sources)
@@ -815,7 +805,7 @@ class EndpointService:
                     params=int(r.params),
                     verified=verified,
                     unprobed=n - verified,
-                    new_count=int(r.fresh),
+                    new_count=fresh_by_host.get(r.host, 0),
                     gone_count=gone.get(r.host, 0),
                     anomaly=anomaly_for(
                         int(r.walled), mix.get("2xx", 0), mix.get("5xx", 0), verified
@@ -894,6 +884,70 @@ class EndpointService:
         return agg, substantive
 
     @staticmethod
+    def _host_ranked(scope: QueryScope, reach: _Reach, agg, substantive, f):
+        """The host rollup with the totals over every host carried on each row."""
+        rolled = agg.add_columns(substantive.label("substantive")).subquery("rolled")
+        windowed = select(
+            rolled,
+            func.count().over().label("hosts_all"),
+            func.sum(rolled.c.n).over().label("endpoints_all"),
+            func.count().filter(rolled.c.substantive == 0).over().label("root_all"),
+        ).subquery("windowed")
+        if f.sort == "new":
+            fresh = (
+                select(Endpoint.host.label("host"), func.count().label("n"))
+                .select_from(reach.source)
+                .where(reach.limit, endpoint_is_new(scope))
+                .group_by(Endpoint.host)
+                .subquery("fresh")
+            )
+            ranked = select(
+                windowed, func.coalesce(fresh.c.n, 0).label("fresh")
+            ).select_from(windowed.outerjoin(fresh, fresh.c.host == windowed.c.host))
+        else:
+            ranked = select(windowed)
+        if f.hide_root_only:
+            ranked = ranked.where(windowed.c.substantive > 0)
+        return ranked
+
+    async def _host_totals(self, reach: _Reach, substantive) -> tuple:
+        per_host = (
+            select(
+                Endpoint.host,
+                func.count().label("n"),
+                substantive.label("substantive"),
+            )
+            .select_from(reach.source)
+            .where(reach.limit)
+            .group_by(Endpoint.host)
+            .subquery()
+        )
+        return tuple(
+            (
+                await self.session.execute(
+                    select(
+                        func.count(per_host.c.host),
+                        func.sum(per_host.c.n),
+                        func.count().filter(per_host.c.substantive == 0),
+                    )
+                )
+            ).one()
+        )
+
+    async def _host_fresh(
+        self, scope: QueryScope, reach: _Reach, hosts: list[str]
+    ) -> dict[str, int]:
+        if not hosts:
+            return {}
+        rows = await self.session.execute(
+            select(Endpoint.host, func.count())
+            .select_from(reach.source)
+            .where(reach.limit, endpoint_is_new(scope), Endpoint.host.in_(hosts))
+            .group_by(Endpoint.host)
+        )
+        return {host: int(n) for host, n in rows.all()}
+
+    @staticmethod
     def _host_order(agg, f: EndpointFilter):
         cols = agg.selected_columns
         if f.sort in ("host", "path", "url"):
@@ -906,7 +960,7 @@ class EndpointService:
             "params": cols.params,
             "input": cols.params,
             "api": cols.api,
-            "new": cols.fresh,
+            "new": cols.get("fresh"),
         }.get(f.sort, cols.n)
         return [lead.desc(), cols.n.desc(), cols.host.asc()]
 
