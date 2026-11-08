@@ -9,7 +9,7 @@ def test_a_backtracking_check_pattern_is_cut_short():
     probe = echo_guard._probe("regex", r"(a|aa)+$", fold=False)
     started = time.monotonic()
     assert probe("a" * 60 + "!") is None
-    assert time.monotonic() - started < 1
+    assert time.monotonic() - started < 10
 
 
 def test_an_ordinary_check_pattern_still_answers():

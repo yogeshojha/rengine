@@ -6,6 +6,7 @@ import time
 
 import pytest
 
+from tools.runner import executor
 from tools.runner.abort import StageAbortedError, aborting_on
 from tools.runner.executor import CLIToolRunner, _run_process
 from tools.runner.models import ToolResult
@@ -27,13 +28,14 @@ def _run(script: str, **over):
     return _run_process([_SH, "-c", script], **options)
 
 
-def test_a_finished_tool_returns_without_waiting_for_the_poll():
+def test_a_finished_tool_returns_without_waiting_for_the_poll(monkeypatch):
+    monkeypatch.setattr(executor, "_STOP_POLL_SECONDS", 60.0)
     started = time.monotonic()
     done = _run("echo out; echo err >&2")
     assert done.returncode == 0
     assert done.stdout.strip() == "out"
     assert done.stderr.strip() == "err"
-    assert time.monotonic() - started < 1.0
+    assert time.monotonic() - started < 30
 
 
 def test_stdin_reaches_the_tool():

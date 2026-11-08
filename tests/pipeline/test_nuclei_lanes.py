@@ -363,13 +363,15 @@ async def test_a_single_lane_confirms_before_its_deep_sweep(monkeypatch):
 
 async def test_a_failed_confirmation_stops_the_lanes(monkeypatch):
     started: list[str] = []
+    stopped: list[bool] = []
 
     def one(self, job, library, cap, store):
         started.append(f"{job.lane}:{job.tier}")
         if job.lane == REDUCED and job.tier == Tier.DEEP.value:
-            deadline = time.monotonic() + 2
+            deadline = time.monotonic() + 30
             while not self._stopping() and time.monotonic() < deadline:
                 time.sleep(0.01)
+            stopped.append(self._stopping())
         else:
             time.sleep(0.05 if job.lane == REDUCED else 0.3)
         return Coverage(group=job.lane, tier=job.tier, batch=job.batch)
@@ -381,7 +383,6 @@ async def test_a_failed_confirmation_stops_the_lanes(monkeypatch):
         msg = "confirmation broke"
         raise RuntimeError(msg)
 
-    began = time.monotonic()
     with pytest.raises(RuntimeError, match="confirmation broke"):
         scanner._run_lanes(
             {
@@ -399,7 +400,7 @@ async def test_a_failed_confirmation_stops_the_lanes(monkeypatch):
             },
             confirm=confirm,
         )
-    assert time.monotonic() - began < 1.5, "the running deep batch is stopped"
+    assert stopped == [True]
     assert f"{STANDARD}:{Tier.DEEP.value}" not in started
     assert started.count(f"{REDUCED}:{Tier.DEEP.value}") == 1
 

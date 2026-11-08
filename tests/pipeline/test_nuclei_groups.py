@@ -137,17 +137,31 @@ async def test_only_the_calling_thread_writes_findings_and_marks(monkeypatch):
 async def test_lanes_overlap_and_batches_within_a_lane_queue(monkeypatch):
     writes = _Writes()
     scanner = _scanner(writes)
-    monkeypatch.setattr(NucleiScanner, "_one", _fake_one(0.3, 1))
+    log: list[tuple[str, int, str]] = []
+    lock = threading.Lock()
+    first = threading.Barrier(2, timeout=10)
+    met: list[str] = []
 
+    def run(self, job, library, cap, store):
+        with lock:
+            log.append((job.lane, job.batch, "start"))
+        if job.batch == 1:
+            first.wait()
+            met.append(job.lane)
+        with lock:
+            log.append((job.lane, job.batch, "end"))
+        return Coverage(group=job.lane, tier=job.tier, batch=job.batch)
+
+    monkeypatch.setattr(NucleiScanner, "_one", run)
     lanes = {
         STANDARD: [_job(STANDARD, 1), _job(STANDARD, 2)],
         REDUCED: [_job(REDUCED, 1), _job(REDUCED, 2)],
     }
-    started = time.monotonic()
     scanner._run_lanes(lanes, _library(), ScannerResult())
-    elapsed = time.monotonic() - started
 
-    assert 0.55 < elapsed < 1.0, "two lanes of two 0.3s batches run side by side"
+    assert sorted(met) == sorted([STANDARD, REDUCED])
+    for lane in lanes:
+        assert log.index((lane, 1, "end")) < log.index((lane, 2, "start"))
 
 
 async def test_a_broken_lane_does_not_cost_the_other_its_coverage(monkeypatch):

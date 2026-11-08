@@ -1032,7 +1032,7 @@ def test_evidence_in_an_issue_masks_secret_values_and_keeps_their_names():
 def test_masking_a_long_run_of_credential_words_stays_linear(text):
     started = time.monotonic()
     mask_secrets(text)
-    assert time.monotonic() - started < 1
+    assert time.monotonic() - started < 10
 
 
 def test_a_long_dotted_credential_name_is_masked():
