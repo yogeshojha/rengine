@@ -11,3 +11,11 @@ frontend/static/tech-icons
 .ruff_cache
 .pytest_cache
 .mypy_cache
+.env
+api.env
+backups
+**/*.tar*
+NOTES.md
+CLAUDE.md
+frontend/.svelte-kit
+frontend/build
