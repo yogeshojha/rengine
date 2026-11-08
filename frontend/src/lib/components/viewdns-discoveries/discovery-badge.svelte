@@ -138,7 +138,10 @@
 		</Tooltip.Trigger>
 		<Tooltip.Content side="bottom" align="start">
 			<div class="space-y-1">
-				<p class="font-medium tabular-nums">{total.toLocaleString()} discovered domains</p>
+				<p class="font-medium tabular-nums">
+					{total.toLocaleString()}
+					{total === 1 ? 'discovery' : 'discoveries'}
+				</p>
 				{#each breakdown as b (b.source)}
 					<p class="text-xs text-muted-foreground tabular-nums">
 						{DISCOVERY_SOURCE_LABELS[b.source]}: {b.count.toLocaleString()} via {b.query}

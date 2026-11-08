@@ -60,8 +60,6 @@
 
 	const PREVIEW_LIMIT = 15;
 
-	let totalDiscovered = $derived(sourceResults.reduce((sum, s) => sum + s.domains.length, 0));
-
 	let discovered = $derived.by(() => {
 		const byKey = new SvelteMap<string, { domain: string; sources: DiscoverySourceType[] }>();
 		for (const sr of sourceResults) {
@@ -282,13 +280,13 @@
 	/>
 {:else}
 	<div class="space-y-5 py-1">
-		{#if totalDiscovered > 0}
+		{#if discovered.length > 0}
 			<div class="flex items-center gap-2 text-sm text-muted-foreground">
 				<span>
 					<span class="font-semibold text-foreground tabular-nums"
-						>{totalDiscovered.toLocaleString()}</span
+						>{discovered.length.toLocaleString()}</span
 					>
-					discovered {totalDiscovered === 1 ? 'domain' : 'domains'}
+					discovered {discovered.length === 1 ? 'domain' : 'domains'}
 					across {sourceResults.filter((s) => s.cache).length}
 					{sourceResults.filter((s) => s.cache).length === 1 ? 'source' : 'sources'}
 					{#if settled && !matchFailed}
