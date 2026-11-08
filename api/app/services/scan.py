@@ -1493,7 +1493,6 @@ class ScanService:
         scan.status = ScanStatus.RUNNING.value
         scan.error = None
         scan.run_epoch = epoch = (scan.run_epoch or 0) + 1
-        await self._log_resumed(scan, left)
         await self.session.commit()
 
         try:
@@ -1508,6 +1507,8 @@ class ScanService:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="The scan was not resumed. Check that the worker service is running.",
             ) from None
+        await self._log_resumed(scan, left)
+        await self.session.commit()
         await self._announce_resumed(scan, left)
         await self.session.refresh(scan)
         return self._to_read(scan)
