@@ -103,7 +103,7 @@ class PlainNarrator(Narrator):
 
     def _change(self, brief: ReportBrief) -> str:
         if brief.first_run:
-            return "This is the first recorded run for this target."
+            return "No earlier completed run of this target."
         if not brief.changes:
             return "Nothing was added or retired since the previous run."
         pieces = []
