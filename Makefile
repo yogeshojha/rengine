@@ -1,7 +1,7 @@
 .PHONY: help up down build logs logs-api logs-worker lint test migrate migrate-create migrate-draft \
         migrate-history migrate-downgrade db-reset shell-api shell-worker db-shell
 
-PACKAGES = api shared reports worker stages tools toolbox interest mcp channels connectors tests scripts
+PACKAGES = api shared reports worker stages tools toolbox interest mcp channels connectors tests scripts alembic
 RUFF ?= uvx ruff@0.14.14
 
 help:

@@ -70,9 +70,7 @@ def upgrade() -> None:
             "target_id", "fingerprint", name="uq_investigation_finding"
         ),
     )
-    op.create_index(
-        "ix_investigations_project_id", "investigations", ["project_id"]
-    )
+    op.create_index("ix_investigations_project_id", "investigations", ["project_id"])
     op.create_index("ix_investigations_target_id", "investigations", ["target_id"])
     op.create_index("ix_investigations_scan_id", "investigations", ["scan_id"])
     op.create_index(
@@ -134,9 +132,7 @@ def upgrade() -> None:
         "investigation_plans",
         ["investigation_id", "created_at"],
     )
-    op.create_index(
-        "ix_investigation_plans_state", "investigation_plans", ["state"]
-    )
+    op.create_index("ix_investigation_plans_state", "investigation_plans", ["state"])
     op.create_index(
         "ix_investigation_plans_launched",
         "investigation_plans",
@@ -145,9 +141,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_investigation_plans_launched", table_name="investigation_plans"
-    )
+    op.drop_index("ix_investigation_plans_launched", table_name="investigation_plans")
     op.drop_index("ix_investigation_plans_state", table_name="investigation_plans")
     op.drop_index(
         "ix_investigation_plans_inv_created", table_name="investigation_plans"
@@ -157,9 +151,7 @@ def downgrade() -> None:
         table_name="investigation_plans",
     )
     op.drop_table("investigation_plans")
-    op.drop_index(
-        "ix_investigations_project_updated", table_name="investigations"
-    )
+    op.drop_index("ix_investigations_project_updated", table_name="investigations")
     op.drop_index("ix_investigations_scan_verdict", table_name="investigations")
     op.drop_index("ix_investigations_scan_id", table_name="investigations")
     op.drop_index("ix_investigations_target_id", table_name="investigations")
