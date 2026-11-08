@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import secrets
 import uuid
 from collections import Counter, defaultdict
@@ -299,15 +300,42 @@ def _clusters(rows: list[_Row]) -> list[list[_Row]]:
     """Rows whose word and line counts sit within tolerance of a cluster's first member."""
     ordered = sorted(rows, key=lambda r: (r.path != "/", len(r.path), r.path))
     clusters: list[list[_Row]] = []
+    grid: dict[tuple[int | None, int | None], list[int]] = defaultdict(list)
     for row in ordered:
-        for cluster in clusters:
-            anchor = cluster[0]
-            if _close(anchor.words, row.words) and _close(anchor.lines, row.lines):
-                cluster.append(row)
-                break
-        else:
+        cell = (_cell(row.words), _cell(row.lines))
+        match = None
+        for key in _neighbours(cell):
+            for index in grid.get(key, ()):
+                if match is not None and index >= match:
+                    break
+                anchor = clusters[index][0]
+                if _close(anchor.words, row.words) and _close(anchor.lines, row.lines):
+                    match = index
+                    break
+        if match is None:
+            grid[cell].append(len(clusters))
             clusters.append([row])
+        else:
+            clusters[match].append(row)
     return clusters
+
+
+_CELL_OFFSET = 2 / NOT_FOUND_TOLERANCE
+_CELL_WIDTH = -math.log(1 - NOT_FOUND_TOLERANCE)
+
+
+def _cell(value: int | None) -> int | None:
+    """A log-scale bucket; two counts within tolerance sit in the same or adjacent cells."""
+    if value is None:
+        return None
+    return math.floor(math.log(value + _CELL_OFFSET) / _CELL_WIDTH)
+
+
+def _neighbours(cell: tuple[int | None, int | None]):
+    words, lines = cell
+    for w in (None,) if words is None else (words - 1, words, words + 1):
+        for ln in (None,) if lines is None else (lines - 1, lines, lines + 1):
+            yield (w, ln)
 
 
 def _location_in_scope(location: str, in_scope: Callable[[str], bool]) -> bool:
