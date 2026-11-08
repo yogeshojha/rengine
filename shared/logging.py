@@ -60,6 +60,8 @@ class _FieldLogger(logging.LoggerAdapter):
             kwargs.pop(key)
         if fields:
             rendered = " ".join(f"{k}={v}" for k, v in fields.items())
+            if args:
+                rendered = rendered.replace("%", "%%")
             msg = f"{msg} | {rendered}"
         super().log(level, msg, *args, **kwargs)
 
