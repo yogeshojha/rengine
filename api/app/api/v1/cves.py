@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.cve_exposure import DEFAULT_PAGE_SIZE, CveExposureService
+from shared.definitions.surface import MAX_PAGE
 from shared.definitions.vulnerabilities import CVE_ID
 from shared.models.cve_exposure import CveExposure, CveIndex
 
@@ -27,7 +28,7 @@ async def list_cves(
     service: Annotated[CveExposureService, Depends(get_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     q: Annotated[str, Query(max_length=MAX_QUERY, description="CVE filter")] = "",
-    page: Annotated[int, Query(ge=1)] = 1,
+    page: Annotated[int, Query(ge=1, le=MAX_PAGE)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = DEFAULT_PAGE_SIZE,
     sort: Annotated[str, Query(description="Sort key", max_length=40)] = "rank",
     dir: Annotated[

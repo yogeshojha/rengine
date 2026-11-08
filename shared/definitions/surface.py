@@ -21,6 +21,7 @@ SURFACE_ORDER: tuple[str, ...] = tuple(d.value for d in SurfaceDimension)
 
 # the most rows one selection may address
 MAX_SELECTED_ROWS = 1_000
+MAX_PAGE = 500_000
 
 SURFACE_LABELS: dict[str, str] = {
     SurfaceDimension.WEB_ASSETS.value: "Web assets",

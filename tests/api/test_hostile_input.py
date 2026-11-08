@@ -3,7 +3,9 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from app.main import app as main_app
 from shared.definitions.asset_query import MAX_FACET_VALUE_LENGTH
+from shared.definitions.surface import MAX_PAGE
 from shared.models.endpoint import EndpointFilter
 from shared.models.scan_correlation import IpGroupFilter, ServiceFilter
 from shared.models.secret import SecretFilter
@@ -69,6 +71,16 @@ def test_facet_numbers_in_range_pass():
 def test_filter_strings_are_bounded(model, field):
     with pytest.raises(ValidationError):
         model(**{field: "x" * 1000})
+
+
+def _query_param(path: str, name: str) -> dict:
+    operation = main_app.openapi()["paths"][path]["get"]
+    return next(p for p in operation["parameters"] if p["name"] == name)["schema"]
+
+
+@pytest.mark.parametrize("path", ["/api/v1/cves", "/api/v1/scans/compare/rows"])
+def test_page_is_bounded(path):
+    assert _query_param(path, "page")["maximum"] == MAX_PAGE
 
 
 def test_secret_offset_is_bounded():
