@@ -25,6 +25,10 @@ jobs:
 
       - name: Update CHANGELOG.md
         run: |
+          if grep -qxF "## $TAG" CHANGELOG.md 2>/dev/null; then
+            echo "CHANGELOG.md has an entry for $TAG"
+            exit 0
+          fi
           printf '%s\n' "# Changelog" "" "## $TAG" "" "$BODY" "" > CHANGELOG.md.new
           if [ -f CHANGELOG.md ]; then
             sed '1,2d' CHANGELOG.md >> CHANGELOG.md.new

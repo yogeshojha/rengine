@@ -182,12 +182,22 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       TAG: ${{ github.ref_name }}
     steps:
+      - name: 📥 Checkout the git repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: 📝 Draft a release for the tag
         run: |
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "A release for $TAG exists."
             exit 0
           fi
-          flags=(--draft --verify-tag --generate-notes --title "$TAG")
+          awk -v head="## $TAG" '$0 == head { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if [ -s "$RUNNER_TEMP/notes.md" ]; then
+            flags=(--draft --verify-tag --notes-file "$RUNNER_TEMP/notes.md" --title "$TAG")
+          else
+            flags=(--draft --verify-tag --generate-notes --title "$TAG")
+          fi
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" "${flags[@]}"

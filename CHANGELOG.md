@@ -1,5 +1,92 @@
 # Changelog
 
+## v3.0.0
+
+Sirius. A rewrite as an attack surface management platform. A 2.x database is not imported: install 3.0 as a new instance and add targets again.
+
+### Results
+- Seven result dimensions: web assets, endpoints, services, IP addresses, vulnerabilities, software CVEs and secrets, per scan and across a project
+- Targets of type domain, IP address, IP range, ASN and URL, with known assets seeded into every scan
+- Query language across every result table, with autocomplete, suggestions and one filter toolbar
+- Correlation graph and cross-target links on shared addresses, certificates, titles, favicons, body hashes, JARM and technology
+- Target relations by certificate, registrant, network and nameserver
+- Candidate targets from redirects, certificates, relations and infostealer logins
+- What's new since the last visit, grouped by run
+- Compare runs, with the configuration difference between the two
+- Timeline views on web assets, screenshots, services and findings
+- Recon notes anchored to an asset
+- Bulk selection, triage and export on every result table
+
+### Scanning
+- Scan engines built from stages, with a built-in engine per project
+- Passive, normal, aggressive and custom intensity
+- Scan contexts for authentication, scope exclusions, HTTP protocol, proxies and rate limits
+- Single-run overrides and focused rescans
+- Pause, resume and cancel
+- One-off, interval, daily and cron schedules
+- Concurrent scan limit with a launch-order queue
+- Session check before a scan with authentication
+- Separate workers for scan stages, scan control and background jobs
+
+### Discovery
+- Subdomain discovery from passive sources, certificate transparency, wordlists and permutations
+- IP address, ASN and country enrichment without an API key
+- Netblock sweeps and reverse DNS for ASN and IP range targets
+- Port scanning with service fingerprinting, banner grabbing and Shodan InternetDB
+- HTTP probing with technology, web server, TLS, CDN, WAF and favicon detection
+- URL discovery from crawling, archives, sitemaps, source maps and API schemas
+- Content discovery with calibrated fuzzing
+- Virtual host discovery and zone transfer checks
+- Screenshot gallery with pages that render alike grouped
+- AI service detection on web assets
+- Lookalike domains: registered typo, homoglyph and TLD variants
+- Exposed cloud storage buckets named after a target
+- Infostealer infections on domain targets from Hudson Rock
+
+### Vulnerabilities
+- Scan surface planner: typed inputs, origin clusters, tiers and replay on cluster members
+- DAST fuzzing with nuclei and dalfox behind a reflection probe
+- Out-of-band checks through a self-hosted or public interactsh server
+- Follow-up runs when the check library adds checks
+- Software CVE inference against a local NVD corpus
+- Secret mining across every stored response
+- Web hygiene checks on headers, cookies, CSP and CORS
+- Domain posture checks on SPF, DMARC, DKIM, MTA-STS, DNSSEC and CAA
+- Subdomain takeover, name ownership, origin probe and broken link checks
+- EPSS and CISA KEV exploit intelligence, refreshed nightly
+- Evidence ladder from inferred to proven, and triage carried across scans
+- Issue filing into Jira, GitHub and GitLab
+
+### Monitoring
+- Tripwires: saved queries that notify or start a scan on a match
+- Notifications on Slack, Discord, Telegram, Microsoft Teams, email and webhooks
+- Activity panel of runs and failures
+- Data retention windows for screenshots and stored responses
+
+### Bug bounty
+- Bounty Hub with HackerOne and Intigriti sync and the public program feed
+- HackerOne reports and earnings
+- Program watches with certificate transparency monitoring
+
+### Integrations
+- MCP server for AI agents, with per-agent keys and a call log
+- Ask: read-only AI conversation on a finding, a web asset or the estate
+- AI providers: OpenAI, Anthropic, Google and OpenAI-compatible, with one usage ledger
+- Remote control from a paired Telegram chat
+- Burp Suite connector: proxy traffic into the endpoint inventory and stored requests sent to Burp
+
+### Reporting
+- PDF reports from configurable sections, themes and branding
+- CSV, JSON and text exports, run as jobs
+
+### Platform
+- Project dashboard and target page scoped by target, organization and tag
+- Toolbox for WHOIS, DNS, subdomains, HTTP probe, IP intelligence, CVE and domains by organization
+- Arsenal for checks, wordlists and threat intelligence feeds
+- Two-factor authentication, encrypted API keys and per-user sessions
+- One-script installer with Caddy, the `rengine` command, backup, restore and update
+- Images for amd64 and arm64 on Docker Hub and GitHub Container Registry
+
 ## v2.2.0
 
 ## What's Changed
