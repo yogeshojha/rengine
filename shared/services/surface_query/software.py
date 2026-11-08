@@ -55,7 +55,7 @@ def order(query, f: SoftwareFilter):
             SoftwareCve.id,
         )
     descending = (f.direction or "desc").lower() != "asc"
-    ordered = column.desc() if descending else column.asc()
+    ordered = (column.desc() if descending else column.asc()).nulls_last()
     return query.order_by(ordered, SoftwareCve.cve, SoftwareCve.id)
 
 
