@@ -341,6 +341,11 @@ class OrgDomains(Tool):
                 else "ViewDNS did not answer."
             )
             return
+        except Exception as exc:
+            logger.warning("org_domains viewdns failed", error=type(exc).__name__)
+            await ctx.session.rollback()
+            sources.registrations = "ViewDNS did not answer."
+            return
 
         sources.answered += 1
         response = read.data if read else None
