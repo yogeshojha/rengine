@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+from sqlalchemy import func
 from sqlmodel import col, select
 
 from mcp.context import ToolContext
@@ -116,15 +117,24 @@ async def find_target(ctx: ToolContext, value: str) -> Target:
         match = (await ctx.session.execute(by_id)).scalars().first()
 
     if match is None:
-        rows = (await ctx.session.execute(_scoped(select(Target)))).scalars().all()
-        if not rows:
+        match = await _loose_match(ctx, _scoped, needle)
+    if match is None:
+        near = (
+            (
+                await ctx.session.execute(
+                    _scoped(select(Target.target_value))
+                    .order_by(Target.target_value)
+                    .limit(8)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if not near:
             msg = "No targets in scope."
             raise ToolError(msg)
-        match = _pick(rows, needle)
-        if match is None:
-            near = ", ".join(sorted(r.target_value for r in rows)[:8])
-            msg = f"No target matches {value!r}. Known targets include: {near}."
-            raise ToolError(msg)
+        msg = f"No target matches {value!r}. Known targets include: {', '.join(near)}."
+        raise ToolError(msg)
 
     ctx.check_project(match.project_id)
     ctx.check_target(match.id)
@@ -138,15 +148,17 @@ def _as_uuid(needle: str) -> uuid.UUID | None:
         return None
 
 
-def _pick(rows: list[Target], needle: str) -> Target | None:
-    exact = [r for r in rows if r.target_value.lower() == needle]
-    if exact:
-        return exact[0]
-    with_id = [r for r in rows if str(r.id) == needle]
-    if with_id:
-        return with_id[0]
-    partial = [r for r in rows if needle in r.target_value.lower()]
-    return partial[0] if len(partial) == 1 else None
+async def _loose_match(ctx: ToolContext, scoped, needle: str) -> Target | None:
+    value = func.lower(Target.target_value)
+    exact = scoped(select(Target).where(value == needle)).limit(1)
+    match = (await ctx.session.execute(exact)).scalars().first()
+    if match is not None:
+        return match
+    partial = scoped(
+        select(Target).where(value.contains(needle, autoescape=True))
+    ).limit(2)
+    rows = (await ctx.session.execute(partial)).scalars().all()
+    return rows[0] if len(rows) == 1 else None
 
 
 def active_projects():

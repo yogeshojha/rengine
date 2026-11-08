@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pydantic import Field
+from sqlalchemy import func
 from sqlmodel import select
 
 from mcp import links
@@ -47,8 +48,18 @@ class ListTargets(Tool):
                 Target.target_value.ilike(f"%{args.contains.strip()}%")
             )
 
-        rows = (
-            (await ctx.session.execute(statement.order_by(Target.target_value)))
+        total = (
+            await ctx.session.scalar(
+                select(func.count()).select_from(statement.subquery())
+            )
+            or 0
+        )
+        shown = (
+            (
+                await ctx.session.execute(
+                    statement.order_by(Target.target_value).limit(args.limit)
+                )
+            )
             .scalars()
             .all()
         )
@@ -57,14 +68,13 @@ class ListTargets(Tool):
             for p in (await ctx.session.execute(active_projects())).scalars().all()
         }
 
-        shown = rows[: args.limit]
         return ToolResult(
-            summary=f"{counted(len(rows), 'target')} in scope",
+            summary=f"{counted(total, 'target')} in scope",
             data={
                 "scope": "all projects"
                 if ctx.token.project_id is None
                 else projects.get(ctx.token.project_id, str(ctx.token.project_id)),
-                "total": len(rows),
+                "total": total,
                 "targets": [
                     {
                         "value": row.target_value,
@@ -77,8 +87,8 @@ class ListTargets(Tool):
             },
             pivot=links.targets(ctx.ui_base_url),
             caveats=(
-                [f"{len(rows) - len(shown)} more not shown. Narrow with `contains`."]
-                if len(rows) > len(shown)
+                [f"{total - len(shown)} more not shown. Narrow with `contains`."]
+                if total > len(shown)
                 else []
             ),
             blocks=[
@@ -91,7 +101,7 @@ class ListTargets(Tool):
                         ]
                         for row in shown
                     ],
-                    total=len(rows),
+                    total=total,
                     empty="No targets.",
                 )
             ],
