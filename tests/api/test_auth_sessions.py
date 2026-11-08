@@ -19,10 +19,12 @@ from app.api.v1.users import update_user
 from app.config import ALGORITHM
 from app.core import ratelimit
 from app.core.security import (
+    ACCESS_TOKEN_COOKIE,
     ISSUED_MS_CLAIM,
     TOKEN_TYPE_ACCESS,
     TOKEN_TYPE_REFRESH,
     create_access_token,
+    create_refresh_token,
     create_token,
     decode_token,
     hash_password,
@@ -247,3 +249,25 @@ async def test_one_user_cannot_hold_every_event_stream(monkeypatch):
             async with sse_manager.stream([SSEChannel.BROADCAST], owner):
                 pass
     assert not sse_manager.owner_at_capacity(owner)
+
+
+async def test_logout_revokes_the_access_and_refresh_tokens(redis, flush_only):
+    user = await _user(flush_only)
+    access = create_access_token(str(user.id))
+    refresh = create_refresh_token(str(user.id))
+    cookie = f"{ACCESS_TOKEN_COOKIE}={access}; {auth.REFRESH_TOKEN_COOKIE}={refresh}"
+    assert (await deps.resolve_user(access, flush_only)).id == user.id
+
+    await auth.logout(
+        Request({"type": "http", "headers": [(b"cookie", cookie.encode())]}),
+        Response(),
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await deps.resolve_user(access, flush_only)
+    assert exc.value.status_code == 401
+    with pytest.raises(HTTPException) as exc:
+        await auth.refresh_access_token(
+            _refresh_request(refresh), Response(), flush_only
+        )
+    assert exc.value.status_code == 401
