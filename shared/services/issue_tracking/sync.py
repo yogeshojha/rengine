@@ -11,8 +11,8 @@ from collections.abc import Iterable
 from datetime import timedelta
 
 from pydantic import ValidationError
-from sqlalchemy import exists, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy import exists, select, text, tuple_
+from sqlalchemy.orm import Session, defer
 from sqlalchemy.orm.exc import StaleDataError
 
 from shared.definitions.activity import issues_filed, issues_not_filed
@@ -79,6 +79,12 @@ VULN_STAGE = "vulnerability_scan"
 DAST_STAGE = "dast_scan"
 DAST_TAG = "dast"
 SCANNED_STATES = (SurfaceState.SCANNED.value, SurfaceState.COVERED.value)
+_EVIDENCE_COLUMNS = (
+    Vulnerability.request,
+    Vulnerability.response,
+    Vulnerability.curl_command,
+    Vulnerability.interaction,
+)
 _UNRECORDED = "Filed as {key}. Link not saved."
 _NOT_FOUND = (
     "{label} did not find {destination}. Check the {noun} and the token's access."
@@ -99,26 +105,30 @@ def load_doc(raw: dict) -> Doc:
 
 
 def latest_vulns(
-    session: Session, pairs: Iterable[tuple[uuid.UUID, str]]
+    session: Session,
+    pairs: Iterable[tuple[uuid.UUID, str]],
+    *,
+    evidence: bool = False,
 ) -> dict[tuple[uuid.UUID, str], Vulnerability]:
     """The newest observation of each (target, fingerprint)."""
-    wanted = set(pairs)
+    wanted = sorted(set(pairs))
     if not wanted:
         return {}
-    rows = session.execute(
+    stmt = (
         select(Vulnerability)
-        .where(
-            Vulnerability.target_id.in_({t for t, _ in wanted}),
-            Vulnerability.fingerprint.in_({f for _, f in wanted}),
+        .distinct(Vulnerability.target_id, Vulnerability.fingerprint)
+        .where(tuple_(Vulnerability.target_id, Vulnerability.fingerprint).in_(wanted))
+        .order_by(
+            Vulnerability.target_id,
+            Vulnerability.fingerprint,
+            Vulnerability.discovered_at.desc(),
         )
-        .order_by(Vulnerability.discovered_at.desc())
-    ).scalars()
-    out: dict[tuple[uuid.UUID, str], Vulnerability] = {}
-    for row in rows:
-        key = (row.target_id, row.fingerprint)
-        if key in wanted and key not in out:
-            out[key] = row
-    return out
+    )
+    if not evidence:
+        stmt = stmt.options(*(defer(column) for column in _EVIDENCE_COLUMNS))
+    return {
+        (row.target_id, row.fingerprint): row for row in session.execute(stmt).scalars()
+    }
 
 
 def _error(exc: Exception, tracker: IssueTracker | None = None) -> str:
@@ -171,7 +181,9 @@ def _body_for(
             select(TrackedIssueFinding).where(TrackedIssueFinding.issue_id == issue.id)
         ).scalars()
     )
-    found = latest_vulns(session, [(lk.target_id, lk.fingerprint) for lk in links])
+    found = latest_vulns(
+        session, [(lk.target_id, lk.fingerprint) for lk in links], evidence=True
+    )
     vulns = sorted(found.values(), key=lambda v: v.matched_at or "")
     if not vulns:
         return None, links
