@@ -103,29 +103,38 @@
 		}
 	});
 
+	let correlationsReq = 0;
+	let recordReq = 0;
+
 	async function loadCorrelations() {
 		if (!targetId) return;
+		const my = ++correlationsReq;
 		isLoadingCorrelations = true;
 		correlationsError = null;
 		try {
-			correlations = await whoisApi.getTargetCorrelations(targetId);
+			const res = await whoisApi.getTargetCorrelations(targetId);
+			if (my === correlationsReq) correlations = res;
 		} catch (e) {
-			correlationsError = e instanceof Error ? e.message : 'Correlations not loaded';
+			if (my === correlationsReq)
+				correlationsError = e instanceof Error ? e.message : 'Correlations not loaded';
 		} finally {
-			isLoadingCorrelations = false;
+			if (my === correlationsReq) isLoadingCorrelations = false;
 		}
 	}
 
 	async function loadData() {
 		if (recordId) {
+			const my = ++recordReq;
 			isLoadingRecord = true;
 			recordError = null;
 			try {
-				internalRecord = await whoisApi.getRecord(recordId);
+				const res = await whoisApi.getRecord(recordId);
+				if (my === recordReq) internalRecord = res;
 			} catch (e) {
-				recordError = e instanceof Error ? e.message : 'WHOIS record not loaded';
+				if (my === recordReq)
+					recordError = e instanceof Error ? e.message : 'WHOIS record not loaded';
 			} finally {
-				isLoadingRecord = false;
+				if (my === recordReq) isLoadingRecord = false;
 			}
 		}
 

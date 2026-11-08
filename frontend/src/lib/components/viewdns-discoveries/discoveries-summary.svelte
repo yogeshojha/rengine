@@ -112,7 +112,10 @@
 		loadCachedData();
 	});
 
+	let req = 0;
+
 	async function loadCachedData() {
+		const my = ++req;
 		const lookups = planLookups(targetType, targetValue, whoisRecord);
 		if (lookups.length === 0) {
 			isLoading = false;
@@ -123,7 +126,7 @@
 		error = null;
 
 		try {
-			sourceResults = await Promise.all(
+			const results = await Promise.all(
 				lookups.map(async (lookup): Promise<SourceResult> => {
 					try {
 						const cache = await lookup.fetch(lookup.queryValue, true);
@@ -134,12 +137,15 @@
 					}
 				})
 			);
+			if (my !== req) return;
+			sourceResults = results;
 		} catch (e) {
+			if (my !== req) return;
 			error = e instanceof Error ? e.message : 'Discoveries not loaded';
 		} finally {
-			isLoading = false;
+			if (my === req) isLoading = false;
 		}
-		void matchTargets();
+		if (my === req) void matchTargets();
 	}
 
 	async function matchTargets() {

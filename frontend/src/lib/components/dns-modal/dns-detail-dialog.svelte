@@ -51,20 +51,25 @@
 		}, POLL_MS);
 	}
 
+	let req = 0;
+
 	async function load(id: string, silent = false) {
+		const my = ++req;
 		if (!silent) loading = true;
 		try {
 			const res = await targetsApi.getDns(id);
+			if (my !== req) return;
 			lookup = res.lookup;
 			status = res.status;
 			error = res.error;
 		} catch {
+			if (my !== req) return;
 			lookup = null;
 			status = TaskStatus.FAILED;
 			error = 'DNS records not loaded';
 			loadedFor = null;
 		} finally {
-			loading = false;
+			if (my === req) loading = false;
 		}
 	}
 

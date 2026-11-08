@@ -62,7 +62,10 @@
 		}
 	});
 
+	let req = 0;
+
 	async function loadCorrelation() {
+		const my = ++req;
 		isLoading = true;
 		error = null;
 		records = [];
@@ -92,6 +95,7 @@
 				}
 			}
 
+			if (my !== req) return;
 			const seen = new SvelteSet<string>();
 			const all: WhoisRecordSummary[] = [];
 			for (const group of data) {
@@ -104,9 +108,10 @@
 			}
 			records = all.sort((a, b) => a.query_value.localeCompare(b.query_value));
 		} catch (e) {
+			if (my !== req) return;
 			error = e instanceof Error ? e.message : 'Records not loaded';
 		} finally {
-			isLoading = false;
+			if (my === req) isLoading = false;
 		}
 	}
 </script>

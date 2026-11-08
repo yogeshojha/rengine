@@ -64,19 +64,25 @@
 		}, POLL_MS);
 	}
 
+	let req = 0;
+
 	async function load(id: string, silent = false) {
+		const my = ++req;
 		if (!silent) loading = true;
 		try {
-			bgp = await targetsApi.getBgp(id);
-			status = bgp.status;
+			const res = await targetsApi.getBgp(id);
+			if (my !== req) return;
+			bgp = res;
+			status = res.status;
 			error = null;
 		} catch {
+			if (my !== req) return;
 			bgp = null;
 			status = TaskStatus.FAILED;
 			error = 'BGP data not loaded';
 			loadedFor = null;
 		} finally {
-			loading = false;
+			if (my === req) loading = false;
 		}
 	}
 
