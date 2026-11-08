@@ -20,6 +20,7 @@
 		type NotifProvider
 	} from '$lib/types/notification-channel';
 	import {
+		NOTIFICATION_PROVIDERS,
 		ONBOARDING_NOTIFICATION_PROVIDERS as PROVIDERS,
 		SHARED_BOT_FIELD,
 		SHARED_BOT_KEY,
@@ -36,6 +37,9 @@
 	import { SvelteSet } from 'svelte/reactivity';
 
 	let { next, setFooter }: StepProps = $props();
+	const elsewhere = new Intl.ListFormat('en-GB', { type: 'conjunction' }).format(
+		NOTIFICATION_PROVIDERS.filter((m) => !PROVIDERS.includes(m)).map((m) => m.name)
+	);
 	const categories = $derived(channelEventsFor((c) => capabilitiesStore.has(c)));
 
 	interface ChannelDraft {
@@ -257,10 +261,12 @@
 			</div>
 		{/each}
 
-		<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
-			<InfoIcon class="mt-px size-3.5 shrink-0" />
-			<span>Email, Microsoft Teams and Apprise URLs can be added in Settings.</span>
-		</p>
+		{#if elsewhere}
+			<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
+				<InfoIcon class="mt-px size-3.5 shrink-0" />
+				<span>{elsewhere} channels are added in Settings.</span>
+			</p>
+		{/if}
 	</div>
 
 	{#if anyEnabled}
