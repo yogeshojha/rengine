@@ -448,7 +448,7 @@ class VulnTemplateService:
             started=ok,
             message="Downloading and indexing the check library."
             if ok
-            else "The task queue did not accept the sync. Check the worker.",
+            else "Sync not queued. Check that the worker service is running.",
         )
 
 
