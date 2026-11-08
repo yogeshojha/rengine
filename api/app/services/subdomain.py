@@ -38,7 +38,6 @@ from shared.definitions.correlation import (
     CORRELATION_KIND_LABELS,
     CORRELATION_KIND_ORDER,
     CORRELATION_RELATION_PHRASE,
-    SCREENSHOT_DISTANCE,
 )
 from shared.definitions.interest import TONE_INFO, TONE_WARNING
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
@@ -101,7 +100,7 @@ from shared.services.asset_query.renders import cluster, is_identity
 from shared.services.correlation import CorrelationFinder, values_carried
 from shared.services.surface_query import web_assets as surface_hosts
 from shared.utils.datetime import utc_now
-from shared.utils.imagehash import distance, hex_digest
+from shared.utils.imagehash import hex_digest
 from shared.utils.infra import generic_page
 
 logger = get_logger(__name__)
@@ -614,33 +613,24 @@ class SubdomainService:
         """How many rows in scope render like each of the page's own hashes."""
         if not values:
             return {}
-        rows = await self.session.execute(
-            select(
-                Subdomain.screenshot_phash,
-                func.count(),
-                func.array_agg(distinct(Subdomain.target_id)),
+        ordered = sorted(values)
+        columns = []
+        for value in ordered:
+            near = preds.renders_like(Subdomain.screenshot_phash, value)
+            columns.append(func.count().filter(near))
+            columns.append(func.count(distinct(Subdomain.target_id)).filter(near))
+        row = (
+            await self.session.execute(
+                select(*columns).where(
+                    scope.match(Subdomain.scan_id),
+                    Subdomain.screenshot_phash.isnot(None),
+                )
             )
-            .where(
-                scope.match(Subdomain.scan_id),
-                Subdomain.screenshot_phash.isnot(None),
-            )
-            .group_by(Subdomain.screenshot_phash)
-        )
-        histogram: dict[int, tuple[int, set]] = {
-            int(raw): (int(n), set(targets or [])) for raw, n, targets in rows.all()
+        ).one()
+        return {
+            value: (int(row[2 * i] or 0), int(row[2 * i + 1] or 0))
+            for i, value in enumerate(ordered)
         }
-        out: dict[int, tuple[int, int]] = {}
-        for value in values:
-            near = [
-                found
-                for other, found in histogram.items()
-                if distance(value, other) <= SCREENSHOT_DISTANCE
-            ]
-            out[value] = (
-                sum(n for n, _ in near),
-                len({t for _, targets in near for t in targets}),
-            )
-        return out
 
     async def _endpoint_counts(
         self, scope: QueryScope, hosts: list[str]
