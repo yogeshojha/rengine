@@ -15,6 +15,7 @@ type StateCallback = (state: ConnectionState) => void;
 const REFRESH_ATTEMPT_AFTER_FAILURES = 3;
 const MAX_REFRESHES = 3;
 const HIDDEN_PAUSE_MS = 30_000;
+const SILENCE_MS = 65_000;
 
 class SSEClient {
 	private eventSource: EventSource | null = null;
@@ -33,6 +34,8 @@ class SSEClient {
 	private reconnectAttempts = 0;
 	private refreshAttempts = 0;
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+	private silenceTimer: ReturnType<typeof setTimeout> | null = null;
+	private heartbeats = false;
 
 	private readonly baseDelay = 1000; // 1s
 	private readonly maxDelay = 30_000; // 30s
@@ -148,7 +151,13 @@ class SSEClient {
 		const es = new EventSource(url, { withCredentials: true });
 
 		es.addEventListener('message', (event: MessageEvent) => {
+			this.armSilence();
 			this.handleMessage(event);
+		});
+
+		es.addEventListener('heartbeat', () => {
+			this.heartbeats = true;
+			this.armSilence();
 		});
 
 		es.addEventListener('unauthorized', () => {
@@ -259,7 +268,14 @@ class SSEClient {
 		}, delay);
 	}
 
+	private armSilence(): void {
+		if (this.silenceTimer) clearTimeout(this.silenceTimer);
+		this.silenceTimer = this.heartbeats ? setTimeout(() => this.handleError(), SILENCE_MS) : null;
+	}
+
 	private closeEventSource(): void {
+		if (this.silenceTimer) clearTimeout(this.silenceTimer);
+		this.silenceTimer = null;
 		if (this.eventSource) {
 			this.eventSource.close();
 			this.eventSource = null;
