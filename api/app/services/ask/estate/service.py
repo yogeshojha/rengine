@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.database import async_db_session
+from app.core.validation_errors import validation_detail
 from app.services.ask import budget, citations, context, tools
 from app.services.ask.estate import (
     blocks,
@@ -255,7 +256,10 @@ class EstateService:
                 "Delete a thread to start another.",
             )
         if foreign := await scope.foreign(self.session, project_id, data.scope):
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, foreign)
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                validation_detail(["body", "scope"], foreign),
+            )
         title = strip_control(data.title or "").strip()
         row = AskThread(
             project_id=project_id,
@@ -326,7 +330,8 @@ class EstateService:
             )
         except blocks.BlockError as exc:
             raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                validation_detail(["path", "block_id"], str(exc)),
             ) from exc
 
     async def edit(
@@ -346,7 +351,9 @@ class EstateService:
                 if block.kind == BlockKind.CVE.value:
                     raise HTTPException(
                         status.HTTP_422_UNPROCESSABLE_CONTENT,
-                        "A CVE block has no query.",
+                        validation_detail(
+                            ["path", "block_id"], "A CVE block has no query."
+                        ),
                     )
                 block.query = blocks.clean_query(query)
                 block.cause_key = None
@@ -354,7 +361,8 @@ class EstateService:
                 data = await _reread(self.session, project_id, resolved, block)
                 if data.error:
                     raise HTTPException(
-                        status.HTTP_422_UNPROCESSABLE_CONTENT, data.error
+                        status.HTTP_422_UNPROCESSABLE_CONTENT,
+                        validation_detail(["body", "query"], data.error),
                     )
                 block.total = data.total
                 block.capped = data.capped
@@ -378,7 +386,10 @@ class EstateService:
 
     async def starters(self, project_id: uuid.UUID, raw: dict) -> EstateStarters:
         if foreign := await scope.foreign(self.session, project_id, scope.parsed(raw)):
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, foreign)
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                validation_detail(["query"], foreign),
+            )
         resolved = await scope.resolve(self.session, project_id, raw)
         return await starters.counted(self.session, project_id, resolved)
 
