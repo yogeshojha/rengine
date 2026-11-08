@@ -66,6 +66,11 @@ COVER_LAYOUT_LABELS: dict[str, str] = {
 }
 
 
+class CoverInk(StrEnum):
+    LIGHT = "light"
+    DARK = "dark"
+
+
 class CoverArt(StrEnum):
     NONE = "none"
     GRID = "grid"
@@ -149,7 +154,7 @@ class CoverTokens(BaseModel):
 
     layout: str = CoverLayout.BAND.value
     art: str = CoverArt.NONE.value
-    ink: str = "light"
+    ink: str = CoverInk.LIGHT.value
     background: HexColor = ""
     accent_bar: bool = True
 
