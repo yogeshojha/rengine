@@ -26,6 +26,7 @@ const UNWRAP = new Set([
 ]);
 const PASSTHROUGH = new Set(['filter', 'slice', 'sort', 'toSorted', 'toReversed', 'reverse']);
 const FLOATING = Symbol('floating');
+const FIXED_HEAD = /^(\/[^/\\]|[?#]|https?:|mailto:)/i;
 
 type Owner = Node | null | typeof FLOATING;
 
@@ -230,7 +231,7 @@ class Resolver {
 				case 'Literal':
 					return node.value === null || typeof node.value === 'string';
 				case 'TemplateLiteral':
-					return node.quasis[0].value.cooked !== '' || this.safe(node.expressions[0]);
+					return this.safeTemplate(node);
 				case 'Identifier':
 					return node.name === 'undefined' || this.safeName(node.name, node);
 				case 'ConditionalExpression':
@@ -245,6 +246,11 @@ class Resolver {
 					return false;
 			}
 		});
+	}
+
+	private safeTemplate(node: Node): boolean {
+		const head: string = node.quasis[0].value.cooked ?? '';
+		return head === '' ? this.safe(node.expressions[0]) : FIXED_HEAD.test(head);
 	}
 
 	safeName(name: string, at: Node | null): boolean {
@@ -418,6 +424,8 @@ describe('link attribute check', () => {
 		`${script('let { row } = $props(); let u = $derived(row.url);')}<a href={u}>x</a>`,
 		`${script('let { url } = $props();')}<a href={url}>x</a>`,
 		`${script('let { a } = $props();')}<a href={\`\${a}/x\`}>x</a>`,
+		`${script('let { row } = $props();')}<a href={\`/\${row.path}\`}>x</a>`,
+		`${script('let { row } = $props();')}<a href={\`java\${row.path}\`}>x</a>`,
 		`${script('let { row } = $props();')}<Sheet openHref={row.url} />`,
 		`${script('let { row } = $props();')}<a href=" {row.url}">x</a>`,
 		`${script(`${ROUTES_IMPORT} let { items } = $props(); let rows = $derived(items.map((i) => ({ href: i.url })));`)}{#each rows as r}<a href={r.href}>x</a>{/each}`
@@ -429,7 +437,8 @@ describe('link attribute check', () => {
 		`${script(`${GUARD_IMPORT} let { row } = $props();`)}<a href={externalHref(row.url)}>x</a>`,
 		`${script(`${ROUTES_IMPORT} let { items } = $props(); let rows = $derived(items.map((i) => ({ href: ROUTES.scan(i.id) })));`)}{#each rows as r}<a href={r.href}>x</a>{/each}`,
 		`${script('let { href } = $props();')}<a {href}>x</a>`,
-		'<a href="/scans">x</a><a href={`https://nvd.nist.gov/vuln/detail/${cve}`}>x</a>'
+		'<a href="/scans">x</a><a href={`https://nvd.nist.gov/vuln/detail/${cve}`}>x</a>',
+		`${script('let { row } = $props();')}<a href={\`/scans/\${row.id}\`}>x</a>`
 	])('accepts %s', (source) => {
 		expect(offenders(FIXTURE, source)).toEqual([]);
 	});
