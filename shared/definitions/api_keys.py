@@ -271,6 +271,8 @@ SUBFINDER_SOURCES: dict[APIProvider, SubfinderSource] = {
     if "subfinder" in meta
 }
 
+MAX_KEY_LENGTH = 600
+
 # subfinder splits a multi-part key on its colons
 _KEY_SEPARATOR = ":"
 
@@ -307,6 +309,8 @@ def key_error(provider: APIProvider, key_value: str) -> str | None:
     name = provider_name(provider)
     if not key_value:
         return f"The {name} key is empty."
+    if len(key_value.encode()) > MAX_KEY_LENGTH:
+        return f"The {name} key is longer than {MAX_KEY_LENGTH} characters."
     if any(ch.isspace() or not ch.isprintable() for ch in key_value):
         return f"The {name} key contains spaces or control characters."
     if (
