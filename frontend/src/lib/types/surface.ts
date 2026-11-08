@@ -1,9 +1,11 @@
+import type { ScanStatus } from './scan';
+
 export interface SurfaceTargetRead {
 	target_id: string;
 	target_value: string;
 	target_type: string;
 	scan_id: string | null;
-	scan_status: string | null;
+	scan_status: ScanStatus | null;
 	observed_at: string | null;
 	stale: boolean;
 }

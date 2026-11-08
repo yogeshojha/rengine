@@ -25,13 +25,11 @@
 	let covered = $derived(coverage?.covered ?? []);
 	let uncovered = $derived(coverage?.uncovered ?? []);
 	let stale = $derived(covered.filter((t) => t.stale));
-	let live = $derived(
-		covered.filter((t) => t.scan_status && isLiveStatus(t.scan_status as ScanStatus))
-	);
+	let live = $derived(covered.filter((t) => t.scan_status && isLiveStatus(t.scan_status)));
 	let oldest = $derived(coverage?.observed_from ?? null);
 
-	const statusDot = (status: string | null) =>
-		SCAN_STATUS_DOT[status as ScanStatus] ?? 'bg-muted-foreground';
+	const statusDot = (status: ScanStatus | null) =>
+		(status && SCAN_STATUS_DOT[status]) ?? 'bg-muted-foreground';
 
 	let Icon = $derived(
 		!coverage || !covered.length ? CircleSlash : uncovered.length ? TriangleAlert : CircleCheck

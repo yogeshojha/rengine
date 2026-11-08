@@ -23,7 +23,6 @@
 		type NewKindKey
 	} from '$lib/config/whats-new';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
-	import type { ScanStatus } from '$lib/types/scan';
 	import type { TargetType } from '$lib/types/target';
 	import type { VulnerabilityRead } from '$lib/utilities/vulns';
 	import type { NewGroup, NewItem } from '$lib/types/whats-new';
@@ -90,7 +89,7 @@
 	let found = $derived(group.counts[NewKind.FINDING] ?? 0);
 	let status = $derived(
 		group.scan_status && group.scan_status !== 'completed'
-			? (RUN_VERBS[group.scan_status as ScanStatus] ?? group.scan_status)
+			? (RUN_VERBS[group.scan_status] ?? group.scan_status)
 			: null
 	);
 	let time = $derived(formatClock(group.at));

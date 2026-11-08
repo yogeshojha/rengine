@@ -1,3 +1,5 @@
+import type { ScanStatus } from './scan';
+
 export interface NewItem {
 	id: string;
 	kind: string;
@@ -58,7 +60,7 @@ export interface NewGroup {
 	sections: NewSection[];
 	scan_id: string | null;
 	scan_started_at: string | null;
-	scan_status: string | null;
+	scan_status: ScanStatus | null;
 	previous_scan_id: string | null;
 	severities: Record<string, number>;
 	completed_at: string | null;
