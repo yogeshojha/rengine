@@ -73,6 +73,7 @@
 		isOpenStatus,
 		scanStatusIcon,
 		SCAN_STATUS_LABEL,
+		SCAN_STATUS_TEXT,
 		SCAN_POLL_MS,
 		elapsedSeconds,
 		elapsedText
@@ -107,11 +108,6 @@
 	import { plural } from '$lib/utilities/strings';
 
 	const HISTORY_SIZE = 12;
-	const STATUS_TEXT: Record<string, string> = {
-		running: 'text-info',
-		completed: 'text-success',
-		failed: 'text-destructive'
-	};
 
 	const scanId = $derived(page.params.id ?? '');
 
@@ -1113,8 +1109,9 @@
 						>
 							<span class="font-mono text-sm">{scan.execution_config.target_value}</span>
 							<StatusIcon
-								class="size-3.5 {STATUS_TEXT[scan.status] ??
-									'text-muted-foreground'} {scan.status === 'running' ? 'animate-spin' : ''}"
+								class="size-3.5 {SCAN_STATUS_TEXT[scan.status]} {scan.status === 'running'
+									? 'animate-spin'
+									: ''}"
 								aria-label={SCAN_STATUS_LABEL[scan.status]}
 							/>
 							{#if isLiveStatus(scan.status) && stripProgress}
