@@ -59,6 +59,7 @@ lint:
 
 test:
 	docker compose exec -T api /app/.venv/bin/python -m pytest tests -q
+	docker compose run --rm --no-deps -v "$$PWD:/repo:ro" -w /repo api /app/.venv/bin/python -m pytest tests/deploy -q -p no:cacheprovider
 	cd frontend && npm run check && npm run test
 
 migrate:
