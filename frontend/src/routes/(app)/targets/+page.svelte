@@ -145,8 +145,25 @@
 	let scheduleTargetId = $state<string | undefined>(undefined);
 
 	let showEnrichConfirm = $state(false);
+	const ENRICHMENT: Record<
+		EnrichmentKind,
+		{
+			label: string;
+			refresh: (id: string) => Promise<unknown>;
+			status: 'whois_status' | 'dns_status' | 'bgp_status' | 'infostealer_status';
+		}
+	> = {
+		whois: { label: 'WHOIS', refresh: targetsApi.refreshWhois, status: 'whois_status' },
+		dns: { label: 'DNS', refresh: targetsApi.refreshDns, status: 'dns_status' },
+		bgp: { label: 'BGP', refresh: targetsApi.refreshBgp, status: 'bgp_status' },
+		infostealer: {
+			label: 'Infostealer',
+			refresh: targetsApi.refreshInfostealer,
+			status: 'infostealer_status'
+		}
+	};
 	let enrichConfirmKind = $state<EnrichmentKind>('whois');
-	const enrichKindLabel = $derived(enrichConfirmKind.toUpperCase());
+	const enrichKindLabel = $derived(ENRICHMENT[enrichConfirmKind].label);
 
 	$effect(() => {
 		const activeProject = projectsStore.activeProject;
@@ -482,9 +499,9 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkEnrich(ids, kind);
-			toast.success(`${kind.toUpperCase()} queued for ${n} target${n !== 1 ? 's' : ''}`);
+			toast.success(`${ENRICHMENT[kind].label} queued for ${n} target${n !== 1 ? 's' : ''}`);
 		} catch {
-			toast.error(`${kind.toUpperCase()} not queued`);
+			toast.error(`${ENRICHMENT[kind].label} not queued`);
 		}
 	}
 
@@ -567,20 +584,12 @@
 
 	async function handleReEnrich(target: Target, kind: EnrichmentKind) {
 		try {
-			if (kind === 'whois') await targetsApi.refreshWhois(target.id);
-			else if (kind === 'dns') await targetsApi.refreshDns(target.id);
-			else await targetsApi.refreshBgp(target.id);
-
-			const patch: Partial<Target> =
-				kind === 'whois'
-					? { whois_status: TaskStatus.PENDING }
-					: kind === 'dns'
-						? { dns_status: TaskStatus.PENDING }
-						: { bgp_status: TaskStatus.PENDING };
-			targetsStore.optimisticUpdateTarget(target.id, patch);
-			toast.success(`${kind.toUpperCase()} refresh started`);
+			const spec = ENRICHMENT[kind];
+			await spec.refresh(target.id);
+			targetsStore.optimisticUpdateTarget(target.id, { [spec.status]: TaskStatus.PENDING });
+			toast.success(`${spec.label} refresh started`);
 		} catch {
-			toast.error(`${kind.toUpperCase()} not queued`);
+			toast.error(`${ENRICHMENT[kind].label} not queued`);
 		}
 	}
 
