@@ -1,6 +1,7 @@
 import { toast } from 'svelte-sonner';
 import { endpointsApi } from '$lib/api/scan-results';
 import { writeClipboard } from '$lib/utilities/clipboard';
+import { filterToken } from '$lib/utilities/scan-insights';
 import type { EndpointFilter, EndpointRead, TreeNode } from '$lib/utilities/endpoints';
 
 const COPY_CAP = 5000;
@@ -112,7 +113,7 @@ export function hostNode(host: string): TreeNode {
 		glyph: 'folder',
 		sample_url: null,
 		leaf: null,
-		query: `host:${host}`,
+		query: filterToken('host', host),
 		children: [],
 		lazy: false,
 		folders: 0,

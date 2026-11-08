@@ -89,7 +89,12 @@
 	import type { SubdomainRead } from '$lib/types/subdomain';
 	import type { HttpAssetDetail } from '$lib/types/http-asset';
 	import type { SubdomainCorrelation } from '$lib/utilities/scan-insights';
-	import { certState, daysUntilExpiry, exactToken } from '$lib/utilities/scan-insights';
+	import {
+		certState,
+		daysUntilExpiry,
+		exactToken,
+		filterToken
+	} from '$lib/utilities/scan-insights';
 	import {
 		formatResponseTime,
 		httpStatusClass,
@@ -552,7 +557,7 @@
 											{#each sub.resolved_ips as ip (ip)}
 												{@render chip(
 													ip,
-													`ip:${ip}`,
+													filterToken('ip', ip),
 													true,
 													isPrivateIp(ip) ? 'Private range' : undefined
 												)}
@@ -574,7 +579,7 @@
 															<button
 																{...props}
 																type="button"
-																onclick={() => onFilter?.(`cname:${prov.suffix}`)}
+																onclick={() => onFilter?.(filterToken('cname', prov.suffix))}
 															>
 																<Badge variant="secondary" class="cursor-pointer gap-1 font-normal">
 																	<ProviderIcon class="size-3" />
@@ -588,7 +593,7 @@
 													</Tooltip.Content>
 												</Tooltip.Root>
 											{/if}
-											{@render chip(sub.cname, `cname:${sub.cname}`, true)}
+											{@render chip(sub.cname, filterToken('cname', sub.cname), true)}
 										</dd>
 									</div>
 								{/if}
@@ -607,7 +612,7 @@
 									<dt class={SHEET_DT}>Discovered via</dt>
 									<dd class="flex flex-wrap gap-1">
 										{#each sub.sources ?? [] as src (src)}
-											{@render chip(src, `source:${src}`)}
+											{@render chip(src, filterToken('source', src))}
 										{/each}
 									</dd>
 								</div>
@@ -630,7 +635,7 @@
 										<dd>
 											{@render chip(
 												sub.favicon_hash,
-												`favicon:${sub.favicon_hash}`,
+												filterToken('favicon', sub.favicon_hash),
 												true,
 												'Filter by favicon'
 											)}
@@ -929,7 +934,7 @@
 								<SectionHead icon={Layers} title="Technologies" />
 								<div class="flex flex-wrap gap-1">
 									{#each sub.tech as t (t)}
-										{@render chip(t, `tech:${t}`, false, undefined, false, true)}
+										{@render chip(t, filterToken('tech', t), false, undefined, false, true)}
 									{/each}
 								</div>
 								{#if detail?.cpe?.length}
@@ -1263,7 +1268,7 @@
 														variant="ghost"
 														size="sm"
 														class="h-7 text-xs"
-														onclick={() => onFilter?.(`ip:${m.ip}`)}
+														onclick={() => onFilter?.(filterToken('ip', m.ip))}
 													>
 														<Filter data-icon="inline-start" />
 														{WEB.label}
