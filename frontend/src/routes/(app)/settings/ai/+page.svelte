@@ -86,7 +86,7 @@
 		<div id="ai-features" class="scroll-mt-20"></div>
 		<PanelHead title="Features" class="border-t px-4" />
 		{#if !status.enabled}
-			<p class="px-4 py-2.5 text-xs text-muted-foreground">Turn on AI to use these</p>
+			<p class="px-4 py-2.5 text-xs text-muted-foreground">AI is off.</p>
 		{/if}
 		{#each catalog?.features ?? [] as feature, i (feature.key)}
 			<SettingRow
