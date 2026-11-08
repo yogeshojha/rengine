@@ -263,7 +263,7 @@
 
 		{#if elsewhere}
 			<p class="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
-				<InfoIcon class="mt-px size-3.5 shrink-0" />
+				<span class="flex h-4 shrink-0 items-center"><InfoIcon class="size-3.5" /></span>
 				<span>{elsewhere} channels are added in Settings.</span>
 			</p>
 		{/if}
@@ -279,11 +279,12 @@
 							class="flex cursor-pointer items-start gap-3 rounded-md border border-input px-3 py-2.5 data-[active=true]:border-primary data-[active=true]:bg-muted"
 							data-active={pref.types.includes(cat.type)}
 						>
-							<Checkbox
-								checked={pref.types.includes(cat.type)}
-								onCheckedChange={(v) => toggleCategory(cat.type, v === true)}
-								class="mt-0.5"
-							/>
+							<span class="flex h-5 shrink-0 items-center">
+								<Checkbox
+									checked={pref.types.includes(cat.type)}
+									onCheckedChange={(v) => toggleCategory(cat.type, v === true)}
+								/>
+							</span>
 							<span class="min-w-0 space-y-0.5">
 								<span class="block text-sm font-medium">{cat.label}</span>
 								<span class="block text-xs text-muted-foreground">{cat.hint}</span>

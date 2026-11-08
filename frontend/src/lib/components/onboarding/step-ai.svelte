@@ -260,11 +260,12 @@
 						class="flex cursor-pointer items-start gap-3 rounded-md border border-input px-3 py-2.5 data-[active=true]:border-primary data-[active=true]:bg-muted"
 						data-active={features[f.key]}
 					>
-						<Checkbox
-							checked={features[f.key]}
-							onCheckedChange={(v) => (features = { ...features, [f.key]: v === true })}
-							class="mt-0.5"
-						/>
+						<span class="flex h-5 shrink-0 items-center">
+							<Checkbox
+								checked={features[f.key]}
+								onCheckedChange={(v) => (features = { ...features, [f.key]: v === true })}
+							/>
+						</span>
 						<span class="space-y-0.5">
 							<span class="block text-sm font-medium">{f.label}</span>
 							<span class="block text-xs text-muted-foreground">{f.help}</span>

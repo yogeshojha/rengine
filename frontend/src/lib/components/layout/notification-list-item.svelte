@@ -56,7 +56,7 @@
 >
 	<div
 		class={cn(
-			'mt-0.5 flex shrink-0 items-center justify-center rounded-md',
+			'flex shrink-0 items-center justify-center rounded-md',
 			full ? 'size-8' : 'size-7',
 			SEVERITY_TILE_CLASS[notification.severity]
 		)}
@@ -76,15 +76,17 @@
 				{notification.title}
 			</p>
 			<span
-				class="shrink-0 pt-px font-mono text-2xs text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
+				class="flex h-5 shrink-0 items-center font-mono text-2xs text-muted-foreground tabular-nums transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
 			>
 				{relativeTime(notification.created_at)}
 			</span>
 			{#if unread}
 				<span
-					class="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
+					class="flex h-5 shrink-0 items-center transition-opacity group-hover:opacity-0 group-focus-within:opacity-0"
 					aria-hidden="true"
-				></span>
+				>
+					<span class="size-1.5 rounded-full bg-primary"></span>
+				</span>
 			{/if}
 		</div>
 

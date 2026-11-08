@@ -212,7 +212,7 @@
 
 			{#if showClockHint}
 				<p class="flex items-start gap-1.5 text-xs text-warning">
-					<TriangleAlertIcon class="mt-px size-3.5 shrink-0" />
+					<span class="flex h-4 shrink-0 items-center"><TriangleAlertIcon class="size-3.5" /></span>
 					<span>Check that the device clock is set automatically.</span>
 				</p>
 			{/if}

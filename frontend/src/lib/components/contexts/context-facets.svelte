@@ -30,11 +30,13 @@
 					facet.set ? 'text-foreground' : 'text-muted-foreground/70'
 				)}
 			>
-				{#if facet.set}
-					<Check size={12} class="relative top-0.5 shrink-0 text-primary" aria-label="Set" />
-				{:else}
-					<Minus size={12} class="relative top-0.5 shrink-0 opacity-60" aria-label="Default" />
-				{/if}
+				<span class="flex h-4 items-center self-start">
+					{#if facet.set}
+						<Check size={12} class="shrink-0 text-primary" aria-label="Set" />
+					{:else}
+						<Minus size={12} class="shrink-0 opacity-60" aria-label="Default" />
+					{/if}
+				</span>
 				<span class="text-2xs tracking-wide text-muted-foreground uppercase">{facet.label}</span>
 				<span class="min-w-0 leading-snug break-words">{facet.value}</span>
 			</li>

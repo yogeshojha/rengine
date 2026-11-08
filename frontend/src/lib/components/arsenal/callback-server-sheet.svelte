@@ -233,7 +233,9 @@
 						<section class="flex flex-col gap-2.5 py-5">
 							<SectionHead title="Public server" />
 							<div class="flex items-start gap-2 text-xs">
-								<TriangleAlertIcon class="mt-px size-3.5 shrink-0 text-warning" />
+								<span class="flex h-4 shrink-0 items-center"
+									><TriangleAlertIcon class="size-3.5 text-warning" /></span
+								>
 								<span>{PUBLIC_ACK}</span>
 							</div>
 							<label class="flex w-fit cursor-pointer items-center gap-2 text-sm" for="oast-ack">
@@ -277,9 +279,13 @@
 					{#if result && !dirty}
 						<section class="flex items-start gap-2 py-4 text-sm">
 							{#if result.ok}
-								<CheckIcon class="mt-0.5 size-4 shrink-0 text-success" />
+								<span class="flex h-5 shrink-0 items-center"
+									><CheckIcon class="size-4 text-success" /></span
+								>
 							{:else}
-								<CircleXIcon class="mt-0.5 size-4 shrink-0 text-destructive" />
+								<span class="flex h-5 shrink-0 items-center"
+									><CircleXIcon class="size-4 text-destructive" /></span
+								>
 							{/if}
 							<span class="wrap-anywhere">{result.detail}</span>
 						</section>

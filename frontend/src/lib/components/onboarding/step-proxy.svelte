@@ -212,8 +212,10 @@
 				class="flex cursor-pointer items-start gap-3 rounded-lg border border-input bg-transparent px-4 py-3.5 transition-colors data-[active=true]:border-primary data-[active=true]:bg-muted"
 				data-active={choice === opt.value}
 			>
-				<RadioGroup.Item value={opt.value} class="mt-0.5" />
-				<Icon class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+				<span class="flex h-5 shrink-0 items-center"><RadioGroup.Item value={opt.value} /></span>
+				<span class="flex h-5 shrink-0 items-center"
+					><Icon class="size-4 text-muted-foreground" /></span
+				>
 				<span class="min-w-0 flex-1 space-y-0.5">
 					<span class="block text-sm font-medium">{opt.label}</span>
 					{#if opt.hint}
