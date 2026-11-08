@@ -5,7 +5,6 @@
 	let {
 		ref = $bindable(null),
 		class: className,
-		// every panel here holds focusable content, so the panel itself is not a tab stop
 		tabindex = -1,
 		...restProps
 	}: TabsPrimitive.ContentProps = $props();

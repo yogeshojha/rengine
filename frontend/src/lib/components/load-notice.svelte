@@ -5,7 +5,6 @@
 	import { cn } from '$lib/utils';
 
 	interface Props {
-		/** Sections of the page that did not load, e.g. ["Surface", "Runs"]. */
 		sections: string[];
 		busy?: boolean;
 		onRetry: () => void;
@@ -15,7 +14,6 @@
 	let { sections, busy = false, onRetry, class: className }: Props = $props();
 </script>
 
-<!-- one notice, one Retry, for every part of a page that did not load -->
 <div
 	role="status"
 	class={cn(
