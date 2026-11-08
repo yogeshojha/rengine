@@ -32,6 +32,8 @@
 		connecting: boolean;
 		error: string | null;
 		result: string | null;
+		syncFailed: boolean;
+		syncing: boolean;
 	}
 
 	let settings = $state<BountySettings | null>(null);
@@ -53,7 +55,16 @@
 	}
 
 	function blank(): Draft {
-		return { username: '', token: '', reveal: false, connecting: false, error: null, result: null };
+		return {
+			username: '',
+			token: '',
+			reveal: false,
+			connecting: false,
+			error: null,
+			result: null,
+			syncFailed: false,
+			syncing: false
+		};
 	}
 
 	async function load() {
@@ -117,7 +128,7 @@
 			}
 			d.result = test.message;
 			d.token = '';
-			await bountyProgramsApi.sync(true, p.platform).catch(() => {});
+			await startSync(p);
 			settings = await bountyProgramsApi.settings();
 			return true;
 		} catch (e) {
@@ -126,6 +137,20 @@
 			return false;
 		} finally {
 			d.connecting = false;
+		}
+	}
+
+	async function startSync(p: PlatformCount) {
+		const d = drafts[p.platform];
+		if (!d) return;
+		d.syncing = true;
+		try {
+			await bountyProgramsApi.sync(true, p.platform);
+			d.syncFailed = false;
+		} catch {
+			d.syncFailed = true;
+		} finally {
+			d.syncing = false;
 		}
 	}
 
@@ -214,6 +239,19 @@
 												· {p.private_programs.toLocaleString()} private
 											{/if}
 										</span>
+									{:else if d?.syncFailed}
+										<span class="text-destructive">Program sync not started</span>
+										<LoadingButton
+											size="sm"
+											variant="outline"
+											class="h-7 text-xs"
+											loading={d.syncing}
+											loadingLabel="Retrying"
+											disabled={busy}
+											onclick={() => startSync(p)}
+										>
+											Retry
+										</LoadingButton>
 									{:else}
 										<span class="text-muted-foreground">Program sync started</span>
 									{/if}
