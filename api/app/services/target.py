@@ -624,11 +624,12 @@ class TargetService:
         await self.session.commit()
 
         await asyncio.to_thread(self._dispatch_post_target_creation, [target])
+        await self._attach_connectors(target.project_id)
 
         return self._to_target_read(target, stored)
 
     async def ensure_targets(
-        self, values: list[str], project_id: UUID, user_id
+        self, values: list[str], project_id: UUID, user_id, *, attach: bool = True
     ) -> list[Target]:
         """The project's targets for these values, creating any that do not exist yet."""
         wanted: dict[str, TargetType] = {}
@@ -689,6 +690,8 @@ class TargetService:
         await self._log_added(created, project_id, user_id)
         await self.session.commit()
         await asyncio.to_thread(self._dispatch_post_target_creation, created)
+        if created and attach:
+            await self._attach_connectors(project_id)
         return [found[value] for value in wanted]
 
     async def _log_added(
@@ -817,6 +820,8 @@ class TargetService:
         await self.session.commit()
 
         await asyncio.to_thread(self._dispatch_post_target_creation, created_targets)
+        if created_targets:
+            await self._attach_connectors(project.id)
 
         return TargetBulkCreateResponse(
             total=len(items),
@@ -1541,6 +1546,11 @@ class TargetService:
             response.abuse_contacts = await self._abuse_contacts(prefix)
 
         return response
+
+    async def _attach_connectors(self, project_id: UUID) -> None:
+        from app.services.connector import ConnectorService  # noqa: PLC0415
+
+        await ConnectorService(self.session).attach_project(project_id)
 
     def _dispatch_post_target_creation(self, targets: list[Target]) -> None:
         if not targets:

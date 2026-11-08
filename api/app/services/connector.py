@@ -778,7 +778,7 @@ class ConnectorService:
             msg = f"{value} is out of scope for {program}."
             raise ConnectorError(msg)
         targets = await TargetService(self.session).ensure_targets(
-            [value], project_id, created_by
+            [value], project_id, created_by, attach=False
         )
         if not targets:
             msg = "Target not created."
