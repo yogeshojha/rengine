@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 
 from app.services.ask.context import (
     MAX_SAMPLE,
@@ -40,6 +41,16 @@ from shared.utils.text import counted, strip_control
 LOGIN_WORDS = ("login", "log in", "sign in", "signin", "sso", "authenticate")
 ADMIN_WORDS = ("admin", "dashboard", "console", "manage", "internal", "staging")
 MAX_HTTP_ROWS = 8
+_ASSET_COLUMNS = (
+    HttpAsset.port,
+    HttpAsset.url,
+    HttpAsset.status_code,
+    HttpAsset.title,
+    HttpAsset.webserver,
+    HttpAsset.tech,
+    HttpAsset.location,
+    HttpAsset.content_length,
+)
 
 RULES = """\
 You help a security engineer understand one web asset that reNgine's scanner observed. \
@@ -99,6 +110,7 @@ async def load(
         (
             await session.execute(
                 select(HttpAsset)
+                .options(load_only(*_ASSET_COLUMNS))
                 .where(HttpAsset.scan_id == scan_id, HttpAsset.host == name)
                 .order_by(HttpAsset.port)
             )
