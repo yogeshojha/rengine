@@ -79,4 +79,6 @@ export const DEFAULT_RATE_LIMIT = 5;
 export const MAX_RATE_LIMIT = 1000;
 export const WATCH_HOST_PAGE_SIZE = 50;
 export const WATCH_EVENT_PAGE_SIZE = 50;
+// mirrors shared/definitions/watch.py:UNRESOLVED_RETRY_HOURS
+export const UNRESOLVED_RETRY_HOURS = 48;
 export const ALERT_QUERY_EXAMPLES = ['is:live', 'status:200 and not title:parked', 'tech:*'];

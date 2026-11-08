@@ -23,7 +23,8 @@
 		CADENCES,
 		CADENCE_LABELS,
 		DEFAULT_RATE_LIMIT,
-		MAX_RATE_LIMIT
+		MAX_RATE_LIMIT,
+		UNRESOLVED_RETRY_HOURS
 	} from '$lib/config/watch';
 	import { notificationProviderMeta as metaFor } from '$lib/config/notification-providers';
 	import { ROUTES } from '$lib/config/routes';
@@ -460,7 +461,8 @@
 					<label class="flex items-center justify-between gap-4 text-sm">
 						<span class="flex flex-col gap-0.5">
 							Alert on names that do not resolve
-							<span class="text-xs text-muted-foreground">After 48 hours without a DNS answer.</span
+							<span class="text-xs text-muted-foreground"
+								>After {UNRESOLVED_RETRY_HOURS} hours without a DNS answer.</span
 							>
 						</span>
 						<Switch checked={alertUnresolved} onCheckedChange={(v) => (alertUnresolved = v)} />
