@@ -141,6 +141,7 @@ async def subdomain_search_renders(
         facets=f"{project_id}|{body.model_dump_json()}",
         model=RenderGroups,
         build=lambda: service.renders(project_id=project_id, scope=scope, f=body),
+        keep=lambda found: found.error is None,
         ttl=lead_cache.SEARCH_TTL_SECONDS,
         live_ttl=None,
     )

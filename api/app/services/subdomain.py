@@ -544,7 +544,17 @@ class SubdomainService:
 
         await self.session.execute(text(STATEMENT_TIMEOUT))
         await self.session.execute(text(NO_JIT))
-        scoped = base.subquery()
+        try:
+            return await self._render_groups(base.subquery())
+        except DBAPIError as exc:
+            await self.session.rollback()
+            rejected = query_error_for(exc)
+            if rejected is None:
+                raise
+            logger.info("render query rejected by postgres", error=str(exc.orig))
+            return RenderGroups(error=rejected)
+
+    async def _render_groups(self, scoped) -> RenderGroups:
         rows = (
             await self.session.execute(
                 select(
