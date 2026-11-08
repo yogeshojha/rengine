@@ -1,4 +1,4 @@
-"""Map a Postgres data exception to a 400 and a statement timeout to a 503."""
+"""Map a Postgres data exception to a 400 and a timeout to a 503."""
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
@@ -26,6 +26,18 @@ def _sqlstate(exc: DBAPIError) -> str | None:
     inner = getattr(orig, "__cause__", None) or orig
     state = getattr(inner, "sqlstate", None)
     return state if isinstance(state, str) else None
+
+
+async def timeout_handler(request: Request, _exc: TimeoutError) -> JSONResponse:
+    from app.core.database import DATABASE_UNAVAILABLE  # noqa: PLC0415
+
+    logger.warning(
+        "database call timed out", path=request.url.path, method=request.method
+    )
+    return JSONResponse(
+        status_code=HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": DATABASE_UNAVAILABLE},
+    )
 
 
 async def data_exception_handler(request: Request, exc: DBAPIError) -> JSONResponse:

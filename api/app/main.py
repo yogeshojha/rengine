@@ -11,7 +11,7 @@ from app.config import API_V1_PREFIX, settings
 from app.core import ai_ledger
 from app.core.body_limit import BodySizeLimitMiddleware
 from app.core.database import check_capacity
-from app.core.db_errors import data_exception_handler
+from app.core.db_errors import data_exception_handler, timeout_handler
 from app.core.redis_sse_bridge import RedisSSEBridge
 from app.core.sanitize import RejectNulMiddleware
 from app.core.secret_errors import secret_decryption_handler
@@ -64,6 +64,7 @@ if "*" in settings.CORS_ORIGINS:
     raise ValueError(msg)
 
 app.add_exception_handler(DBAPIError, data_exception_handler)
+app.add_exception_handler(TimeoutError, timeout_handler)
 app.add_exception_handler(SecretDecryptionError, secret_decryption_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 

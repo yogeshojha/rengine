@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import database
+from app.core.db_errors import timeout_handler
 
 pytestmark = pytest.mark.api
 
@@ -52,3 +53,19 @@ async def test_a_session_that_cannot_close_keeps_the_answer(monkeypatch):
         response = await client.get("/done")
 
     assert response.status_code == 200
+
+
+async def test_a_route_with_its_own_session_answers_503_on_a_timeout():
+    app = FastAPI()
+    app.add_exception_handler(TimeoutError, timeout_handler)
+
+    @app.get("/own-session")
+    async def own_session():
+        raise TimeoutError
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+        response = await client.get("/own-session")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == database.DATABASE_UNAVAILABLE
