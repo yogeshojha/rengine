@@ -59,7 +59,7 @@
 		<span class="flex-1"></span>
 		{#if onOpen}
 			<Button variant="link" size="sm" class="h-auto p-0 text-2xs" onclick={onOpen}
-				>Open Evidence</Button
+				>Open evidence</Button
 			>
 		{/if}
 	</div>
