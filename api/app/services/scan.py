@@ -1016,7 +1016,9 @@ class ScanService:
                     func.count().filter(status_class("2xx")),
                     func.count(Subdomain.http_status),
                 )
-                .where(Subdomain.scan_id.in_(scan_ids))
+                .where(
+                    Subdomain.scan_id.in_(scan_ids), Subdomain.http_status.isnot(None)
+                )
                 .group_by(Subdomain.scan_id)
             )
         ).all()
