@@ -66,7 +66,7 @@ class EndpointProbeStage(Stage):
     """Request discovered URLs, highest attack surface first, within a budget."""
 
     name = "endpoint_probe"
-    title = "Endpoint Verification"
+    title = "Endpoint verification"
     description = "Request the discovered URLs and record each status."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"url_discovery"})

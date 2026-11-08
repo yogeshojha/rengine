@@ -14,7 +14,7 @@ from stages.broken_links.finding import link_finding
 
 class BrokenLinksStage(Stage):
     name = "broken_links"
-    title = "Broken Link Hijacking"
+    title = "Broken link hijacking"
     description = (
         "Report embedded resources loaded from a domain that can now be registered."
     )

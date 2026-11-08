@@ -29,7 +29,7 @@ class Verdict:
 
 class SessionCheckStage(Stage):
     name = "session_check"
-    title = "Session Check"
+    title = "Session check"
     description = "Check the scan context's credentials before the scan runs."
     phase = Phase.DISCOVERY.value
     depends_on = frozenset({"seed_resolution"})

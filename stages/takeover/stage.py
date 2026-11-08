@@ -76,7 +76,7 @@ def _finding(name: str, cname: str, provider: str) -> Finding:
 
 class TakeoverStage(Stage):
     name = "takeover"
-    title = "Subdomain Takeover"
+    title = "Subdomain takeover"
     description = "Report hostnames whose CNAME points at a hosting provider but resolves nowhere."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"subdomain_discovery", "seed_resolution"})

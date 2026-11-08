@@ -60,7 +60,7 @@ def _named_host(target_type: str, target_value: str) -> str:
 
 class UrlDiscoveryStage(Stage):
     name = "url_discovery"
-    title = "URL Discovery"
+    title = "URL discovery"
     description = "Collect the URLs and paths that exist on every live web asset."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"http_probe"})

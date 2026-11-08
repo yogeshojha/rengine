@@ -42,7 +42,7 @@ class ContentDiscoveryStage(Stage):
     """Paths guessed from a ranked wordlist against every web asset."""
 
     name = "content_discovery"
-    title = "Content Discovery"
+    title = "Content discovery"
     description = "Guess common paths and files on every web asset."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"http_probe"})

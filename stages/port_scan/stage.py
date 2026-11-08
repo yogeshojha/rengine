@@ -45,7 +45,7 @@ class Decision:
 
 class PortScanStage(Stage):
     name = "port_scan"
-    title = "Port Scan"
+    title = "Port scan"
     description = "Find listening TCP services on every address in scope."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"cdn_check", "passive_ports"})

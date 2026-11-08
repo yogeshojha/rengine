@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 
 class PassivePortsStage(Stage):
     name = "passive_ports"
-    title = "Passive Port Discovery"
+    title = "Passive port discovery"
     description = "Read ports indexed for each address by internet-wide scanners."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"host_discovery", "seed_resolution", "subdomain_discovery"})

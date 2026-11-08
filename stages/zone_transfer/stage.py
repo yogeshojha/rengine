@@ -105,7 +105,7 @@ def transferred_names(session: Session, scan_id: uuid.UUID) -> list[str]:
 
 class ZoneTransferStage(Stage):
     name = "zone_transfer"
-    title = "Zone Transfer"
+    title = "Zone transfer"
     description = "Report a zone that handed over its whole contents during discovery."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"subdomain_discovery"})

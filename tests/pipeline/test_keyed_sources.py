@@ -551,7 +551,7 @@ def _preview_warnings(stage: str, configured: set[str]) -> list[str]:
 
 def test_a_capability_with_no_key_set_warns_once():
     assert _preview_warnings("subdomain_discovery", set()) == [
-        "Subdomain Discovery: no API key set. Reduced coverage."
+        "Subdomain discovery: no API key set. Reduced coverage."
     ]
 
 

@@ -68,8 +68,8 @@ async def test_the_report_lists_the_stages_the_run_started(estate):
 
     assert [(s["title"], s["result"]) for s in built["stages"]] == [
         ("Reverse DNS", "Success"),
-        ("URL Discovery", "Partial"),
-        ("Subdomain Takeover", "Aborted"),
+        ("URL discovery", "Partial"),
+        ("Subdomain takeover", "Aborted"),
     ]
 
 

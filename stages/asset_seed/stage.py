@@ -35,7 +35,7 @@ _WRITE_BATCH = 1000
 
 class AssetSeedStage(Stage):
     name = "asset_seed"
-    title = "Seed Assets"
+    title = "Seed assets"
     description = "Start a run from stored assets and assets chosen in an earlier run."
     phase = Phase.DISCOVERY.value
     group = StageGroup.HOSTS.value

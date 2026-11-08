@@ -38,7 +38,7 @@ def _is_stale(queried_at: datetime | None) -> bool:
 
 class TargetEnrichmentStage(Stage):
     name = "target_enrichment"
-    title = "Target Enrichment"
+    title = "Target enrichment"
     description = (
         "Resolve the target and attach DNS, WHOIS, BGP and infostealer context."
     )

@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 
 class ServiceFingerprintStage(Stage):
     name = "service_fingerprint"
-    title = "Service Fingerprint"
+    title = "Service fingerprint"
     description = (
         "Identify the software behind every non-web port from its service banner."
     )

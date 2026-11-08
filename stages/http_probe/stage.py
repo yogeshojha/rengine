@@ -110,7 +110,7 @@ class _Mentions:
 
 class HttpProbeStage(Stage):
     name = "http_probe"
-    title = "HTTP Probe"
+    title = "HTTP probe"
     description = "Probe every name and port for HTTP, technologies and titles."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({_PORT_SCAN, "vhost"})

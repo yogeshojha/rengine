@@ -60,7 +60,7 @@ class Network:
 
 class NetblockSweepStage(Stage):
     name = "netblock_sweep"
-    title = "Netblock Sweep"
+    title = "Netblock sweep"
     description = (
         "Find hosts by resolving reverse DNS across the network ranges "
         "the organisation announces."

@@ -75,7 +75,7 @@ class _Pacer:
 
 class AiDetectionStage(Stage):
     name = "ai_detection"
-    title = "AI Detection"
+    title = "AI detection"
     description = (
         "Identify model servers, AI gateways, AI applications and MCP servers "
         "on every web asset."

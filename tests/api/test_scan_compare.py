@@ -134,7 +134,7 @@ async def test_a_partial_producing_stage_leaves_missing_rows_unconfirmed(estate,
     assert web.verdict.confirmed is False
     assert web.verdict.comparability == Comparability.QUALITY_DIFFERS.value
     assert web.verdict.note == (
-        "Subdomain Discovery was partial in the later run."
+        "Subdomain discovery was partial in the later run."
         " 1 missing web asset not confirmed."
     )
 

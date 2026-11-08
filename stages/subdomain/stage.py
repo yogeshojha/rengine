@@ -167,7 +167,7 @@ class _Batch:
 
 class SubdomainStage(Stage):
     name = "subdomain_discovery"
-    title = "Subdomain Discovery"
+    title = "Subdomain discovery"
     description = "Enumerate subdomains from passive sources, certificates, wordlists and permutations."
     phase = Phase.EXPANSION.value
     group = StageGroup.HOSTS.value

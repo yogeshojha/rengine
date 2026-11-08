@@ -17,7 +17,7 @@ _MAX_URLS = 500
 
 class WafDetectStage(Stage):
     name = "waf_detect"
-    title = "WAF Detection"
+    title = "WAF detection"
     description = "Fingerprint web application firewalls in front of live web assets."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"http_probe"})

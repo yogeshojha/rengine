@@ -22,7 +22,7 @@ _MAX_ASN_PREFIXES = 256
 
 class SeedResolutionStage(Stage):
     name = "seed_resolution"
-    title = "Seed Resolution"
+    title = "Seed resolution"
     description = "Expand an IP, netblock, ASN or URL seed into individual addresses."
     phase = Phase.DISCOVERY.value
     group = StageGroup.ADDRESSES.value

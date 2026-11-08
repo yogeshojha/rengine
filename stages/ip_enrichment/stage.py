@@ -49,7 +49,7 @@ WHERE s.id = h.id
 
 class IpEnrichmentStage(Stage):
     name = "ip_enrichment"
-    title = "IP Enrichment"
+    title = "IP enrichment"
     description = (
         "Resolve ASN, network operator and country for every IP address the scan found."
     )

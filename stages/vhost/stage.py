@@ -36,7 +36,7 @@ def host_for(label: str, apex: str) -> str | None:
 
 class VhostStage(Stage):
     name = "vhost"
-    title = "Virtual Host Discovery"
+    title = "Virtual host discovery"
     description = (
         "Find virtual hosts that DNS does not resolve, by varying the Host header."
     )

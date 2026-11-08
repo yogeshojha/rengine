@@ -13,7 +13,7 @@ from stages.name_ownership.finding import SEVERITIES, claim_finding
 
 class NameOwnershipStage(Stage):
     name = "name_ownership"
-    title = "Hostname Ownership"
+    title = "Hostname ownership"
     description = "Report hostnames that serve third-party content or resolve to a server with no site for them."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"http_probe", "origin_probe"})
