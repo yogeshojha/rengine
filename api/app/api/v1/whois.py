@@ -44,7 +44,7 @@ class WhoisRefreshResponse(BaseModel):
     description="One cached WHOIS record with parsed data.",
 )
 async def get_whois_record(
-    record_id: str,
+    record_id: _uuid.UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
@@ -69,7 +69,7 @@ async def get_whois_record(
     description="Re-query RDAP for the record.",
 )
 async def refresh_whois_record(
-    record_id: str,
+    record_id: _uuid.UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
