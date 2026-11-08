@@ -67,6 +67,7 @@ class DnsLookup(Tool):
     icon = "list-tree"
     execution = ToolExecution.QUEUED.value
     order = 20
+    touches_target = True
     value_field = "domain"
     placeholder = "example.com"
     examples = ("example.com",)
