@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { packedSpans } from '$lib/utilities/bento';
 	import { pageTitle } from '$lib/utilities/page-title';
+	import { requestPool } from '$lib/utilities/request-pool';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -496,12 +497,17 @@
 		}
 	}
 
+	const run = requestPool();
+
 	async function settle<T>(section: string, work: Promise<T>, apply: (value: T) => void) {
+		const id = targetId;
 		try {
-			apply(await work);
+			const value = await work;
+			if (id !== targetId) return;
+			apply(value);
 			loaded(section);
 		} catch {
-			notLoadedNow(section);
+			if (id === targetId) notLoadedNow(section);
 		}
 	}
 
@@ -521,9 +527,13 @@
 		if (!project || estateFor === key) return;
 		estateFor = key;
 		await Promise.all([
-			settle('Estate', targetsApi.getEstate(targetId, project.id, scanId), (e) => {
-				estate = e;
-			}),
+			settle(
+				'Estate',
+				run(() => targetsApi.getEstate(targetId, project.id, scanId)),
+				(e) => {
+					estate = e;
+				}
+			),
 			fetchLookalikes(),
 			fetchCloud()
 		]);
@@ -532,17 +542,25 @@
 	async function fetchLookalikes() {
 		const project = projectsStore.activeProject;
 		if (!project || !showDns) return;
-		await settle('Lookalike domains', lookalikesApi.target(project.id, targetId), (l) => {
-			lookalikes = l;
-		});
+		await settle(
+			'Lookalike domains',
+			run(() => lookalikesApi.target(project.id, targetId)),
+			(l) => {
+				lookalikes = l;
+			}
+		);
 	}
 
 	async function fetchCloud() {
 		const project = projectsStore.activeProject;
 		if (!project || !showDns) return;
-		await settle('Cloud storage', cloudStorageApi.target(project.id, targetId), (c) => {
-			cloud = c;
-		});
+		await settle(
+			'Cloud storage',
+			run(() => cloudStorageApi.target(project.id, targetId)),
+			(c) => {
+				cloud = c;
+			}
+		);
 	}
 
 	let webFor: string | null = null;
@@ -553,31 +571,49 @@
 		extrasLoading = true;
 		const reachQueries = reachabilityStates(showDns).map((s) => s.query);
 		await Promise.all([
-			settle('Hosting', subdomainsApi.hosting(project.id, scanId), (h) => (hosting = h)),
+			settle(
+				'Hosting',
+				run(() => subdomainsApi.hosting(project.id, scanId)),
+				(h) => (hosting = h)
+			),
 			settle(
 				'Technology',
-				subdomainsApi.facets(project.id, scanId).then((f) => f.tech),
+				run(() => subdomainsApi.facets(project.id, scanId)).then((f) => f.tech),
 				(t) => (tech = t)
 			),
-			settle('Web hygiene', subdomainsApi.hygiene(project.id, scanId), (h) => (hygiene = h)),
-			settle('Domain posture', domainPostureApi.target(project.id, targetId), (p) => (posture = p)),
+			settle(
+				'Web hygiene',
+				run(() => subdomainsApi.hygiene(project.id, scanId)),
+				(h) => (hygiene = h)
+			),
 			settle(
 				'Domain posture',
-				subdomainsApi.posture(project.id, scanId),
+				run(() => domainPostureApi.target(project.id, targetId)),
+				(p) => (posture = p)
+			),
+			settle(
+				'Domain posture',
+				run(() => subdomainsApi.posture(project.id, scanId)),
 				(p) => (postureHosts = p)
 			),
 			settle(
 				'Certificates',
-				subdomainsApi.insights(project.id, scanId).then((i) => certBucketsOf(i.cert_buckets)),
+				run(() => subdomainsApi.insights(project.id, scanId)).then((i) =>
+					certBucketsOf(i.cert_buckets)
+				),
 				(b) => (certBuckets = b)
 			),
-			settle('Reachability', subdomainsApi.counts(project.id, scanId, reachQueries), (r) => {
-				reach = r.counts;
-				reachCapped = r.capped;
-			}),
+			settle(
+				'Reachability',
+				run(() => subdomainsApi.counts(project.id, scanId, reachQueries)),
+				(r) => {
+					reach = r.counts;
+					reachCapped = r.capped;
+				}
+			),
 			settle(
 				'Exposures',
-				interestApi.scan(scanId, { limit: EXPOSURE_ROWS }),
+				run(() => interestApi.scan(scanId, { limit: EXPOSURE_ROWS })),
 				(p) => (exposures = p)
 			)
 		]);
@@ -589,7 +625,11 @@
 		const project = projectsStore.activeProject;
 		if (!project || geoFor === scanId) return;
 		geoFor = scanId;
-		await settle('Geography', ipsApi.facets(project.id, scanId), (f) => (ipFacets = f));
+		await settle(
+			'Geography',
+			run(() => ipsApi.facets(project.id, scanId)),
+			(f) => (ipFacets = f)
+		);
 	}
 
 	let servicesFor: string | null = null;
@@ -598,8 +638,16 @@
 		if (!project || servicesFor === scanId) return;
 		servicesFor = scanId;
 		await Promise.all([
-			settle('Services', servicesApi.exposure(project.id, scanId), (e) => (exposure = e)),
-			settle('AI services', servicesApi.ai(project.id, scanId), (a) => (ai = a))
+			settle(
+				'Services',
+				run(() => servicesApi.exposure(project.id, scanId)),
+				(e) => (exposure = e)
+			),
+			settle(
+				'AI services',
+				run(() => servicesApi.ai(project.id, scanId)),
+				(a) => (ai = a)
+			)
 		]);
 	}
 
@@ -608,7 +656,11 @@
 		const project = projectsStore.activeProject;
 		if (!project || vulnsFor === scanId) return;
 		vulnsFor = scanId;
-		await settle('Findings', vulnerabilitiesApi.overview(project.id, scanId), (v) => (vulns = v));
+		await settle(
+			'Findings',
+			run(() => vulnerabilitiesApi.overview(project.id, scanId)),
+			(v) => (vulns = v)
+		);
 	}
 
 	let softwareFor: string | null = null;
@@ -619,8 +671,8 @@
 		await settle(
 			'Software CVEs',
 			Promise.all([
-				softwareApi.facets(project.id, scanId),
-				softwareApi.coverage(project.id, scanId)
+				run(() => softwareApi.facets(project.id, scanId)),
+				run(() => softwareApi.coverage(project.id, scanId))
 			]).then(([facets, coverage]) => ({ facets, coverage })),
 			(s) => (software = s)
 		);
@@ -639,7 +691,7 @@
 		stealerLoading = true;
 		await settle(
 			'Infostealer infections',
-			targetsApi.getInfostealer(targetId, webScanId),
+			run(() => targetsApi.getInfostealer(targetId, webScanId)),
 			(r) => (stealer = r)
 		);
 		if (stealerFor === key) stealerLoading = false;
