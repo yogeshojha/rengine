@@ -1,5 +1,3 @@
-"""The plan policy lives in shared so the worker's rule reads the same decision."""
-
 from __future__ import annotations
 
 from shared.services.investigate_policy import (

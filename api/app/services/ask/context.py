@@ -139,7 +139,7 @@ def extracted(v: VulnerabilityRead) -> list[str]:
 
 
 def _finding(v: VulnerabilityRead) -> dict:
-    """What reNgine itself recorded: nothing here was written by the target."""
+    """Fields reNgine recorded."""
     asset = v.asset
     return {
         "check": {

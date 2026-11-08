@@ -87,7 +87,6 @@ EMPTY_COUNTS = {"in_scope_count": 0, "out_of_scope_count": 0, "importable_count"
 
 
 def _without_counts(program) -> dict:
-    """paginate() may hand back an already-coerced read."""
     data = program.model_dump()
     for key in (
         *EMPTY_COUNTS,
