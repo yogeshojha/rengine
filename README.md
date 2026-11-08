@@ -33,7 +33,7 @@
   reNgine is an open source attack surface management platform for security teams, penetration testers and bug bounty hunters. It maps the external attack surface of an organisation, finds subdomains, IP addresses, open ports, endpoints and running software, scans them for vulnerabilities, and keeps the results in one place. Scans are built from configurable engines, results are searched with a query language, and every scan can be scheduled, compared with the previous one and reported on.
 </p>
 <p>
-  reNgine runs on your own server with Docker Compose and works with the open source tools the community already trusts, including subfinder, httpx, naabu, katana, ffuf, nuclei and dalfox.
+  It runs on a self-hosted server with Docker Compose and works with subfinder, httpx, naabu, katana, ffuf, nuclei and dalfox.
 </p>
 
 ## Documentation
@@ -62,13 +62,13 @@ Detailed documentation is available at [rengine.wiki](https://rengine.wiki).
 
 **Query language.** All results are searchable with the same query syntax. `is:live tech:nginx` finds live nginx web assets, `severity:critical is:new` finds critical findings not seen in any earlier scan of the target, `port:22` finds SSH services and `cve:CVE-2024-3400` finds every asset affected by one CVE. Queries drive filters, saved rules, dashboard counts, exports and notifications.
 
-**Correlation.** Hosts that share an IP address, certificate, page title, favicon, body hash, JARM fingerprint, technology or CDN are grouped and drawn as a graph. Links are drawn across targets in a project, and targets are related to each other by certificate, registrant, network and nameserver. Provider infrastructure such as CDN edges and shared platform hostnames is recognised and not drawn as a relation.
+**Correlation.** Web assets that share an IP address, certificate, page title, favicon, body hash, JARM fingerprint, technology or CDN are grouped and drawn as a graph. Links are drawn across targets in a project, and targets are related to each other by certificate, registrant, network and nameserver. Provider infrastructure such as CDN edges and shared platform hostnames is recognised and not drawn as a relation.
 
 **Prioritisation.** Findings carry CVSS, EPSS and CISA KEV data, refreshed nightly from the feeds without a rescan. Software CVEs are inferred from fingerprinted versions against a local NVD corpus and shown as their own dimension. Every finding sits on one evidence ladder, from inferred to proven, and triage decisions carry across scans.
 
 **Continuous monitoring.** Scans run once, on an interval, daily at a fixed time or on a cron expression. What's new lists everything found since the last visit, grouped by run, and Compare runs shows the difference between any two scans of a target, including what changed in the configuration between them. Notifications go to Slack, Discord, Telegram, Microsoft Teams, email and webhooks.
 
-**Bug bounty mode.** Bounty Hub syncs programs and scopes from HackerOne and Intigriti and imports the public program feed. A program watch turns a program's scope into targets, a scan context and a schedule, then follows certificate transparency logs and probes each new in-scope host as its certificate appears.
+**Bug bounty mode.** Bounty Hub syncs programs and scopes from HackerOne and Intigriti and imports the public program feed. A program watch turns a program's scope into targets, a scan context and a schedule, then follows certificate transparency logs and probes each new in-scope name as its certificate appears.
 
 **Integrations.** An MCP server exposes reNgine's data and scan controls to AI agents with scoped service tokens. Remote control pairs a Telegram chat with the instance for scans, findings and progress from a phone. The Burp Suite connector feeds proxy traffic into the endpoint inventory and sends endpoints back to Burp. AI providers can be connected for report narration and exposure review.
 
@@ -213,7 +213,7 @@ Read the [documentation](https://rengine.wiki) before asking for help. Most ques
 
 ## Support and Sponsoring
 
-reNgine is a passion project developed alongside a day job. Support it by:
+Ways to support the project:
 
 * Adding a [GitHub Star](https://github.com/yogeshojha/rengine)
 * Writing or posting about reNgine
