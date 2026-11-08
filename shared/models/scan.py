@@ -6,6 +6,7 @@ from sqlalchemy import Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.ai import MAX_MODEL_ID
 from shared.definitions.constants import MAX_SCAN_BATCH
 from shared.definitions.endpoints import EndpointSource
 from shared.definitions.rescan import (
@@ -165,7 +166,7 @@ class Scan(SQLModel, table=True):
     error: str | None = Field(default=None, max_length=2000)
     interest_signature: str | None = Field(default=None, max_length=64)
     interest_judged_at: datetime | None = Field(default=None)
-    interest_model: str | None = Field(default=None, max_length=80)
+    interest_model: str | None = Field(default=None, max_length=MAX_MODEL_ID)
     created_by: uuid.UUID = Field(foreign_key="users.id")
     created_at: datetime = Field(default_factory=utc_now)
     started_at: datetime | None = Field(default=None)

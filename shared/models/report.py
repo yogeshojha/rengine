@@ -6,6 +6,7 @@ from pydantic import Field as PydanticField
 from sqlalchemy import Column, Text
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.ai import MAX_MODEL_ID
 from shared.definitions.report_fonts import (
     DEFAULT_WEIGHT,
     MAX_FACES,
@@ -87,7 +88,7 @@ class Report(SQLModel, table=True):
 
     ai_used: bool = Field(default=False)
     ai_provider: str | None = Field(default=None, max_length=32)
-    ai_model: str | None = Field(default=None, max_length=80)
+    ai_model: str | None = Field(default=None, max_length=MAX_MODEL_ID)
     ai_calls: int = Field(default=0)
     ai_input_tokens: int = Field(default=0)
     ai_output_tokens: int = Field(default=0)

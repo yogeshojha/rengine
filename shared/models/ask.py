@@ -11,6 +11,7 @@ from sqlalchemy import Column, Index, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.ai import MAX_MODEL_ID
 from shared.definitions.ask import (
     ASK_DIMENSIONS,
     MAX_BLOCK_QUERY,
@@ -132,7 +133,7 @@ class AskMessage(SQLModel, table=True):
     )
     about: str | None = Field(default=None, max_length=MAX_ASSET_KEY)
     intelligent: bool = Field(default=False)
-    model: str | None = Field(default=None, max_length=80)
+    model: str | None = Field(default=None, max_length=MAX_MODEL_ID)
     input_tokens: int = Field(default=0)
     output_tokens: int = Field(default=0)
     cost_usd: float | None = Field(default=None)

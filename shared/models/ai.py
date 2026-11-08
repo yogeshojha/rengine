@@ -9,6 +9,7 @@ from sqlmodel import Field, SQLModel, UniqueConstraint
 from shared.definitions.ai import (
     MAX_API_KEY,
     MAX_BASE_URL,
+    MAX_CALL_ERROR,
     MAX_CATALOG_ID,
     MAX_CONNECTION_NAME,
     MAX_COST_SOURCE,
@@ -33,7 +34,7 @@ class AiNarrative(SQLModel, table=True):
     cache_key: str = Field(max_length=64, index=True)
     subject: str = Field(default="", max_length=300)
     provider: str = Field(max_length=32)
-    model: str = Field(max_length=80)
+    model: str = Field(max_length=MAX_MODEL_ID)
     content: str = Field(sa_column=Column(Text, nullable=False))
     input_tokens: int = Field(default=0)
     output_tokens: int = Field(default=0)
@@ -51,7 +52,7 @@ class AiCall(SQLModel, table=True):
     task: str = Field(max_length=40)
     feature: str = Field(max_length=40)
     provider: str = Field(max_length=32)
-    model: str = Field(max_length=80)
+    model: str = Field(max_length=MAX_MODEL_ID)
     ok: bool = Field(default=True)
     cached: bool = Field(default=False)
     rounds: int = Field(default=1)
@@ -64,7 +65,7 @@ class AiCall(SQLModel, table=True):
     input_per_mtok: float | None = Field(default=None)
     output_per_mtok: float | None = Field(default=None)
     latency_ms: int = Field(default=0)
-    error: str | None = Field(default=None, max_length=300)
+    error: str | None = Field(default=None, max_length=MAX_CALL_ERROR)
     source_kind: str | None = Field(default=None, max_length=20)
     source_id: uuid.UUID | None = Field(default=None)
     user_id: uuid.UUID | None = Field(default=None)

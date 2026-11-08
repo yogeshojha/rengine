@@ -11,6 +11,7 @@ from sqlalchemy import Column, Index, Text, UniqueConstraint
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.ai import MAX_MODEL_ID
 from shared.definitions.investigate import (
     INVESTIGATE_DIMENSION,
     MAX_HOST,
@@ -59,7 +60,7 @@ class Investigation(SQLModel, table=True):
     # set when a plan reproduced the finding or the evidence was conclusive
     verified_at: datetime | None = Field(default=None)
 
-    model: str | None = Field(default=None, max_length=80)
+    model: str | None = Field(default=None, max_length=MAX_MODEL_ID)
     input_tokens: int = Field(default=0)
     output_tokens: int = Field(default=0)
     cost_usd: float | None = Field(default=None)

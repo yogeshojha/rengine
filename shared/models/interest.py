@@ -7,6 +7,7 @@ from sqlalchemy import Column, Index
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.ai import MAX_MODEL_ID
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.interest import (
     MAX_EVIDENCE,
@@ -76,7 +77,7 @@ class InterestSignal(SQLModel, table=True):
     reason: str = Field(default="", max_length=MAX_REASON)
     evidence: str | None = Field(default=None, max_length=MAX_EVIDENCE)
     rule_id: uuid.UUID | None = Field(default=None, index=True)
-    model: str | None = Field(default=None, max_length=80)
+    model: str | None = Field(default=None, max_length=MAX_MODEL_ID)
     prompt_version: str | None = Field(default=None, max_length=16)
     created_at: datetime = Field(default_factory=utc_now)
 
