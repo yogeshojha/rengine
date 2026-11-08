@@ -266,7 +266,7 @@ async def test_crtsh_client_transport_errors(monkeypatch, error, fragment):
         (400, "bad", ViewDNSRejectedError),
         (404, "missing", ViewDNSRejectedError),
         (401, "no", ViewDNSAuthError),
-        (403, "no", ViewDNSAuthError),
+        (403, "no", ViewDNSRejectedError),
         (429, "slow", ViewDNSRateLimitError),
         (500, "boom", ViewDNSAPIError),
         (503, "boom", ViewDNSAPIError),
