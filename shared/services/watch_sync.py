@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from sqlalchemy import func, select, update
+from sqlalchemy import Row, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 
@@ -462,20 +462,21 @@ def fingerprint(
     return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
-def _best_asset(session: Session, scan_id, name: str) -> HttpAsset | None:
-    rows = list(
-        session.execute(
-            select(HttpAsset).where(
-                HttpAsset.scan_id == scan_id, HttpAsset.host == name
-            )
-        )
-        .scalars()
-        .all()
-    )
+def _best_asset(session: Session, scan_id, name: str) -> Row | None:
+    rows = session.execute(
+        select(
+            HttpAsset.status_code,
+            HttpAsset.title,
+            HttpAsset.tech,
+            HttpAsset.screenshot_path,
+            HttpAsset.ip,
+            HttpAsset.scheme,
+        ).where(HttpAsset.scan_id == scan_id, HttpAsset.host == name)
+    ).all()
     if not rows:
         return None
 
-    def rank(row: HttpAsset) -> tuple:
+    def rank(row: Row) -> tuple:
         code = row.status_code or 999
         return (
             0 if row.screenshot_path else 1,
