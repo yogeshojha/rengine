@@ -45,4 +45,5 @@ class CustomTextSection(Section):
             "body": cfg.body,
             "callout": cfg.style != "plain",
             "kind": kind,
+            "flow": not cfg.new_page,
         }

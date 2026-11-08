@@ -52,6 +52,7 @@ def _wrap(
     title: str,
     anchor: str,
     number: str,
+    flow: bool = False,
 ) -> str:
     heading = ctx.theme.layout.heading
     if heading == HeadingStyle.NUMBERED.value and not ctx.style.section_numbering:
@@ -65,7 +66,7 @@ def _wrap(
         if heading == HeadingStyle.KICKER.value
         else "",
         heading_style=heading,
-        flow=spec.page_break == "flow",
+        flow=flow or spec.page_break == "flow",
     )
 
 
@@ -128,6 +129,7 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
                 built_title = payload.pop("title", "")
                 subs = payload.pop("toc_subs", None) or []
                 bare = bool(payload.pop("bare", False))
+                flow = bool(payload.pop("flow", False))
                 body = _body(env, ctx, spec, config, payload)
         except Exception as exc:
             logger.warning("section failed", section=spec.name, error=str(exc)[:300])
@@ -158,7 +160,16 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
         blocks.append(
             body
             if bare
-            else _wrap(env, ctx, spec, body, title=title, anchor=anchor, number=number)
+            else _wrap(
+                env,
+                ctx,
+                spec,
+                body,
+                title=title,
+                anchor=anchor,
+                number=number,
+                flow=flow,
+            )
         )
         doc.rendered.append(spec.name)
 
