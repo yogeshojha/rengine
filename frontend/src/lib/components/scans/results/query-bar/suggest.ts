@@ -108,7 +108,7 @@ function optionsFor(
 	}
 	if (field.values.length) return field.values.map((v) => ({ value: v }));
 	if (field.type === 'date') {
-		return (field.name === 'cert.expires' ? FUTURE_DATES : RELATIVE_DATES).map((d) => ({
+		return (field.future ? FUTURE_DATES : RELATIVE_DATES).map((d) => ({
 			value: d.value,
 			detail: d.detail
 		}));

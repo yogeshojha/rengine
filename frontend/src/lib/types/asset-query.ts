@@ -20,6 +20,7 @@ export interface QueryFieldSpec {
 	facet: string | null;
 	operators: string[];
 	unit: string | null;
+	future: boolean;
 }
 
 export interface QueryOperatorSpec {

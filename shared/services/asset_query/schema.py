@@ -41,6 +41,7 @@ def build_schema(registry: QueryRegistry = HOST_QUERY) -> QuerySchema:
                 facet=spec.facet,
                 operators=[op.value for op in OPS_BY_TYPE[spec.type]],
                 unit=spec.unit,
+                future=spec.future,
             )
             for spec in registry.fields
         ],

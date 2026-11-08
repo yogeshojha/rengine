@@ -159,6 +159,7 @@ class QueryField:
     evidence: str | None = None
     unit: str | None = None
     dynamic_sub: str | None = None
+    future: bool = False
 
 
 GROUPS: tuple[str, ...] = (
@@ -571,6 +572,7 @@ FIELDS: tuple[QueryField, ...] = (
         group="Certificates",
         description="Certificate expiry date.",
         example="cert.expires:<30d",
+        future=True,
     ),
     QueryField(
         name="tls.version",

@@ -16,6 +16,7 @@ class QueryFieldSpec(BaseModel):
     facet: str | None = None
     operators: list[str] = Field(default_factory=list)
     unit: str | None = None
+    future: bool = False
 
 
 class QueryOperatorSpec(BaseModel):
