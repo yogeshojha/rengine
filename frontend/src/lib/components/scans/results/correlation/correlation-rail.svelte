@@ -117,9 +117,10 @@
 					{/if}
 				{/each}
 			</ul>
-			{#if hub.members.length > MEMBERS}
+			{@const rest = hub.count - Math.min(hub.members.length, MEMBERS)}
+			{#if rest > 0}
 				<p class="px-4 py-2 text-2xs text-muted-foreground">
-					{hub.members.length - MEMBERS} more in Web assets
+					{rest.toLocaleString()} more in Web assets
 				</p>
 			{/if}
 		</ScrollArea>
