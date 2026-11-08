@@ -10,10 +10,8 @@ from starlette.requests import Request
 from app.api.v1.auth import (
     AUTH_COOKIES,
     REFRESH_TOKEN_COOKIE,
-    LoginRequest,
     PasswordChangeRequest,
     UsernameChangeRequest,
-    login,
     refresh_access_token,
     router,
 )
@@ -43,21 +41,6 @@ async def _account(session) -> User:
     session.add(user)
     await session.flush()
     return user
-
-
-async def test_login_sets_cookies_and_returns_no_token(session):
-    user = await _account(session)
-    response = Response()
-
-    body = await login(
-        LoginRequest(username=user.username, password=STRONG),
-        Request({"type": "http", "headers": [], "client": ("192.0.2.1", 1)}),
-        response,
-        session,
-    )
-
-    assert body.model_dump() == {"mfa_required": False, "mfa_token": None}
-    assert _cookies(response) == set(AUTH_COOKIES)
 
 
 async def test_refresh_answers_no_content(session):

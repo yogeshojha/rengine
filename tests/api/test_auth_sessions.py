@@ -203,8 +203,8 @@ async def test_login_returns_no_token_in_the_body(redis, flush_only):
         response,
         flush_only,
     )
-    assert set(body.model_dump()) == {"mfa_required", "mfa_token"}
-    assert _cookie(response, auth.REFRESH_TOKEN_COOKIE)
+    assert body.model_dump() == {"mfa_required": False, "mfa_token": None}
+    assert all(_cookie(response, name) for name in auth.AUTH_COOKIES)
 
 
 async def test_a_busy_event_stream_rechecks_its_token(monkeypatch):
