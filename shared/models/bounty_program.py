@@ -8,6 +8,7 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.bounty_programs import ProgramSource
+from shared.definitions.constants import MAX_LABELS
 from shared.enums.target import TargetType
 from shared.models.organization import OrganizationSummary
 from shared.models.tag import TagSummary
@@ -186,7 +187,7 @@ class BountyImportRequest(BaseModel):
     group_by_program: bool = True
     # blank falls back to the program name
     organization_name: str | None = None
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list, max_length=MAX_LABELS)
 
 
 class BountyImportResult(BaseModel):

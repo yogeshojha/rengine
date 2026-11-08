@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, field_validator
 from sqlmodel import Field, Relationship, SQLModel, UniqueConstraint
 
-from shared.definitions.constants import MAX_TARGET_BULK, MAX_TARGETS_IMPORT
+from shared.definitions.constants import (
+    MAX_LABELS,
+    MAX_TARGET_BULK,
+    MAX_TARGETS_IMPORT,
+)
 from shared.definitions.infostealer import MAX_ERROR_LENGTH
 from shared.definitions.rescan import MAX_RUN_ASSETS
 from shared.enums.target import TargetType
@@ -139,8 +143,8 @@ class Target(TargetBase, table=True):
 
 class TargetCreate(TargetBase):
     project_slug: str
-    organization_names: list[str] = Field(default_factory=list)
-    tag_names: list[str] = Field(default_factory=list)
+    organization_names: list[str] = Field(default_factory=list, max_length=MAX_LABELS)
+    tag_names: list[str] = Field(default_factory=list, max_length=MAX_LABELS)
     seeds: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
 
     _tags = field_validator("tag_names")(_clean_tags)
@@ -155,8 +159,8 @@ class TargetBulkCreate(BaseModel):
         max_length=MAX_TARGET_BULK,
         description=f"Target values to import. At most {MAX_TARGET_BULK}.",
     )
-    organization_names: list[str] = Field(default_factory=list)
-    tag_names: list[str] = Field(default_factory=list)
+    organization_names: list[str] = Field(default_factory=list, max_length=MAX_LABELS)
+    tag_names: list[str] = Field(default_factory=list, max_length=MAX_LABELS)
     seeds: list[str] = Field(default_factory=list, max_length=MAX_RUN_ASSETS)
 
     _tags = field_validator("tag_names")(_clean_tags)
@@ -182,8 +186,8 @@ class TargetBulkCreateResponse(BaseModel):
 
 class TargetUpdate(SQLModel):
     display_name: str | None = Field(default=None, max_length=MAX_DISPLAY_NAME_LEN)
-    organization_names: list[str] | None = None
-    tag_names: list[str] | None = None
+    organization_names: list[str] | None = Field(default=None, max_length=MAX_LABELS)
+    tag_names: list[str] | None = Field(default=None, max_length=MAX_LABELS)
     seed_scans: bool | None = None
     new_checks: bool | None = None
 
@@ -238,10 +242,12 @@ class TargetImportRequest(BaseModel):
     )
     organization_names: list[str] = Field(
         default_factory=list,
+        max_length=MAX_LABELS,
         description="Organizations added to every imported target.",
     )
     tag_names: list[str] = Field(
         default_factory=list,
+        max_length=MAX_LABELS,
         description="Tags added to every imported target.",
     )
 
