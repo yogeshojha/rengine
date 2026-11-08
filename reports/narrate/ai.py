@@ -7,7 +7,7 @@ from reports.analysis.brief import AttackPath, ReportBrief
 from reports.data.models import Issue
 from reports.narrate.base import Narrator
 from reports.narrate.deterministic import PlainNarrator
-from shared.definitions.ai import AITask
+from shared.definitions.ai import UNTRUSTED_NOTE, AITask
 from shared.definitions.reports import Audience, Depth, NarrativeOptions
 from shared.services.ai.cache import narrate
 from shared.services.ai.config import AIConfig
@@ -74,7 +74,7 @@ class AiNarrator(Narrator):
         subject: str,
     ) -> str | None:
         nonce = hashlib.sha256(payload.encode()).hexdigest()[:12]
-        prompt = f"{instruction}\n\nBRIEF:\n<<untrusted {nonce}>>\n{payload}\n<<end {nonce}>>"
+        prompt = f"{instruction}\n\nBRIEF:\n<<untrusted {nonce}>>\n{UNTRUSTED_NOTE}\n{payload}\n<<end {nonce}>>"
         text = narrate(
             self.session,
             self.cfg,
