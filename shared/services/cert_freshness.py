@@ -60,17 +60,14 @@ def enabled(session: Session) -> bool:
 def due(session: Session, *, limit: int = MAX_PER_RUN) -> list[Subdomain]:
     """Hosts due a re-check, nearest expiry first, newest settled census run only."""
     now = utc_now()
-    newest = Subdomain.scan_id == (
+    latest = (
         select(Scan.id)
-        .where(
-            Scan.target_id == Subdomain.target_id,
-            census_only(),
-            Scan.status.in_(SCAN_TERMINAL_STATUSES),
-        )
-        .order_by(Scan.created_at.desc())
-        .limit(1)
-        .scalar_subquery()
+        .where(census_only(), Scan.status.in_(SCAN_TERMINAL_STATUSES))
+        .distinct(Scan.target_id)
+        .order_by(Scan.target_id, Scan.created_at.desc())
+        .subquery()
     )
+    newest = Subdomain.scan_id.in_(select(latest.c.id))
     urgent = Subdomain.tls_not_after <= now + URGENT_WITHIN
     cutoff = case((urgent, now - URGENT_AFTER), else_=now - STALE_AFTER)
     return list(
