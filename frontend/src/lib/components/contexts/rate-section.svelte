@@ -13,6 +13,7 @@
 		type ScanContextCreate
 	} from '$lib/types/scan-context';
 	import { engineCatalogStore } from '$lib/stores/engine-catalog.svelte';
+	import { MAX_RATE } from '$lib/config/intensity';
 
 	type CtxLike = ScanContextRead | ScanContextCreate;
 
@@ -35,7 +36,7 @@
 	}));
 
 	const RATE_MIN = 1;
-	const RATE_MAX = 10000;
+	const RATE_MAX = MAX_RATE;
 	const RATE_ERR = `Enter a value between ${RATE_MIN} and ${RATE_MAX}`;
 
 	function parseRate(raw: string): number | null {
