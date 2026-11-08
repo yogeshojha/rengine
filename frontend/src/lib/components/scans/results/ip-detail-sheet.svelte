@@ -227,7 +227,7 @@
 										`${p.number}${p.service_name ? `/${p.service_name}` : ''}`,
 										`port:${p.number}`,
 										isSensitivePort(p.number)
-											? 'An administrative or datastore port'
+											? 'An administrative or database port'
 											: 'Filter by port',
 										true,
 										isSensitivePort(p.number)

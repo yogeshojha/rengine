@@ -140,7 +140,7 @@
 								{#if f.sensitive_ports.length}
 									<span class="ml-1 flex items-center gap-1 text-xs text-warning">
 										<TriangleAlert class="size-3.5" />
-										{f.sensitive_ports.length} administrative or datastore
+										{f.sensitive_ports.length} administrative or database
 									</span>
 								{/if}
 							</div>

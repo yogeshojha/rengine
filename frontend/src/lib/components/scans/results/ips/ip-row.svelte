@@ -208,7 +208,7 @@
 							</button>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>An administrative or datastore port is open</Tooltip.Content>
+					<Tooltip.Content>An administrative or database port is open</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
 			<span class="hidden h-5 shrink-0 items-center sm:flex">

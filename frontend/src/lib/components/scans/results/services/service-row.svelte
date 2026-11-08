@@ -172,7 +172,7 @@
 							</span>
 						{/snippet}
 					</Tooltip.Trigger>
-					<Tooltip.Content>An administrative or datastore port</Tooltip.Content>
+					<Tooltip.Content>An administrative or database port</Tooltip.Content>
 				</Tooltip.Root>
 			</span>
 

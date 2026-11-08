@@ -80,7 +80,7 @@
 		if (exposure.sensitive > 0)
 			return {
 				value: exposure.sensitive,
-				text: `administrative or datastore ${exposure.sensitive === 1 ? 'port' : 'ports'} exposed`
+				text: `administrative or database ${exposure.sensitive === 1 ? 'port' : 'ports'} exposed`
 			};
 		if (exposure.non_web_services > 0)
 			return {
