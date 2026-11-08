@@ -30,6 +30,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import aliased
 from sqlalchemy.types import Uuid
 
+from app.core.validation_errors import validation_detail
 from app.services.subdomain import SubdomainService
 from shared.definitions.surface import SurfaceDimension
 from shared.definitions.timeline import (
@@ -210,7 +211,10 @@ class TimelineService:
         if scan.scope != ScanScope.FULL.value:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Timeline reads census runs. This run is focused.",
+                detail=validation_detail(
+                    ["query", "scan_id"],
+                    "Timeline reads census runs. This run is focused.",
+                ),
             )
         return scan
 
