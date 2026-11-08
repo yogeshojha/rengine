@@ -92,7 +92,7 @@
 		if (!query.trim()) return;
 		checking = true;
 		try {
-			preview = await interestApi.preview(query);
+			preview = await interestApi.preview(projectId, query);
 		} catch (e) {
 			preview = null;
 			toast.error(e instanceof Error ? e.message : 'Query not checked');

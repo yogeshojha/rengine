@@ -63,8 +63,9 @@ async def brief_asset(
     service: Service,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
     name: Annotated[str, Query(min_length=1, max_length=MAX_ASSET_KEY)],
+    project_id: ProjectId,
 ):
-    found = await service.brief_asset(scan_id, name)
+    found = await service.brief_asset(scan_id, name, project_id)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Web asset not found.")
     return found

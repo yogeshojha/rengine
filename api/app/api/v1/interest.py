@@ -114,8 +114,9 @@ async def preview_rule(
     _user: CurrentUser,
     query: Annotated[str, Body(embed=True, max_length=MAX_QUERY_LENGTH)],
     scan_id: Annotated[UUID | None, Query()] = None,
+    project_id: Annotated[UUID | None, Query()] = None,
 ) -> RulePreview:
-    return await InterestReadService(session).preview(query, scan_id)
+    return await InterestReadService(session).preview(query, scan_id, project_id)
 
 
 @router.post("/scan/{scan_id}", response_model=InterestPage)
@@ -244,6 +245,7 @@ async def restore_dismissal(
     session: SessionDep,
     _user: CurrentUser,
     dismissal_id: Annotated[UUID, Path()],
+    project_id: Annotated[UUID, Query()],
 ) -> None:
-    if not await InterestReadService(session).restore(dismissal_id):
+    if not await InterestReadService(session).restore(dismissal_id, project_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dismissal not found.")

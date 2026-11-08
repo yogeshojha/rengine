@@ -91,7 +91,11 @@ export function createBriefCache(
 
 function fetchBrief(subject: AskSubject): Promise<AskBrief> {
 	if (subject.dimension === SurfaceDimension.WEB_ASSETS) {
-		const query = new URLSearchParams({ scan_id: subject.scanId, name: subject.key });
+		const query = new URLSearchParams({
+			scan_id: subject.scanId,
+			name: subject.key,
+			project_id: subject.projectId
+		});
 		return api.get<AskBrief>(`/ask/brief/web-asset?${query}`);
 	}
 	const scope = scopeQuery({ projectId: subject.projectId, scanId: subject.scanId });

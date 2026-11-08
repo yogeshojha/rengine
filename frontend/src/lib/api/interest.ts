@@ -36,9 +36,10 @@ export const interestApi = {
 		return api.delete<void>(`/interest/rules/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
-	preview(query: string, scanId?: string): Promise<RulePreview> {
-		const suffix = scanId ? `?scan_id=${scanId}` : '';
-		return api.post<RulePreview>(`/interest/rules/preview${suffix}`, { query });
+	preview(projectId: string, query: string, scanId?: string): Promise<RulePreview> {
+		const params = new URLSearchParams({ project_id: projectId });
+		if (scanId) params.set('scan_id', scanId);
+		return api.post<RulePreview>(`/interest/rules/preview?${params}`, { query });
 	},
 
 	project(
@@ -86,7 +87,9 @@ export const interestApi = {
 		return api.get<InterestDismissal[]>(`/interest/dismissals?project_id=${projectId}`);
 	},
 
-	restore(id: string): Promise<void> {
-		return api.delete<void>(`/interest/dismissals/${encodeURIComponent(id)}`);
+	restore(projectId: string, id: string): Promise<void> {
+		return api.delete<void>(
+			`/interest/dismissals/${encodeURIComponent(id)}?project_id=${projectId}`
+		);
 	}
 };

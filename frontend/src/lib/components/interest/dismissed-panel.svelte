@@ -48,7 +48,7 @@
 	async function restore(row: InterestDismissal): Promise<void> {
 		restoring.add(row.id);
 		try {
-			await interestApi.restore(row.id);
+			await interestApi.restore(projectId, row.id);
 			rows = rows.filter((r) => r.id !== row.id);
 			toast.success(`${row.host} restored`);
 		} catch {
