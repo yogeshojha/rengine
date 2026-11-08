@@ -2890,7 +2890,7 @@ SOFTWARE_FLAGS: dict[str, str] = {
     "kev": "Listed in CISA KEV",
     "ransomware": "Listed in CISA ransomware campaigns",
     "overdue": "Past the CISA remediation deadline",
-    "likely": f"EPSS score of {BANDS_BY_KEY['likely'].floor} or above",
+    "likely": BANDS_BY_KEY["likely"].description.removesuffix("."),
     "firm": "Every part of the match is verified",
     "conditional": "NVD names a further component not identified on the asset",
     "backport": "A distribution build. Fixes may land without a version change",
