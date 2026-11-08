@@ -96,14 +96,18 @@
 						<div class="px-4 py-3 space-y-2.5">
 							{#if entity.name}
 								<div class="flex items-start gap-2.5">
-									<UserRound class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+									<span class="flex h-5 shrink-0 items-center"
+										><UserRound class="h-3.5 w-3.5 text-muted-foreground" /></span
+									>
 									<p class="text-sm">{entity.name}</p>
 								</div>
 							{/if}
 
 							{#if entity.email}
 								<div class="flex items-start gap-2.5">
-									<Mail class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+									<span class="flex h-5 shrink-0 items-center"
+										><Mail class="h-3.5 w-3.5 text-muted-foreground" /></span
+									>
 									<a
 										href="mailto:{entity.email}"
 										class="text-sm text-primary hover:text-primary/80"
@@ -115,14 +119,18 @@
 
 							{#if entity.tel}
 								<div class="flex items-start gap-2.5">
-									<Phone class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+									<span class="flex h-5 shrink-0 items-center"
+										><Phone class="h-3.5 w-3.5 text-muted-foreground" /></span
+									>
 									<p class="text-sm font-mono">{entity.tel}</p>
 								</div>
 							{/if}
 
 							{#if formatAddress(entity)}
 								<div class="flex items-start gap-2.5">
-									<MapPin class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+									<span class="flex h-5 shrink-0 items-center"
+										><MapPin class="h-3.5 w-3.5 text-muted-foreground" /></span
+									>
 									<p class="text-sm whitespace-pre-line text-muted-foreground">
 										{formatAddress(entity)}
 									</p>
@@ -131,7 +139,9 @@
 
 							{#if entity.whois_server}
 								<div class="flex items-start gap-2.5">
-									<Globe class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+									<span class="flex h-5 shrink-0 items-center"
+										><Globe class="h-3.5 w-3.5 text-muted-foreground" /></span
+									>
 									<p class="text-sm font-mono text-muted-foreground">{entity.whois_server}</p>
 								</div>
 							{/if}

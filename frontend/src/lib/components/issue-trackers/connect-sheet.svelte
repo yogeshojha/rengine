@@ -226,9 +226,9 @@
 							role="status"
 						>
 							{#if result.success}
-								<CheckIcon class="mt-0.5 size-4 shrink-0" />
+								<span class="flex h-5 shrink-0 items-center"><CheckIcon class="size-4" /></span>
 							{:else}
-								<XIcon class="mt-0.5 size-4 shrink-0" />
+								<span class="flex h-5 shrink-0 items-center"><XIcon class="size-4" /></span>
 							{/if}
 							<span class="wrap-anywhere">{result.message}</span>
 						</p>

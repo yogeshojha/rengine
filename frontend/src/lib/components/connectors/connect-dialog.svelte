@@ -75,13 +75,13 @@
 				<li class="flex gap-3.5">
 					{#if finished(index)}
 						<span
-							class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
+							class="flex size-6 shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
 						>
 							<CheckIcon class="size-3.5" />
 						</span>
 					{:else}
 						<span
-							class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium tabular-nums"
+							class="flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium tabular-nums"
 							>{index + 1}</span
 						>
 					{/if}

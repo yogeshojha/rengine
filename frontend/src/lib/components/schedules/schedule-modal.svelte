@@ -496,8 +496,9 @@
 						</Tabs.Content>
 					</Tabs.Root>
 
-					<div class="flex items-start gap-1.5 text-2xs text-muted-foreground">
-						<CalendarClock class="mt-px h-3.5 w-3.5 shrink-0" />
+					<div class="flex items-start gap-1.5 text-2xs leading-4 text-muted-foreground">
+						<span class="flex h-4 shrink-0 items-center"><CalendarClock class="h-3.5 w-3.5" /></span
+						>
 						<span>
 							{#if isEdit}
 								Scheduled times use the timezone
