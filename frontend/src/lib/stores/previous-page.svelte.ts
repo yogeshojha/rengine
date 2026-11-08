@@ -1,7 +1,8 @@
 import { browser } from '$app/environment';
+import { STORAGE_KEYS } from '$lib/config/storage-keys';
 import type { Crumb } from './breadcrumbs.svelte';
 
-const KEY = 'previous-page';
+const KEY = STORAGE_KEYS.previousPage;
 const KEEP = 50;
 
 function load(): Record<string, Crumb> {
@@ -15,10 +16,7 @@ function load(): Record<string, Crumb> {
 
 const entries = $state<Record<string, Crumb>>(load());
 
-/**
- * The page each page was opened from, by pathname, so a back link can name and return to it.
- * Kept for the tab's session: a reload or a browser Back into the page still knows it.
- */
+/** The page each page was opened from, by pathname, for the tab's session. */
 export const previousPage = {
 	record(pathname: string, from: Crumb) {
 		delete entries[pathname];
@@ -28,11 +26,20 @@ export const previousPage = {
 		try {
 			sessionStorage.setItem(KEY, JSON.stringify(entries));
 		} catch {
-			// storage off or full: the link falls back to the page's parent
+			// storage off or full
 		}
 	},
 
 	of(pathname: string): Crumb | undefined {
 		return entries[pathname];
+	},
+
+	clear() {
+		for (const key of Object.keys(entries)) delete entries[key];
+		try {
+			sessionStorage.removeItem(KEY);
+		} catch {
+			// storage off
+		}
 	}
 };

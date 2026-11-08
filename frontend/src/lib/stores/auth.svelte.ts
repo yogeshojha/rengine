@@ -42,6 +42,7 @@ import { clearServiceLookup } from '$lib/utilities/service-lookup';
 import { clearFindings } from '$lib/components/scans/history/findings';
 import { forgetPeeks } from '$lib/components/scans/results/vulnerabilities/findings/peek';
 import { forgetBriefs } from '$lib/api/ask';
+import { previousPage } from '$lib/stores/previous-page.svelte';
 
 export const NO_SESSION =
 	'Session not started. Check that the instance is served over HTTPS and the api service is running.';
@@ -138,6 +139,7 @@ function createAuthStore() {
 		for (const store of Object.values(QUERY_SCHEMAS)) store.reset();
 		dashboardStore.clear();
 		breadcrumbStore.clear();
+		previousPage.clear();
 		recent.reset();
 		activityFeed.reset();
 		liveScans.clear();

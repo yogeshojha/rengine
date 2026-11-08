@@ -60,5 +60,6 @@ export const STORAGE_KEYS = {
 	scansShowMedium: 'rengine:scans:showMedium',
 	scansColumns: 'rengine:scans:columns',
 	scansDensity: 'rengine:scans:density',
-	sessionExpired: 'rengine:session:expired'
+	sessionExpired: 'rengine:session:expired',
+	previousPage: 'previous-page'
 } as const;
