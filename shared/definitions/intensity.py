@@ -78,6 +78,9 @@ RATE_TOOLS: tuple[str, ...] = tuple(
     tool for tool, (rate, _) in _NORMAL.items() if rate is not None
 )
 
+# rate-less tools that still take the context ceiling
+CEILING_BOUND: frozenset[str] = frozenset({TransportTool.BANNER.value})
+
 
 def tool_threads(
     tool: str,
@@ -106,7 +109,7 @@ def tool_rate(
     base = PROFILES.get(intensity, _NORMAL).get(tool, (None, 1))[0]
     value = rate_override if rate_override is not None else base
     if value is None:
-        return ceiling
+        return ceiling if tool in CEILING_BOUND else None
     if ceiling is not None:
         value = min(value, ceiling)
     return _clamp(int(value), 1, MAX_RATE)
