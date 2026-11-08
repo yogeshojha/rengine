@@ -19,6 +19,7 @@ from shared.models.note import NoteFacets
 pytestmark = pytest.mark.api
 
 PROJECT = str(uuid.uuid4())
+ID = str(uuid.uuid4())
 
 
 class _Service:
@@ -56,6 +57,9 @@ async def _facets(params: list[tuple[str, str]]) -> int:
         [("triage", "false_positive")],
         [("tag", "t")] * MAX_NOTE_TAGS,
         [("asset", "ips:192.0.2.1")] * MAX_NOTE_FACET_VALUES,
+        [("target_id", ID)] * MAX_NOTE_FACET_VALUES,
+        [("scan", ID)] * MAX_NOTE_FACET_VALUES,
+        [("author", ID)] * MAX_NOTE_FACET_VALUES,
     ],
 )
 async def test_bounded_values_pass(params):
@@ -75,6 +79,9 @@ async def test_bounded_values_pass(params):
         [("tag", "t")] * (MAX_NOTE_TAGS + 1),
         [("asset", "ips:192.0.2.1")] * (MAX_NOTE_FACET_VALUES + 1),
         [("status", "open")] * 3,
+        [("target_id", ID)] * (MAX_NOTE_FACET_VALUES + 1),
+        [("scan", ID)] * (MAX_NOTE_FACET_VALUES + 1),
+        [("author", ID)] * (MAX_NOTE_FACET_VALUES + 1),
     ],
 )
 async def test_values_past_their_bound_are_refused(params):

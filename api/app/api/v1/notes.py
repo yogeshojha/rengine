@@ -56,14 +56,22 @@ def get_service(
 
 def note_filter(
     target_id: Annotated[
-        list[UUID] | None, Query(description="Notes on any of these targets")
+        list[UUID] | None,
+        Query(
+            description="Notes on any of these targets",
+            max_length=MAX_NOTE_FACET_VALUES,
+        ),
     ] = None,
     scan_id: Annotated[
         UUID | None,
         Query(description="Notes written in this scan or on an asset it observed"),
     ] = None,
     scan: Annotated[
-        list[UUID] | None, Query(description="Notes written in any of these scans")
+        list[UUID] | None,
+        Query(
+            description="Notes written in any of these scans",
+            max_length=MAX_NOTE_FACET_VALUES,
+        ),
     ] = None,
     dimension: Annotated[
         list[_Dimension] | None,
@@ -95,7 +103,11 @@ def note_filter(
         ),
     ] = None,
     author: Annotated[
-        list[UUID] | None, Query(description="Notes written by any of these users")
+        list[UUID] | None,
+        Query(
+            description="Notes written by any of these users",
+            max_length=MAX_NOTE_FACET_VALUES,
+        ),
     ] = None,
     triage: Annotated[
         list[_Triage] | None,
