@@ -29,7 +29,6 @@
 		onHover
 	}: Props = $props();
 
-	const uid = $props.id();
 	const SPIN_SECONDS = 20;
 	const MAX_FRAME_MS = 100;
 	const MIN_R = 2.25;
@@ -160,13 +159,6 @@
 		onHover?.(null);
 	}}
 >
-	<defs>
-		<radialGradient id="{uid}-sea" cx="36%" cy="30%" r="74%">
-			<stop offset="0%" stop-color="var(--series)" stop-opacity="0.2" />
-			<stop offset="100%" stop-color="var(--series)" stop-opacity="0.04" />
-		</radialGradient>
-	</defs>
-
 	<circle
 		cx={mid}
 		cy={mid}
@@ -185,7 +177,7 @@
 		stroke-width="3"
 		opacity="0.1"
 	/>
-	<path d={sphere} fill="url(#{uid}-sea)" />
+	<path d={sphere} fill="var(--series)" opacity="0.1" />
 	<path d={grid} fill="none" stroke="var(--border)" stroke-width="0.5" opacity="0.8" />
 	<path d={landPath} fill="var(--muted-foreground)" opacity="0.45" />
 	<path d={sphere} fill="none" stroke="var(--border)" stroke-width="1" />
@@ -216,7 +208,7 @@
 				cy={dot.y}
 				r={dot.r + 3.5}
 				fill="none"
-				stroke="var(--primary)"
+				stroke="var(--series)"
 				stroke-width="1"
 				opacity={active ? 0.55 : 0.2}
 			/>
