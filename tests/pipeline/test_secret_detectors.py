@@ -20,9 +20,9 @@ def _kinds(text: str) -> dict[str, list[str]]:
 @pytest.mark.parametrize(
     "link",
     [
-        '<a href="http://mailto:ito.thorirmun@gmail.com">Mail</a>',
-        '<a href="http://mailto:info@trivenimunrolpa.gov.np">Contact</a>',
-        '<a href="https://tel:9779851012345@nepal.gov.np">Call</a>',
+        '<a href="http://mailto:office.ward@municipality.example">Mail</a>',
+        '<a href="http://mailto:info@municipality.example">Contact</a>',
+        '<a href="https://tel:15555550100@phone.example">Call</a>',
         '<a href="http://javascript:void0@open.example.net">x</a>',
     ],
 )
@@ -33,16 +33,16 @@ def test_a_link_scheme_in_the_user_field_is_not_a_credential(link):
 
 
 def test_the_address_inside_a_broken_mailto_link_is_still_an_email():
-    found = _kinds('<a href="http://mailto:ito.thorirmun@gmail.com">Mail</a>')
-    assert found.get("email") == ["ito.thorirmun@gmail.com"]
+    found = _kinds('<a href="http://mailto:office.ward@municipality.example">Mail</a>')
+    assert found.get("email") == ["office.ward@municipality.example"]
 
 
 @pytest.mark.parametrize(
     ("text", "value"),
     [
         (
-            "ftp://nftp:TmV4q9rBjS7pq5p@10.27.27.187:21/backup",
-            "ftp://nftp:TmV4q9rBjS7pq5p@10.27.27.187:21",
+            "ftp://user:Rk7vQ2mWx9Lp@192.0.2.10:21/backup",
+            "ftp://user:Rk7vQ2mWx9Lp@192.0.2.10:21",
         ),
         (
             'fetch("https://deploy:Gh7kQ2xLp9vZ@registry.acme-corp.io/v2/")',
