@@ -219,6 +219,14 @@ def _open_end(scan: Scan) -> datetime | None:
     return scan.paused_at if scan.status == ScanStatus.PAUSED.value else None
 
 
+def _finalize_each(ids: list[UUID]) -> None:
+    for scan_id in ids:
+        try:
+            dispatch_scan_finalize(str(scan_id))
+        except Exception:
+            logger.warning("cancel finalize dispatch failed", exc_info=True)
+
+
 class ScanService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -1375,31 +1383,7 @@ class ScanService:
     ) -> ScanRead:
         scan = await self._get_scan(id, project_id, lock=True)
         if scan.status in SCAN_OPEN_STATUSES:
-            held = scan.status == ScanStatus.RUNNING.value
-            scan.status = ScanStatus.CANCELLED.value
-            scan.completed_at = utc_now()
-            fold_pause(scan, scan.completed_at)
-            scan.error = cancelled_reason(actor)
-            await self.session.commit()
-
-            now = utc_now()
-            for model in (ScanActivity, ScanCommand):
-                await self.session.execute(
-                    update(model)
-                    .where(
-                        model.scan_id == scan.id,
-                        model.status.in_(_UNSETTLED_ACTIVITY_STATUSES),
-                    )
-                    .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
-                )
-            await self.session.commit()
-            try:
-                await asyncio.to_thread(dispatch_scan_finalize, str(scan.id))
-            except Exception:
-                logger.warning("cancel finalize dispatch failed", exc_info=True)
-            if held:
-                await self._admit_waiting()
-            await self._announce_cancelled(scan)
+            await self._settle_cancelled([scan], actor)
             await self.session.refresh(scan)
         return self._to_read(scan)
 
@@ -1412,15 +1396,45 @@ class ScanService:
         conds = [Scan.project_id == project_id, Scan.status.in_(SCAN_OPEN_STATUSES)]
         if target_ids:
             conds.append(Scan.target_id.in_(target_ids))
-        ids = (
-            (await self.session.execute(select(Scan.id).where(*conds))).scalars().all()
+        scans = list(
+            (
+                await self.session.execute(
+                    select(Scan).where(*conds).order_by(Scan.id).with_for_update()
+                )
+            )
+            .scalars()
+            .all()
         )
-        cancelled = 0
-        for scan_id in ids:
-            read = await self.cancel(id=scan_id, project_id=project_id, actor=actor)
-            if read.status == ScanStatus.CANCELLED.value:
-                cancelled += 1
-        return ScanCancelAll(cancelled=cancelled)
+        if scans:
+            await self._settle_cancelled(scans, actor)
+        return ScanCancelAll(cancelled=len(scans))
+
+    async def _settle_cancelled(self, scans: list[Scan], actor: str | None) -> None:
+        held = any(scan.status == ScanStatus.RUNNING.value for scan in scans)
+        ids = [scan.id for scan in scans]
+        for scan in scans:
+            scan.status = ScanStatus.CANCELLED.value
+            scan.completed_at = utc_now()
+            fold_pause(scan, scan.completed_at)
+            scan.error = cancelled_reason(actor)
+        await self.session.commit()
+
+        now = utc_now()
+        for model in (ScanActivity, ScanCommand):
+            await self.session.execute(
+                update(model)
+                .where(
+                    model.scan_id.in_(ids),
+                    model.status.in_(_UNSETTLED_ACTIVITY_STATUSES),
+                )
+                .values(status=ScanActivityStatus.ABORTED.value, completed_at=now)
+            )
+        await self.session.commit()
+        await asyncio.to_thread(_finalize_each, ids)
+        if held:
+            await self._admit_waiting()
+        for scan in scans:
+            await self._announce_cancelled(scan)
 
     async def pause(self, id: UUID, project_id: UUID) -> ScanRead:
         """Stop the run where it stands."""
