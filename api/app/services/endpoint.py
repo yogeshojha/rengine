@@ -1175,12 +1175,6 @@ class EndpointService:
         if hide_static:
             reach.append(~surface_endpoints.static_clause())
 
-        async def count(*extra) -> int:
-            return int(
-                await self.session.scalar(select(func.count()).where(*reach, *extra))
-                or 0
-            )
-
         static = surface_endpoints.static_clause()
         kept = ~static if hide_static else true()
         measures = {
@@ -1192,30 +1186,33 @@ class EndpointService:
             "walled": Endpoint.status_code.in_(preds.AUTH_STATUS),
             "interesting": func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0,
         }
-        counted = (
+        per_class = (
             await self.session.execute(
                 select(
+                    Endpoint.endpoint_class,
+                    func.count().label("rows"),
                     func.count().filter(static).label("static_total"),
                     *(
                         func.count().filter(and_(kept, test)).label(name)
                         for name, test in measures.items()
                     ),
-                ).where(scope.match(Endpoint.scan_id), Endpoint.host == host)
+                    func.count()
+                    .filter(and_(kept, endpoint_is_new(scope)))
+                    .label("new"),
+                )
+                .where(scope.match(Endpoint.scan_id), Endpoint.host == host)
+                .group_by(Endpoint.endpoint_class)
             )
-        ).one()
+        ).all()
+        sums = ("static_total", *measures, "new")
         out = HostBrief(
-            host=host, **{k: int(v or 0) for k, v in counted._mapping.items()}
+            host=host,
+            **{k: sum(int(getattr(r, k) or 0) for r in per_class) for k in sums},
         )
         out.identity = (await self._host_identity(scope, [host])).get(host)
-        by_class = await self.session.execute(
-            select(Endpoint.endpoint_class, func.count())
-            .where(scope.match(Endpoint.scan_id), Endpoint.host == host)
-            .group_by(Endpoint.endpoint_class)
-        )
-        out.by_class = {k: int(v) for k, v in by_class.all()}
+        out.by_class = {r.endpoint_class: int(r.rows) for r in per_class}
         if not out.total:
             return out
-        out.new = await count(endpoint_is_new(scope))
         previous, previous_at = await self._previous_scan(scope)
         out.previous_scan_at = previous_at
         if previous is not None:
