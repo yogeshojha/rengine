@@ -1,4 +1,5 @@
-<p class="block muted small">{{ total|num }} of {{ all_hosts|num }} web assets{% if only_live %} answered HTTP and{% endif %} are listed.</p>
+{% set listed = rows|length %}
+<p class="block muted small">{% if only_live %}{{ total|num }} of {{ all_hosts|num }} {{ all_hosts|plural('web asset') }} answered HTTP. {{ listed|num }} {{ 'is' if listed == 1 else 'are' }} listed.{% else %}{{ listed|num }} of {{ all_hosts|num }} {{ all_hosts|plural('web asset') }} {{ 'is' if listed == 1 else 'are' }} listed.{% endif %}</p>
 <table class="table table--fixed">
   <thead>
     <tr>
@@ -26,4 +27,4 @@
     {% endfor %}
   </tbody>
 </table>
-{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further web assets are not listed.</p>{% endif %}
+{% if hidden %}<p class="micro faint" style="margin-top:1.4mm">{{ hidden|num }} further {{ hidden|plural('web asset') }} {{ 'is' if hidden == 1 else 'are' }} not listed.</p>{% endif %}
