@@ -7,6 +7,7 @@ from sqlalchemy import BigInteger, Column
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.exports import (
     ExportFormat,
     ExportScope,
@@ -39,7 +40,7 @@ class Export(SQLModel, table=True):
         default=None, foreign_key="targets.id", index=True, ondelete="CASCADE"
     )
     subject: str = Field(default="", max_length=MAX_SUBJECT_LEN)
-    query: str = Field(default="", max_length=2000)
+    query: str = Field(default="", max_length=MAX_QUERY_LENGTH)
     filters: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     export_format: str = Field(default=ExportFormat.CSV.value, max_length=16)
     include_evidence: bool = Field(default=False)

@@ -7,6 +7,7 @@ from sqlalchemy import Column, Index
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.interest import (
     MAX_EVIDENCE,
     MAX_KEYWORDS,
@@ -31,7 +32,7 @@ class InterestRule(SQLModel, table=True):
     name: str = Field(max_length=MAX_RULE_NAME)
     description: str | None = Field(default=None, max_length=300)
     mode: str = Field(default=RuleMode.QUERY.value, max_length=16)
-    query: str = Field(default="", max_length=2000)
+    query: str = Field(default="", max_length=MAX_QUERY_LENGTH)
     keywords: list = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
     keyword_fields: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
@@ -102,7 +103,7 @@ class InterestRuleCreate(BaseModel):
     name: str = PField(min_length=1, max_length=MAX_RULE_NAME)
     description: str | None = None
     mode: str = RuleMode.QUERY.value
-    query: str = ""
+    query: str = PField(default="", max_length=MAX_QUERY_LENGTH)
     keywords: list[str] = PField(default_factory=list, max_length=MAX_KEYWORDS)
     keyword_fields: list[str] = PField(default_factory=list)
     live_only: bool = False
@@ -116,7 +117,7 @@ class InterestRuleCreate(BaseModel):
 class InterestRuleUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
-    query: str | None = None
+    query: str | None = PField(default=None, max_length=MAX_QUERY_LENGTH)
     keywords: list[str] | None = PField(default=None, max_length=MAX_KEYWORDS)
     keyword_fields: list[str] | None = None
     live_only: bool | None = None
