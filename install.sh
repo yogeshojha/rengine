@@ -119,6 +119,9 @@ rand_hex() {
 }
 
 valid_port() { [[ "$1" =~ ^[0-9]+$ ]] && [ "$1" -ge 1 ] && [ "$1" -le 65535 ]; }
+valid_tag() { [[ "$1" =~ ^v?[0-9A-Za-z._-]+$ ]]; }
+valid_ipv4() { [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; }
+valid_email() { [[ "$1" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]; }
 
 port_free() {
   command -v ss >/dev/null 2>&1 || return 0
@@ -220,6 +223,8 @@ while [ $# -gt 0 ]; do
 done
 
 [[ "$IMAGE_PREFIX" =~ ^[a-z0-9][a-z0-9._/:-]*$ ]] || die "not an image repository prefix: $IMAGE_PREFIX"
+[ -z "$GIT_TAG" ] || valid_tag "$GIT_TAG" || die "not a release tag: $GIT_TAG"
+[ -z "$ACME_EMAIL" ] || valid_email "$ACME_EMAIL" || die "not an email address: $ACME_EMAIL"
 
 ADMIN_PASSWORD="${RENGINE_ADMIN_PASSWORD:-}"
 unset RENGINE_ADMIN_PASSWORD
@@ -332,6 +337,7 @@ resolve_tag() {
   GIT_TAG="$(curl -fsSLm 15 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
     | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')"
   [ -n "$GIT_TAG" ] || die "GitHub did not answer with the latest release. Pass --tag."
+  valid_tag "$GIT_TAG" || die "not a release tag: $GIT_TAG"
   IMAGE_TAG="${GIT_TAG#v}"
 }
 
@@ -444,6 +450,7 @@ ask_reachability() {
       fi
       [ -n "$SERVER_IP" ] || die "no server address"
       case "$SERVER_IP" in *:* | *\[*) die "ports are published on IPv4 only. Pass the server's IPv4 address." ;; esac
+      valid_ipv4 "$SERVER_IP" || die "not an IPv4 address: $SERVER_IP"
       SERVER_HOST="$SERVER_IP"
       if [ -z "$UI_PORT" ]; then
         ask "UI port" "443"
