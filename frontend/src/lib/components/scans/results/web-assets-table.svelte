@@ -275,6 +275,9 @@
 	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
+	let facetsReq = 0;
+	let hygieneReq = 0;
+	let postureReq = 0;
 
 	let selected = $state<SubdomainRead | null>(null);
 	let drawerOpen = $state(false);
@@ -702,29 +705,36 @@
 
 	async function loadFacets() {
 		if (!ready) return;
+		const my = ++facetsReq;
 		try {
-			facets = await subdomainsApi.facets(projectId, scanId);
+			const res = await subdomainsApi.facets(projectId, scanId);
+			if (my !== facetsReq) return;
+			facets = res;
 			facetsLoaded = true;
 		} catch {
-			if (!facetsLoaded) facets = EMPTY_FACETS;
+			if (my === facetsReq && !facetsLoaded) facets = EMPTY_FACETS;
 		}
 	}
 
 	async function loadHygiene() {
 		if (!ready) return;
+		const my = ++hygieneReq;
 		try {
-			hygiene = await subdomainsApi.hygiene(projectId, scanId);
+			const res = await subdomainsApi.hygiene(projectId, scanId);
+			if (my === hygieneReq) hygiene = res;
 		} catch {
-			hygiene = null;
+			if (my === hygieneReq) hygiene = null;
 		}
 	}
 
 	async function loadPosture() {
 		if (!ready) return;
+		const my = ++postureReq;
 		try {
-			posture = await subdomainsApi.posture(projectId, scanId);
+			const res = await subdomainsApi.posture(projectId, scanId);
+			if (my === postureReq) posture = res;
 		} catch {
-			posture = null;
+			if (my === postureReq) posture = null;
 		}
 	}
 

@@ -214,6 +214,8 @@
 	let groupFailed = $state(false);
 	let groupLoading = $state(false);
 	let groupReq = 0;
+	let facetsReq = 0;
+	let accountReq = 0;
 	let tree = $state<EndpointTree | null>(null);
 	let treeLoading = $state(false);
 	let treeFailed = $state(false);
@@ -780,21 +782,28 @@
 
 	async function loadFacets() {
 		if (!ready) return;
+		const my = ++facetsReq;
 		try {
-			facets = await endpointsApi.facets(projectId, scanId);
+			const res = await endpointsApi.facets(projectId, scanId);
+			if (my !== facetsReq) return;
+			facets = res;
 			onScanTotal?.(facets.total);
 			facetsLoaded = true;
 		} catch {
-			if (!facetsLoaded) facets = EMPTY_ENDPOINT_FACETS;
+			if (my === facetsReq && !facetsLoaded) facets = EMPTY_ENDPOINT_FACETS;
 		}
 	}
 
 	async function loadAccount() {
 		if (!ready) return;
+		const my = ++accountReq;
 		try {
-			summary = await endpointsApi.summary(projectId, scanId);
+			const res = await endpointsApi.summary(projectId, scanId);
+			if (my !== accountReq) return;
+			summary = res;
 			accountLoaded = true;
 		} catch {
+			if (my !== accountReq) return;
 			summary = null;
 		}
 		if (projectWide) {
@@ -802,9 +811,10 @@
 			return;
 		}
 		try {
-			coverage = await endpointsApi.coverage(projectId, scanId);
+			const res = await endpointsApi.coverage(projectId, scanId);
+			if (my === accountReq) coverage = res;
 		} catch {
-			coverage = [];
+			if (my === accountReq) coverage = [];
 		}
 	}
 
