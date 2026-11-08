@@ -607,7 +607,7 @@ class TargetService:
             await self.session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Target exists in this project",
+                detail="Target exists in this project.",
             ) from e
         await self.session.refresh(target)
 
@@ -1027,7 +1027,7 @@ class TargetService:
         except UnicodeDecodeError as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be UTF-8 encoded",
+                detail="File must be UTF-8 encoded.",
             ) from e
 
         targets_data = _parse_csv(csv_text, MAX_TARGETS_IMPORT)
@@ -1035,7 +1035,7 @@ class TargetService:
         if not targets_data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No valid targets in the CSV file",
+                detail="No valid targets in the CSV file.",
             )
 
         if len(targets_data) > MAX_TARGETS_IMPORT:
@@ -1251,7 +1251,7 @@ class TargetService:
         if existing_target.scalar_one_or_none():
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Target exists in this project",
+                detail="Target exists in this project.",
             )
 
     async def _get_or_create_organizations(

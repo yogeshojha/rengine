@@ -25,7 +25,7 @@ router = APIRouter(prefix="/tripwires", tags=["tripwires"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 ProjectId = Annotated[UUID, Query(description="Project ID")]
-NOT_FOUND = "Tripwire not found"
+NOT_FOUND = "Tripwire not found."
 
 
 def get_service(session: SessionDep) -> TripwireService:
