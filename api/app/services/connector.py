@@ -107,6 +107,7 @@ from shared.models.user import User
 from shared.models.vulnerability import Vulnerability
 from shared.redis import async_client
 from shared.services import proxy_sync
+from shared.services.asset_query import QuerySyntaxError
 from shared.services.asset_query.tokens import token
 from shared.services.credential_access import launch_refusal, may_use
 from shared.services.scan_resolve import redact_message, unseal_headers
@@ -1086,9 +1087,13 @@ class ConnectorService:
         if body.filter is not None and scope is not None:
             from app.services.endpoint import EndpointService  # noqa: PLC0415
 
-            endpoints.extend(
-                await EndpointService(self.session).pick(scope, body.filter, body.limit)
-            )
+            try:
+                filtered = await EndpointService(self.session).pick(
+                    scope, body.filter, body.limit
+                )
+            except QuerySyntaxError as exc:
+                raise ConnectorError(exc.message) from None
+            endpoints.extend(filtered)
         responses = await self._responses([e.id for e in endpoints])
         items.extend(handoff.from_endpoint(e, responses.get(e.id)) for e in endpoints)
         if body.candidate_ids:
