@@ -117,7 +117,7 @@ def _parse_or_reject(data: bytes) -> None:
 
 def delete_family(slug: str, origin: str) -> None:
     if origin != FontOrigin.CUSTOM.value:
-        msg = "A default typeface cannot be deleted."
+        msg = "Default typefaces are read-only."
         raise FontError(msg)
     directory = family_dir(slug)
     if not directory.is_dir():
