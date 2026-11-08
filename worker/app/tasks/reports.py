@@ -134,7 +134,15 @@ def _fail(session, report_id: str, error: str, seconds: float) -> None:
     report.duration_seconds = seconds
     session.add(report)
     session.commit()
+    _purge(report.id)
     _notify_failed(session, report)
+
+
+def _purge(report_id: object) -> None:
+    try:
+        purge_dir(REPORT_ROOT, report_id)
+    except OSError:
+        logger.warning("report files not removed", report_id=str(report_id))
 
 
 def _subject(session, report: Report) -> tuple[Scan | None, Target]:
@@ -249,4 +257,6 @@ def reap() -> int:
             session.add(report)
         if rows:
             session.commit()
+        for report in rows:
+            _purge(report.id)
     return len(rows)

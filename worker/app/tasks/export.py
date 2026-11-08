@@ -201,7 +201,15 @@ def _fail(session, export_id: str, exc: Exception) -> None:
     row.step = "Failed"
     row.completed_at = utc_now()
     session.commit()
+    _purge(row.id)
     _notify_failed(session, row)
+
+
+def _purge(export_id: object) -> None:
+    try:
+        purge_dir(EXPORT_ROOT, export_id)
+    except OSError:
+        logger.warning("export files not removed", export_id=str(export_id))
 
 
 @shared_task(name="app.tasks.export.cleanup")
@@ -258,6 +266,8 @@ def reap() -> int:
             row.error = "The export stopped without finishing. Run it again."
             row.completed_at = utc_now()
         session.commit()
+        for row in rows:
+            _purge(row.id)
         return len(rows)
     finally:
         session.close()
