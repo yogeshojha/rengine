@@ -171,7 +171,7 @@
 									</span>
 								</div>
 								<dl class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-									{#each [['Found', row.urls_found], ['Stored', row.urls_stored], ['Verified', row.urls_probed], ['Pages fetched', row.pages_fetched], ['Hosts', row.hosts_scanned], ['Depth reached', row.depth_reached], ['Errors', row.errors]] as [label, value] (label)}
+									{#each [['Found', row.urls_found], ['Stored', row.urls_stored], ['Verified', row.urls_probed], ['Pages fetched', row.pages_fetched], ['Web assets', row.hosts_scanned], ['Depth reached', row.depth_reached], ['Errors', row.errors]] as [label, value] (label)}
 										{#if value !== null && value !== undefined}
 											<div class="flex justify-between gap-2">
 												<dt class="text-muted-foreground">{label}</dt>

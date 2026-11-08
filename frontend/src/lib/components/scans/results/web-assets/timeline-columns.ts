@@ -4,7 +4,7 @@ import { RenderSort, TimelineSort } from '$lib/config/timeline';
 export const TIMELINE_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'name',
-		label: 'Host',
+		label: 'Web asset',
 		sort: TimelineSort.NAME,
 		width: 'min-w-0 flex-[2] contain-inline-size sm:min-w-64'
 	}
@@ -27,7 +27,7 @@ export const TIMELINE_COLUMNS: TableColumn[] = [
 export const RENDER_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'name',
-		label: 'Host',
+		label: 'Web asset',
 		sort: RenderSort.NAME,
 		width: 'min-w-0 flex-[2] contain-inline-size sm:min-w-64'
 	}

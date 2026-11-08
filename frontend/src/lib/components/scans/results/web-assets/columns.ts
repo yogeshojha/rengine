@@ -3,7 +3,7 @@ import type { TableColumn } from '../table/columns';
 export const WEB_ASSET_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'name',
-		label: 'Host',
+		label: 'Web asset',
 		sort: 'name',
 		width: 'min-w-0 flex-[3] contain-inline-size sm:min-w-52'
 	},

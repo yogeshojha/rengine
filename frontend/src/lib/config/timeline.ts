@@ -157,7 +157,7 @@ export const TIMELINE_SORTS: SortOption[] = [
 	{ key: TimelineSort.LAST_CHANGE, label: 'Last change' },
 	{ key: TimelineSort.CHANGES, label: 'Changes' },
 	{ key: TimelineSort.FIRST_SEEN, label: 'First seen' },
-	{ key: TimelineSort.NAME, label: 'Host' },
+	{ key: TimelineSort.NAME, label: 'Web asset' },
 	{ key: TimelineSort.STATUS, label: 'Status' }
 ];
 
@@ -270,7 +270,7 @@ export const RENDER_SORTS: SortOption[] = [
 	{ key: RenderSort.LAST_CHANGE, label: 'Last change' },
 	{ key: RenderSort.CHANGES, label: 'Changes' },
 	{ key: RenderSort.FIRST_CAPTURED, label: 'First screenshot' },
-	{ key: RenderSort.NAME, label: 'Host' },
+	{ key: RenderSort.NAME, label: 'Web asset' },
 	{ key: RenderSort.STATUS, label: 'Status' }
 ];
 

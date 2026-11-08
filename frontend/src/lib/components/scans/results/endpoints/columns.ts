@@ -11,7 +11,7 @@ export const OUTLINE_LEAD_COLUMNS: TableColumn[] = [
 ];
 
 export const ENDPOINT_COLUMNS: TableColumn[] = [
-	{ key: 'host', label: 'Host', width: 'w-[13rem]', sort: 'host' },
+	{ key: 'host', label: 'Web asset', width: 'w-[13rem]', sort: 'host' },
 	{ key: 'kind', label: 'Kind', width: 'w-[6.5rem]', sort: 'class' },
 	{ key: 'params', label: 'Parameters', width: 'w-[11rem]', sort: 'params' },
 	{ key: 'title', label: 'Title', width: 'w-[14rem]' },
@@ -27,7 +27,13 @@ export const DEFAULT_VISIBLE_ENDPOINT_COLUMNS = ['host', 'kind', 'params', 'size
 export const DEFAULT_VISIBLE_OUTLINE_COLUMNS = ['params', 'size', 'sources'];
 
 export const HOST_LEAD_COLUMNS: TableColumn[] = [
-	{ key: 'host', label: 'Host', width: 'min-w-80 contain-inline-size', grow: true, sort: 'host' },
+	{
+		key: 'host',
+		label: 'Web asset',
+		width: 'min-w-80 contain-inline-size',
+		grow: true,
+		sort: 'host'
+	},
 	{ key: 'endpoints', label: 'Endpoints', width: 'w-[8.5rem]', align: 'right', sort: 'endpoints' }
 ];
 

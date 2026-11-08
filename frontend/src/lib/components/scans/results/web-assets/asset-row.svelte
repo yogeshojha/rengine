@@ -885,7 +885,7 @@
 							</DropdownMenu.Item>
 						{/if}
 						<DropdownMenu.Item onclick={() => copy(s.name)} class="gap-2">
-							<Copy class="h-4 w-4" /> Copy host
+							<Copy class="h-4 w-4" /> Copy web asset
 						</DropdownMenu.Item>
 						{#if s.http_url}
 							<DropdownMenu.Item onclick={() => copy(s.http_url ?? '')} class="gap-2">
