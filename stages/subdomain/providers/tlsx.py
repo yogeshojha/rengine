@@ -4,6 +4,7 @@ from shared.enums.subdomain import SubdomainSource
 from shared.services.proxy_resolve import is_socks5
 from stages.subdomain.providers.base import SubdomainProvider
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
+from tools.tlsx.client import TLSX_ALIASES
 
 
 class TlsxProvider(SubdomainProvider):
@@ -24,7 +25,9 @@ class TlsxProvider(SubdomainProvider):
         return ok, reason
 
     def discover(self) -> set[str]:
-        runner = CLIToolRunner(self.binary, default_timeout=self.ctx.timeout)
+        runner = CLIToolRunner(
+            self.binary, default_timeout=self.ctx.timeout, aliases=TLSX_ALIASES
+        )
         args = ["-san", "-resp-only"]
         if self.ctx.proxy_url:
             args += ["-proxy", self.ctx.proxy_url]
