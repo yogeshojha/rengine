@@ -284,6 +284,12 @@ services:
     volumes:
       - beat_state:/app/beat-state
     command: uv run celery -A app.celery beat
+    healthcheck:
+      test: ["CMD-SHELL", "find /app/beat-state -name 'celerybeat-schedule*' -mmin -10 | grep -q ."]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   # certificate transparency stream for watched programs
   ct-stream:
