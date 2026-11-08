@@ -475,7 +475,8 @@ def _settled_counts(session: Session, scan: Scan) -> dict:
     _guard(session, lambda: _match_software(session, scan), None)
     _guard(session, lambda: _mine_findings(session, scan), None)
     _guard(session, lambda: _refold_posture(session, scan), None)
-    _guard(session, lambda: analyze_result_tables(session), None)
+    if scan.scope != ScanScope.FOCUSED.value:
+        _guard(session, lambda: analyze_result_tables(session), None)
     return derived_counts(session, scan.id)
 
 
