@@ -229,7 +229,6 @@ def build_run(
         overrides=overrides,
         intensity=(covering.execution_config or {}).get("intensity"),
     )
-    # passive intensity switches the stage off after the override
     if not resolved.stage(_VULN_STAGE).get("enabled"):
         return None
     selection = vuln.VulnerabilityScanConfig(**resolved.stage(_VULN_STAGE)).selection()
