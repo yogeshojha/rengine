@@ -10,7 +10,7 @@ class ContentDiscoveryConfig(StageConfig):
     enabled: bool = Field(
         default=False,
         title="Guess paths and files",
-        description="Request wordlist paths on every live site. One request per word per site.",
+        description="Request wordlist paths on every web asset. One request per word per web asset.",
     )
     wordlist: str = wordlist(
         WordlistKind.CONTENT.value,
@@ -22,7 +22,7 @@ class ContentDiscoveryConfig(StageConfig):
         ge=50,
         le=200_000,
         title="Words to try",
-        description="Words tried per site, from the top of the list.",
+        description="Words tried per web asset, from the top of the list.",
     )
     max_minutes: int = Field(
         default=20,
@@ -35,6 +35,6 @@ class ContentDiscoveryConfig(StageConfig):
         25,
         ge=1,
         le=1_000,
-        title="Sites to guess against",
-        description="Sites tried. Sites that answered are picked first.",
+        title="Web assets to guess against",
+        description="Web assets that answered are picked first.",
     )

@@ -39,11 +39,11 @@ _NAMED = 3
 
 
 class ContentDiscoveryStage(Stage):
-    """Paths guessed from a ranked wordlist against every live site."""
+    """Paths guessed from a ranked wordlist against every web asset."""
 
     name = "content_discovery"
     title = "Content Discovery"
-    description = "Guess common paths and files on every live site."
+    description = "Guess common paths and files on every web asset."
     phase = Phase.DEPTH.value
     depends_on = frozenset({"http_probe"})
     group = StageGroup.ENDPOINTS.value
@@ -69,7 +69,7 @@ class ContentDiscoveryStage(Stage):
         cfg = self.cfg
         hosts = self._hosts(cfg.max_hosts)
         if not hosts:
-            self.emit_progress("no live site to guess against")
+            self.emit_progress("no web asset to guess against")
             return StageResult(counts={"endpoints": 0, "hosts": 0})
 
         with self._files(cfg) as (prepared, problem):
@@ -82,7 +82,7 @@ class ContentDiscoveryStage(Stage):
             word_file, tried, label = prepared
             self.emit_progress(
                 f"guessing {tried:,} {plural(tried, 'path')} from {label} "
-                f"against {counted(len(hosts), 'site')}"
+                f"against {counted(len(hosts), 'web asset')}"
             )
             return self._fuzz(cfg, hosts, word_file, tried, label)
 
@@ -143,7 +143,7 @@ class ContentDiscoveryStage(Stage):
         )
 
     def _one(self, args: dict, host: str, word_file: str, budget: int, tried: int):
-        """One site, in its own ffuf process."""
+        """One web asset, in its own ffuf process."""
         outcome = _Outcome(host=host)
         try:
             client = FfufClient(**args)
@@ -175,7 +175,7 @@ class ContentDiscoveryStage(Stage):
         return result.created + result.updated
 
     def _hosts(self, limit: int) -> list[str]:
-        """Sites that answered, best status first."""
+        """Web assets that answered, best status first."""
         rows = self.session.execute(
             select(HttpAsset.url, HttpAsset.status_code)
             .where(
@@ -256,10 +256,10 @@ class _Run:
     def note(self, written: int, tried: int, hosts: int) -> str:
         text = (
             f"{written:,} {plural(written, 'path')} answered out of {tried:,} "
-            f"guessed on {counted(hosts, 'site')}"
+            f"guessed on {counted(hosts, 'web asset')}"
         )
         if self.uncalibrated:
-            text += f", {counted(self.uncalibrated, 'site')} dropped as catch-all"
+            text += f", {counted(self.uncalibrated, 'web asset')} dropped as catch-all"
         return text
 
     def warnings(self, cfg, tried: int) -> list[str]:
@@ -269,18 +269,20 @@ class _Run:
             extra = len(self.dropped) - _NAMED
             more = f" and {extra} more" if extra > 0 else ""
             out.append(
-                f"{counted(self.uncalibrated, 'site')} answered at least "
+                f"{counted(self.uncalibrated, 'web asset')} answered at least "
                 f"{int(MAX_HIT_SHARE * 100)}% of {tried:,} guessed paths and "
                 f"{plural(self.uncalibrated, 'was', 'were')} dropped as catch-all: "
                 f"{shown}{more}."
             )
         if self.cut_short:
             out.append(
-                f"{counted(self.cut_short, 'site')} reached the {cfg.max_minutes}-minute "
+                f"{counted(self.cut_short, 'web asset')} reached the {cfg.max_minutes}-minute "
                 "budget with wordlist remaining."
             )
         if self.failed:
-            out.append(f"{counted(self.failed, 'site')} not tested. {self.first_error}")
+            out.append(
+                f"{counted(self.failed, 'web asset')} not tested. {self.first_error}"
+            )
         return out
 
 
