@@ -2,22 +2,18 @@
 
 from __future__ import annotations
 
-import re
 import uuid
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 
-from shared.definitions.ai import TASK_FEATURE, Charge, Usage, price
+from shared.definitions.ai import MAX_CALL_ERROR, TASK_FEATURE, Charge, Usage, price
 from shared.logging import get_logger
 from shared.utils.datetime import utc_now
 from shared.utils.net import redact_url_queries
 
 logger = get_logger(__name__)
-
-MAX_ERROR = 300
-_USERINFO = re.compile(r"://[^/@\s]+@")
 
 
 @dataclass(frozen=True)
@@ -81,14 +77,14 @@ def current() -> Source:
 
 def scrub(text: str) -> str:
     """Error text with no URL query and no URL credentials."""
-    return _USERINFO.sub("://", redact_url_queries(text))
+    return redact_url_queries(text)
 
 
 def record(rec: CallRecord) -> None:
     if rec.source == _NO_SOURCE:
         rec.source = _source.get()
     if rec.error:
-        rec.error = scrub(rec.error)[:MAX_ERROR]
+        rec.error = scrub(rec.error)[:MAX_CALL_ERROR]
     if _writer is None:
         logger.debug("ai call not recorded", task=rec.task, ok=rec.ok)
         return
