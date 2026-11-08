@@ -83,7 +83,7 @@ SOURCE_LABELS: dict[str, str] = {
 SOURCE_HELP: dict[str, str] = {
     EndpointSource.SEED.value: "The web asset itself, as the HTTP probe recorded it.",
     EndpointSource.RESPONSE_MINING.value: "Extracted from a stored response body. No request was sent.",
-    EndpointSource.CRAWL.value: "Reached by following links from a page on this host.",
+    EndpointSource.CRAWL.value: "Reached by following links from a page on this web asset.",
     EndpointSource.ROBOTS.value: "Listed in robots.txt.",
     EndpointSource.SITEMAP.value: "Listed in the sitemap.",
     EndpointSource.ARCHIVE.value: "Recorded by a public archive.",

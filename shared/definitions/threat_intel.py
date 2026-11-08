@@ -198,7 +198,7 @@ SIGNALS: tuple[SignalSpec, ...] = (
     SignalSpec(
         ExploitSignal.RANSOM_PATH.value,
         "Ransomware path",
-        "Used in ransomware campaigns. The host exposes a remote access or database service.",
+        "Used in ransomware campaigns. The address exposes a remote access or database service.",
         35,
         TONE_CRITICAL,
     ),

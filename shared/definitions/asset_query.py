@@ -2691,8 +2691,8 @@ ENDPOINT_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
     ),
     GroupDimension(
         key="host",
-        label="Host",
-        description="Endpoints on the same host",
+        label="Web asset",
+        description="Endpoints on the same web asset",
     ),
     GroupDimension(
         key="class",
@@ -3073,7 +3073,7 @@ SOFTWARE_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         description="Everything running the same release",
     ),
     GroupDimension(
-        key="host", label="Host", description="Everything inferred on one hostname"
+        key="host", label="Web asset", description="Everything inferred on one hostname"
     ),
     GroupDimension(
         key="severity", label="Severity", description="Matches of the same severity"
@@ -3328,7 +3328,9 @@ SECRET_GROUP_DIMENSIONS: tuple[GroupDimension, ...] = (
         key="vendor", label="Provider", description="Values from the same provider"
     ),
     GroupDimension(key="state", label="State", description="Values in the same state"),
-    GroupDimension(key="host", label="Host", description="Values read on one host"),
+    GroupDimension(
+        key="host", label="Web asset", description="Values read on one web asset"
+    ),
     GroupDimension(
         key="subject",
         label="Subject",

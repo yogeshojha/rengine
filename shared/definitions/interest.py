@@ -126,7 +126,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.INTERNAL_NAMING.value,
         "Internal naming",
-        "Carries internal or private naming on a publicly resolvable host.",
+        "Carries internal or private naming on a publicly resolvable hostname.",
         18,
         TONE_INFO,
     ),
@@ -162,7 +162,7 @@ KINDS: tuple[KindSpec, ...] = (
     KindSpec(
         InterestKind.SENSITIVE_SERVICE.value,
         "Sensitive service",
-        "An administrative or database port is open on this host.",
+        "An administrative or database port is open on this web asset.",
         26,
         TONE_WARNING,
     ),
