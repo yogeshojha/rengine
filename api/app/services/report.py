@@ -842,7 +842,7 @@ class ReportService:
             row.status in _GENERATING
             and utc_now() - (row.started_at or row.created_at) < stranded_after()
         ):
-            raise HTTPException(status.HTTP_409_CONFLICT, "Report is still generating.")
+            raise HTTPException(status.HTTP_409_CONFLICT, "Report is generating.")
         row.status = ReportStatus.QUEUED.value
         row.progress = 0
         row.step = "Queued"
