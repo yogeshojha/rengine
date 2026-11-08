@@ -325,7 +325,7 @@ _CELL_WIDTH = -math.log(1 - NOT_FOUND_TOLERANCE)
 
 
 def _cell(value: int | None) -> int | None:
-    """A log-scale bucket; two counts within tolerance sit in the same or adjacent cells."""
+    """The log-scale bucket of a word or line count."""
     if value is None:
         return None
     return math.floor(math.log(value + _CELL_OFFSET) / _CELL_WIDTH)
