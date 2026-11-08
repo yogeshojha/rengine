@@ -160,9 +160,7 @@
 								href={ROUTES.scan(scan.id)}
 								class="flex items-center gap-2 text-sm hover:text-primary"
 							>
-								<span
-									class="size-1.5 shrink-0 rounded-full bg-chart-1 shadow-[0_0_0_3px_color-mix(in_oklch,var(--chart-1)_22%,transparent)]"
-								></span>
+								<span class="size-1.5 shrink-0 rounded-full bg-info"></span>
 								<span class="min-w-0 flex-1 truncate">
 									<span class="font-medium">{names.get(scan.target_id) ?? scan.engine_name}</span>
 									{#if run?.stage}<span class="text-muted-foreground">

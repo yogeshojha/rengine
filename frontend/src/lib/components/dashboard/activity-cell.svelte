@@ -20,7 +20,7 @@
 	const DOT: Record<ActivityTone, string> = {
 		[ActivityTone.Neutral]: 'bg-muted-foreground/60',
 		[ActivityTone.Hot]: 'bg-destructive',
-		[ActivityTone.New]: 'bg-chart-1'
+		[ActivityTone.New]: 'bg-info'
 	};
 	function href(e: DashboardEvent): string | null {
 		switch (e.kind) {
