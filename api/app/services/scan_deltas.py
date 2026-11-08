@@ -56,6 +56,14 @@ async def row_counts(
     return counts
 
 
+async def held(
+    session: AsyncSession, dimension: str, scan_ids: Iterable[UUID]
+) -> dict[UUID, int]:
+    """Rows per scan, from the stored count where it is valid and counted otherwise."""
+    ids = list(scan_ids)
+    return await session.run_sync(lambda sync: scan_deltas.held(sync, dimension, ids))
+
+
 async def retired(
     session: AsyncSession,
     dimension: str,

@@ -279,6 +279,28 @@ def row_counts(
     return out, fill
 
 
+def held(session: Session, dimension: str, scan_ids: Iterable[UUID]) -> dict[UUID, int]:
+    """Rows per scan, from the stored count where it is valid and counted otherwise."""
+    ids = list(dict.fromkeys(scan_ids))
+    if not ids:
+        return {}
+    out: dict[UUID, int] = {}
+    if dimension in FIRST_SEEN:
+        out = {
+            scan_id: int(rows)
+            for scan_id, _, rows, _, _ in session.execute(
+                _stored_facts(dimension, ids, loose=False)
+            ).all()
+        }
+    counting = [sid for sid in ids if sid not in out]
+    if counting:
+        for scan_id, rows, _ in session.execute(
+            _rows_statement(dimension, counting)
+        ).all():
+            out[scan_id] = int(rows)
+    return {sid: n for sid, n in out.items() if n}
+
+
 def retired(
     session: Session,
     dimension: str,

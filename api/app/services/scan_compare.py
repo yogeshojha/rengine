@@ -26,6 +26,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services import scan_deltas as stored_deltas
 from shared.definitions.compare import (
     AUTH_STATUS,
     COMPARABILITY_LABELS,
@@ -92,6 +93,7 @@ from shared.models.software import SoftwareCve
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.vulnerability import Vulnerability, VulnerabilityCoverage
+from shared.services import scan_deltas
 from shared.services.asset_query import NO_JIT, vuln_suppressed
 from shared.services.scan_scope import covering_stages, producing_stages
 from shared.utils.datetime import utc_now
@@ -1311,6 +1313,11 @@ class ScanCompareService:
         if not scan_ids:
             return out
         for dimension, spec in SPECS.items():
+            if dimension in scan_deltas.FIRST_SEEN:
+                held = await stored_deltas.held(self.session, dimension, scan_ids)
+                for scan_id, total in held.items():
+                    out.setdefault(scan_id, {})[dimension] = total
+                continue
             query = select(spec.model.scan_id, func.count()).where(
                 spec.model.scan_id.in_(scan_ids)
             )
