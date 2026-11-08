@@ -932,7 +932,7 @@ EXAMPLES: tuple[QueryExample, ...] = (
     QueryExample(
         query="(host:admin or host:portal or host:console) and is:live and not is:auth",
         description="Administrative interfaces without authentication",
-        group="Non-production",
+        group="Access control",
     ),
     QueryExample(
         query="is:auth and is:live",
