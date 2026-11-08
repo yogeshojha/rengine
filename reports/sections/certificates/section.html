@@ -3,7 +3,7 @@
 <div class="callout callout--quiet">No certificate has expired, is expiring within {{ window }} days, or is self signed.</div>
 {% else %}
 <table class="table table--fixed">
-  <thead><tr><th>Host</th><th style="width:26mm">Expires</th><th class="num" style="width:20mm">Days</th><th style="width:44mm">Issuer</th><th style="width:22mm">State</th></tr></thead>
+  <thead><tr><th>Web asset</th><th style="width:26mm">Expires</th><th class="num" style="width:20mm">Days</th><th style="width:44mm">Issuer</th><th style="width:22mm">State</th></tr></thead>
   <tbody>
     {% for row in rows %}
     <tr>

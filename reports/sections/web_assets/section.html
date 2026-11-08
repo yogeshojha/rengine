@@ -2,7 +2,7 @@
 <table class="table table--fixed">
   <thead>
     <tr>
-      <th>Host</th>
+      <th>Web asset</th>
       {% for field in fields %}<th class="{{ 'num' if field in ('status', 'findings') }}" style="width:{{ {'status':12,'ip':27,'tech':34,'server':26,'cdn':22,'asn':34,'tls':22,'findings':15,'title':38}[field] }}mm">{{ labels[field] }}</th>{% endfor %}
     </tr>
   </thead>
