@@ -137,7 +137,7 @@
 <svelte:head><title>{pageTitle(routeLabels.schedules)}</title></svelte:head>
 
 <div class="flex flex-col gap-6">
-	<PageHeader title="Schedules" description="Scans that run on a recurring schedule">
+	<PageHeader title={routeLabels.schedules}>
 		{#snippet actions()}
 			<Hint text="Refresh">
 				{#snippet child(props)}
