@@ -9,7 +9,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { ROUTES } from '$lib/config/routes';
 	import { relativeTime } from '$lib/utilities/dates';
-	import { SCAN_STATUS_DOT } from '$lib/utilities/scan-status';
+	import { SCAN_STATUS_DOT, isLiveStatus } from '$lib/utilities/scan-status';
 	import type { ScanStatus } from '$lib/types/scan';
 	import type { SurfaceCoverage } from '$lib/types/surface';
 
@@ -25,7 +25,9 @@
 	let covered = $derived(coverage?.covered ?? []);
 	let uncovered = $derived(coverage?.uncovered ?? []);
 	let stale = $derived(covered.filter((t) => t.stale));
-	let live = $derived(covered.filter((t) => t.scan_status === 'running'));
+	let live = $derived(
+		covered.filter((t) => t.scan_status && isLiveStatus(t.scan_status as ScanStatus))
+	);
 	let oldest = $derived(coverage?.observed_from ?? null);
 
 	const statusDot = (status: string | null) =>
