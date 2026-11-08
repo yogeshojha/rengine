@@ -149,7 +149,7 @@
 		<div class="min-w-0">
 			<button
 				type="button"
-				class="rounded-sm font-mono text-sm leading-5 font-medium underline-offset-2 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/70"
+				class="rounded-sm font-mono text-sm leading-5 font-medium outline-none hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/70"
 				onclick={(e) => {
 					stopProp(e);
 					onAddress(row.ip);
