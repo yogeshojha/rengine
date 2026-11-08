@@ -45,7 +45,9 @@
 	$effect(() => {
 		const needle = term.trim();
 		if (needle.length < 2 || local.length) {
+			++req;
 			remote = null;
+			searching = false;
 			return;
 		}
 		const my = ++req;
