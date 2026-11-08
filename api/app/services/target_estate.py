@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.program_coverage import ProgramCoverageService
 from app.services.surface_scope import SurfaceScopeService
-from app.services.target_relations import TargetRelationService
+from app.services.target_relations import TargetRelationService, project_targets
 from shared.definitions.domains import (
     IGNORED_DOMAINS,
     PRIVATE_TLDS,
@@ -69,6 +69,7 @@ from shared.utils.net import cert_covers, url_host
 from shared.utils.text import counted
 from shared.utils.validation import validate_ip
 
+_READ_BATCH = 50
 _SHARED_KINDS = frozenset({EstateReason.ADDRESS.value, TargetRelation.FAVICON.value})
 
 
@@ -97,6 +98,17 @@ class _Cert:
     provider: str | None = None
     subject_apex: str | None = None
     sans: list[tuple[str, str]] = field(default_factory=list)
+
+
+@dataclass
+class _Rows:
+    """Estate inputs keyed by scan and by target."""
+
+    assets: dict[UUID, list] = field(default_factory=lambda: defaultdict(list))
+    cnames: dict[UUID, list] = field(default_factory=lambda: defaultdict(list))
+    claimed: dict[UUID, set[str]] = field(default_factory=lambda: defaultdict(set))
+    dns: dict[UUID, list] = field(default_factory=lambda: defaultdict(list))
+    services: dict[UUID, list] = field(default_factory=dict)
 
 
 @dataclass
@@ -163,11 +175,13 @@ class TargetEstateService:
         relations: bool = True,
         dismissed: set[str] | None = None,
         with_programs: bool = False,
+        dossier: bool = True,
         persist: bool = False,
         targets: dict[UUID, Target] | None = None,
+        rows: _Rows | None = None,
     ) -> TargetEstate:
         if targets is None:
-            targets = await self._targets(project_id)
+            targets = await project_targets(self.session, project_id)
         target = targets.get(target_id)
         if target is None:
             return TargetEstate(target_id=target_id)
@@ -176,6 +190,12 @@ class TargetEstateService:
                 project_id, SurfaceDimension.WEB_ASSETS.value
             )
             scan_id = covering.get(target_id)
+        hostname = TargetType(target.target_type) in HOSTNAME_TARGET_TYPES
+        if rows is None:
+            rows = await self._read(
+                [scan_id] if scan_id is not None else [],
+                [target_id] if hostname else [],
+            )
 
         root = target_zone(target.target_value)
         apexes = {target_zone(t.target_value): t.id for t in targets.values()}
@@ -186,12 +206,15 @@ class TargetEstateService:
         neighbours: list[EstateNeighbourCert] = []
 
         if scan_id is not None:
-            await self._assets(scan_id, root, signals, providers, neighbours)
-            await self._cnames(scan_id, root, signals, providers)
-            await self._drop_claimed(scan_id, signals)
-        if TargetType(target.target_type) in HOSTNAME_TARGET_TYPES:
-            nameservers = await self._dns(target_id, root, providers)
-            await self._infostealer(target_id, root, nameservers, signals)
+            self._assets(
+                rows.assets.get(scan_id, []), root, signals, providers, neighbours
+            )
+            self._cnames(rows.cnames.get(scan_id, []), root, signals, providers)
+            for domain in rows.claimed.get(scan_id, ()):
+                signals.pop(domain or "", None)
+        if hostname:
+            nameservers = self._dns(rows.dns.get(target_id, []), root, providers)
+            self._infostealer(rows.services.get(target_id), root, nameservers, signals)
         if relations:
             await self._relations(project_id, target_id, targets, signals)
             if scan_id is not None:
@@ -208,7 +231,8 @@ class TargetEstateService:
         shown = (open_domains + closed)[:MAX_ESTATE_DOMAINS]
         if with_programs:
             await self._attach_programs(shown)
-        await self._attach_dossier(project_id, shown)
+        if dossier:
+            await self._attach_dossier(project_id, shown)
         if persist:
             await self._persist_candidates(
                 project_id,
@@ -244,51 +268,32 @@ class TargetEstateService:
     async def _project(
         self, project_id: UUID, covering: dict[UUID, UUID]
     ) -> ProjectEstate:
-        targets = await self._targets(project_id)
+        targets = await project_targets(self.session, project_id)
         dismissed = await self._dismissed(project_id)
         merged: dict[str, EstateDomain] = {}
         examined = 0
-        for target_id, scan_id in covering.items():
-            target = targets.get(target_id)
-            if (
-                target is None
-                or TargetType(target.target_type) not in HOSTNAME_TARGET_TYPES
-            ):
-                continue
-            examined += 1
-            estate = await self.for_target(
-                project_id,
-                target_id,
-                scan_id,
-                relations=False,
-                dismissed=dismissed,
-                targets=targets,
-            )
-            for d in estate.domains:
-                if d.target_id is not None:
-                    continue
-                entry = merged.setdefault(
-                    d.domain, EstateDomain(domain=d.domain, state=d.state)
+        hostnames = [
+            (target_id, scan_id)
+            for target_id, scan_id in covering.items()
+            if target_id in targets
+            and TargetType(targets[target_id].target_type) in HOSTNAME_TARGET_TYPES
+        ]
+        for start in range(0, len(hostnames), _READ_BATCH):
+            batch = hostnames[start : start + _READ_BATCH]
+            rows = await self._read([s for _, s in batch], [t for t, _ in batch])
+            for target_id, scan_id in batch:
+                examined += 1
+                estate = await self.for_target(
+                    project_id,
+                    target_id,
+                    scan_id,
+                    relations=False,
+                    dismissed=dismissed,
+                    dossier=False,
+                    targets=targets,
+                    rows=rows,
                 )
-                entry.strength = max(entry.strength, d.strength)
-                if entry.dossier is None:
-                    entry.dossier = d.dossier
-                entry.sources.append(
-                    EstateSource(
-                        target_id=target_id,
-                        target_value=target.target_value,
-                        scan_id=scan_id,
-                    )
-                )
-                known = {s.kind: s for s in entry.signals}
-                for s in d.signals:
-                    if s.kind in known:
-                        known[s.kind].count += s.count
-                        known[s.kind].hosts = (known[s.kind].hosts + s.hosts)[
-                            :MAX_ESTATE_HOSTS
-                        ]
-                    else:
-                        entry.signals.append(s.model_copy())
+                self._merge(merged, estate, targets[target_id], scan_id)
         domains = sorted(
             merged.values(),
             key=lambda d: (
@@ -301,6 +306,7 @@ class TargetEstateService:
         )
         open_count = sum(1 for d in domains if d.state == EstateTriageState.OPEN.value)
         shown = domains[:MAX_PROJECT_ESTATE]
+        await self._attach_dossier(project_id, shown)
         await self._persist_candidates(
             project_id,
             [d.domain for d in shown if d.state == EstateTriageState.OPEN.value],
@@ -310,6 +316,39 @@ class TargetEstateService:
             untracked=open_count,
             domains=shown,
         )
+
+    @staticmethod
+    def _merge(
+        merged: dict[str, EstateDomain],
+        estate: TargetEstate,
+        target: Target,
+        scan_id: UUID,
+    ) -> None:
+        for d in estate.domains:
+            if d.target_id is not None:
+                continue
+            entry = merged.setdefault(
+                d.domain, EstateDomain(domain=d.domain, state=d.state)
+            )
+            entry.strength = max(entry.strength, d.strength)
+            if entry.dossier is None:
+                entry.dossier = d.dossier
+            entry.sources.append(
+                EstateSource(
+                    target_id=target.id,
+                    target_value=target.target_value,
+                    scan_id=scan_id,
+                )
+            )
+            known = {s.kind: s for s in entry.signals}
+            for s in d.signals:
+                if s.kind in known:
+                    known[s.kind].count += s.count
+                    known[s.kind].hosts = (known[s.kind].hosts + s.hosts)[
+                        :MAX_ESTATE_HOSTS
+                    ]
+                else:
+                    entry.signals.append(s.model_copy())
 
     async def _attach_programs(self, domains: list[EstateDomain]) -> None:
         candidates = [
@@ -358,6 +397,19 @@ class TargetEstateService:
         clean = sorted({_clean(n) for n in names} - {""})
         if not clean:
             return
+        known = set(
+            (
+                await self.session.execute(
+                    select(EstateCandidate.domain).where(
+                        EstateCandidate.project_id == project_id,
+                        EstateCandidate.domain.in_(clean),
+                    )
+                )
+            ).scalars()
+        )
+        missing = [domain for domain in clean if domain not in known]
+        if not missing:
+            return
         now = utc_now()
         stmt = insert(EstateCandidate).values(
             [
@@ -370,14 +422,15 @@ class TargetEstateService:
                     "ports": [],
                     "updated_at": now,
                 }
-                for domain in clean
+                for domain in missing
             ]
         )
         stmt = stmt.on_conflict_do_nothing(
             constraint="uq_estate_candidate_project_domain"
         )
-        await self.session.execute(stmt)
-        await self.session.commit()
+        async with AsyncSession(self.session.bind) as writer:
+            await writer.execute(stmt)
+            await writer.commit()
 
     async def triage(self, project_id: UUID, domains: list[str], state: str) -> int:
         clean = sorted({_clean(d) for d in domains} - {""})
@@ -421,47 +474,76 @@ class TargetEstateService:
         )
         return set(rows.scalars())
 
-    async def _drop_claimed(
-        self, scan_id: UUID, signals: dict[str, dict[str, _Signal]]
-    ) -> None:
-        claimed = (
-            await self.session.execute(
-                select(Vulnerability.matcher_name)
-                .where(
-                    Vulnerability.scan_id == scan_id,
-                    Vulnerability.template_id.in_(list(CLAIM_TEMPLATES.values())),
+    async def _read(self, scan_ids: list[UUID], target_ids: list[UUID]) -> _Rows:
+        out = _Rows()
+        if scan_ids:
+            for row in (
+                await self.session.execute(
+                    select(
+                        HttpAsset.scan_id,
+                        HttpAsset.host,
+                        HttpAsset.final_url,
+                        HttpAsset.location,
+                        HttpAsset.tls_subject_cn,
+                        HttpAsset.tls_sans,
+                    ).where(HttpAsset.scan_id.in_(scan_ids))
                 )
-                .distinct()
+            ).all():
+                out.assets[row[0]].append(row[1:])
+            for scan_id, name, cname in (
+                await self.session.execute(
+                    select(Subdomain.scan_id, Subdomain.name, Subdomain.cname).where(
+                        Subdomain.scan_id.in_(scan_ids), Subdomain.cname.isnot(None)
+                    )
+                )
+            ).all():
+                out.cnames[scan_id].append((name, cname))
+            for scan_id, domain in (
+                await self.session.execute(
+                    select(Vulnerability.scan_id, Vulnerability.matcher_name)
+                    .where(
+                        Vulnerability.scan_id.in_(scan_ids),
+                        Vulnerability.template_id.in_(list(CLAIM_TEMPLATES.values())),
+                    )
+                    .distinct()
+                )
+            ).all():
+                out.claimed[scan_id].add(domain)
+        if target_ids:
+            for target_id, kind, value in (
+                await self.session.execute(
+                    select(
+                        DnsRecord.target_id, DnsRecord.record_type, DnsRecord.value
+                    ).where(
+                        DnsRecord.target_id.in_(target_ids),
+                        DnsRecord.record_type.in_(
+                            [DnsRecordType.NS, DnsRecordType.MX, DnsRecordType.TXT]
+                        ),
+                    )
+                )
+            ).all():
+                out.dns[target_id].append((kind, value))
+            out.services = dict(
+                (
+                    await self.session.execute(
+                        select(
+                            TargetInfostealer.target_id, TargetInfostealer.services
+                        ).where(TargetInfostealer.target_id.in_(target_ids))
+                    )
+                )
+                .tuples()
+                .all()
             )
-        ).scalars()
-        for domain in claimed:
-            signals.pop(domain or "", None)
+        return out
 
-    async def _targets(self, project_id: UUID) -> dict[UUID, Target]:
-        rows = await self.session.execute(
-            select(Target).where(Target.project_id == project_id)
-        )
-        return {row.id: row for row in rows.scalars().all()}
-
-    async def _assets(
+    def _assets(
         self,
-        scan_id: UUID,
+        rows: list,
         root: str,
         signals: dict[str, dict[str, _Signal]],
         providers: dict[tuple[str, str], _Provider],
         neighbours: list[EstateNeighbourCert],
     ) -> None:
-        rows = (
-            await self.session.execute(
-                select(
-                    HttpAsset.host,
-                    HttpAsset.final_url,
-                    HttpAsset.location,
-                    HttpAsset.tls_subject_cn,
-                    HttpAsset.tls_sans,
-                ).where(HttpAsset.scan_id == scan_id)
-            )
-        ).all()
         seen_neighbour: set[str] = set()
         redirects: dict[str | None, tuple | None] = {}
         certificates: dict[tuple, _Cert] = {}
@@ -582,20 +664,13 @@ class TargetEstateService:
         for apex, name in cert.sans:
             signals[apex][EstateReason.CERT_SAN.value].add(host, name)
 
-    async def _cnames(
+    def _cnames(
         self,
-        scan_id: UUID,
+        rows: list,
         root: str,
         signals: dict[str, dict[str, _Signal]],
         providers: dict[tuple[str, str], _Provider],
     ) -> None:
-        rows = (
-            await self.session.execute(
-                select(Subdomain.name, Subdomain.cname).where(
-                    Subdomain.scan_id == scan_id, Subdomain.cname.isnot(None)
-                )
-            )
-        ).all()
         for name, cname in rows:
             to = _clean(cname)
             apex = registrable_domain(to)
@@ -614,23 +689,13 @@ class TargetEstateService:
                 continue
             signals[apex][EstateReason.CNAME.value].add(name, to)
 
-    async def _dns(
+    def _dns(
         self,
-        target_id: UUID,
+        rows: list,
         root: str,
         providers: dict[tuple[str, str], _Provider],
     ) -> dict[str, str]:
         nameservers: dict[str, str] = {}
-        rows = (
-            await self.session.execute(
-                select(DnsRecord.record_type, DnsRecord.value).where(
-                    DnsRecord.target_id == target_id,
-                    DnsRecord.record_type.in_(
-                        [DnsRecordType.NS, DnsRecordType.MX, DnsRecordType.TXT]
-                    ),
-                )
-            )
-        ).all()
         for kind, value in rows:
             host = _clean(value)
             if kind in (DnsRecordType.NS, DnsRecordType.MX):
@@ -657,20 +722,13 @@ class TargetEstateService:
                     self._provider(providers, name, ProviderKind.MAIL, include)
         return nameservers
 
-    async def _infostealer(
+    def _infostealer(
         self,
-        target_id: UUID,
+        services: list | None,
         root: str,
         nameservers: dict[str, str],
         signals: dict[str, dict[str, _Signal]],
     ) -> None:
-        services = (
-            await self.session.execute(
-                select(TargetInfostealer.services).where(
-                    TargetInfostealer.target_id == target_id
-                )
-            )
-        ).scalar_one_or_none()
         credentials: dict[str, int] = defaultdict(int)
         for row in services or []:
             if not isinstance(row, dict):
@@ -706,7 +764,7 @@ class TargetEstateService:
         signals: dict[str, dict[str, _Signal]],
     ) -> None:
         related = await TargetRelationService(self.session).for_target(
-            project_id, target_id
+            project_id, target_id, targets
         )
         for item in related.items:
             other = targets.get(item.target_id)
