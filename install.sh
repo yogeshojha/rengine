@@ -262,6 +262,7 @@ ensure_docker() {
       command -v sudo >/dev/null 2>&1 || die "installing Docker needs root. Install Docker, then run this script again."
       sudo_cmd="sudo"
     fi
+    [ "$INTERACTIVE" -eq 1 ] || die "Docker is not installed. Install Docker Engine and the compose plugin from https://docs.docker.com/engine/install/, then run this script again."
     confirm "Install Docker from get.docker.com now" y || die "install Docker, then run this script again"
     curl -fsSL https://get.docker.com | $sudo_cmd sh
     $sudo_cmd systemctl enable --now docker 2>/dev/null || true
