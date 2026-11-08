@@ -23,6 +23,7 @@ from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import API_V1_PREFIX, settings
+from app.services import scan_deltas as stored_deltas
 from connectors import auth, handoff
 from connectors.base import CLIENT_DIR
 from connectors.handoff import Handoff
@@ -1535,40 +1536,40 @@ class ConnectorService:
 
     async def target_options(self, row: Connector) -> list[TargetOption]:
         """The picker the proxy shows while testing."""
-        covering = (
-            select(Scan.target_id, Scan.id)
-            .distinct(Scan.target_id)
-            .where(
-                Scan.project_id == row.project_id,
-                Scan.status.in_(SCAN_TERMINAL_STATUSES),
-                census_only(),
-                covers(Endpoint, _DIMENSION),
-            )
-            .order_by(
-                Scan.target_id, func.coalesce(Scan.started_at, Scan.created_at).desc()
-            )
-            .subquery("covering")
-        )
-        counted = (
-            select(covering.c.target_id, func.count().label("n"))
-            .join(Endpoint, Endpoint.scan_id == covering.c.id)
-            .group_by(covering.c.target_id)
-            .subquery("counted")
-        )
-        rows = (
-            await self.session.execute(
-                select(
-                    Target.id,
-                    Target.target_value,
-                    Target.target_type,
-                    func.coalesce(counted.c.n, 0),
+        covering = dict(
+            (
+                await self.session.execute(
+                    select(Scan.target_id, Scan.id)
+                    .distinct(Scan.target_id)
+                    .where(
+                        Scan.project_id == row.project_id,
+                        Scan.status.in_(SCAN_TERMINAL_STATUSES),
+                        census_only(),
+                        covers(Endpoint, _DIMENSION),
+                    )
+                    .order_by(
+                        Scan.target_id,
+                        func.coalesce(Scan.started_at, Scan.created_at).desc(),
+                    )
                 )
-                .outerjoin(counted, counted.c.target_id == Target.id)
-                .where(Target.project_id == row.project_id)
-                .order_by(Target.target_value)
-                .limit(MAX_PICKER_TARGETS)
             )
-        ).all()
+            .tuples()
+            .all()
+        )
+        held = await stored_deltas.held(
+            self.session, _DIMENSION, list(covering.values())
+        )
+        rows = [
+            (identifier, value, kind, held.get(covering.get(identifier), 0))
+            for identifier, value, kind in (
+                await self.session.execute(
+                    select(Target.id, Target.target_value, Target.target_type)
+                    .where(Target.project_id == row.project_id)
+                    .order_by(Target.target_value)
+                    .limit(MAX_PICKER_TARGETS)
+                )
+            ).all()
+        ]
         options = [
             TargetOption(
                 id=identifier,
