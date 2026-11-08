@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from sqlalchemy import and_, cast, delete, false, func, or_, select
+from sqlalchemy import and_, cast, delete, exists, false, func, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import Session
@@ -349,10 +349,7 @@ def reindex_official(session: Session) -> int:
 def library_ready(session: Session) -> bool:
     return bool(
         session.scalar(
-            select(func.count())
-            .select_from(VulnTemplate)
-            .where(VulnTemplate.origin == TemplateOrigin.OFFICIAL.value)
-            .limit(1)
+            select(exists().where(VulnTemplate.origin == TemplateOrigin.OFFICIAL.value))
         )
     )
 
