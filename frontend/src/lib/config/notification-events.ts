@@ -47,7 +47,7 @@ export const CHANNEL_EVENTS: ChannelEvent[] = [
 	},
 	{
 		type: 'system',
-		label: 'Report failures',
+		label: 'Reports and exports',
 		hint: 'Reports and exports that did not complete',
 		capability: null
 	}

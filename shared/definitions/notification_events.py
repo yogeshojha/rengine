@@ -51,7 +51,7 @@ CHANNEL_EVENTS: tuple[ChannelEvent, ...] = (
     ),
     ChannelEvent(
         NotificationType.SYSTEM.value,
-        "Report failures",
+        "Reports and exports",
         "Reports and exports that did not complete",
     ),
 )
