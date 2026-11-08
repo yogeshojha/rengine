@@ -2,10 +2,12 @@ from collections import defaultdict
 from datetime import datetime
 from uuid import UUID
 
+from pydantic import BaseModel
 from sqlalchemy import Select, cast, func, not_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services import scan_deltas as stored_deltas
 from app.services.scan import ScanService
 from app.services.surface_scope import TABLES
 from shared.definitions.ports import SENSITIVE_PORTS
@@ -35,11 +37,18 @@ from shared.models.target_summary import (
     TargetSummaryRead,
 )
 from shared.models.vulnerability import SeverityCount, Vulnerability
-from shared.services.asset_query import vuln_suppressed
+from shared.services import scan_deltas
+from shared.services.asset_query import lead_cache, vuln_suppressed
 from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.services.schedule_timing import describe_schedule
 
 _MAX_RUNS = 25
+
+
+class _Inventory(BaseModel):
+    total: int
+
+
 _STARTED = func.coalesce(Scan.started_at, Scan.created_at)
 
 
@@ -70,7 +79,7 @@ class TargetSummaryService:
         if service_scan is not None:
             summary.sensitive_services = await self._sensitive(service_scan.id)
 
-        summary.inventory_total = await self._inventory(target_id)
+        summary.inventory_total = await self._inventory(target_id, recent)
         summary.monitoring = await self._monitoring(target_id, project_id)
         return summary
 
@@ -122,6 +131,9 @@ class TargetSummaryService:
         ids = [r.id for r in runs]
         out: dict[str, dict[UUID, int]] = {}
         for key, model in TABLES.items():
+            if key in scan_deltas.FIRST_SEEN:
+                out[key] = await stored_deltas.held(self.session, key, ids)
+                continue
             query: Select = (
                 select(model.scan_id, func.count())
                 .where(model.scan_id.in_(ids))
@@ -203,32 +215,25 @@ class TargetSummaryService:
         return metrics
 
     async def _risk(self, scan: Scan) -> TargetRisk:
+        hidden = vuln_suppressed(scan.id)
+        n = func.count()
         result = await self.session.execute(
-            select(Vulnerability.severity, func.count())
-            .where(
-                Vulnerability.scan_id == scan.id,
-                not_(vuln_suppressed(scan.id)),
+            select(
+                Vulnerability.severity,
+                n.filter(not_(hidden)),
+                n.filter(hidden),
+                n.filter(Vulnerability.is_kev.is_(True), not_(hidden)),
             )
+            .where(Vulnerability.scan_id == scan.id)
             .group_by(Vulnerability.severity)
         )
         tally: dict[str, int] = defaultdict(int)
-        for severity, count in result.all():
-            tally[coerce_severity(severity)] += count
-
-        suppressed = await self.session.scalar(
-            select(func.count())
-            .select_from(Vulnerability)
-            .where(Vulnerability.scan_id == scan.id, vuln_suppressed(scan.id))
-        )
-        kev = await self.session.scalar(
-            select(func.count())
-            .select_from(Vulnerability)
-            .where(
-                Vulnerability.scan_id == scan.id,
-                Vulnerability.is_kev.is_(True),
-                not_(vuln_suppressed(scan.id)),
-            )
-        )
+        suppressed = kev = 0
+        for severity, shown, hid, known in result.all():
+            if shown:
+                tally[coerce_severity(severity)] += shown
+            suppressed += hid
+            kev += known
         return TargetRisk(
             scan_id=scan.id,
             observed_at=_started(scan),
@@ -253,13 +258,28 @@ class TargetSummaryService:
         )
         return int(value or 0)
 
-    async def _inventory(self, target_id: UUID) -> int:
-        total = await self.session.scalar(
-            select(func.count(func.distinct(Subdomain.name))).where(
-                Subdomain.target_id == target_id
-            )
+    async def _inventory(self, target_id: UUID, runs: list[Scan]) -> int:
+        held = await self.session.scalar(
+            select(func.count()).select_from(Scan).where(Scan.target_id == target_id)
         )
-        return int(total or 0)
+
+        async def build() -> _Inventory:
+            total = await self.session.scalar(
+                select(func.count(func.distinct(Subdomain.name))).where(
+                    Subdomain.target_id == target_id
+                )
+            )
+            return _Inventory(total=int(total or 0))
+
+        cached = await lead_cache.cached(
+            self.session,
+            name="target_inventory",
+            scans=tuple(r.id for r in runs),
+            facets=f"{target_id}|{held}",
+            model=_Inventory,
+            build=build,
+        )
+        return cached.total
 
     async def _monitoring(
         self, target_id: UUID, project_id: UUID
