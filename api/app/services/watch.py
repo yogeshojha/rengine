@@ -702,6 +702,7 @@ class WatchService:
                     interval_every=every,
                     interval_unit=unit,
                 ),
+                actor_id=user_id,
             )
             return
         program = await self.session.get(BountyProgram, watch.program_id)
