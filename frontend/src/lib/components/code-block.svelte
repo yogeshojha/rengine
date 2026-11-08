@@ -361,9 +361,6 @@
 					{/each}
 				</div>
 			</ScrollArea>
-			{#if collapsible && !expanded}
-				<div class="cb-fade" aria-hidden="true"></div>
-			{/if}
 		</div>
 
 		{#if collapsible}
@@ -492,14 +489,6 @@
 	}
 	.cb-lc:first-child {
 		padding-left: 0.875rem;
-	}
-	.cb-fade {
-		position: absolute;
-		inset-inline: 0;
-		bottom: 0;
-		height: 2.75rem;
-		pointer-events: none;
-		background: linear-gradient(to bottom, transparent, var(--code-surface) 85%);
 	}
 	.cb-more {
 		display: flex;

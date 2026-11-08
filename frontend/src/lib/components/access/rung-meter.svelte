@@ -27,7 +27,7 @@
 					? 'bg-warning'
 					: 'bg-foreground/75'
 				: held
-					? 'bg-[repeating-linear-gradient(135deg,currentColor_0_2px,transparent_2px_5px)] text-muted-foreground/60'
+					? 'bg-[repeating-linear-gradient(135deg,var(--fill-hatch)_0_2px,transparent_2px_5px)]'
 					: 'bg-muted-foreground/20'}"
 		></span>
 	{/each}

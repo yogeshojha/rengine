@@ -142,15 +142,10 @@
 		font-variant-numeric: tabular-nums;
 	}
 	.link {
-		width: 3px;
+		width: 0;
 		height: 14px;
-		margin-left: calc(var(--spacing) * 3);
-		background: radial-gradient(
-				circle,
-				color-mix(in oklch, var(--muted-foreground) 65%, transparent) 1px,
-				transparent 1.6px
-			)
-			center / 3px 5px repeat-y;
+		margin-left: calc(var(--spacing) * 3 + 0.5px);
+		border-left: 2px dotted color-mix(in oklch, var(--muted-foreground) 65%, transparent);
 	}
 	.link.phase-link {
 		height: 20px;
