@@ -146,7 +146,7 @@
 		<div class="-mt-px -ml-px grid grid-cols-1 {GRID[sections]}">
 			{#if findings.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
-					<h3 class="text-sm font-semibold">Interest</h3>
+					<h3 class="text-sm font-semibold">Exposed paths</h3>
 					<ul class="-mx-2 flex flex-col gap-0.5">
 						{#each findings as f (f.kind + f.label)}
 							{@const Icon = FINDING_ICON[f.kind as keyof typeof FINDING_ICON] ?? ShieldAlert}
@@ -198,7 +198,7 @@
 
 			{#if interest.length}
 				<section class="flex min-w-0 flex-col gap-4 border-t border-l p-5">
-					<h3 class="text-sm font-semibold">Path interests</h3>
+					<h3 class="text-sm font-semibold">Path categories</h3>
 					<RankedList rows={interest} base={interestBase} onSelect={pick} />
 				</section>
 			{/if}
