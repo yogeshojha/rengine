@@ -73,7 +73,7 @@
 	let highlight = $state(-1);
 	let windowNote = $derived(
 		result.runs > scans.length && scans[0]?.started_at
-			? `Last ${scans.length} of ${result.runs} runs · earlier runs open from ${formatMonthDay(scans[0].started_at)}`
+			? `Last ${scans.length} of ${result.runs} scans · earlier scans open from ${formatMonthDay(scans[0].started_at)}`
 			: ''
 	);
 	const expanded = new SvelteSet<string>();
