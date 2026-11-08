@@ -155,11 +155,7 @@
 			</div>
 		</Card.Root>
 	{:else if !tokens.length && !running}
-		<EmptyState
-			icon={PowerIcon}
-			title="MCP server stopped"
-			description="Start the server so agents can connect."
-		>
+		<EmptyState icon={PowerIcon} title="MCP server stopped">
 			<LoadingButton
 				size="sm"
 				loading={mcp.isSaving}

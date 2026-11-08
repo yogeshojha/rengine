@@ -289,8 +289,7 @@
 							<div class="flex flex-col items-start gap-1.5">
 								<span class="text-sm font-medium">Unknown</span>
 								<span class="text-xs text-muted-foreground">
-									The threat-intel feeds are not downloaded, so this CVE has no exploitation rank.
-									Values below are what the findings reported.
+									Threat-intel feeds not downloaded.
 								</span>
 								<Button variant="outline" size="sm" href={ROUTES.arsenal('threat-intel')}>
 									<Download class="size-3.5" />

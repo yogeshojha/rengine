@@ -248,7 +248,7 @@
 				<TriangleAlert />
 				<Alert.AlertTitle>Software inference not available</Alert.AlertTitle>
 				<Alert.AlertDescription>
-					The NVD corpus is not loaded, so only CVEs a check reported are listed. {plural(
+					The NVD corpus is not loaded. Only CVEs a check reported are listed. {plural(
 						index.finding_scans,
 						'target'
 					)} with checks.
