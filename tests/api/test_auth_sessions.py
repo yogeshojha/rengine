@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from contextlib import asynccontextmanager
 from datetime import timedelta
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import jwt
 import pyotp
@@ -11,7 +14,7 @@ from fastapi import HTTPException, Response
 from starlette.requests import Request
 
 from app.api import deps
-from app.api.v1 import auth, totp
+from app.api.v1 import auth, events, totp
 from app.api.v1.users import update_user
 from app.config import ALGORITHM
 from app.core import ratelimit
@@ -26,7 +29,9 @@ from app.core.security import (
     signing_key,
 )
 from app.services.totp import TOTPService
+from shared.enums.sse import SSEChannel
 from shared.models.user import User, UserAdminUpdate
+from shared.sse import sse_manager
 
 pytestmark = pytest.mark.api
 
@@ -199,3 +204,36 @@ async def test_login_returns_no_token_in_the_body(redis, flush_only):
     )
     assert set(body.model_dump()) == {"mfa_required", "mfa_token"}
     assert _cookie(response, auth.REFRESH_TOKEN_COOKIE)
+
+
+async def test_a_busy_event_stream_rechecks_its_token(monkeypatch):
+    checks: list[str] = []
+
+    async def _revoked(token):
+        checks.append(token)
+        return False
+
+    monkeypatch.setattr(events, "token_still_valid", _revoked)
+    monkeypatch.setattr(events, "HEARTBEAT_SECONDS", 0.05)
+    request = SimpleNamespace(is_disconnected=AsyncMock(return_value=False))
+    user = SimpleNamespace(id=uuid.uuid4())
+    response = await events.event_stream(
+        request, user, "stream-token", channels=SSEChannel.BROADCAST
+    )
+
+    async def _publish():
+        while True:
+            await sse_manager.publish(SSEChannel.BROADCAST, "tick", {})
+            await asyncio.sleep(0.01)
+
+    publisher = asyncio.create_task(_publish())
+    frames: list[str] = []
+    try:
+        async with asyncio.timeout(2):
+            async for frame in response.body_iterator:
+                frames.append(frame)
+    finally:
+        publisher.cancel()
+
+    assert checks == ["stream-token"]
+    assert frames[-1].startswith("event: unauthorized")

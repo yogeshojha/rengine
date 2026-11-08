@@ -77,24 +77,30 @@ async def event_stream(
         )
 
     async def generate():
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + HEARTBEAT_SECONDS
         async with sse_manager.stream(validated) as queue:
             try:
                 while True:
                     if await request.is_disconnected():
                         break
 
-                    try:
-                        message = await asyncio.wait_for(
-                            queue.get(), timeout=HEARTBEAT_SECONDS
-                        )
-                        if message is STREAM_CLOSED:
-                            break
-                        yield message
-                    except TimeoutError:
+                    if loop.time() >= deadline:
                         if not await token_still_valid(token):
                             yield "event: unauthorized\ndata: {}\n\n"
                             break
+                        deadline = loop.time() + HEARTBEAT_SECONDS
+
+                    try:
+                        message = await asyncio.wait_for(
+                            queue.get(), timeout=deadline - loop.time()
+                        )
+                    except TimeoutError:
                         yield ": heartbeat\n\n"
+                        continue
+                    if message is STREAM_CLOSED:
+                        break
+                    yield message
 
             except asyncio.CancelledError:
                 pass
