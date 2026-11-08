@@ -40,6 +40,13 @@
 		type QuickScanSelection
 	} from '$lib/utilities/quick-scan';
 	import { plural } from '$lib/utilities/strings';
+	import {
+		CSV_NAME,
+		CSV_ORGANIZATIONS,
+		CSV_POSITIONS,
+		CSV_TAGS,
+		CSV_TARGET
+	} from '$lib/config/target-import';
 	import { goto } from '$app/navigation';
 	import type {
 		TargetImportItem,
@@ -55,13 +62,6 @@
 
 	type ImportMode = 'input' | 'preview' | 'results';
 	type ImportMethod = 'manual' | 'json' | 'csv';
-
-	// CSV columns, mirroring api/app/services/target.py
-	const CSV_TARGET = ['target_value', 'target', 'value', 'domain', 'ip'];
-	const CSV_TAGS = ['tags', 'tag'];
-	const CSV_ORGANIZATIONS = ['organizations', 'organization', 'orgs', 'org'];
-	const CSV_NAME = ['display_name', 'name'];
-	const CSV_POSITIONS = ['target_value', 'tags', 'organizations', 'display_name'];
 
 	let mode = $state<ImportMode>('input');
 	let activeTab = $state<ImportMethod>('manual');
