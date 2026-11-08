@@ -87,10 +87,9 @@ def _bad(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
 
-def _duplicate() -> HTTPException:
+def _duplicate(program: str) -> HTTPException:
     return HTTPException(
-        status_code=status.HTTP_409_CONFLICT,
-        detail="This program is already watched in the project.",
+        status_code=status.HTTP_409_CONFLICT, detail=f"Program {program} has a watch."
     )
 
 
@@ -210,8 +209,9 @@ class WatchService:
         self, platform: str, handle: str, data: WatchCreate, user_id: UUID
     ) -> WatchRead:
         program = await self.programs.get_program(platform, handle)
+        program_name = program.name
         if await self._existing(data.project_id, program.id) is not None:
-            raise _duplicate()
+            raise _duplicate(program_name)
         plan = plan_scope(await self._scopes(program.id))
         if not plan.items:
             msg = "The program has no in-scope domain or wildcard to watch."
@@ -247,7 +247,7 @@ class WatchService:
             await self.session.rollback()
             with contextlib.suppress(HTTPException):
                 await contexts.delete(context.id, data.project_id)
-            raise _duplicate() from None
+            raise _duplicate(program_name) from None
         except ValidationError as exc:
             await self.session.rollback()
             with contextlib.suppress(HTTPException):
