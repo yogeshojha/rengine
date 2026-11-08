@@ -153,7 +153,7 @@ async def cve_counts(
         findings = await session.scalar(
             select(func.count()).where(
                 found.match(Vulnerability.scan_id),
-                func.jsonb_exists(cast(Vulnerability.cve_ids, JSONB), cve),
+                cast(Vulnerability.cve_ids, JSONB).op("?")(cve),
                 not_(vuln_suppressed(found)),
             )
         )
@@ -173,7 +173,7 @@ async def library_checks(session, cve: str) -> tuple[int, bool]:
             select(
                 func.count().filter(
                     VulnTemplate.enabled.is_(True),
-                    func.jsonb_exists(cast(VulnTemplate.cve_ids, JSONB), cve),
+                    cast(VulnTemplate.cve_ids, JSONB).op("?")(cve),
                 ),
                 func.count(),
             ).select_from(VulnTemplate)

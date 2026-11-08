@@ -752,18 +752,12 @@ class ReportSource:
                 )
             )
             .label("clean"),
-            func.count()
-            .filter(func.jsonb_exists_any(issues, warning_keys))
-            .label("warning"),
-            func.count().filter(func.jsonb_exists_any(issues, info_keys)).label("info"),
+            func.count().filter(issues.op("?|")(warning_keys)).label("warning"),
+            func.count().filter(issues.op("?|")(info_keys)).label("info"),
         ]
         for key in hygiene_defs.CHECK_KEYS:
-            columns.append(
-                func.count().filter(func.jsonb_exists(issues, key)).label(f"f_{key}")
-            )
-            columns.append(
-                func.count().filter(func.jsonb_exists(checked, key)).label(f"a_{key}")
-            )
+            columns.append(func.count().filter(issues.op("?")(key)).label(f"f_{key}"))
+            columns.append(func.count().filter(checked.op("?")(key)).label(f"a_{key}"))
         row = (
             self.session.execute(
                 select(*columns)
@@ -777,7 +771,7 @@ class ReportSource:
             select(Subdomain.name, Subdomain.hygiene_issues)
             .where(
                 Subdomain.scan_id == scan_id,
-                func.jsonb_exists_any(issues, warning_keys),
+                issues.op("?|")(warning_keys),
             )
             .order_by(
                 preds.hygiene_length(Subdomain.hygiene_issues).desc(), Subdomain.name
