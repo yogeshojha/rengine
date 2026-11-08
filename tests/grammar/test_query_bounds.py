@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import pytest
+from sqlalchemy import column
 
 from app.services.subdomain import SubdomainService
-from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.definitions.asset_query import MAX_QUERY_LENGTH, Op
 from shared.models.subdomain import SubdomainFilter
 from shared.services.asset_query import parse_query
-from shared.services.asset_query.ast import Not, Term
+from shared.services.asset_query.ast import Compare, Not, QuerySyntaxError, Term
+from shared.services.asset_query.terms import date_match
+from shared.utils.datetime import utc_now
 
 pytestmark = pytest.mark.grammar
 
@@ -46,3 +49,17 @@ async def test_status_not_none_keeps_only_answered_hosts(estate, now):
     )
     assert not_ok.error is None
     assert not_ok.total == 2
+
+
+@pytest.mark.parametrize(
+    ("op", "raw", "future"),
+    [
+        (Op.GT, "99999999999d", False),
+        (Op.MATCH, "9999-12-31", False),
+        (Op.LT, "5000y", True),
+    ],
+)
+def test_a_date_past_the_calendar_is_a_query_error(op, raw, future):
+    cmp = Compare("discovered", op, (raw,), False, None, 0, len(raw))
+    with pytest.raises(QuerySyntaxError, match="out of range"):
+        date_match(column("at"), cmp, utc_now(), future=future)

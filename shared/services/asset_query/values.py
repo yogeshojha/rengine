@@ -94,7 +94,11 @@ def moment(raw: str, start: int, end: int) -> datetime:
     relative = _RELATIVE_RE.match(text)
     if relative is not None:
         seconds = float(relative.group(1)) * _RELATIVE[relative.group(2).lower()]
-        return now - timedelta(seconds=seconds)
+        try:
+            return now - timedelta(seconds=seconds)
+        except OverflowError as exc:
+            msg = f"{raw!r} is out of range."
+            raise QuerySyntaxError(msg, start, end) from exc
     if text.lower() in ("now", "today"):
         return now
     for fmt in _DATE_FORMATS:

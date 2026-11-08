@@ -143,12 +143,17 @@ def date_match(col, cmp: Compare, now: datetime, *, future: bool):
         return or_(col.is_(None), negate(matched))
     raw = cmp.values[0]
     instant = moment(raw, cmp.start, cmp.end)
+    try:
+        end = instant + _ONE_DAY
+        span = now - instant
+        boundary = now + span if future else now - span
+    except OverflowError as exc:
+        msg = f"{raw!r} is out of range."
+        raise QuerySyntaxError(msg, cmp.start, cmp.end) from exc
     if not is_relative(raw):
         if cmp.op in (Op.MATCH, Op.EQ):
-            return and_(col >= instant, col < instant + _ONE_DAY)
+            return and_(col >= instant, col < end)
         return threshold(col, cmp.op, instant)
-    span = now - instant
-    boundary = now + span if future else now - span
     if cmp.op in (Op.MATCH, Op.EQ):
         return col <= boundary if future else col >= boundary
     op = cmp.op if future else _FLIPPED.get(cmp.op, cmp.op)
