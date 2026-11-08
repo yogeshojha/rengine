@@ -124,7 +124,10 @@ class InstanceSettingsService:
             try:
                 ZoneInfo(data.timezone)
             except Exception as exc:
-                msg = f"Invalid timezone '{data.timezone}'."
+                msg = (
+                    f"Timezone {data.timezone} not recognised. "
+                    "Use an IANA name such as Europe/Berlin."
+                )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail=msg
                 ) from exc
