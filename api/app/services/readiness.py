@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 import time
 
 from sqlalchemy import func, select
@@ -15,19 +16,28 @@ from shared.services.celery_dispatch import get_celery_client
 REQUIRED_QUEUES = frozenset(spec.name for spec in QUEUES)
 ONLINE_TTL_SECONDS = 30.0
 
-_online: dict[str, tuple[float, int | None]] = {}
+_last: dict[str, tuple[float, bool, int | None]] = {}
+_inspecting = threading.Lock()
 
 
 def _workers() -> tuple[bool, int | None]:
-    seen = _online.get("workers")
-    if seen is not None and time.monotonic() - seen[0] < ONLINE_TTL_SECONDS:
-        return True, seen[1]
-    online, slots = _inspect()
-    if online:
-        _online["workers"] = (time.monotonic(), slots)
-    else:
-        _online.pop("workers", None)
-    return online, slots
+    asked = time.monotonic()
+    seen = _last.get("workers")
+    if seen is not None and seen[1] and asked - seen[0] < ONLINE_TTL_SECONDS:
+        return True, seen[2]
+    if seen is None:
+        _inspecting.acquire()
+    elif not _inspecting.acquire(blocking=False):
+        return seen[1], seen[2]
+    try:
+        seen = _last.get("workers")
+        if seen is not None and seen[0] >= asked:
+            return seen[1], seen[2]
+        online, slots = _inspect()
+        _last["workers"] = (time.monotonic(), online, slots)
+        return online, slots
+    finally:
+        _inspecting.release()
 
 
 def _inspect() -> tuple[bool, int | None]:
@@ -54,13 +64,13 @@ class ReadinessService:
         self.session = session
 
     async def readiness(self) -> DashboardReadiness:
-        checks = int(
-            await self.session.scalar(select(func.count(VulnTemplate.id))) or 0
-        )
         try:
             online, slots = await asyncio.to_thread(_workers)
         except Exception:
             online, slots = False, None
+        checks = int(
+            await self.session.scalar(select(func.count(VulnTemplate.id))) or 0
+        )
         return DashboardReadiness(
             worker_online=online,
             worker_concurrency=slots,
