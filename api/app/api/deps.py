@@ -159,7 +159,9 @@ async def token_still_valid(token: str) -> bool:
     try:
         async with async_db_session() as session:
             user = await user_for_payload(payload, session)
-    except HTTPException:
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
+            raise
         return False
     except (SQLAlchemyError, TimeoutError):
         return True

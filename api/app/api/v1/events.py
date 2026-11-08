@@ -86,7 +86,11 @@ async def event_stream(
                         break
 
                     if loop.time() >= deadline:
-                        if not await token_still_valid(token):
+                        try:
+                            valid = await token_still_valid(token)
+                        except HTTPException:
+                            break
+                        if not valid:
                             yield "event: unauthorized\ndata: {}\n\n"
                             break
                         deadline = loop.time() + HEARTBEAT_SECONDS

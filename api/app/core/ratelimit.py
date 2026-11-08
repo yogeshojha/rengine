@@ -15,6 +15,10 @@ LIMITER_UNAVAILABLE = (
     "The rate limiter is unavailable. Check that the redis service is running."
 )
 
+SESSIONS_UNAVAILABLE = (
+    "Sessions cannot be checked. Check that the redis service is running."
+)
+
 
 async def too_many_attempts(key: str, *, limit: int, fail_closed: bool = False) -> None:
     try:
@@ -84,7 +88,10 @@ async def is_token_revoked(jti: str) -> bool:
         return await async_client().exists(f"revoked:jti:{jti}") == 1
     except Exception as exc:
         logger.warning("token revoke check unavailable for %s: %s", jti, exc)
-        return False
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=SESSIONS_UNAVAILABLE,
+        ) from exc
 
 
 async def grant_token_grace(jti: str, ttl_seconds: int) -> None:
@@ -131,5 +138,8 @@ async def tokens_valid_after(user_id: UUID) -> int | None:
         raw = await async_client().get(f"auth:valid-after:{user_id}")
     except Exception as exc:
         logger.warning("session revoke check unavailable for %s: %s", user_id, exc)
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=SESSIONS_UNAVAILABLE,
+        ) from exc
     return int(raw) if raw is not None else None
