@@ -48,7 +48,7 @@
 		if (s && s.proxies > 0) items.push(`${plural(s.proxies, 'proxy', 'proxies')} configured`);
 		if (s?.ai_enabled) items.push('AI analysis enabled');
 		if (s && s.channels > 0) {
-			items.push(plural(s.channels, 'notification channel'));
+			items.push(`${plural(s.channels, 'notification channel')} added`);
 		}
 		items.push('Project created');
 		return items;
