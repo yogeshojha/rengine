@@ -15,6 +15,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import EmptyState from '$lib/components/empty-state.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import CountTabs from '$lib/components/count-tabs.svelte';
 	import { cloudStorageApi } from '$lib/api/cloud-storage';
 	import { writeClipboard } from '$lib/utilities/clipboard';
@@ -197,17 +198,21 @@
 				{@const current = stateOf(b)}
 				<div class="col-span-full grid grid-cols-subgrid items-center px-4 py-2.5">
 					<div class="order-1">
-						<span
-							title={spec.help}
-							class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium {OPEN_ACCESS.has(
-								b.access
-							)
-								? `${sev.ink}`
-								: 'text-muted-foreground'}"
-						>
-							<span class="size-2 rounded-full {sev.edge}"></span>
-							{spec.label}
-						</span>
+						<Hint text={spec.help}>
+							{#snippet child(props)}
+								<span
+									{...props}
+									class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium {OPEN_ACCESS.has(
+										b.access
+									)
+										? `${sev.ink}`
+										: 'text-muted-foreground'}"
+								>
+									<span class="size-2 rounded-full {sev.edge}"></span>
+									{spec.label}
+								</span>
+							{/snippet}
+						</Hint>
 					</div>
 					<div class="order-3 col-span-full min-w-0 sm:order-2 sm:col-span-1">
 						<div class="flex items-center gap-2">
@@ -215,8 +220,7 @@
 								href={externalHref(b.url)}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="truncate font-mono text-sm hover:text-foreground hover:underline"
-								title={b.url}
+								class="truncate font-mono text-sm hover:text-foreground"
 							>
 								{b.name}
 							</a>
@@ -225,9 +229,13 @@
 						<div class="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
 							<span>{PROVIDER_LABELS[b.provider] ?? b.provider}</span>
 							{#if b.region}<span>· {b.region}</span>{/if}
-							<span title={SOURCE_HELP[b.source]} class="rounded border px-1 py-px">
-								{SOURCE_LABELS[b.source] ?? b.source}
-							</span>
+							<Hint text={SOURCE_HELP[b.source]}>
+								{#snippet child(props)}
+									<span {...props} class="rounded border px-1 py-px">
+										{SOURCE_LABELS[b.source] ?? b.source}
+									</span>
+								{/snippet}
+							</Hint>
 							{#if current !== ReviewState.OPEN}
 								<span class="rounded border border-dashed px-1 py-px">{STATE_LABELS[current]}</span>
 							{/if}
