@@ -3,12 +3,24 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi_pagination.ext.sqlalchemy import paginate
+from pydantic import StringConstraints
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.note import NoteService
+from shared.definitions.notes import (
+    MAX_ASSET_KEY,
+    MAX_NOTE_FACET_VALUES,
+    MAX_NOTE_TAG_CHARS,
+    MAX_NOTE_TAGS,
+    NOTE_ASSET_SEPARATOR,
+    NOTE_STATUSES,
+    NOTE_SUBJECTS,
+    TRIAGE_REASON_STATES,
+)
+from shared.definitions.surface import SurfaceDimension
 from shared.models.note import (
     NoteCreate,
     NoteFacets,
@@ -19,6 +31,21 @@ from shared.models.note import (
 )
 
 router = APIRouter(prefix="/notes", tags=["notes"])
+
+_DIMENSIONS = (*(d.value for d in SurfaceDimension), *NOTE_SUBJECTS)
+_DIMENSION_CHARS = max(map(len, _DIMENSIONS))
+_Dimension = Annotated[str, StringConstraints(max_length=_DIMENSION_CHARS)]
+_Asset = Annotated[
+    str,
+    StringConstraints(
+        max_length=_DIMENSION_CHARS + len(NOTE_ASSET_SEPARATOR) + MAX_ASSET_KEY
+    ),
+]
+_Tag = Annotated[str, StringConstraints(max_length=MAX_NOTE_TAG_CHARS + 1)]
+_Status = Annotated[str, StringConstraints(max_length=max(map(len, NOTE_STATUSES)))]
+_Triage = Annotated[
+    str, StringConstraints(max_length=max(map(len, TRIAGE_REASON_STATES)))
+]
 
 
 def get_service(
@@ -39,25 +66,43 @@ def note_filter(
         list[UUID] | None, Query(description="Notes written in any of these scans")
     ] = None,
     dimension: Annotated[
-        list[str] | None,
-        Query(description="Result dimension, target or scan"),
+        list[_Dimension] | None,
+        Query(
+            description="Result dimension, target or scan",
+            max_length=len(_DIMENSIONS),
+        ),
     ] = None,
-    asset_key: Annotated[str | None, Query(description="Asset identity")] = None,
+    asset_key: Annotated[
+        str | None, Query(description="Asset identity", max_length=MAX_ASSET_KEY)
+    ] = None,
     asset: Annotated[
-        list[str] | None,
-        Query(description="Dimension and asset identity as dimension:key"),
+        list[_Asset] | None,
+        Query(
+            description="Dimension and asset identity as dimension:key",
+            max_length=MAX_NOTE_FACET_VALUES,
+        ),
     ] = None,
     tag: Annotated[
-        list[str] | None, Query(description="Notes carrying every tag named")
+        list[_Tag] | None,
+        Query(description="Notes carrying every tag named", max_length=MAX_NOTE_TAGS),
     ] = None,
     status_filter: Annotated[
-        list[str] | None, Query(alias="status", description="open or resolved")
+        list[_Status] | None,
+        Query(
+            alias="status",
+            description="open or resolved",
+            max_length=len(NOTE_STATUSES),
+        ),
     ] = None,
     author: Annotated[
         list[UUID] | None, Query(description="Notes written by any of these users")
     ] = None,
     triage: Annotated[
-        list[str] | None, Query(description="Review state of a triage reason")
+        list[_Triage] | None,
+        Query(
+            description="Review state of a triage reason",
+            max_length=len(TRIAGE_REASON_STATES),
+        ),
     ] = None,
     search: Annotated[
         str | None, Query(description="Text in the body or title", max_length=200)
@@ -104,7 +149,8 @@ async def note_facets(
     project_id: Annotated[UUID, Query(description="Project ID")],
     f: Filtered,
     asset_q: Annotated[
-        str | None, Query(description="Text in an asset label or key")
+        str | None,
+        Query(description="Text in an asset label or key", max_length=MAX_ASSET_KEY),
     ] = None,
 ):
     return await service.facets(project_id, f, asset_query=asset_q)
