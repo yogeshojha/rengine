@@ -19,7 +19,7 @@ from shared.models.secret import SecretFilter
 from shared.models.software import SoftwareFilter
 from shared.models.subdomain import SubdomainFilter
 from shared.models.vulnerability import VulnerabilityFilter
-from shared.services.asset_query import compiler
+from shared.services.asset_query import compiler, paging
 
 pytestmark = pytest.mark.grammar
 
@@ -318,3 +318,21 @@ async def test_a_short_word_matches_what_each_field_matches(estate, now, monkeyp
         found = await service.search(estate.project_id, scan, SubdomainFilter(q=word))
         assert short[word] == sorted(row.name for row in found.items), word
     assert short["ad"] == ["admin.example.com", "dead.example.com"]
+
+
+async def test_a_page_past_the_end_is_empty_with_the_same_count(
+    estate, now, monkeypatch
+):
+    scan = await _rich_scan(estate, now)
+    services = PortService(estate.session)
+    first = await services.search(scan, ServiceFilter(limit=1))
+    past = await services.search(scan, ServiceFilter(limit=1, offset=100_000_000))
+    assert first.total == 3
+    assert past.items == []
+    assert past.total == first.total
+    monkeypatch.setattr(paging, "COUNT_CAP", 2)
+    last = await services.search(scan, ServiceFilter(limit=5, offset=2))
+    assert len(last.items) == 1
+    gone = await services.search(scan, ServiceFilter(limit=5, offset=3))
+    assert gone.items == []
+    assert gone.total == 3

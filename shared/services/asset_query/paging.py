@@ -26,6 +26,14 @@ async def page_rows(
     capped: bool = False,
 ) -> tuple[Sequence[Any], int]:
     """The page's rows and how many rows matched, counted to the cap when `capped`."""
+    if offset >= COUNT_CAP:
+        reached = await session.scalar(
+            select(func.count()).select_from(
+                base.order_by(None).limit(offset + 1).subquery()
+            )
+        )
+        if int(reached or 0) <= offset:
+            return [], min(int(reached or 0), COUNT_CAP + 1)
     total = MATCHED_TOTAL
     if capped:
         total = (
