@@ -193,7 +193,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
             out.append(
                 Caveat(
                     kind="failed",
-                    text=f"The {row.group} scan failed: {row.error or 'no error recorded'}.",
+                    text=f"The {row.group} scan failed.",
                 )
             )
         if row.hosts_dropped:
