@@ -333,7 +333,6 @@ DIFF_MARK: dict[str, str] = {
 }
 
 MAX_DIFF_LINES = 5000
-DIFF_PAGE = 200
 DIFF_FIELD_INDENT = "    "
 
 DEFAULT_RANK = 99

@@ -34,7 +34,6 @@ from shared.definitions.compare import (
     DEFAULT_RANK,
     DIFF_FIELD_INDENT,
     DIFF_MARK,
-    DIFF_PAGE,
     INTEL_FIELDS,
     LISTED_VERBS,
     MAX_COMPARABLE_RUNS,
@@ -712,30 +711,25 @@ class ScanCompareService:
         budget: int,
     ) -> list[str]:
         lines: list[str] = []
-        page = 1
-        while len(lines) < budget:
-            result = await self.rows(
-                baseline_id=report.baseline.scan_id,
-                current_id=report.current.scan_id,
-                project_id=project_id,
-                dimension=delta.dimension,
-                verbs=verbs,
-                page=page,
-                size=DIFF_PAGE,
+        if budget <= 0:
+            return lines
+        result = await self.rows(
+            baseline_id=report.baseline.scan_id,
+            current_id=report.current.scan_id,
+            project_id=project_id,
+            dimension=delta.dimension,
+            verbs=verbs,
+            page=1,
+            size=budget,
+        )
+        for row in result.items:
+            lines.append(f"{DIFF_MARK.get(row.verb, ' ')} {self._diff_label(row)}")
+            lines.extend(
+                f"{DIFF_FIELD_INDENT}{field.label:<16}{self._diff_field(field)}"
+                for field in row.fields
             )
-            if not result.items:
-                break
-            for row in result.items:
-                lines.append(f"{DIFF_MARK.get(row.verb, ' ')} {self._diff_label(row)}")
-                lines.extend(
-                    f"{DIFF_FIELD_INDENT}{field.label:<16}{self._diff_field(field)}"
-                    for field in row.fields
-                )
-                if len(lines) >= budget:
-                    return lines[:budget]
-            if page * DIFF_PAGE >= result.total:
-                break
-            page += 1
+            if len(lines) >= budget:
+                return lines[:budget]
         return lines
 
     def _diff_label(self, row: ChangeRow) -> str:
