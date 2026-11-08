@@ -28,7 +28,6 @@ _SORTS = {
     "seen": Secret.discovered_at,
 }
 
-# exposed, expired, public
 STATE_RANK = case(
     {
         SecretState.EXPOSED.value: 3,
