@@ -6,7 +6,12 @@ from pydantic import Field as PydanticField
 from sqlalchemy import Index
 from sqlmodel import Field, SQLModel
 
-from shared.definitions.scan_surface import SurfaceClass, SurfaceState
+from shared.definitions.scan_surface import (
+    MAX_ITEM_LENGTH,
+    MAX_NOTE_LENGTH,
+    SurfaceClass,
+    SurfaceState,
+)
 from shared.models.fields import json_dict, json_list
 from shared.utils.datetime import utc_now
 
@@ -33,7 +38,7 @@ class ScanSurfaceItem(SQLModel, table=True):
         max_length=16,
         sa_column_kwargs={"name": "class"},
     )
-    value: str = Field(max_length=2000)
+    value: str = Field(max_length=MAX_ITEM_LENGTH)
     host: str | None = Field(default=None, max_length=500)
     port: int | None = Field(default=None)
     scheme: str | None = Field(default=None, max_length=8)
@@ -58,7 +63,7 @@ class ScanSurfaceItem(SQLModel, table=True):
     tiers_planned: list = json_list()
     tiers_done: dict = json_dict()
     state: str = Field(default=SurfaceState.PLANNED.value, max_length=16)
-    note: str | None = Field(default=None, max_length=500)
+    note: str | None = Field(default=None, max_length=MAX_NOTE_LENGTH)
 
     created_at: datetime = Field(default_factory=utc_now)
 

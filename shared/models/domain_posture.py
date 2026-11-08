@@ -7,7 +7,12 @@ from sqlalchemy.types import JSON
 from sqlmodel import Field as SQLField
 from sqlmodel import SQLModel
 
-from shared.definitions.domain_posture import MAX_ZONE_LENGTH, DnssecState
+from shared.definitions.domain_posture import (
+    MAX_POLICY_LENGTH,
+    MAX_RECORD_LENGTH,
+    MAX_ZONE_LENGTH,
+    DnssecState,
+)
 from shared.utils.datetime import utc_now
 
 
@@ -28,11 +33,13 @@ class DomainPosture(SQLModel, table=True):
     hosts: int = SQLField(default=0)
 
     spf: str | None = SQLField(default=None, sa_column=Column(Text, nullable=True))
-    spf_all: str | None = SQLField(default=None, max_length=16)
+    spf_all: str | None = SQLField(default=None, max_length=MAX_POLICY_LENGTH)
     spf_lookups: int | None = SQLField(default=None)
     dmarc: str | None = SQLField(default=None, sa_column=Column(Text, nullable=True))
-    dmarc_policy: str | None = SQLField(default=None, max_length=16)
-    dmarc_subdomain_policy: str | None = SQLField(default=None, max_length=16)
+    dmarc_policy: str | None = SQLField(default=None, max_length=MAX_POLICY_LENGTH)
+    dmarc_subdomain_policy: str | None = SQLField(
+        default=None, max_length=MAX_POLICY_LENGTH
+    )
     dmarc_pct: int | None = SQLField(default=None)
     dmarc_rua: bool | None = SQLField(default=None)
     dmarc_inherited: bool = SQLField(default=False)
@@ -42,10 +49,12 @@ class DomainPosture(SQLModel, table=True):
     dkim_key_bits: int | None = SQLField(default=None)
     mx: list = SQLField(default_factory=list, sa_column=Column(JSON, nullable=False))
     null_mx: bool = SQLField(default=False)
-    mta_sts: str | None = SQLField(default=None, max_length=500)
-    mta_sts_mode: str | None = SQLField(default=None, max_length=16)
-    tls_rpt: str | None = SQLField(default=None, max_length=500)
-    dnssec: str = SQLField(default=DnssecState.UNKNOWN.value, max_length=16)
+    mta_sts: str | None = SQLField(default=None, max_length=MAX_RECORD_LENGTH)
+    mta_sts_mode: str | None = SQLField(default=None, max_length=MAX_POLICY_LENGTH)
+    tls_rpt: str | None = SQLField(default=None, max_length=MAX_RECORD_LENGTH)
+    dnssec: str = SQLField(
+        default=DnssecState.UNKNOWN.value, max_length=MAX_POLICY_LENGTH
+    )
     caa: list = SQLField(default_factory=list, sa_column=Column(JSON, nullable=False))
 
     posture_issues: list = SQLField(
