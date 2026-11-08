@@ -74,7 +74,7 @@
 <div class="flex flex-col gap-6">
 	<PageHeader
 		title={routeLabels.exposures}
-		description="Assets that stand out, like admin panels, remote access and staging hosts"
+		description="Admin panels, remote access and staging web assets"
 	/>
 
 	<Tabs.Root
