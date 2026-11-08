@@ -14,6 +14,7 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
@@ -376,7 +377,9 @@
 				>Scans send their traffic through one of these endpoints.</Dialog.Description
 			>
 		</Dialog.Header>
-		<div class="min-h-0 flex-1 overflow-y-auto">
+		<ScrollArea
+			class="min-h-0 flex-1 [&>[data-slot=scroll-area-viewport]]:max-h-[calc(85vh-10rem)]"
+		>
 			<div class="flex flex-col gap-5 px-6 py-5">
 				<div class="grid gap-4 sm:grid-cols-2">
 					<FormField label="Name" error={nameError} required>
@@ -514,7 +517,7 @@
 					<Switch id="proxy-default" bind:checked={asDefault} disabled={saving} />
 				</label>
 			</div>
-		</div>
+		</ScrollArea>
 		<Dialog.Footer class="border-t px-6 py-4">
 			<Button variant="outline" disabled={saving} onclick={() => guard.close()}>Cancel</Button>
 			<LoadingButton loading={saving} loadingLabel="Saving" onclick={save}>
