@@ -298,7 +298,7 @@ class TargetService:
         project = await self._get_project_by_slug(project_slug)
         if project is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
             )
         if not values:
             return {}
@@ -320,7 +320,7 @@ class TargetService:
     ) -> dict[str, int]:
         project = await self._get_project_by_slug(project_slug)
         if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise HTTPException(status_code=404, detail="Project not found.")
 
         query = with_whois_join(
             select(Target.target_type, func.count(Target.id)).select_from(Target)
@@ -580,7 +580,7 @@ class TargetService:
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
+                detail="Project not found.",
             )
 
         await self._check_duplicate_target(target_value, project.id)
@@ -650,7 +650,7 @@ class TargetService:
             return []
         if await self.session.get(Project, project_id) is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
             )
 
         rows = await self.session.execute(
@@ -730,7 +730,7 @@ class TargetService:
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
+                detail="Project not found.",
             )
 
         items = [
@@ -931,7 +931,7 @@ class TargetService:
         ).rowcount
         if not deleted:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Seed not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Seed not found."
             )
         await self.session.commit()
 
@@ -1054,7 +1054,7 @@ class TargetService:
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found",
+                detail="Project not found.",
             )
         return await self._import_items(
             project,
@@ -1224,7 +1224,7 @@ class TargetService:
         if not target:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Target not found",
+                detail="Target not found.",
             )
         return target
 

@@ -582,6 +582,6 @@ class ScanContextService:
         if not ctx:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Scan context not found",
+                detail="Scan context not found.",
             )
         return ctx

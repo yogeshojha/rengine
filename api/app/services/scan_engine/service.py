@@ -427,6 +427,6 @@ class ScanEngineService:
         if not engine:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Scan engine not found",
+                detail="Scan engine not found.",
             )
         return engine

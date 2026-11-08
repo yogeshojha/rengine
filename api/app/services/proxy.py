@@ -350,6 +350,6 @@ class ProxyService:
         proxy = result.scalar_one_or_none()
         if not proxy:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Proxy not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Proxy not found."
             )
         return proxy

@@ -260,7 +260,7 @@ class RescanService:
         scan = await self.session.get(Scan, scan_id)
         if scan is None or scan.project_id != project_id:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found."
             )
         if scan.status in SCAN_OPEN_STATUSES:
             raise HTTPException(

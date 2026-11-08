@@ -135,7 +135,7 @@ async def preview_engine(data, session: AsyncSession) -> EnginePreviewResult:
         ).scalar_one_or_none()
         if context is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found."
             )
     draft = _DraftEngine(data)
     resolved = merge_engine_context(draft, context, "preview", data.target_type)

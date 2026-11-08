@@ -204,7 +204,7 @@ class ReportService:
             .first()
         )
         if row is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found.")
         return row.source or builtin_source(slug)
 
     async def upload_theme(self, content: str, user_id: UUID) -> ReportThemeRead:
@@ -266,7 +266,7 @@ class ReportService:
             .first()
         )
         if row is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Theme not found.")
         if row.origin == ThemeOrigin.BUILTIN.value:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST, "Default themes are read-only."
@@ -371,7 +371,7 @@ class ReportService:
             .first()
         )
         if row is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Typeface not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Typeface not found.")
         try:
             delete_family(row.slug, row.origin)
         except FontError as exc:
@@ -451,7 +451,7 @@ class ReportService:
     async def template(self, template_id: UUID, project_id: UUID) -> ReportTemplate:
         row = await self.session.get(ReportTemplate, template_id)
         if row is None or row.project_id != project_id:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Report template not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Report template not found.")
         return row
 
     async def create_template(
@@ -561,7 +561,7 @@ class ReportService:
         if data.scan_id is not None:
             scan = await self.session.get(Scan, data.scan_id)
             if scan is None or scan.project_id != project_id:
-                raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found")
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found.")
             target = await self.session.get(Target, scan.target_id)
         elif data.target_id is not None:
             target = await self.session.get(Target, data.target_id)
@@ -827,7 +827,7 @@ class ReportService:
     async def get(self, report_id: UUID, project_id: UUID) -> Report:
         row = await self.session.get(Report, report_id)
         if row is None or row.project_id != project_id:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Report not found")
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Report not found.")
         return row
 
     async def delete(self, report_id: UUID, project_id: UUID) -> None:

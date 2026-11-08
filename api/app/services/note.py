@@ -53,8 +53,8 @@ from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import element_counts, lead_cache
 from shared.utils.datetime import utc_now
 
-_SCAN_NOT_FOUND = "Scan not found"
-_NOTE_NOT_FOUND = "Note not found"
+_SCAN_NOT_FOUND = "Scan not found."
+_NOTE_NOT_FOUND = "Note not found."
 _NOTE_NOT_YOURS = "Only its author or an administrator can change this note."
 _FINDINGS = SurfaceDimension.VULNERABILITIES.value
 _SCAN_AT = func.coalesce(Scan.started_at, Scan.created_at)
@@ -415,7 +415,7 @@ class NoteService:
         target = await self.session.get(Target, data.target_id)
         if target is None or target.project_id != project_id:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Target not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Target not found."
             )
         if data.scan_id is not None:
             scan = await self.session.get(Scan, data.scan_id)

@@ -38,7 +38,7 @@ async def get_label[T](
     )
     if row is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"{noun} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"{noun} not found."
         )
     return row
 

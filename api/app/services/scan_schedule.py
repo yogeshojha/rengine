@@ -66,7 +66,7 @@ class ScanScheduleService:
         row = (await self.session.execute(query)).scalar_one_or_none()
         if row is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Schedule not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Schedule not found."
             )
         return row
 
@@ -80,7 +80,7 @@ class ScanScheduleService:
         ).scalar_one_or_none()
         if engine is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan engine not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan engine not found."
             )
         return engine
 
@@ -98,7 +98,7 @@ class ScanScheduleService:
         ).scalar_one_or_none()
         if ctx is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found."
             )
         return ctx
 

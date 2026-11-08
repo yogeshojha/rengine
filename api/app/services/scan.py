@@ -243,7 +243,7 @@ class ScanService:
         engine = result.scalar_one_or_none()
         if not engine:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan engine not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan engine not found."
             )
         return engine
 
@@ -256,7 +256,7 @@ class ScanService:
         ctx = result.scalar_one_or_none()
         if not ctx:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found."
             )
         return ctx
 
@@ -287,7 +287,7 @@ class ScanService:
         target = result.scalar_one_or_none()
         if not target:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Target not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Target not found."
             )
         return target
 
@@ -1376,7 +1376,7 @@ class ScanService:
         scan = result.scalar_one_or_none()
         if not scan:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found."
             )
         return scan
 
@@ -1647,7 +1647,7 @@ class ScanService:
         ).scalar_one_or_none()
         if cmd is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Command not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Command not found."
             )
         detail = ScanCommandDetail.model_validate(cmd, from_attributes=True)
         detail.command = redact_command(detail.command)

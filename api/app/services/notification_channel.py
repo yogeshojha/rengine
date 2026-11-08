@@ -328,6 +328,6 @@ class NotificationChannelService:
         if not channel:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Notification channel not found",
+                detail="Notification channel not found.",
             )
         return channel

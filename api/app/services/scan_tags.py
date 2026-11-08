@@ -99,7 +99,7 @@ class ScanTagService:
         )
         if len(owned) != len(set(scan_ids)):
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found."
             )
         if remove:
             await self.session.execute(
