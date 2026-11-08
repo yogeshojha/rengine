@@ -1145,6 +1145,10 @@
 	}
 
 	const FILED_RECHECK_MS = 5000;
+	let filedRecheck: ReturnType<typeof setTimeout> | null = null;
+	onDestroy(() => {
+		if (filedRecheck) clearTimeout(filedRecheck);
+	});
 	let fileFor = $state<{ fingerprints: string[]; templateIds: string[]; bulk: boolean } | null>(
 		null
 	);
@@ -1203,7 +1207,8 @@
 			if (drawerOpen && selected) void openById(selected.id);
 		};
 		reload();
-		setTimeout(reload, FILED_RECHECK_MS);
+		if (filedRecheck) clearTimeout(filedRecheck);
+		filedRecheck = setTimeout(reload, FILED_RECHECK_MS);
 	}
 
 	$effect(() => {

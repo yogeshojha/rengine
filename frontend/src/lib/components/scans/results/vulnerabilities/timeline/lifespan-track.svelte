@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Button } from '$lib/components/ui/button';
 	import {
@@ -45,6 +46,9 @@
 	let open = $state(false);
 	let anchor = $state<HTMLElement | null>(null);
 	let closing: ReturnType<typeof setTimeout> | null = null;
+	onDestroy(() => {
+		if (closing) clearTimeout(closing);
+	});
 
 	function left(seg: LifeSegment): number {
 		return columnLeft(seg.start, n, width);
