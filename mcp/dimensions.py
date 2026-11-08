@@ -42,6 +42,8 @@ class Dimension:
     service_path: str
     needs_project: bool = False
     page_args: tuple[str, str] = ("limit", "offset")
+    # the search route's cache entry and page model, shared with it
+    search_cache: tuple[str, str] | None = None
 
     @property
     def fields(self) -> tuple[str, ...]:
@@ -88,9 +90,28 @@ class Dimension:
         self, session: AsyncSession, scan_id: uuid.UUID, f: Any, project_id: uuid.UUID
     ) -> Any:
         service = self.service(session)
-        if self.needs_project:
-            return await service.search(project_id, scan_id, f)
-        return await service.search(scan_id, f)
+
+        async def build() -> Any:
+            if self.needs_project:
+                return await service.search(project_id, scan_id, f)
+            return await service.search(scan_id, f)
+
+        if self.search_cache is None:
+            return await build()
+        from shared.services.asset_query import QueryScope, lead_cache  # noqa: PLC0415
+
+        name, model_path = self.search_cache
+        facets = f.model_dump_json()
+        return await lead_cache.cached(
+            session,
+            name=name,
+            scans=QueryScope.of(scan_id).ids,
+            facets=f"{project_id}|{facets}" if self.needs_project else facets,
+            model=_load(model_path),
+            build=build,
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+            live_ttl=None,
+        )
 
     async def leads(
         self, session: AsyncSession, scan_id: uuid.UUID, f: Any, project_id: uuid.UUID
@@ -128,24 +149,34 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="web-assets",
         service_path="app.services.subdomain.SubdomainService",
         needs_project=True,
+        search_cache=(
+            "search:web_assets",
+            "shared.models.subdomain.SubdomainSearchResult",
+        ),
     ),
     Dimension(
         key=SurfaceDimension.IPS.value,
         registry=IP_QUERY,
         tab="ips",
         service_path="app.services.ip_address.IpAddressService",
+        search_cache=("search:ips", "shared.models.scan_correlation.IpGroupPage"),
     ),
     Dimension(
         key=SurfaceDimension.SERVICES.value,
         registry=SERVICE_QUERY,
         tab="services",
         service_path="app.services.port.PortService",
+        search_cache=("search:services", "shared.models.scan_correlation.ServicePage"),
     ),
     Dimension(
         key=SurfaceDimension.VULNERABILITIES.value,
         registry=VULN_QUERY,
         tab="vulnerabilities",
         service_path="app.services.vulnerability.VulnerabilityService",
+        search_cache=(
+            "search:vulnerabilities",
+            "shared.models.vulnerability.VulnerabilityPage",
+        ),
     ),
     Dimension(
         key=SurfaceDimension.ENDPOINTS.value,
@@ -153,6 +184,7 @@ DIMENSIONS: tuple[Dimension, ...] = (
         tab="endpoints",
         service_path="app.services.endpoint.EndpointService",
         page_args=("size", "page"),
+        search_cache=("search:endpoints", "shared.models.endpoint.EndpointPage"),
     ),
     Dimension(
         key=SurfaceDimension.SECRETS.value,
