@@ -90,7 +90,7 @@
 		Include request and response
 	</DropdownMenu.CheckboxItem>
 	<p class="px-2 pb-1 text-2xs text-muted-foreground">
-		Adds the stored request and response. Scan headers are masked. Response bodies are not.
+		Scan headers are masked. Response bodies are not.
 	</p>
 {/if}
 {#if onHistory}
