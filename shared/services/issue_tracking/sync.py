@@ -512,14 +512,14 @@ def send_comments(
     session.commit()
     clients = _Clients()
     sent = 0
+    limited: set[uuid.UUID] = set()
     try:
         for comment_id in ids:
             row = _claim_comment(session, comment_id)
-            if row is None:
+            if row is None or row[2].id in limited:
                 session.commit()
                 continue
             comment, issue, tracker = row
-            comment.attempts += 1
             _serialize(session, tracker)
             try:
                 clients.of(tracker).comment(
@@ -527,11 +527,16 @@ def send_comments(
                     issue.external_id or "",
                     load_doc(json.loads(comment.body)),
                 )
+            except RateLimitedError as exc:
+                comment.error = _error(exc, tracker)
+                limited.add(tracker.id)
             except TrackerError as exc:
+                comment.attempts += 1
                 comment.error = _error(exc, tracker)
                 if comment.attempts >= MAX_COMMENT_ATTEMPTS:
                     comment.state = CommentState.FAILED.value
             else:
+                comment.attempts += 1
                 comment.state = CommentState.SENT.value
                 comment.error = None
                 comment.sent_at = utc_now()
