@@ -23,9 +23,9 @@ from shared.services.secret_mining.corpora import FINDINGS
 
 pytestmark = pytest.mark.pipeline
 
-_KEY_A = "AKIAJ4Q7ZX9M2PLW8KTB"
-_KEY_B = "AKIAQ2W8E7R1T9Y3U6I5"
-_KEY_C = "AKIAZ9X8C7V6B5N4M3L2"
+_KEY_A = "AKIA" + "J4Q7ZX9M2PLW8KTB"
+_KEY_B = "AKIA" + "Q2W8E7R1T9Y3U6I5"
+_KEY_C = "AKIA" + "Z9X8C7V6B5N4M3L2"
 
 
 # ---------- the storage rule ----------

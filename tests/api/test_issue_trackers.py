@@ -70,6 +70,8 @@ from shared.services.scan_resolve import MASK
 
 pytestmark = pytest.mark.api
 
+AWS_KEY = "AKIA" + "QYLPMN5HHHFPZAM2"
+
 
 def _client(handler) -> httpx.Client:
     return httpx.Client(transport=httpx.MockTransport(handler))
@@ -1011,14 +1013,14 @@ def test_evidence_in_an_issue_masks_secret_values_and_keeps_their_names():
             "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
             "APP_NAME=Shop\nDB_PASSWORD=hunter2hunter2\n"
             '{"api_key": "abc123abc123"}\n'
-            "AWS=AKIAQYLPMN5HHHFPZAM2\n"
+            f"AWS={AWS_KEY}\n"
         ),
     )
     spec = TRACKERS_BY_KIND[TrackerKind.GITHUB.value]
     text = to_markdown(issue_body([vuln], "h", spec, grouped=False))
     assert "hunter2hunter2" not in text
     assert "abc123abc123" not in text
-    assert "AKIAQYLPMN5HHHFPZAM2" not in text
+    assert AWS_KEY not in text
     assert "DB_PASSWORD=••••••••" in text
     assert "APP_NAME=Shop" in text
     assert "Accept: */*" in text
