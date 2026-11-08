@@ -41,6 +41,7 @@ async def handle_request(
         identity, row = await service.authenticate(auth.from_header(authorization))
 
         if await limits.exceeded(identity.id, config.rate_limit_per_minute):
+            await _record_limited(request, identity, transport, agent)
             return protocol.failure(request.id, FORBIDDEN, RATE_MESSAGE)
     except McpError as exc:
         return protocol.failure(request.id, exc.code, exc.message)
@@ -62,3 +63,22 @@ async def handle_request(
         logger.debug("mcp bookkeeping skipped", error=str(exc))
 
     return response
+
+
+async def _record_limited(request, identity, transport: Transport, agent) -> None:
+    if request.method != protocol.Method.TOOLS_CALL:
+        return
+    name = request.params.get("name")
+    await telemetry.record(
+        telemetry.CallRecord(
+            token_id=identity.id,
+            token_name=identity.name,
+            client=transport.value,
+            agent=telemetry.clip(agent, telemetry.AGENT_MAX),
+            tool=telemetry.clip(str(name or ""), telemetry.TOOL_NAME_MAX) or "",
+            ok=False,
+            duration_ms=0,
+            detail=RATE_MESSAGE,
+            refused=True,
+        )
+    )

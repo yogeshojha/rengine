@@ -223,6 +223,7 @@ class Dispatcher:
 
         identity = identity_for(chat, user, cfg.ceiling)
         if spec.capability not in identity.capabilities:
+            await self._refused(identity, spec, "Capability not granted.", parsed)
             await self.channel.reply(
                 external_id, self._refusal(spec, chat, user, cfg.ceiling)
             )
@@ -239,7 +240,9 @@ class Dispatcher:
             return
 
         if await limits.exceeded(identity.id, cfg.rate_limit_per_minute):
-            await self._say(external_id, "Rate limit exceeded. Try again in a minute.")
+            message = "Rate limit exceeded. Try again in a minute."
+            await self._refused(identity, spec, message, parsed, args)
+            await self._say(external_id, message)
             return
 
         if (
@@ -248,6 +251,9 @@ class Dispatcher:
             and not await stepup.in_grace(kind, external_id)
         ):
             await stepup.hold(kind, external_id, parsed.raw)
+            await self._refused(
+                identity, spec, "Authenticator code required.", parsed, args
+            )
             await self._say(external_id, STEP_UP_PROMPT)
             return
 
@@ -427,6 +433,10 @@ class Dispatcher:
         started: float,
         detail: str | None,
         command: str | None = None,
+        *,
+        capability: str | None = None,
+        args: str | None = None,
+        refused: bool = False,
     ) -> None:
         await telemetry.record(
             telemetry.CallRecord(
@@ -436,9 +446,32 @@ class Dispatcher:
                 tool=tool,
                 ok=ok,
                 duration_ms=int((time.monotonic() - started) * 1000),
-                detail=detail[:300] if detail else None,
+                detail=telemetry.masked(detail)[:300] if detail else None,
                 command=command,
+                capability=capability,
+                args=args,
+                refused=refused,
             )
+        )
+
+    async def _refused(
+        self,
+        identity: TokenIdentity,
+        spec: CommandSpec,
+        detail: str,
+        parsed: Parsed,
+        args: dict | None = None,
+    ) -> None:
+        await self._observe(
+            identity,
+            spec.tool or spec.name,
+            False,
+            time.monotonic(),
+            detail,
+            said(parsed),
+            capability=spec.capability,
+            args=telemetry.phrase_args(args),
+            refused=True,
         )
 
     # ---------- builtins ----------
