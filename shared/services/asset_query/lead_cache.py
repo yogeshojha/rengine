@@ -28,7 +28,6 @@ SEARCH_TTL_SECONDS = 600
 LIVE_TTL_SECONDS = 20
 STALE_TTL_SECONDS = 15 * 60
 BUILD_LOCK_SECONDS = 120
-BUILD_WAIT_SECONDS = 30
 BUILD_POLL_SECONDS = 0.2
 _RELEASE = (
     "if redis.call('get', KEYS[1]) == ARGV[1] then "
@@ -188,7 +187,7 @@ async def _release(key: str, token: str) -> None:
 
 async def _await_build[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
     """The value another request is building, once it lands."""
-    deadline = time.monotonic() + BUILD_WAIT_SECONDS
+    deadline = time.monotonic() + BUILD_LOCK_SECONDS
     while time.monotonic() < deadline:
         await asyncio.sleep(BUILD_POLL_SECONDS)
         hit = await _read(key, model, name)
