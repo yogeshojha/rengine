@@ -443,7 +443,7 @@
 	});
 	const REVIEW_TABS = [
 		{ key: 'active', label: 'Active' },
-		{ key: VulnState.OPEN, label: 'Not reviewed' },
+		{ key: VulnState.OPEN, label: VULN_STATE_LABELS[VulnState.OPEN] },
 		{ key: VulnState.CONFIRMED, label: VULN_STATE_LABELS[VulnState.CONFIRMED] },
 		{ key: VulnState.FALSE_POSITIVE, label: VULN_STATE_LABELS[VulnState.FALSE_POSITIVE] },
 		{ key: VulnState.ACCEPTED, label: VULN_STATE_LABELS[VulnState.ACCEPTED] },
