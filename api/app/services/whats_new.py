@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import (
     DateTime,
     Uuid,
+    case,
     cast,
     column,
     exists,
@@ -951,13 +952,52 @@ class WhatsNewService:
             await self._event_rows(out, project_id, window, wanted)
 
     async def _event_rows(self, out: _Groups, project_id: UUID, window, wanted):
-        stmt = (
-            select(BountyEventRow, BountyProgram)
+        raw_kinds = [raw for raw, kind in EVENT_KIND.items() if kind in wanted]
+        if not raw_kinds:
+            return
+        kind_of = case(
+            *[(BountyEventRow.kind == raw, kind) for raw, kind in EVENT_KIND.items()]
+        )
+        library = [r for r, k in EVENT_KIND.items() if k == NewKind.PROGRAM.value]
+        held_by = case(
+            (BountyEventRow.kind.in_(library), None), else_=BountyEventRow.program_id
+        )
+        section = (
+            held_by,
+            _local_date(BountyEventRow.created_at, out.zone),
+            kind_of,
+        )
+        ranked = (
+            select(
+                BountyEventRow.id,
+                func.row_number()
+                .over(
+                    partition_by=section,
+                    order_by=(BountyEventRow.created_at.desc(), BountyEventRow.id),
+                )
+                .label("rank"),
+                func.count().over(partition_by=section).label("size"),
+            )
             .join(BountyProgram, BountyProgram.id == BountyEventRow.program_id)
-            .where(*window)
+            .where(*window, BountyEventRow.kind.in_(raw_kinds))
+            .subquery()
+        )
+        stmt = (
+            select(BountyEventRow, BountyProgram, ranked.c.size)
+            .join(ranked, ranked.c.id == BountyEventRow.id)
+            .join(BountyProgram, BountyProgram.id == BountyEventRow.program_id)
+            .where(ranked.c.rank <= BOUNTY_ROWS_PER_SECTION)
             .order_by(BountyEventRow.created_at.desc())
         )
-        events = (await self.session.execute(stmt)).all()
+        rows = (await self.session.execute(stmt)).all()
+        events = [(e, p) for e, p, _ in rows]
+        sizes = {e.id: int(n) for e, _, n in rows}
+        if NewKind.SCOPE.value in wanted:
+            out.fact(
+                NewKind.SCOPE.value,
+                Fact.NOT_TARGET.value,
+                await self._not_targets(project_id, window),
+            )
         watches = await self._watches(project_id)
         scope_values = {
             e.asset_identifier
@@ -975,10 +1015,9 @@ class WhatsNewService:
         )
         subjects: dict[str, NewSubject] = {}
         latest: dict[str, datetime] = {}
+        totals: dict[tuple[str, str], int] = {}
         for e, p in events:
             kind = EVENT_KIND[e.kind]
-            if kind not in wanted:
-                continue
             watch_id = watches.get(e.program_id)
             day = _day_of(e.created_at, out.zone)
             if kind == NewKind.PROGRAM.value:
@@ -997,18 +1036,39 @@ class WhatsNewService:
                     else self._scope_item(e, p, scope, existing, scanned, watch_id)
                 )
             by_group[gid][kind].append(item)
+            totals[(gid, kind)] = sizes[e.id]
             latest[gid] = max(latest.get(gid, e.created_at), e.created_at)
 
         for gid, sections in by_group.items():
             g = out.group(gid, subjects[gid], latest[gid])
             for kind, items in sections.items():
-                if kind == NewKind.SCOPE.value:
-                    out.fact(
-                        kind,
-                        Fact.NOT_TARGET.value,
-                        sum(1 for i in items if i.importable and not i.target_exists),
-                    )
-                out.section(g, kind, len(items), items[:BOUNTY_ROWS_PER_SECTION])
+                out.section(g, kind, totals[(gid, kind)], items)
+
+    async def _not_targets(self, project_id: UUID, window) -> int:
+        """Scope events whose in-scope asset is not a target of the project."""
+        raw_kinds = [r for r, k in EVENT_KIND.items() if k == NewKind.SCOPE.value]
+        counted = await self.session.scalar(
+            select(func.count(func.distinct(BountyEventRow.id)))
+            .select_from(BountyEventRow)
+            .join(BountyProgram, BountyProgram.id == BountyEventRow.program_id)
+            .join(
+                BountyScope,
+                (BountyScope.program_id == BountyEventRow.program_id)
+                & (BountyScope.asset_identifier == BountyEventRow.asset_identifier),
+            )
+            .where(
+                *window,
+                BountyEventRow.kind.in_(raw_kinds),
+                BountyScope.target_value.is_not(None),
+                BountyScope.target_value != "",
+                BountyScope.scope_state == ScopeState.IN_SCOPE.value,
+                ~exists().where(
+                    Target.project_id == project_id,
+                    Target.target_value == BountyScope.target_value,
+                ),
+            )
+        )
+        return int(counted or 0)
 
     @staticmethod
     def _program_item(e: BountyEventRow, p: BountyProgram, watch_id) -> NewItem:
@@ -1187,19 +1247,43 @@ class WhatsNewService:
         if kind not in wanted or not total:
             return
 
-        stmt = (
-            select(WatchHost, ProgramWatch, BountyProgram, Target)
+        section = (
+            ProgramWatch.program_id,
+            _local_date(WatchHost.first_seen_at, out.zone),
+        )
+        ranked = (
+            select(
+                WatchHost.id,
+                func.row_number()
+                .over(
+                    partition_by=section,
+                    order_by=(WatchHost.first_seen_at.desc(), WatchHost.name),
+                )
+                .label("rank"),
+                func.count().over(partition_by=section).label("size"),
+            )
             .join(*join)
             .join(BountyProgram, BountyProgram.id == ProgramWatch.program_id)
             .join(Target, Target.id == WatchHost.target_id)
             .where(*window)
+            .subquery()
+        )
+        stmt = (
+            select(WatchHost, ProgramWatch, BountyProgram, Target, ranked.c.size)
+            .join(ranked, ranked.c.id == WatchHost.id)
+            .join(*join)
+            .join(BountyProgram, BountyProgram.id == ProgramWatch.program_id)
+            .join(Target, Target.id == WatchHost.target_id)
+            .where(ranked.c.rank <= BOUNTY_ROWS_PER_SECTION)
             .order_by(WatchHost.first_seen_at.desc(), WatchHost.name)
         )
         by_program: dict[str, list[NewItem]] = defaultdict(list)
         subjects: dict[str, NewSubject] = {}
         latest: dict[str, datetime] = {}
-        for h, w, p, t in (await self.session.execute(stmt)).all():
+        totals: dict[str, int] = {}
+        for h, w, p, t, size in (await self.session.execute(stmt)).all():
             gid = f"program:{p.id}:{_day_of(h.first_seen_at, out.zone)}"
+            totals[gid] = int(size)
             subjects[gid] = NewSubject(
                 kind=SubjectKind.PROGRAM.value,
                 id=str(p.id),
@@ -1240,7 +1324,7 @@ class WhatsNewService:
             )
         for gid, items in by_program.items():
             g = out.group(gid, subjects[gid], latest[gid])
-            out.section(g, kind, len(items), items[:BOUNTY_ROWS_PER_SECTION])
+            out.section(g, kind, totals[gid], items)
 
     async def _targets(
         self,
@@ -1278,26 +1362,44 @@ class WhatsNewService:
         window = [*base, Target.created_at >= since]
         if until is not None:
             window.append(Target.created_at < until)
-        targets = (
-            (
-                await self.session.execute(
-                    select(Target)
-                    .where(*window)
-                    .order_by(Target.created_at.desc(), Target.target_value)
-                )
+        scanned_once = exists().where(Scan.target_id == Target.id, census_only())
+        total, unscanned = (
+            await self.session.execute(
+                select(func.count(), func.count().filter(~scanned_once)).where(*window)
             )
-            .scalars()
-            .all()
-        )
-        if not targets:
+        ).one()
+        if not total:
             return
-        scanned = await self._scanned_targets({t.id for t in targets})
-        out.count(kind, len(targets))
-        out.fact(
-            kind, Fact.NOT_SCANNED.value, sum(1 for t in targets if t.id not in scanned)
-        )
+        out.count(kind, int(total))
+        out.fact(kind, Fact.NOT_SCANNED.value, int(unscanned or 0))
         if kind not in wanted:
             return
+        day = _local_date(Target.created_at, out.zone)
+        ranked = (
+            select(
+                Target.id,
+                func.row_number()
+                .over(
+                    partition_by=day,
+                    order_by=(Target.created_at.desc(), Target.target_value),
+                )
+                .label("rank"),
+                func.count().over(partition_by=day).label("size"),
+            )
+            .where(*window)
+            .subquery()
+        )
+        rows = (
+            await self.session.execute(
+                select(Target, ranked.c.size)
+                .join(ranked, ranked.c.id == Target.id)
+                .where(ranked.c.rank <= BOUNTY_ROWS_PER_SECTION)
+                .order_by(Target.created_at.desc(), Target.target_value)
+            )
+        ).all()
+        targets = [t for t, _ in rows]
+        sizes = {t.id: int(n) for t, n in rows}
+        scanned = await self._scanned_targets({t.id for t in targets})
         watched = {
             r[0]
             for r in (
@@ -1346,10 +1448,10 @@ class WhatsNewService:
         by_day: dict[str, list[NewItem]] = defaultdict(list)
         for item in items:
             by_day[_day_of(item.at, out.zone)].append(item)
-        for day, listed in by_day.items():
+        for listed_day, listed in by_day.items():
             g = out.group(
-                f"targets:{day}",
+                f"targets:{listed_day}",
                 NewSubject(kind=SubjectKind.TARGETS.value, label="Targets"),
                 listed[0].at,
             )
-            out.section(g, kind, len(listed), listed[:BOUNTY_ROWS_PER_SECTION])
+            out.section(g, kind, sizes[listed[0].target_id], listed)
