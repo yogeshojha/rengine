@@ -1556,7 +1556,7 @@
 		{:else if !gonePage && goneFailed}
 			<EmptyState
 				icon={TriangleAlert}
-				title="Retired endpoints not loaded"
+				title="Gone endpoints not loaded"
 				class="rounded-none border-0 bg-transparent py-16"
 			>
 				<Button size="sm" variant="outline" onclick={() => loadGone()}>Retry</Button>
@@ -1564,7 +1564,7 @@
 		{:else if gonePage && gonePage.items.length === 0}
 			<EmptyState
 				icon={History}
-				title="No retired endpoints"
+				title="No gone endpoints"
 				class="rounded-none border-0 bg-transparent py-16"
 			/>
 		{:else if gonePage}
