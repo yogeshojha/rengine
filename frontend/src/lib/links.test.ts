@@ -428,6 +428,7 @@ describe('link attribute check', () => {
 		`${script('let { row } = $props();')}<a href={\`java\${row.path}\`}>x</a>`,
 		`${script('let { row } = $props();')}<Sheet openHref={row.url} />`,
 		`${script('let { row } = $props();')}<a href=" {row.url}">x</a>`,
+		`${script('let { row } = $props();')}<a href={\` \${row.url}\`}>x</a>`,
 		`${script(`${ROUTES_IMPORT} let { items } = $props(); let rows = $derived(items.map((i) => ({ href: i.url })));`)}{#each rows as r}<a href={r.href}>x</a>{/each}`
 	])('refuses %s', (source) => {
 		expect(offenders(FIXTURE, source)).toHaveLength(1);
@@ -438,7 +439,8 @@ describe('link attribute check', () => {
 		`${script(`${ROUTES_IMPORT} let { items } = $props(); let rows = $derived(items.map((i) => ({ href: ROUTES.scan(i.id) })));`)}{#each rows as r}<a href={r.href}>x</a>{/each}`,
 		`${script('let { href } = $props();')}<a {href}>x</a>`,
 		'<a href="/scans">x</a><a href={`https://nvd.nist.gov/vuln/detail/${cve}`}>x</a>',
-		`${script('let { row } = $props();')}<a href={\`/scans/\${row.id}\`}>x</a>`
+		`${script('let { row } = $props();')}<a href={\`/scans/\${row.id}\`}>x</a>`,
+		`${script('let { row } = $props();')}<a href={\`?tab=\${row.tab}\`}>x</a>`
 	])('accepts %s', (source) => {
 		expect(offenders(FIXTURE, source)).toEqual([]);
 	});
