@@ -291,6 +291,7 @@ class EndpointService:
                 lambda q: self._order(q, f),
                 limit=size,
                 offset=offset,
+                capped=True,
             )
         except DBAPIError as exc:
             await self.session.rollback()

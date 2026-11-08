@@ -23,12 +23,21 @@ async def page_rows(
     *,
     limit: int,
     offset: int,
+    capped: bool = False,
 ) -> tuple[Sequence[Any], int]:
-    """The page's rows and how many rows matched."""
+    """The page's rows and how many rows matched; `capped` counts to the cap alone."""
+    total = MATCHED_TOTAL
+    if capped:
+        total = (
+            select(func.count())
+            .select_from(base.order_by(None).limit(COUNT_CAP + 1).subquery())
+            .scalar_subquery()
+            .label(MATCHED_TOTAL.name)
+        )
     rows = (
         (
             await session.execute(
-                order(base.add_columns(MATCHED_TOTAL)).limit(limit).offset(offset)
+                order(base.add_columns(total)).limit(limit).offset(offset)
             )
         )
         .mappings()
