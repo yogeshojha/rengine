@@ -111,8 +111,8 @@ export function extractErrorMessage(detail: unknown, status: number): string {
 					.filter(Boolean)
 			)
 		];
-		if (msgs.length > 2) return `${msgs[0]} (and ${msgs.length - 1} more)`;
-		if (msgs.length) return msgs.join('; ');
+		if (msgs.length > 2) return `${msgs[0]} and ${msgs.length - 1} more`;
+		if (msgs.length) return msgs.join('. ');
 	}
 	return `Request failed with status ${status}`;
 }
