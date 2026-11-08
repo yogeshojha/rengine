@@ -624,6 +624,20 @@ class ConnectorService:
         await self._sync_endpoints(row, signatures)
         return set(by_target)
 
+    async def attach_project(self, project_id: uuid.UUID) -> None:
+        """Attach every connector's unassigned shapes and hosts in the project."""
+        rows = (
+            (
+                await self.session.execute(
+                    select(Connector).where(Connector.project_id == project_id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for row in rows:
+            await self.attach_targets(row)
+
     async def _record_hosts(
         self, row: Connector, counts: dict[str, int], targets, now
     ) -> None:
@@ -865,8 +879,7 @@ class ConnectorService:
         search: str | None = None,
         page: int = 1,
     ) -> CandidatePage:
-        row = await self.get(connector_id, project_id)
-        await self.attach_targets(row)
+        await self.get(connector_id, project_id)
         base = select(ConnectorCandidate).where(
             ConnectorCandidate.connector_id == connector_id
         )
