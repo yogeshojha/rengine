@@ -158,7 +158,7 @@ class SubdomainFinder(Tool):
                 ],
             ),
             table(
-                ["Host", "Found by", "Inventory"],
+                ["Hostname", "Found by", "Inventory"],
                 [
                     [
                         cell(name, mono=True, lookup=lookup(name, "dns")),
@@ -174,7 +174,7 @@ class SubdomainFinder(Tool):
                     ]
                     for name in names[:MAX_LISTED]
                 ],
-                title="Hosts",
+                title="Hostnames",
                 empty="No hostnames returned",
                 total=len(names),
             ),
@@ -187,7 +187,7 @@ class SubdomainFinder(Tool):
             )
 
         return ToolOutcome(
-            summary=f"{len(names):,} host{'s' if len(names) != 1 else ''} · "
+            summary=f"{len(names):,} hostname{'s' if len(names) != 1 else ''} · "
             f"{len(new):,} not in inventory",
             blocks=blocks,
             caveats=[
