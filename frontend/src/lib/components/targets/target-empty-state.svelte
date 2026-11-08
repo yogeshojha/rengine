@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { TARGET_TYPE_LABELS } from '$lib/types/target';
 	import CrosshairIcon from '@lucide/svelte/icons/crosshair';
 	import Funnel from '@lucide/svelte/icons/funnel';
 	import Upload from '@lucide/svelte/icons/upload';
@@ -15,13 +16,16 @@
 	}
 
 	let { hasFilters, onAddTarget, onImport, onClearFilters }: Props = $props();
+	const TYPES = new Intl.ListFormat('en', { type: 'disjunction' }).format(
+		Object.values(TARGET_TYPE_LABELS)
+	);
 </script>
 
 <EmptyState
 	compact
 	icon={hasFilters ? Funnel : CrosshairIcon}
 	title={hasFilters ? 'No matching targets' : 'No targets'}
-	description={hasFilters ? undefined : 'Add a domain, IP address, IP range, URL or ASN.'}
+	description={hasFilters ? undefined : `Target types: ${TYPES}.`}
 	class="border-0 bg-transparent py-16"
 >
 	{#if hasFilters}

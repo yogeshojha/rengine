@@ -1,14 +1,18 @@
 <script lang="ts">
 	import ExternalLink from '@lucide/svelte/icons/external-link';
+	import { TARGET_TYPE_LABELS } from '$lib/types/target';
 
 	type ImportType = 'text' | 'json' | 'csv';
 	let { type }: { type: ImportType } = $props();
+	const TYPES = new Intl.ListFormat('en', { type: 'disjunction' }).format(
+		Object.values(TARGET_TYPE_LABELS)
+	);
 </script>
 
 <p class="text-xs text-muted-foreground">
 	<span class="inline-flex flex-wrap items-center gap-1">
 		{#if type === 'text'}
-			Accepted targets: domain, IP address, CIDR range, ASN or URL.<a
+			Target types: {TYPES}.<a
 				href="https://rengine.wiki/import/targets"
 				target="_blank"
 				rel="noopener noreferrer"
