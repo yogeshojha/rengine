@@ -10,7 +10,7 @@ import Globe from '@lucide/svelte/icons/globe';
 import ShieldAlert from '@lucide/svelte/icons/shield-alert';
 import Building2 from '@lucide/svelte/icons/building-2';
 import type { IconComponent } from './icons';
-import type { Tone } from '$lib/types/toolbox';
+import type { RunStatus, Tone } from '$lib/types/toolbox';
 
 export const TOOL_ICONS: Record<string, IconComponent> = {
 	'scroll-text': ScrollText,
@@ -28,6 +28,9 @@ export const ORG_DOMAINS_TOOL = 'org_domains';
 export const ORG_DOMAINS_ICON = Building2;
 
 export const ADD_TARGETS_BATCH = 500;
+
+export const TERMINAL_RUN_STATUSES: ReadonlySet<RunStatus> = new Set(['completed', 'failed']);
+export const isPendingRun = (status: RunStatus) => !TERMINAL_RUN_STATUSES.has(status);
 export const SELECT_ROW_PAGE = 25;
 export const SELECT_FILTER_AT = 10;
 

@@ -1,8 +1,7 @@
 import { toolboxApi } from '$lib/api/toolbox';
-import { TOOLBOX_POLL_MS } from '$lib/config/toolbox';
+import { TOOLBOX_POLL_MS, isPendingRun } from '$lib/config/toolbox';
 import type { ToolboxCatalog, ToolboxLaunch, ToolRun, ToolSpec } from '$lib/types/toolbox';
 
-const PENDING = new Set(['queued', 'running']);
 const POLL_RETRIES = 5;
 
 function createToolboxStore() {
@@ -36,7 +35,7 @@ function createToolboxStore() {
 					const next = await toolboxApi.get(id);
 					if (mine !== chain) return;
 					upsert(next);
-					if (PENDING.has(next.status)) return poll(id);
+					if (isPendingRun(next.status)) return poll(id);
 				} catch {
 					if (mine !== chain) return;
 					if (misses < POLL_RETRIES) return poll(id, misses + 1);
@@ -119,7 +118,7 @@ function createToolboxStore() {
 			try {
 				runs = await toolboxApi.runs();
 				historyError = null;
-				const live = runs.find((r) => PENDING.has(r.status));
+				const live = runs.find((r) => isPendingRun(r.status));
 				if (live && !timer) {
 					busy = true;
 					poll(live.id);
@@ -135,7 +134,7 @@ function createToolboxStore() {
 			try {
 				const run = await toolboxApi.run({ tool, input, project_id: projectId });
 				upsert(run);
-				if (PENDING.has(run.status)) poll(run.id);
+				if (isPendingRun(run.status)) poll(run.id);
 				else busy = false;
 				return run;
 			} catch (e) {
