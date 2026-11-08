@@ -168,7 +168,7 @@
 						</div>
 					{/each}
 					<p class="text-xs text-muted-foreground">
-						Capabilities above read are confirmed with the account's authenticator code.
+						Access above read is confirmed with the account's authenticator code.
 					</p>
 				</section>
 

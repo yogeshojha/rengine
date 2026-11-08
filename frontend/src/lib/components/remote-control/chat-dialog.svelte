@@ -87,7 +87,7 @@
 				{/snippet}
 			</FormField>
 			<div class="flex flex-col gap-2">
-				<span class="text-sm font-medium">Capabilities</span>
+				<span class="text-sm font-medium">Access</span>
 				<LadderPick {level} {allowed} onChange={(v) => (level = v)} />
 			</div>
 		</div>

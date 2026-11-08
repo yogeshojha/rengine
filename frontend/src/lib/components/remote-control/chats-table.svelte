@@ -58,7 +58,7 @@
 			<div class={CHAT_COL.chat} role="columnheader">Chat</div>
 			<div class={CHAT_COL.account} role="columnheader">Account</div>
 			<div class={CHAT_COL.project} role="columnheader">Project</div>
-			<div class={CHAT_COL.capabilities} role="columnheader">Capabilities</div>
+			<div class={CHAT_COL.capabilities} role="columnheader">Access</div>
 			<div class={CHAT_COL.last} role="columnheader">Last command</div>
 			<div class={CHAT_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 		</div>
