@@ -41,10 +41,16 @@ PROJECT="${PROJECT:-$(basename "$HERE")}"
 WORK=""
 PART=""
 STOPPED=0
+WROTE=""
+SNAPSHOT=""
+DROPPED=0
 cleanup() {
   [ -n "$WORK" ] && rm -rf "$WORK"
   [ -n "$PART" ] && rm -f "$PART"
-  if [ "$STOPPED" = 1 ]; then
+  if [ "$DROPPED" = 1 ]; then
+    printf 'error: restore not completed. Services left stopped.\n' >&2
+    printf 'The previous data is in %s. Restore it with scripts/backup.sh restore %s\n' "$SNAPSHOT" "$SNAPSHOT" >&2
+  elif [ "$STOPPED" = 1 ]; then
     docker compose start "${SERVICES[@]}" >/dev/null 2>&1 || true
     printf 'error: restore not completed. Stopped services started.\n' >&2
   fi
@@ -148,6 +154,7 @@ dump() {
   fi
   mv "$PART" "$archive"
   PART=""
+  WROTE="$archive"
   say "wrote $archive ($(du -h "$archive" | cut -f1))"
   say "The archive holds the instance key, SECRET_KEY."
   if [ -n "$PASSPHRASE" ]; then say "Encrypted with the passphrase."; else say "Not encrypted."; fi
@@ -175,6 +182,9 @@ restore() {
   else
     tar -xf "$archive" -C "$work"
   fi
+  [ -s "$work/db.dump" ] || die "$archive holds no db.dump"
+  docker compose exec -T db pg_restore -l < "$work/db.dump" >/dev/null 2>&1 \
+    || die "db.dump in $archive is not a readable pg_dump archive"
   archived="$(grep -E '^SECRET_KEY=' "$work/env" | cut -d= -f2- || true)"
   current="$(grep -E '^SECRET_KEY=' .env | cut -d= -f2- || true)"
   differs="SECRET_KEY in .env differs from the archive. Copy the SECRET_KEY line from '$show' into .env and restart the stack."
@@ -188,7 +198,17 @@ restore() {
   STOPPED=1
   docker compose stop "${SERVICES[@]}" >/dev/null
 
+  say "snapshot of the current database"
+  local restore_work="$WORK"
+  DEST="$(dirname "$archive")"
+  [ -w "$DEST" ] || DEST="$HERE/backups"
+  dump db
+  SNAPSHOT="$WROTE"
+  rm -rf "$WORK"
+  WORK="$restore_work"
+
   say "database"
+  DROPPED=1
   docker compose exec -T db dropdb -U "$DB_USER" --if-exists --force "$DB_NAME"
   docker compose exec -T db createdb -U "$DB_USER" "$DB_NAME"
   docker compose exec -T db pg_restore -U "$DB_USER" -d "$DB_NAME" --no-owner < "$work/db.dump"
@@ -229,7 +249,9 @@ restore() {
   say "starting"
   docker compose up -d "${SERVICES[@]}" >/dev/null
   STOPPED=0
+  DROPPED=0
   say "restored"
+  say "previous data: $SNAPSHOT"
   [ "$archived" = "$current" ] || say "$differs"
 }
 
