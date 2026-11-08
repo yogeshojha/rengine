@@ -11,7 +11,7 @@
 <script lang="ts">
 	import { scalePoint } from 'd3-scale';
 	import { curveStepAfter } from 'd3-shape';
-	import { Area, AreaChart, LinearGradient } from 'layerchart';
+	import { Area, AreaChart } from 'layerchart';
 	import * as Chart from '$lib/components/ui/chart';
 	import type { TooltipPayload } from '$lib/components/ui/chart/chart-utils';
 	import { formatDay } from '$lib/utilities/dates';
@@ -26,10 +26,7 @@
 
 	let config = $derived({ total: { label, color: 'var(--series)' } } satisfies Chart.ChartConfig);
 	let series = $derived([{ key: 'total', label, color: 'var(--series)' }]);
-	const stops = [
-		'color-mix(in oklab, var(--series) 28%, transparent)',
-		'color-mix(in oklab, var(--series) 3%, transparent)'
-	];
+	const FILL = 'color-mix(in oklab, var(--series) 16%, transparent)';
 	let every = $derived(data.length <= 7 ? 1 : data.length <= 14 ? 2 : 5);
 	let ticks = $derived(
 		data.map((d) => d.date).filter((_, i) => (data.length - 1 - i) % every === 0)
@@ -68,11 +65,7 @@
 	>
 		{#snippet marks({ visibleSeries, getAreaProps })}
 			{#each visibleSeries as s, i (s.key)}
-				<LinearGradient {stops} vertical>
-					{#snippet children({ gradient })}
-						<Area {...getAreaProps(s, i)} fill={gradient} />
-					{/snippet}
-				</LinearGradient>
+				<Area {...getAreaProps(s, i)} fill={FILL} />
 			{/each}
 		{/snippet}
 		{#snippet aboveMarks({ context })}
