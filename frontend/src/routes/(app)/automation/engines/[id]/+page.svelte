@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { TargetType } from '$lib/types/target';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { onMount, untrack } from 'svelte';
@@ -121,7 +122,7 @@
 	let activeStage = $state<string | null>(null);
 	let revealToken = $state(0);
 
-	let lensTargetType = $state('domain');
+	let lensTargetType = $state<string>(TargetType.DOMAIN);
 	let previewPhases = $state<PreviewPhase[]>([]);
 	let resolvedStages = $state<Record<string, StageConfig>>({});
 	let previewWarnings = $state<string[]>([]);
@@ -235,7 +236,7 @@
 	}
 
 	function blockedByIntensity(stageName: string): boolean {
-		if (parsed?.intensity !== 'passive') return false;
+		if (parsed?.intensity !== ('passive' satisfies Intensity)) return false;
 		const stage = engineCatalogStore.stage(stageName);
 		return Boolean(stage?.touches_target && !stage?.passive_capable);
 	}
