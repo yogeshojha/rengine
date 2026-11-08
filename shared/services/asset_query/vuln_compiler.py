@@ -38,6 +38,7 @@ from .terms import (
     number_match,
     string_match,
     target_match,
+    trigram_match,
 )
 from .values import asn_number
 from .walk import as_compare, compare_with, flags, free_text_fields, walker
@@ -129,8 +130,8 @@ def _evidence_match(cmp: Compare, ctx: VulnQueryContext):
 
 _VULN_BUILDERS = {
     "target": lambda c, _ctx: target_match(Vulnerability.target_id, c),
-    "name": lambda c, _ctx: string_match(Vulnerability.template_name, c),
-    "template": lambda c, _ctx: string_match(Vulnerability.template_id, c),
+    "name": lambda c, _ctx: trigram_match(Vulnerability.template_name, c),
+    "template": lambda c, _ctx: trigram_match(Vulnerability.template_id, c),
     "severity": lambda c, _ctx: string_match(Vulnerability.severity, c),
     "type": lambda c, _ctx: string_match(Vulnerability.protocol, c),
     "scanner": lambda c, _ctx: string_match(Vulnerability.scanner, c),
@@ -149,8 +150,8 @@ _VULN_BUILDERS = {
     ),
     "poc": lambda c, _ctx: number_match(Vulnerability.poc_count, c, int_coerce(c)),
     "signal": lambda c, _ctx: json_array_match(Vulnerability.intel_kinds, c),
-    "host": lambda c, _ctx: string_match(Vulnerability.host, c),
-    "location": lambda c, _ctx: string_match(Vulnerability.matched_at, c),
+    "host": lambda c, _ctx: trigram_match(Vulnerability.host, c),
+    "location": lambda c, _ctx: trigram_match(Vulnerability.matched_at, c),
     "ip": lambda c, _ctx: address_match(
         Vulnerability.ip, preds.inet_of(Vulnerability.ip), c
     ),

@@ -53,6 +53,7 @@ from .terms import (
     string_match,
     target_match,
     tri_state,
+    trigram_match,
 )
 from .values import (
     IPV4_RE,
@@ -211,15 +212,15 @@ _FLAG_BUILDERS = {
 def _waf(cmp: Compare):
     state = tri_state(cmp)
     if state is None:
-        return string_match(Subdomain.waf, cmp)
+        return trigram_match(Subdomain.waf, cmp)
     return Subdomain.waf.isnot(None) if state else Subdomain.waf.is_(None)
 
 
 def _issuer(cmp: Compare):
     return or_(
-        string_match(HttpAsset.tls_issuer, cmp),
-        string_match(HttpAsset.tls_issuer_org, cmp),
-        string_match(HttpAsset.tls_issuer_cn, cmp),
+        trigram_match(HttpAsset.tls_issuer, cmp),
+        trigram_match(HttpAsset.tls_issuer_org, cmp),
+        trigram_match(HttpAsset.tls_issuer_cn, cmp),
     )
 
 
@@ -362,14 +363,14 @@ _SUBDOMAIN_BUILDERS = {
     "target": lambda c, _ctx: target_match(Subdomain.target_id, c),
     "host": lambda c, _ctx: folded_match(Subdomain.name, c),
     "url": lambda c, _ctx: string_match(_url(), c),
-    "cname": lambda c, _ctx: string_match(Subdomain.cname, c),
+    "cname": lambda c, _ctx: trigram_match(Subdomain.cname, c),
     "source": lambda c, _ctx: json_array_match(Subdomain.sources, c),
     "discovered": lambda c, ctx: date_match(
         Subdomain.discovered_at, c, ctx.now, future=False
     ),
     "status": lambda c, _ctx: _status(c),
-    "title": lambda c, _ctx: string_match(Subdomain.page_title, c),
-    "server": lambda c, _ctx: string_match(Subdomain.webserver, c),
+    "title": lambda c, _ctx: trigram_match(Subdomain.page_title, c),
+    "server": lambda c, _ctx: trigram_match(Subdomain.webserver, c),
     "tech": lambda c, _ctx: json_array_match(Subdomain.tech, c),
     "content_type": lambda c, _ctx: string_match(Subdomain.content_type, c),
     "size": lambda c, _ctx: number_match(
@@ -387,7 +388,7 @@ _SUBDOMAIN_BUILDERS = {
     "asn": lambda c, _ctx: number_match(
         Subdomain.asn, c, lambda raw: asn_number(raw, c.start, c.end)
     ),
-    "org": lambda c, _ctx: string_match(Subdomain.asn_org, c),
+    "org": lambda c, _ctx: trigram_match(Subdomain.asn_org, c),
     "cdn": lambda c, _ctx: cdn_match(Subdomain.cdn_name, Subdomain.is_cdn, c),
     "waf": lambda c, _ctx: _waf(c),
     "port": lambda c, ctx: preds.port_match(
@@ -422,12 +423,12 @@ _ASSET_BUILDERS = {
     "path": lambda c, _ctx: string_match(HttpAsset.path, c),
     "words": lambda c, _ctx: number_match(HttpAsset.words, c, int_coerce(c)),
     "lines": lambda c, _ctx: number_match(HttpAsset.lines, c, int_coerce(c)),
-    "redirect": lambda c, _ctx: string_match(HttpAsset.location, c),
+    "redirect": lambda c, _ctx: trigram_match(HttpAsset.location, c),
     "content_hash": lambda c, _ctx: string_match(HttpAsset.content_hash, c),
     "tracking": lambda c, _ctx: json_array_match(HttpAsset.tracking_ids, c),
     "body": lambda c, _ctx: _tsv(c, _BODY_WEIGHT),
     "header": lambda c, _ctx: _header(c),
-    "cert.cn": lambda c, _ctx: string_match(HttpAsset.tls_subject_cn, c),
+    "cert.cn": lambda c, _ctx: trigram_match(HttpAsset.tls_subject_cn, c),
     "cert.san": lambda c, _ctx: json_array_match(HttpAsset.tls_sans, c),
     "cert.issuer": lambda c, _ctx: _issuer(c),
     "tls.version": lambda c, _ctx: string_match(HttpAsset.tls_version, c),

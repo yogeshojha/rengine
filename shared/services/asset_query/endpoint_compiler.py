@@ -29,6 +29,7 @@ from .terms import (
     scaled_coerce,
     string_match,
     target_match,
+    trigram_match,
 )
 from .walk import as_compare, compare_with, flags, free_text_fields, walker
 
@@ -128,12 +129,12 @@ def _vuln_cve(cmp: Compare, ctx: EndpointQueryContext):
 
 _ENDPOINT_BUILDERS = {
     "target": lambda c, _ctx: target_match(Endpoint.target_id, c),
-    "url": lambda c, _ctx: string_match(Endpoint.url, c),
-    "path": lambda c, _ctx: string_match(Endpoint.path, c),
+    "url": lambda c, _ctx: trigram_match(Endpoint.url, c),
+    "path": lambda c, _ctx: trigram_match(Endpoint.path, c),
     "dir": _dir_match,
     "file": lambda c, _ctx: string_match(Endpoint.filename, c),
     "ext": lambda c, _ctx: string_match(Endpoint.extension, c),
-    "host": lambda c, _ctx: string_match(Endpoint.host, c),
+    "host": lambda c, _ctx: trigram_match(Endpoint.host, c),
     "port": lambda c, _ctx: number_match(Endpoint.port, c, int_coerce(c)),
     "scheme": lambda c, _ctx: string_match(Endpoint.scheme, c),
     "depth": lambda c, _ctx: number_match(Endpoint.depth, c, int_coerce(c)),
@@ -143,7 +144,7 @@ _ENDPOINT_BUILDERS = {
     "interest": lambda c, _ctx: json_array_match(Endpoint.interest, c),
     "status": _status_match,
     "type": lambda c, _ctx: string_match(Endpoint.content_type, c),
-    "title": lambda c, _ctx: string_match(Endpoint.title, c),
+    "title": lambda c, _ctx: trigram_match(Endpoint.title, c),
     "length": lambda c, _ctx: number_match(
         Endpoint.content_length, c, scaled_coerce(c, FieldType.BYTES)
     ),

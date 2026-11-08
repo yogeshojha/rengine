@@ -127,9 +127,13 @@ def split_range(raw: str) -> tuple[str, str] | None:
     return low.strip(), high.strip()
 
 
+def exact(raw: str) -> str:
+    """A LIKE pattern matching the value alone."""
+    return raw.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def like(raw: str) -> str:
-    escaped = raw.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    return f"%{escaped}%"
+    return f"%{exact(raw)}%"
 
 
 def tsquery(raw: str, weight: str, prefix: bool = True) -> str:

@@ -26,6 +26,7 @@ from shared.models.target import Target
 from .ast import Compare, QuerySyntaxError
 from .values import (
     IPV4_RE,
+    exact,
     is_relative,
     like,
     moment,
@@ -39,6 +40,7 @@ _FLIPPED = {Op.GT: Op.LT, Op.GTE: Op.LTE, Op.LT: Op.GT, Op.LTE: Op.GTE}
 _TRUTHY = {"yes", "true", "1", "any", "present"}
 _FALSY = {"no", "false", "0", "none", "absent"}
 _EMPTY_ARRAY = "[]"
+_TRIGRAM_MIN = 3
 
 
 def negate(expr):
@@ -69,6 +71,23 @@ def string_match(col, cmp: Compare):
         return or_(col.is_(None), negate(func.lower(col).in_(lowered)))
     matched = or_(*[col.op("~*")(v) for v in cmp.values])
     if cmp.op is Op.RE:
+        return matched
+    return or_(col.is_(None), negate(matched))
+
+
+def trigram_match(col, cmp: Compare):
+    """`string_match` for a column with a trigram index, equality as an anchored ILIKE."""
+    if cmp.op not in (Op.EQ, Op.NE):
+        return string_match(col, cmp)
+    lowered = [v.lower() for v in cmp.values]
+    parts = [
+        col.ilike(exact(v), escape="\\") for v in lowered if len(v) >= _TRIGRAM_MIN
+    ]
+    short = [v for v in lowered if len(v) < _TRIGRAM_MIN]
+    if short:
+        parts.append(func.lower(col).in_(short))
+    matched = or_(*parts)
+    if cmp.op is Op.EQ:
         return matched
     return or_(col.is_(None), negate(matched))
 
@@ -236,7 +255,7 @@ def address_match(column, inet, cmp: Compare):
 def cdn_match(name, flag, cmp: Compare):
     state = tri_state(cmp)
     if state is None:
-        return string_match(name, cmp)
+        return trigram_match(name, cmp)
     return flag.is_(state)
 
 
