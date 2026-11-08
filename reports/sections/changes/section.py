@@ -12,7 +12,7 @@ class ChangesConfig(SectionConfig):
     max_items: int = limit(
         20, title="Items listed per dimension", minimum=1, maximum=MAX_CHANGE_ITEMS
     )
-    show_new_findings: bool = flag(True, title="List new findings")
+    show_new_findings: bool = flag(True, title="List added findings")
 
 
 class ChangesSection(Section):
@@ -40,11 +40,7 @@ class ChangesSection(Section):
             }
             for line in ctx.brief.changes
         ]
-        new_findings = (
-            [f for f in ctx.data.findings if f.is_new][:25]
-            if cfg.show_new_findings
-            else []
-        )
+        new_findings = ctx.data.added_findings(25) if cfg.show_new_findings else []
         if not rows and not new_findings:
             return None
         return {

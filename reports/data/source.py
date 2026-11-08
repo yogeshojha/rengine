@@ -412,6 +412,34 @@ class ReportSource:
             )
         return out
 
+    def added_findings(self, limit: int) -> list[Finding]:
+        """Findings of this run whose fingerprint the previous run did not record."""
+        previous = self.previous_scan
+        if previous is None:
+            return []
+        earlier = aliased(Vulnerability)
+        ids = set(
+            self.session.execute(
+                select(Vulnerability.id)
+                .where(
+                    Vulnerability.scan_id == self.scan_for(_DIM.VULNERABILITIES.value),
+                    self._not_suppressed(),
+                    ~exists().where(
+                        earlier.scan_id == previous.id,
+                        earlier.fingerprint == Vulnerability.fingerprint,
+                    ),
+                )
+                .order_by(
+                    surface_vulns.severity_rank(),
+                    Vulnerability.is_kev.desc(),
+                    Vulnerability.epss_score.desc().nulls_last(),
+                    Vulnerability.id,
+                )
+                .limit(limit)
+            ).scalars()
+        )
+        return [f for f in self.findings if f.id in ids]
+
     def evidence(self, ids: list[UUID]) -> dict[UUID, tuple]:
         """Request, response and curl command of the named findings."""
         if not ids:
