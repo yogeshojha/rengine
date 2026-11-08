@@ -139,7 +139,7 @@ export const FLAG_HELP: Record<TimelineFlag, string> = {
 	[TimelineFlag.EPHEMERAL]: 'Appeared and gone inside the window.',
 	[TimelineFlag.FLAPPING]: 'Three or more state transitions in the window.',
 	[TimelineFlag.ATTRIBUTE]:
-		'Title, address, redirect, server, WAF, CDN or certificate changed with the state unchanged.'
+		'Title, address, redirect, CNAME, server, WAF, CDN or certificate changed with the state unchanged.'
 };
 
 export const TIMELINE_WINDOWS = [10, 25, 50] as const;

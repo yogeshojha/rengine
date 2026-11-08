@@ -81,7 +81,7 @@ FLAG_HELP: dict[str, str] = {
     TimelineFlag.CHANGED.value: "At least one transition in the window.",
     TimelineFlag.EPHEMERAL.value: "Appeared and gone inside the window.",
     TimelineFlag.FLAPPING.value: "Three or more state transitions in the window.",
-    TimelineFlag.ATTRIBUTE.value: "Title, address, redirect, server, WAF, CDN or certificate changed with the state unchanged.",
+    TimelineFlag.ATTRIBUTE.value: "Title, address, redirect, CNAME, server, WAF, CDN or certificate changed with the state unchanged.",
 }
 
 TIMELINE_WINDOWS: tuple[int, ...] = (10, 25, 50)
