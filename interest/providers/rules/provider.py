@@ -28,6 +28,7 @@ from shared.services.asset_query import (
     parse_query,
 )
 from shared.services.asset_query.ast import QuerySyntaxError
+from shared.utils.text import counted
 
 logger = get_logger(__name__)
 
@@ -67,6 +68,9 @@ class RulesProvider(InterestProvider):
     emits = (InterestSource.KEYWORD.value, InterestSource.RULE.value)
     title = "Rules"
     order = 10
+
+    def __init__(self) -> None:
+        self.warnings: list[str] = []
 
     def evaluate(self, ctx: InterestContext) -> Iterable[RawSignal]:
         query_ctx = QueryContext(scope=QueryScope((ctx.scan.id,)), now=ctx.now)
@@ -115,11 +119,9 @@ class RulesProvider(InterestProvider):
                     total = ctx.session.execute(
                         select(func.count()).select_from(Subdomain).where(*where)
                     ).scalar_one()
-                    logger.warning(
-                        "interest rule capped",
-                        rule=rule.name,
-                        cap=MAX_HOSTS_PER_RULE,
-                        over=total - MAX_HOSTS_PER_RULE,
+                    self.warnings.append(
+                        f"{counted(total - MAX_HOSTS_PER_RULE, 'web asset')} over the "
+                        f"{MAX_HOSTS_PER_RULE} cap not flagged by rule {rule.name}."
                     )
                     rows = rows[:MAX_HOSTS_PER_RULE]
         except DataError as exc:

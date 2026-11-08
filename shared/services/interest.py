@@ -47,6 +47,7 @@ class EvaluationResult:
     ai_used: bool = False
     model: str | None = None
     ran: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 def _band_case(column: str) -> str:
@@ -173,9 +174,10 @@ def _keep(signal: RawSignal, dismissed: set[tuple[str, str]]) -> bool:
 
 def _collect(
     ctx: InterestContext, include_ai: bool, only: tuple[str, ...] | None = None
-) -> tuple[list[RawSignal], list[str], bool]:
+) -> tuple[list[RawSignal], list[str], bool, list[str]]:
     gathered: list[RawSignal] = []
     ran: list[str] = []
+    warnings: list[str] = []
     ai_used = False
     for provider in providers():
         if provider.requires_ai and not include_ai:
@@ -193,10 +195,11 @@ def _collect(
             )
             continue
         ran.append(provider.name)
+        warnings.extend(getattr(provider, "warnings", ()))
         if provider.requires_ai and produced:
             ai_used = True
         gathered.extend(produced)
-    return gathered, ran, ai_used
+    return gathered, ran, ai_used, warnings
 
 
 def _prune(
@@ -241,7 +244,7 @@ def evaluate(
         session=session, scan=scan, rules=resolved, ai=ai, now=utc_now()
     )
 
-    signals, ran, ai_used = _collect(ctx, include_ai, only)
+    signals, ran, ai_used, warnings = _collect(ctx, include_ai, only)
     kept = _prune(signals, _dismissed(session, scan.target_id))
 
     if only is not None:
@@ -291,7 +294,9 @@ def evaluate(
     session.add(scan)
     session.commit()
 
-    return _summarise(session, scan, ran, ai_used, ai)
+    result = _summarise(session, scan, ran, ai_used, ai)
+    result.warnings = warnings
+    return result
 
 
 def _rollup(session: Session, scan: Scan) -> None:

@@ -83,12 +83,17 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, digest: bool = False) -
             ai=result.ai_used,
             providers=",".join(result.ran),
         )
+        if result.warnings:
+            logger.warning(
+                "interest evaluation partial", scan=scan_id, warnings=result.warnings
+            )
         _publish(scan, result)
         return {
             "hosts": result.hosts,
             "signals": result.signals,
             "ai_used": result.ai_used,
             "providers": result.ran,
+            "warnings": result.warnings,
         }
 
 
