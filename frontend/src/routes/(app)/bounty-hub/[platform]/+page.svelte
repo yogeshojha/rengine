@@ -727,17 +727,19 @@
 								</Button>
 							{/snippet}
 						</DropdownMenu.Trigger>
-						<DropdownMenu.Content align="end" class="max-h-80 w-64">
-							{#each programs as p (p.handle)}
-								<DropdownMenu.CheckboxItem
-									checked={filters.programs.includes(p.handle)}
-									onCheckedChange={() => toggleIn('program', p.handle, filters.programs)}
-									closeOnSelect={false}
-								>
-									<span class="flex-1 truncate">{p.name}</span>
-									<span class="font-mono text-2xs text-muted-foreground">{p.reports}</span>
-								</DropdownMenu.CheckboxItem>
-							{/each}
+						<DropdownMenu.Content align="end" class="max-h-none w-64 overflow-visible">
+							<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-80">
+								{#each programs as p (p.handle)}
+									<DropdownMenu.CheckboxItem
+										checked={filters.programs.includes(p.handle)}
+										onCheckedChange={() => toggleIn('program', p.handle, filters.programs)}
+										closeOnSelect={false}
+									>
+										<span class="min-w-0 flex-1 wrap-anywhere">{p.name}</span>
+										<span class="font-mono text-2xs text-muted-foreground">{p.reports}</span>
+									</DropdownMenu.CheckboxItem>
+								{/each}
+							</ScrollArea>
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 					<DropdownMenu.Root>
