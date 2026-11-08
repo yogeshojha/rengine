@@ -40,7 +40,7 @@ from shared.services.correlation.kinds import KINDS
 from . import predicates as preds
 from .renders import cluster
 from .scope import QueryScope
-from .terms import array_elements
+from .terms import element_counts
 
 
 def _target_value(column):
@@ -67,14 +67,6 @@ def _scalar(build: Callable[[], Any]) -> _Build:
     return lambda: (build(), None)
 
 
-def _elements(column, name: str) -> _Build:
-    def build() -> tuple[Any, Any]:
-        elements = array_elements(column, name)
-        return elements.c.value, elements
-
-    return build
-
-
 def _kind(spec) -> _Build:
     def build() -> tuple[Any, Any]:
         elements = spec.elements()
@@ -91,18 +83,15 @@ _EXTRA_DIMENSIONS: dict[str, tuple[_Build, str, str, bool]] = {
         "=",
         False,
     ),
-    "hygiene": (
-        _elements(Subdomain.hygiene_issues, "hygiene_value"),
-        "hygiene",
-        ":",
-        False,
-    ),
-    "posture": (
-        _elements(Subdomain.posture_issues, "posture_value"),
-        "posture",
-        ":",
-        False,
-    ),
+}
+_HOST_ARRAYS: dict[str, tuple[Any, str, str]] = {
+    "hygiene": (Subdomain.hygiene_issues, "hygiene", ":"),
+    "posture": (Subdomain.posture_issues, "posture", ":"),
+    **{
+        spec.kind: (spec.column, spec.kind, spec.operator)
+        for spec in KINDS.values()
+        if spec.json_array and not spec.asset and not spec.derived
+    },
 }
 _DIMENSIONS: dict[str, tuple[_Build, str, str, bool]] = {
     **{
@@ -182,10 +171,68 @@ DERIVED_DIMENSIONS: dict[str, Callable] = {
 }
 
 
+async def _array_groups(
+    session: AsyncSession,
+    rows,
+    column,
+    *,
+    dimension: str,
+    field: str,
+    op: str,
+    label: Callable[[str], str],
+) -> QueryGroups:
+    """Groups over a JSON array column, counted per row through `element_counts`."""
+    counted = element_counts(rows, column).subquery("counted")
+    grouped = select(counted.c.value, counted.c.n).where(
+        counted.c.value.isnot(None), counted.c.value != ""
+    )
+    rows_in_scope = await session.scalar(rows.with_only_columns(func.count()))
+    covered = await session.scalar(
+        rows.with_only_columns(func.count()).where(cast(column, Text) != "[]")
+    )
+    total = await session.scalar(select(func.count()).select_from(grouped.subquery()))
+    result = await session.execute(
+        grouped.order_by(desc(counted.c.n), counted.c.value).limit(MAX_GROUPS)
+    )
+    groups = [
+        QueryGroup(
+            value=str(raw),
+            label=label(str(raw)),
+            count=int(n),
+            query=_token(field, op, str(raw)),
+        )
+        for raw, n in result.all()
+    ]
+    counted_groups = int(total or 0)
+    return QueryGroups(
+        dimension=dimension,
+        groups=groups,
+        total_groups=counted_groups,
+        truncated=counted_groups > len(groups),
+        rows=int(rows_in_scope or 0),
+        covered=int(covered or 0),
+    )
+
+
 async def build_groups(session: AsyncSession, base, key: str) -> QueryGroups:
     derived = DERIVED_DIMENSIONS.get(key)
     if derived is not None:
         return await derived(session, base)
+    array = _HOST_ARRAYS.get(key)
+    if array is not None:
+        column, field, op = array
+        scoped = base.subquery()
+        return await _array_groups(
+            session,
+            select(Subdomain.id)
+            .select_from(Subdomain)
+            .join(scoped, Subdomain.id == scoped.c.id),
+            column,
+            dimension=key,
+            field=field,
+            op=op,
+            label=lambda raw: _group_label(key, raw),
+        )
     dimension = _dimension(key)
     if dimension is None:
         return QueryGroups(dimension=key)
@@ -427,12 +474,22 @@ async def build_vuln_groups(
     session: AsyncSession, base, key: str, scope: QueryScope
 ) -> QueryGroups:
     """One row per finding."""
-    elements = None
+    labels = _VULN_LABELS.get(key, {})
     if key in _VULN_ARRAYS:
         column, field, op = _VULN_ARRAYS[key]
-        elements = array_elements(column, f"{key}_value")
-        value = elements.c.value
-    elif key == "state":
+        scoped = base.subquery()
+        return await _array_groups(
+            session,
+            select(Vulnerability.id)
+            .select_from(Vulnerability)
+            .join(scoped, Vulnerability.id == scoped.c.id),
+            column,
+            dimension=key,
+            field=field,
+            op=op,
+            label=lambda raw: labels.get(raw) or raw,
+        )
+    if key == "state":
         value, field, op = preds.vuln_state(scope), "state", "="
     elif key == "evidence":
         value, field, op = _evidence_case(scope), "evidence", "="
@@ -449,10 +506,8 @@ async def build_vuln_groups(
         select(labelled, findings.label("n"))
         .select_from(Vulnerability)
         .join(scoped, Vulnerability.id == scoped.c.id)
+        .where(labelled.isnot(None), cast(labelled, Text) != "")
     )
-    if elements is not None:
-        joined = joined.join(elements, true())
-    joined = joined.where(labelled.isnot(None), cast(labelled, Text) != "")
     rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
     covered, total = (
         await session.execute(
@@ -463,7 +518,6 @@ async def build_vuln_groups(
         joined.group_by(labelled).order_by(desc("n"), labelled).limit(MAX_GROUPS)
     )
 
-    labels = _VULN_LABELS.get(key, {})
     groups = [
         QueryGroup(
             value=str(raw),
@@ -507,12 +561,22 @@ _ENDPOINT_LABELS: dict[str, dict[str, str]] = {
 
 async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryGroups:
     """One row per endpoint."""
-    elements = None
+    labels = _ENDPOINT_LABELS.get(key, {})
     if key in _ENDPOINT_ARRAYS:
         column, field, op = _ENDPOINT_ARRAYS[key]
-        elements = array_elements(column, f"{key}_value")
-        value = elements.c.value
-    elif key in _ENDPOINT_COLUMNS:
+        scoped = base.subquery()
+        return await _array_groups(
+            session,
+            select(Endpoint.id)
+            .select_from(Endpoint)
+            .join(scoped, Endpoint.id == scoped.c.id),
+            column,
+            dimension=key,
+            field=field,
+            op=op,
+            label=lambda raw: labels.get(raw) or raw,
+        )
+    if key in _ENDPOINT_COLUMNS:
         column, field, op = _ENDPOINT_COLUMNS[key]
         value = column
     else:
@@ -525,10 +589,8 @@ async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryG
         select(labelled, endpoints.label("n"))
         .select_from(Endpoint)
         .join(scoped, Endpoint.id == scoped.c.id)
+        .where(labelled.isnot(None), cast(labelled, Text) != "")
     )
-    if elements is not None:
-        joined = joined.join(elements, true())
-    joined = joined.where(labelled.isnot(None), cast(labelled, Text) != "")
     rows_in_scope = await session.scalar(select(func.count()).select_from(scoped))
     covered, total = (
         await session.execute(
@@ -539,7 +601,6 @@ async def build_endpoint_groups(session: AsyncSession, base, key: str) -> QueryG
         joined.group_by(labelled).order_by(desc("n"), labelled).limit(MAX_GROUPS)
     )
 
-    labels = _ENDPOINT_LABELS.get(key, {})
     groups = [
         QueryGroup(
             value=str(raw),
