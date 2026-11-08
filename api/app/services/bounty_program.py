@@ -740,6 +740,6 @@ class BountyProgramService:
         if platform not in PLATFORMS_BY_KEY:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Platform {platform} not found.",
+                detail="Platform not found.",
             )
         return platform

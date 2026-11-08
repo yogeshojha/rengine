@@ -46,7 +46,9 @@ def tracked_platform(platform: str) -> PlatformSpec:
     if not spec or not spec.tracks_reports:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"{spec.label if spec else platform} has no report API.",
+            detail=f"{spec.label} has no report API."
+            if spec
+            else "Platform not found.",
         )
     return spec
 

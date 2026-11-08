@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import pytest
+from fastapi import HTTPException
 
 from app.api.deps import get_current_superuser
 from app.api.v1.bounty_reports import router
+from app.services.bounty_program import BountyProgramService
+from app.services.bounty_report import tracked_platform
 from shared.definitions.bounty_programs import PLATFORMS
 from shared.definitions.bounty_reports import SETTLED_STATES, ReportStage, report_state
 from shared.services.bounty_providers import PROVIDERS_BY_PLATFORM, BountyProvider
@@ -156,3 +159,19 @@ def test_report_sync_is_superuser_only():
         r for r in router.routes if r.path == "/bounty-reports/{platform}/sync"
     )
     assert get_current_superuser in {d.call for d in route.dependant.dependencies}
+
+
+@pytest.mark.parametrize("platform", ["not-a-platform", "a" * 300])
+def test_an_unknown_platform_is_not_echoed(platform):
+    for check in (tracked_platform, BountyProgramService.require_platform):
+        with pytest.raises(HTTPException) as raised:
+            check(platform)
+        assert raised.value.status_code == 404
+        assert raised.value.detail == "Platform not found."
+
+
+def test_a_platform_without_reports_is_named():
+    spec = next(p for p in PLATFORMS if not p.tracks_reports)
+    with pytest.raises(HTTPException) as raised:
+        tracked_platform(spec.key)
+    assert raised.value.detail == f"{spec.label} has no report API."
