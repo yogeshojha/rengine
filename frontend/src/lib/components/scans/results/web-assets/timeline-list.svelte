@@ -1,8 +1,5 @@
 <script lang="ts">
-	import ArrowDown from '@lucide/svelte/icons/arrow-down';
-	import ArrowUp from '@lucide/svelte/icons/arrow-up';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import Hint from '$lib/components/hint.svelte';
 	import TimelineRow from './timeline-row.svelte';
 	import {
 		FLAG_HELP,
@@ -15,14 +12,8 @@
 	} from '$lib/config/timeline';
 	import type { TimelineSearchResult } from '$lib/types/timeline';
 	import type { SubdomainRead } from '$lib/types/subdomain';
-	import { formatDateTime, formatMonthDay } from '$lib/utilities/dates';
-	import { columnCell, type TableColumn } from '../table/columns';
-	import {
-		cellLeft,
-		stripWidth,
-		TIMELINE_COLUMNS,
-		TIMELINE_LEAD_COLUMNS
-	} from './timeline-columns';
+	import { TIMELINE_COLUMNS, TIMELINE_LEAD_COLUMNS } from './timeline-columns';
+	import StripHeader from './strip-header.svelte';
 
 	interface Props {
 		result: TimelineSearchResult;
@@ -64,49 +55,11 @@
 	}: Props = $props();
 
 	let scans = $derived(result.scans);
-	let width = $derived(stripWidth(scans.length));
-	let last = $derived(scans.length - 1);
 	let highlight = $state(-1);
 	let windowNote = $derived(
 		result.runs > scans.length ? `Last ${scans.length} of ${result.runs} scans` : ''
 	);
 
-	const LABEL_PX = 40;
-	let labels = $derived.by(() => {
-		const n = scans.length;
-		if (!n) return [];
-		const every = n > 30 ? 8 : n > 8 ? 4 : 2;
-		const span = (i: number, align: 'start' | 'center' | 'end'): [number, number] => {
-			const x = cellLeft(i) + offset(align);
-			if (align === 'start') return [x, x + LABEL_PX];
-			if (align === 'end') return [x - LABEL_PX, x];
-			return [x - LABEL_PX / 2, x + LABEL_PX / 2];
-		};
-		const placed: { index: number; align: 'start' | 'center' | 'end'; span: [number, number] }[] =
-			[];
-		const place = (index: number, align: 'start' | 'center' | 'end') => {
-			const next = span(index, align);
-			if (placed.some((p) => next[0] < p.span[1] + 6 && p.span[0] < next[1] + 6)) return;
-			placed.push({ index, align, span: next });
-		};
-		place(n - 1, 'end');
-		if (n > 1) place(0, 'start');
-		for (let i = n - 1 - every; i > 0; i -= every) place(i, 'center');
-		return placed.sort((a, b) => a.index - b.index);
-	});
-
-	function shift(align: 'start' | 'center' | 'end'): string {
-		if (align === 'start') return '';
-		return align === 'end' ? '-translate-x-full' : '-translate-x-1/2';
-	}
-	function offset(align: 'start' | 'center' | 'end'): number {
-		return align === 'start' ? 0 : align === 'end' ? 10 : 5;
-	}
-	function scanHint(i: number): string {
-		const at = scans[i]?.started_at;
-		const when = at ? formatDateTime(at) : '';
-		return i === last ? `${when} · This scan` : `${when} · Open this scan's Timeline`;
-	}
 	function legendPick(state: WebAssetState) {
 		if (state === WebAssetState.GONE) return onGone();
 		const token = STATE_QUERY[state];
@@ -114,66 +67,18 @@
 	}
 </script>
 
-{#snippet sortable(col: TableColumn)}
-	{#if col.sort}
-		<button
-			type="button"
-			class="flex items-center gap-1 rounded-sm uppercase outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70 {sortKey ===
-			col.sort
-				? 'text-foreground'
-				: ''}"
-			onclick={() => onSort(col.sort ?? col.key)}
-		>
-			{col.label}
-			{#if sortKey === col.sort}
-				{#if sortDir === 1}<ArrowUp class="size-3" />{:else}<ArrowDown class="size-3" />{/if}
-				<span class="sr-only">, sorted {sortDir === 1 ? 'ascending' : 'descending'}</span>
-			{/if}
-		</button>
-	{:else}
-		{col.label}
-	{/if}
-{/snippet}
-
 <ScrollArea orientation="horizontal">
-	<div
-		class="flex items-end gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
-	>
-		{#each TIMELINE_LEAD_COLUMNS as col (col.key)}
-			<div class="min-w-0 {col.width}">{@render sortable(col)}</div>
-		{/each}
-		{#each TIMELINE_COLUMNS as col (col.key)}
-			<div class={columnCell(col)}>
-				{#if col.key === 'strip'}
-					<div class="relative h-4 normal-case tabular-nums" style="width: {width}px">
-						{#each labels as label (label.index)}
-							{@const at = scans[label.index].started_at}
-							<Hint text={scanHint(label.index)}>
-								{#snippet child(props)}
-									<button
-										{...props}
-										type="button"
-										class="absolute bottom-0 rounded-sm whitespace-nowrap outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70 {shift(
-											label.align
-										)} {label.index === last || highlight === label.index ? 'text-foreground' : ''}"
-										style="left: {cellLeft(label.index) + offset(label.align)}px"
-										disabled={label.index === last}
-										onmouseenter={() => (highlight = label.index)}
-										onmouseleave={() => (highlight = -1)}
-										onclick={() => onOpenScan(scans[label.index].id)}
-									>
-										{at ? formatMonthDay(at) : ''}
-									</button>
-								{/snippet}
-							</Hint>
-						{/each}
-					</div>
-				{:else}
-					{@render sortable(col)}
-				{/if}
-			</div>
-		{/each}
-	</div>
+	<StripHeader
+		leadColumns={TIMELINE_LEAD_COLUMNS}
+		columns={TIMELINE_COLUMNS}
+		{scans}
+		{sortKey}
+		{sortDir}
+		openLabel="Open this scan's Timeline"
+		bind:highlight
+		{onSort}
+		{onOpenScan}
+	/>
 
 	<div
 		class="divide-y divide-border/50 transition-opacity {loading ? 'opacity-60' : ''}"

@@ -185,6 +185,16 @@ export const CAPTURED_STATES: ReadonlySet<string> = new Set([
 	RenderState.SAME
 ]);
 
+export const RENDER_SILENT_STATES: ReadonlySet<string> = new Set([
+	RenderState.UNCONFIRMED,
+	RenderState.UNOBSERVED
+]);
+
+export const RENDER_ABSENT_STATES: ReadonlySet<string> = new Set([
+	RenderState.GONE,
+	RenderState.UNSEEN
+]);
+
 export const RENDER_STATE_LABELS: Record<RenderState, string> = {
 	[RenderState.FIRST]: 'First screenshot',
 	[RenderState.CHANGED]: 'Changed',

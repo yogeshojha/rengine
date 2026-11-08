@@ -5,6 +5,7 @@
 		Observation,
 		RENDER_CELL,
 		RENDER_OBSERVATION_LABELS,
+		RENDER_SILENT_STATES,
 		RENDER_STATE_LABELS,
 		RenderState
 	} from '$lib/config/timeline';
@@ -36,8 +37,6 @@
 		`${name}: ${plural(captured.length, 'capture')} across ${plural(cells.length, 'scan')}`
 	);
 
-	const SILENT = new Set<string>([RenderState.UNCONFIRMED, RenderState.UNOBSERVED]);
-
 	function when(i: number): string {
 		const at = scans[i]?.started_at;
 		return at ? formatDateTime(at) : '';
@@ -54,7 +53,7 @@
 		} else if (cell.state === RenderState.SAME && previous >= 0) {
 			parts[0] = `Same as ${formatMonthDay(scans[previous].started_at ?? '')}`;
 		}
-		if (SILENT.has(cell.state) && scan.observation !== Observation.OBSERVED) {
+		if (RENDER_SILENT_STATES.has(cell.state) && scan.observation !== Observation.OBSERVED) {
 			parts.push(RENDER_OBSERVATION_LABELS[scan.observation]);
 		}
 		if (i === last) parts.push('This scan');

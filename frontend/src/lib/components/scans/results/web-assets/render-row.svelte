@@ -4,6 +4,8 @@
 	import RenderStrip from './render-strip.svelte';
 	import {
 		CAPTURED_STATES,
+		RENDER_ABSENT_STATES,
+		RENDER_SILENT_STATES,
 		RENDER_STATE_LABELS,
 		RenderFlag,
 		RenderState
@@ -78,9 +80,7 @@
 	let now = $derived.by(() => {
 		for (let i = row.cells.length - 1; i >= 0; i -= 1) {
 			const cell = row.cells[i];
-			if (cell.state !== RenderState.UNCONFIRMED && cell.state !== RenderState.UNOBSERVED) {
-				return cell;
-			}
+			if (!RENDER_SILENT_STATES.has(cell.state)) return cell;
 		}
 		return null;
 	});
@@ -98,12 +98,7 @@
 
 	function pick(i: number) {
 		const state = row.cells[i]?.state;
-		const hasRow =
-			!!state &&
-			state !== RenderState.UNSEEN &&
-			state !== RenderState.GONE &&
-			state !== RenderState.UNCONFIRMED &&
-			state !== RenderState.UNOBSERVED;
+		const hasRow = !!state && !RENDER_ABSENT_STATES.has(state) && !RENDER_SILENT_STATES.has(state);
 		if (hasRow) onOpenAt(host, scans[i].id);
 		else onOpen(host);
 	}
