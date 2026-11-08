@@ -182,6 +182,8 @@ sudo rengine update
 
 The update pulls the new images, saves a database snapshot to `backups/`, stops the services, applies the migrations and starts the new release. Running scans resume afterwards and repeat the stages that were in flight. `rengine update --no-backup` skips the snapshot.
 
+`rengine update` leaves the Caddyfile as written. To pick up a release's proxy settings, run that release's `install.sh` and choose Keep the settings and redeploy.
+
 To return to the earlier release, run `rengine update v<earlier> --no-backup`. If the database was already migrated, follow it with `rengine restore backups/<snapshot>`.
 
 A source install updates with `git pull`, then `install.sh --build`.
