@@ -39,7 +39,6 @@ TABLES = {
     SurfaceDimension.SOFTWARE.value: SoftwareCve,
     SurfaceDimension.SECRETS.value: Secret,
 }
-# a finding's first sighting depends on its triage state
 FIRST_SEEN = tuple(
     key for key in TABLES if key != SurfaceDimension.VULNERABILITIES.value
 )
