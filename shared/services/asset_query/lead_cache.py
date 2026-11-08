@@ -31,12 +31,14 @@ LIVE_TTL_SECONDS = 20
 STALE_TTL_SECONDS = 15 * 60
 BUILD_LOCK_SECONDS = 120
 BUILD_POLL_SECONDS = 0.2
+CACHE_RETRY_SECONDS = 15
 _RELEASE = (
     "if redis.call('get', KEYS[1]) == ARGV[1] then "
     "return redis.call('del', KEYS[1]) end return 0"
 )
 _GLOBAL_KEY = "rev:global"
 _REFRESHING: set[asyncio.Task] = set()
+_down_until = 0.0
 
 _PAGING = {"page", "size", "limit", "offset", "sort", "direction", "order"}
 _IGNORED = {"q", *_PAGING}
@@ -191,39 +193,68 @@ async def _refresh[T: BaseModel](
         await _release(key, token)
 
 
-async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
+def _cache():
+    """The cache client, or None while a recent call to it failed."""
+    if time.monotonic() < _down_until:
+        return None
     try:
-        hit = await cache_client().get(key)
+        return cache_client()
     except Exception:
+        _cache_failed()
+        logger.debug("aggregate cache client unavailable", exc_info=True)
+        return None
+
+
+def _cache_failed() -> None:
+    global _down_until  # noqa: PLW0603
+    _down_until = time.monotonic() + CACHE_RETRY_SECONDS
+
+
+async def _read[T: BaseModel](key: str, model: type[T], name: str) -> T | None:
+    if (client := _cache()) is None:
+        return None
+    try:
+        hit = await client.get(key)
+    except Exception:
+        _cache_failed()
         logger.debug("aggregate cache unavailable on read", name=name, exc_info=True)
         return None
     return model.model_validate_json(hit) if hit else None
 
 
 async def _write(key: str, value: BaseModel, ttl: int, name: str) -> None:
+    if (client := _cache()) is None:
+        return
     try:
-        await cache_client().set(key, value.model_dump_json(), ex=ttl)
+        await client.set(key, value.model_dump_json(), ex=ttl)
     except Exception:
+        _cache_failed()
         logger.debug("aggregate cache unavailable on write", name=name, exc_info=True)
 
 
 async def _claim(key: str, name: str) -> str | None:
     """Whether this request builds the value; None when another one already is."""
     token = uuid4().hex
+    if (client := _cache()) is None:
+        return token
     try:
-        claimed = await cache_client().set(
+        claimed = await client.set(
             f"building:{key}", token, nx=True, ex=BUILD_LOCK_SECONDS
         )
     except Exception:
+        _cache_failed()
         logger.debug("aggregate cache unavailable on claim", name=name, exc_info=True)
         return token
     return token if claimed else None
 
 
 async def _release(key: str, token: str) -> None:
+    if (client := _cache()) is None:
+        return
     try:
-        await cache_client().eval(_RELEASE, 1, f"building:{key}", token)
+        await client.eval(_RELEASE, 1, f"building:{key}", token)
     except Exception:
+        _cache_failed()
         logger.debug("aggregate cache build lock not released", exc_info=True)
 
 
@@ -235,10 +266,13 @@ async def _await_build[T: BaseModel](key: str, model: type[T], name: str) -> T |
         hit = await _read(key, model, name)
         if hit is not None:
             return hit
+        if (client := _cache()) is None:
+            return None
         try:
-            if not await cache_client().exists(f"building:{key}"):
+            if not await client.exists(f"building:{key}"):
                 return None
         except Exception:
+            _cache_failed()
             return None
     return None
 

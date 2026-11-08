@@ -18,7 +18,8 @@ _TEST_KEYS = ("*leads:test-*", "*test-page-*")
 
 
 @pytest.fixture(autouse=True)
-async def _forget_test_keys():
+async def _forget_test_keys(monkeypatch):
+    monkeypatch.setattr(lead_cache, "_down_until", 0.0)
     yield
     for client in (cache_client(), async_client()):
         for pattern in _TEST_KEYS:
@@ -211,6 +212,69 @@ async def test_an_unreachable_cache_instance_still_answers(estate, now, monkeypa
 
     assert first.total == second.total == 7
     assert build.calls == 2
+
+
+async def test_a_cache_that_times_out_is_waited_on_once(estate, now, monkeypatch):
+    await estate.scan("example.com", "done", at=now)
+    calls = 0
+
+    class _Hung:
+        def __getattr__(self, _name):
+            async def _timeout(*_args, **_kwargs):
+                nonlocal calls
+                calls += 1
+                msg = "Timeout reading from cache"
+                raise TimeoutError(msg)
+
+            return _timeout
+
+    monkeypatch.setattr(lead_cache, "cache_client", _Hung)
+    build = _Counter()
+
+    first = await _leads(estate, "done", build)
+    second = await _leads(estate, "done", build, facets='{"case":"other"}')
+
+    assert first.total == second.total == 7
+    assert build.calls == 2
+    assert calls == 1
+
+
+async def test_a_build_that_raises_frees_the_request_waiting_on_it(
+    durable_estate, engine, now
+):
+    await durable_estate.scan("example.com", "done", at=now)
+    await durable_estate.session.commit()
+    maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    started = asyncio.Event()
+
+    async def _broken() -> QueryLeads:
+        started.set()
+        await asyncio.sleep(0.3)
+        msg = "build failed"
+        raise RuntimeError(msg)
+
+    async def _read(build) -> QueryLeads:
+        async with maker() as session:
+            return await lead_cache.leads(
+                session,
+                dimension=f"test-{durable_estate.project_id.hex[:8]}",
+                scans=(durable_estate.scans["done"],),
+                facets='{"case":"raises"}',
+                build=build,
+            )
+
+    first = asyncio.create_task(_read(_broken))
+    await started.wait()
+    waiter = _Counter(4)
+    loop = asyncio.get_running_loop()
+    began = loop.time()
+    second = await _read(waiter)
+
+    with pytest.raises(RuntimeError):
+        await first
+    assert second.total == 4
+    assert waiter.calls == 1
+    assert loop.time() - began < 2
 
 
 async def _expire_live(prefix: str) -> None:
