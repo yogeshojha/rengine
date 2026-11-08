@@ -19,6 +19,7 @@ from shared.services.origin_exposure import OriginExposureService
 from shared.services.scope_filter import ip_excluded
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port
+from shared.utils.text import counted
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.origin_probe.config import MAX_PORTS_PER_ADDRESS, OriginProbeConfig
 from stages.origin_probe.confirm import OriginConfirmer, Verdict
@@ -59,7 +60,7 @@ class OriginProbeStage(Stage):
         self._check_abort()
         cfg = self.cfg
         net = self.net_options()
-        targets = self._targets(cfg)
+        targets, over = self._targets(cfg)
         if not targets:
             return StageResult(counts={"probed": 0, "answered": 0})
 
@@ -94,6 +95,11 @@ class OriginProbeStage(Stage):
         self.emit_progress(f"{answered} of {len(targets)} answered by address alone")
         exposed, unchecked = self._record_exposure()
         warnings = []
+        if over:
+            warnings.append(
+                f"{counted(over, 'address', 'addresses')} over the address budget "
+                "not requested."
+            )
         if stalled[0]:
             warnings.append(
                 f"httpx stalled and was stopped. {len(targets):,} addresses queued."
@@ -159,7 +165,7 @@ class OriginProbeStage(Stage):
             self.emit_progress(f"{refuted} of {len(exposure.findings)} not reproduced")
         return kept, seen
 
-    def _targets(self, cfg: OriginProbeConfig) -> list[str]:
+    def _targets(self, cfg: OriginProbeConfig) -> tuple[list[str], int]:
         rows = self.session.execute(
             select(Port.ip, Port.number)
             .where(
@@ -185,7 +191,7 @@ class OriginProbeStage(Stage):
             ]
             targets.extend(host_port(ip, port) for port in ports)
         random.Random(_SHUFFLE_SEED).shuffle(targets)  # noqa: S311
-        return targets
+        return targets, max(0, len(by_ip) - cfg.max_addresses)
 
     def _persist(self, records) -> tuple[int, int]:
         now = utc_now()

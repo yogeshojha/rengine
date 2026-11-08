@@ -15,6 +15,7 @@ from shared.services import ip_inventory, port_inventory
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.services.port_inventory import ServiceObservation
 from shared.services.scope_filter import ip_excluded
+from shared.utils.text import counted
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.passive_ports.config import (
     MAX_ADDRESSES,
@@ -60,11 +61,16 @@ class PassivePortsStage(Stage):
             project_id=self.ctx.project_id,
         )
         self.publish_results(SurfaceDimension.IPS.value)
-        addresses = self._candidates(MAX_ADDRESSES)
+        addresses, over = self._candidates(MAX_ADDRESSES)
         if not addresses:
             return StageResult(counts={"known_ports": 0, "addresses": 0})
 
         warnings: list[str] = []
+        if over:
+            warnings.append(
+                f"{counted(over, 'address', 'addresses')} over the "
+                f"{MAX_ADDRESSES:,} cap not looked up."
+            )
         found, failure = self._internetdb(addresses)
         if failure:
             warnings.append(failure)
@@ -215,7 +221,7 @@ class PassivePortsStage(Stage):
             time.sleep(SHODAN_RETRY_SECONDS)
             return client.host(ip)
 
-    def _candidates(self, budget: int) -> list[str]:
+    def _candidates(self, budget: int) -> tuple[list[str], int]:
         excluded = self.ctx.resolved.excluded_ips or []
         rows = (
             self.session.execute(
@@ -225,6 +231,7 @@ class PassivePortsStage(Stage):
             .all()
         )
         out: list[str] = []
+        over = 0
         for ip in dict.fromkeys(rows):
             try:
                 if not ipaddress.ip_address(ip).is_global:
@@ -233,7 +240,8 @@ class PassivePortsStage(Stage):
                 continue
             if excluded and ip_excluded(ip, excluded):
                 continue
-            out.append(ip)
             if len(out) >= budget:
-                break
-        return out
+                over += 1
+                continue
+            out.append(ip)
+        return out, over

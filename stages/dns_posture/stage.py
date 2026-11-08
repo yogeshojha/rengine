@@ -76,7 +76,7 @@ class DnsPostureStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         names = self._names()
-        zones = self._zones(names)
+        zones, over = self._zones(names)
         if not zones:
             return StageResult(counts={"zones": 0})
         try:
@@ -134,6 +134,11 @@ class DnsPostureStage(Stage):
         self._fold()
 
         warnings: list[str] = []
+        if over:
+            warnings.append(
+                f"{counted(over, 'zone')} over the {MAX_ZONES_PER_SCAN:,} cap "
+                "not checked."
+            )
         if unanswered:
             named = ", ".join(unanswered[:_NAMED_ZONES])
             warnings.append(
@@ -155,7 +160,7 @@ class DnsPostureStage(Stage):
         return StageResult(
             counts={"zones": stored, "posture_issues": failing},
             warnings=warnings,
-            partial=bool(unanswered or not_asked or self._silent_mx),
+            partial=bool(over or unanswered or not_asked or self._silent_mx),
         )
 
     def _fold(self) -> None:
@@ -180,7 +185,7 @@ class DnsPostureStage(Stage):
         self._active = {name for name, active in rows if active}
         return [name for name, _ in rows]
 
-    def _zones(self, names: list[str]) -> list[str]:
+    def _zones(self, names: list[str]) -> tuple[list[str], int]:
         """Registrable domains in the scan, most hosts first."""
         counts: Counter[str] = Counter()
         for name in names:
@@ -191,7 +196,8 @@ class DnsPostureStage(Stage):
         if apex and registrable_domain(f"_.{apex}") == apex:
             counts.setdefault(apex, 0)
         ranked = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
-        return [zone for zone, _ in ranked[:MAX_ZONES_PER_SCAN]]
+        kept = [zone for zone, _ in ranked[:MAX_ZONES_PER_SCAN]]
+        return kept, len(ranked) - len(kept)
 
     def _mail_hosts(
         self, lookup: DnsxLookup, names: list[str], zones: list[str]

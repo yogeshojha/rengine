@@ -111,4 +111,14 @@ def test_candidate_ips_drop_excluded_addresses() -> None:
         SimpleNamespace(is_wildcard=True, resolved_ips=["198.51.100.5"]),
     ]
     stage = _stage_with_subdomains(subs, ["192.0.2.0/28", "198.51.100.5"])
-    assert stage._candidate_ips() == ["192.0.2.20"]
+    assert stage._candidate_ips() == (["192.0.2.20"], 0)
+
+
+def test_candidate_ips_count_the_addresses_over_the_cap() -> None:
+    subs = [
+        SimpleNamespace(is_wildcard=False, resolved_ips=[f"192.0.2.{i}"])
+        for i in range(30)
+    ]
+    ips, over = _stage_with_subdomains(subs, [])._candidate_ips()
+    assert len(ips) == 25
+    assert over == 5

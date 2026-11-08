@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import DataError
 
 from interest.base import InterestProvider, RawSignal
@@ -91,14 +91,15 @@ class RulesProvider(InterestProvider):
         if predicate is None:
             return
 
+        where = (
+            Subdomain.scan_id == ctx.scan.id,
+            Subdomain.is_excluded.is_(False),
+            predicate,
+        )
         stmt = (
             select(Subdomain.id, Subdomain.name)
-            .where(
-                Subdomain.scan_id == ctx.scan.id,
-                Subdomain.is_excluded.is_(False),
-                predicate,
-            )
-            .limit(MAX_HOSTS_PER_RULE)
+            .where(*where)
+            .limit(MAX_HOSTS_PER_RULE + 1)
         )
         source = (
             InterestSource.KEYWORD.value
@@ -110,6 +111,17 @@ class RulesProvider(InterestProvider):
         try:
             with ctx.session.begin_nested():
                 rows = ctx.session.execute(stmt).all()
+                if len(rows) > MAX_HOSTS_PER_RULE:
+                    total = ctx.session.execute(
+                        select(func.count()).select_from(Subdomain).where(*where)
+                    ).scalar_one()
+                    logger.warning(
+                        "interest rule capped",
+                        rule=rule.name,
+                        cap=MAX_HOSTS_PER_RULE,
+                        over=total - MAX_HOSTS_PER_RULE,
+                    )
+                    rows = rows[:MAX_HOSTS_PER_RULE]
         except DataError as exc:
             logger.warning(
                 "interest rule did not run", rule=rule.name, error=str(exc.orig)[:200]

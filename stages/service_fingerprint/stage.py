@@ -16,6 +16,7 @@ from shared.models.port import Port
 from shared.services import port_inventory
 from shared.services.port_inventory import ServiceObservation
 from shared.services.scope_filter import ip_excluded
+from shared.utils.text import counted
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.service_fingerprint.config import ServiceFingerprintConfig
 from tools.banner import BannerClient, Endpoint
@@ -42,9 +43,14 @@ class ServiceFingerprintStage(Stage):
     def run(self) -> StageResult:
         self._check_abort()
         cfg = self.cfg
-        endpoints = self._endpoints(cfg)
+        endpoints, over = self._endpoints(cfg)
         if not endpoints:
             return StageResult(counts={"fingerprinted": 0, "probed": 0})
+        capped = (
+            [f"{counted(over, 'port')} over the service budget not read."]
+            if over
+            else []
+        )
 
         client = BannerClient(
             timeout=float(self.transport.timeout),
@@ -65,7 +71,11 @@ class ServiceFingerprintStage(Stage):
         self._check_abort()
         if not results:
             self.emit_progress(f"no banner returned by {len(endpoints)} ports")
-            return StageResult(counts={"fingerprinted": 0, "probed": len(endpoints)})
+            return StageResult(
+                counts={"fingerprinted": 0, "probed": len(endpoints)},
+                warnings=capped,
+                partial=bool(capped),
+            )
 
         port_inventory.upsert(
             self.session,
@@ -92,10 +102,12 @@ class ServiceFingerprintStage(Stage):
             f"{len(results)} of {len(endpoints)} ports answered, {named} named a product"
         )
         return StageResult(
-            counts={"fingerprinted": len(results), "probed": len(endpoints)}
+            counts={"fingerprinted": len(results), "probed": len(endpoints)},
+            warnings=capped,
+            partial=bool(capped),
         )
 
-    def _endpoints(self, cfg: ServiceFingerprintConfig) -> list[Endpoint]:
+    def _endpoints(self, cfg: ServiceFingerprintConfig) -> tuple[list[Endpoint], int]:
         query = (
             select(
                 Port.ip,
@@ -119,11 +131,15 @@ class ServiceFingerprintStage(Stage):
         )
         excluded = self.ctx.resolved.excluded_ips or []
         endpoints: list[Endpoint] = []
+        over = 0
         try:
             for ip, number, name, tls, policy in rows:
                 if not _allowed(policy, number) or (
                     excluded and ip_excluded(ip, excluded)
                 ):
+                    continue
+                if len(endpoints) >= cfg.max_services:
+                    over += 1
                     continue
                 endpoints.append(
                     Endpoint(
@@ -133,11 +149,9 @@ class ServiceFingerprintStage(Stage):
                         tls=bool(tls) or likely_tls(number),
                     )
                 )
-                if len(endpoints) >= cfg.max_services:
-                    break
         finally:
             rows.close()
-        return endpoints
+        return endpoints, over
 
 
 def _allowed(policy: str | None, port: int) -> bool:

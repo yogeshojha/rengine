@@ -21,6 +21,7 @@ from shared.services.endpoint_inventory import UpsertResult
 from shared.services.endpoint_noise import NoisePolicy, Sifter
 from shared.services.scope_filter import matches_any
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 from shared.utils.validation import normalize_domain
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.url_discovery.config import UrlDiscoveryConfig
@@ -92,7 +93,7 @@ class UrlDiscoveryStage(Stage):
             project_id=self.ctx.project_id,
             sifter=self.sifter,
         )
-        hosts = self._hosts()
+        hosts, over = self._hosts()
         if not hosts:
             self.emit_progress("no live web asset to collect urls from")
             return StageResult(counts={"endpoints": seeded.created})
@@ -143,7 +144,16 @@ class UrlDiscoveryStage(Stage):
         self._store(coverage)
         total = self._total()
         self.emit_progress(f"{total} endpoints across {len(hosts)} web assets")
-        return StageResult(counts={"endpoints": total, "endpoints_new": created})
+        warnings = (
+            [f"{counted(over, 'web asset')} over the web asset cap not crawled."]
+            if over
+            else []
+        )
+        return StageResult(
+            counts={"endpoints": total, "endpoints_new": created},
+            warnings=warnings,
+            partial=bool(warnings),
+        )
 
     def _write(self, source: str, observations: list, index, tallies: dict) -> int:
         """Scope, upsert and tally one source's observations."""
@@ -218,7 +228,7 @@ class UrlDiscoveryStage(Stage):
             kept.append(obs)
         return kept
 
-    def _hosts(self) -> list[Host]:
+    def _hosts(self) -> tuple[list[Host], int]:
         rows = self.session.execute(
             select(
                 HttpAsset.url,
@@ -239,7 +249,7 @@ class UrlDiscoveryStage(Stage):
             if row.status_code is not None and row.status_code < _LIVE_MAX
         ]
         live.sort(key=lambda h: (h.scheme != "https", h.host, h.port))
-        return live[: self.cfg.max_hosts]
+        return live[: self.cfg.max_hosts], max(0, len(live) - self.cfg.max_hosts)
 
     def _apex_domains(self, hosts: list[Host]) -> list[str]:
         named = _named_host(self.ctx.target_type, self.ctx.target_value)

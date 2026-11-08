@@ -15,6 +15,7 @@ from shared.models.subdomain import Subdomain
 from shared.services.scope_filter import ip_excluded, matches_any
 from shared.services.wordlists import WordlistError, lookup, resolve_path
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 from shared.utils.validation import normalize_host
 from stages.base import DOMAIN_TARGETS, Stage, StageResult
 from stages.vhost.config import BUDGET_SECONDS_PER_IP, VhostConfig
@@ -75,7 +76,7 @@ class VhostStage(Stage):
             )
 
         apex = self.ctx.target_value.strip().lower().rstrip(".")
-        ips = self._candidate_ips()
+        ips, over = self._candidate_ips()
         if not ips:
             return StageResult(counts={"subdomains": 0})
 
@@ -122,7 +123,14 @@ class VhostStage(Stage):
             if catch_all
             else []
         )
-        return StageResult(counts={"subdomains": count}, warnings=warnings)
+        if over:
+            warnings.append(
+                f"{counted(over, 'address', 'addresses')} over the {_MAX_IPS:,} cap "
+                "not tried."
+            )
+        return StageResult(
+            counts={"subdomains": count}, warnings=warnings, partial=bool(over)
+        )
 
     @staticmethod
     def _is_catch_all(labels: list[str], total: int) -> bool:
@@ -171,7 +179,7 @@ class VhostStage(Stage):
                 break
         return list(labels)
 
-    def _candidate_ips(self) -> list[str]:
+    def _candidate_ips(self) -> tuple[list[str], int]:
         subs = (
             self.session.execute(
                 select(Subdomain).where(
@@ -192,7 +200,8 @@ class VhostStage(Stage):
                 if ip not in seen and not ip_excluded(ip, excluded):
                     seen.add(ip)
                     bucket.append(ip)
-        return (resolvable + wildcard)[:_MAX_IPS]
+        ordered = resolvable + wildcard
+        return ordered[:_MAX_IPS], max(0, len(ordered) - _MAX_IPS)
 
     def _persist(self, found: dict[str, set[str]]) -> int:
         existing = set(
