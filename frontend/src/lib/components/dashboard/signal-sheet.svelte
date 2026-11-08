@@ -28,6 +28,8 @@
 	export interface SheetAction {
 		label: string;
 		onClick: () => void;
+		loading?: boolean;
+		loadingLabel?: string;
 	}
 </script>
 
@@ -214,7 +216,12 @@
 		</ScrollArea>
 		{#if action}
 			<Sheet.Footer class="flex-row justify-end gap-2 border-t px-5 py-3">
-				<Button size="sm" onclick={action.onClick}>{action.label}</Button>
+				<LoadingButton
+					size="sm"
+					loading={action.loading}
+					loadingLabel={action.loadingLabel}
+					onclick={action.onClick}>{action.label}</LoadingButton
+				>
 			</Sheet.Footer>
 		{/if}
 	</Sheet.Content>

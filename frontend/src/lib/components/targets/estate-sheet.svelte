@@ -105,13 +105,31 @@
 	);
 
 	async function addAll() {
+		const slug = projectsStore.activeProject?.slug;
+		if (!slug) return;
 		adding = true;
 		let n = 0;
-		for (const d of candidates) if (await addTarget(d.domain)) n += 1;
-		adding = false;
+		try {
+			const res = await targetsApi.bulkCreate({
+				project_slug: slug,
+				targets: candidates.map((d) => d.domain)
+			});
+			for (const r of res.results) {
+				if (!r.success && !r.duplicate) continue;
+				added.add(r.target_value);
+				if (r.success) {
+					onAdded?.(r.target_value);
+					n += 1;
+				}
+			}
+		} catch {
+			n = 0;
+		} finally {
+			adding = false;
+		}
 		if (n) {
 			void targetsStore.refresh();
-			toast.success(`${n} ${n === 1 ? 'target' : 'targets'} added`);
+			toast.success(`${plural(n, 'target')} added`);
 		} else toast.error('Targets not added');
 	}
 
@@ -227,7 +245,12 @@
 	{description}
 	{rows}
 	noun="Domains"
-	action={candidates.length > 1 && !adding
-		? { label: `Add ${candidates.length} targets`, onClick: addAll }
+	action={candidates.length > 1 || adding
+		? {
+				label: `Add ${candidates.length} targets`,
+				onClick: addAll,
+				loading: adding,
+				loadingLabel: 'Adding'
+			}
 		: null}
 />
