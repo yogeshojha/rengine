@@ -49,10 +49,13 @@
 				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="center" class="w-40">
+		<DropdownMenu.Content align="center" class="w-52">
 			<DropdownMenu.Item onclick={() => onEnrich('whois')}>Re-run WHOIS</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={() => onEnrich('dns')}>Re-run DNS</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={() => onEnrich('bgp')}>Re-run BGP</DropdownMenu.Item>
+			<DropdownMenu.Item onclick={() => onEnrich('infostealer')}
+				>Re-run infostealer lookup</DropdownMenu.Item
+			>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 
