@@ -44,7 +44,7 @@ class Input(ToolInput):
         min_length=1,
         max_length=MAX_INPUT_LENGTH,
         title="Domain",
-        description="Domain name to resolve",
+        description="example.com",
     )
 
     @field_validator("domain")

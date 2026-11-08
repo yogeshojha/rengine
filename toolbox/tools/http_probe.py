@@ -75,12 +75,12 @@ class Input(ToolInput):
     follow_redirects: bool = Field(
         default=True,
         title="Follow redirects",
-        description="Report the final response in the redirect chain",
+        description="Report the final response in the redirect chain.",
     )
     screenshot: bool = Field(
         default=True,
         title="Screenshot",
-        description="Render the page in a headless browser",
+        description="Render the page in a headless browser.",
     )
 
     @field_validator("target")

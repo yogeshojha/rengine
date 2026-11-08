@@ -66,12 +66,11 @@ class Input(ToolInput):
         min_length=1,
         max_length=MAX_INPUT_LENGTH,
         title="Domain",
-        description="Registrable domain to enumerate",
+        description="example.com",
     )
     sources: list[str] = Field(
         default=list(DEFAULT_SOURCES),
         title="Sources",
-        description="Passive sources to query",
         json_schema_extra={"options": list(SOURCES), "option_labels": SOURCE_LABELS},
     )
 
