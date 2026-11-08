@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import re
 import uuid
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 
 from shared.definitions.endpoints import (
     NOISE_IGNORED_PARAMS,
@@ -39,9 +38,9 @@ if TYPE_CHECKING:
 _CHUNK = 500
 
 
-def _children_of(parent: str):
-    """Rows directly under a folder: its files and its child folders."""
-    return Endpoint.path.op("~")(f"^{re.escape(parent)}[^/]+/?$")
+def _children_of(parents: set[str]):
+    """Rows directly under one of the folders: their files and child folders."""
+    return func.regexp_replace(Endpoint.path, "[^/]+/?$", "").in_(sorted(parents))
 
 
 @dataclass(frozen=True)
@@ -254,13 +253,13 @@ class Sifter:
                 select(Endpoint.path, Endpoint.extension).where(
                     Endpoint.scan_id == self.scan_id,
                     Endpoint.host == host,
-                    or_(*(_children_of(parent) for parent in parents)),
+                    _children_of(parents),
                 )
             ).all()
             counts: Counter = Counter()
             for path, extension in rows:
                 key = sibling_key(path, extension)
-                if key is not None:
+                if key is not None and key[0] in parents:
                     counts[(host, key[0], key[1])] += 1
             for skey in keys:
                 if skey[0] == host:
