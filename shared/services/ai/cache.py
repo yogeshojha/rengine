@@ -152,6 +152,7 @@ async def narrate_async(
         )
         return hit.content
 
+    await session.commit()
     try:
         result = await asyncio.to_thread(
             complete, cfg, system=system, prompt=prompt, task=task
