@@ -34,7 +34,7 @@ from shared.services.notifier import (
     send_one,
     with_shared_bot,
 )
-from shared.services.scan_resolve import MASK, mask_tail
+from shared.services.scan_resolve import CREDENTIAL_HEADER, MASK, mask_tail
 from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port, url_port, validate_public_https_url
@@ -60,6 +60,27 @@ REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     NotificationProvider.CUSTOM.value: ("apprise_url",),
 }
 
+_EMAIL_FIELDS = frozenset(
+    {
+        "smtp_host",
+        "smtp_port",
+        "username",
+        "password",
+        "from_email",
+        "to_email",
+        "use_tls",
+    }
+)
+CONFIG_FIELDS: dict[str, frozenset[str]] = {
+    NotificationProvider.SLACK.value: frozenset({"webhook_url"}),
+    NotificationProvider.DISCORD.value: frozenset({"webhook_url"}),
+    NotificationProvider.TEAMS.value: frozenset({"webhook_url"}),
+    NotificationProvider.WEBHOOK.value: frozenset({"webhook_url"}),
+    NotificationProvider.TELEGRAM.value: frozenset({"bot_token", "chat_id"}),
+    NotificationProvider.EMAIL.value: _EMAIL_FIELDS,
+    NotificationProvider.CUSTOM.value: frozenset({"apprise_url"}),
+}
+
 _FIELD_LABELS: dict[str, str] = {
     "webhook_url": "webhook URL",
     "chat_id": "chat ID",
@@ -79,6 +100,17 @@ _MAX_PORT = 65535
 
 def _bad(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+def _check_fields(provider: str, config: dict) -> None:
+    known = CONFIG_FIELDS.get(provider, frozenset())
+    unknown = sorted(key for key in config if key not in known)
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown {provider} setting '{unknown[0]}'. Expected one of "
+            f"{', '.join(sorted(known))}.",
+        )
 
 
 def _validate_public_https_url(raw: str) -> None:
@@ -156,6 +188,8 @@ def _mask_config(provider: str, config: dict) -> dict:
             masked[key] = (
                 _mask_url(value) if key in _URL_FIELDS else _mask_value(key, value)
             )
+        elif CREDENTIAL_HEADER.match(key):
+            masked[key] = MASK
         else:
             masked[key] = value
     return masked
@@ -245,6 +279,7 @@ class NotificationChannelService:
             msg = f"Invalid provider. Must be one of {', '.join(PROVIDERS)}."
             raise _bad(msg)
         config = {k: v for k, v in (data.config or {}).items() if v is not None}
+        _check_fields(data.provider, config)
         await asyncio.to_thread(_validate_config, data.provider, config)
 
         channel = NotificationChannel(
@@ -274,6 +309,7 @@ class NotificationChannelService:
         if data.config is not None:
             stored = _decrypt_config(channel)
             incoming = {k: v for k, v in data.config.items() if v is not None}
+            _check_fields(channel.provider, incoming)
             if _server_moved(channel.provider, stored, incoming):
                 stored = {}
             merged = _merge_config(channel.provider, stored, incoming)
@@ -302,6 +338,7 @@ class NotificationChannelService:
             msg = f"Invalid provider. Must be one of {', '.join(PROVIDERS)}."
             raise _bad(msg)
         config = {k: v for k, v in (config or {}).items() if v is not None}
+        _check_fields(provider, config)
         config = await self._with_shared_bot(provider, config)
         for field, value in config.items():
             if isinstance(value, str) and MASK in value:

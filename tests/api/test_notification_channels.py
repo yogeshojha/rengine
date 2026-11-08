@@ -6,6 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.services.notification_channel import (
+    _check_fields,
     _mask_config,
     _mask_url,
     _validate_config,
@@ -108,3 +109,37 @@ def test_an_smtp_port_that_is_not_a_number_is_refused():
 
 def test_an_smtp_relay_on_the_private_network_is_kept():
     _validate_config(EMAIL, {**SMTP, "smtp_host": "10.0.0.25", "smtp_port": 25})
+
+
+def test_an_unknown_setting_is_refused_by_name():
+    with pytest.raises(HTTPException) as err:
+        _check_fields(
+            NotificationProvider.WEBHOOK.value,
+            {"webhook_url": "https://hooks.example.com/x", "auth_token": "t"},
+        )
+    assert err.value.status_code == 422
+    assert "'auth_token'" in err.value.detail
+
+
+@pytest.mark.parametrize(
+    ("provider", "config"),
+    [
+        (
+            NotificationProvider.WEBHOOK.value,
+            {"webhook_url": "https://h.example.com/x"},
+        ),
+        (NotificationProvider.TELEGRAM.value, {"bot_token": "1:x", "chat_id": "42"}),
+        (EMAIL, {**SMTP, "smtp_host": "smtp.example.com", "smtp_port": 587}),
+    ],
+)
+def test_every_known_setting_is_accepted(provider, config):
+    _check_fields(provider, config)
+
+
+def test_a_stored_secret_named_setting_is_masked_on_read():
+    masked = _mask_config(
+        NotificationProvider.WEBHOOK.value,
+        {"webhook_url": "https://hooks.example.com/abc", "api_key": "k", "note": "n"},
+    )
+    assert masked["api_key"] == MASK
+    assert masked["note"] == "n"
