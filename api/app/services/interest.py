@@ -303,7 +303,12 @@ class InterestReadService:
         await self.session.commit()
         return True
 
-    async def preview(self, query: str, scan_id: uuid.UUID | None) -> RulePreview:
+    async def preview(
+        self,
+        query: str,
+        scan_id: uuid.UUID | None,
+        project_id: uuid.UUID | None = None,
+    ) -> RulePreview:
         if not query.strip():
             return RulePreview()
         try:
@@ -322,6 +327,8 @@ class InterestReadService:
         stmt = select(Subdomain.name).where(
             Subdomain.scan_id == scan_id, Subdomain.is_excluded.is_(False)
         )
+        if project_id is not None:
+            stmt = stmt.where(Subdomain.project_id == project_id)
         if predicate is not None:
             stmt = stmt.where(predicate)
         rows = (await self.session.execute(stmt.limit(PREVIEW_CAP))).scalars().all()
@@ -630,9 +637,11 @@ class InterestReadService:
             await lead_cache.bump({target_id for target_id, *_ in rows})
         return len(rows)
 
-    async def restore(self, dismissal_id: uuid.UUID) -> bool:
+    async def restore(
+        self, dismissal_id: uuid.UUID, project_id: uuid.UUID | None = None
+    ) -> bool:
         row = await self.session.get(InterestDismissal, dismissal_id)
-        if row is None:
+        if row is None or (project_id is not None and row.project_id != project_id):
             return False
         target_id = row.target_id
         await self.session.delete(row)
@@ -721,7 +730,7 @@ class InterestReadService:
             query = item["query"]
             if query in existing:
                 continue
-            preview = await self.preview(query, scan.id)
+            preview = await self.preview(query, scan.id, scan.project_id)
             if preview.error or preview.matches == 0:
                 continue
             out.append(

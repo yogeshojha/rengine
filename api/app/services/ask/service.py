@@ -262,14 +262,15 @@ class AskService:
         asks = starters.for_finding(v, verdict=verdict, software=software)
         return await self._brief(verdict, facts, asks)
 
-    async def brief_asset(self, scan_id: uuid.UUID, name: str) -> AskBrief | None:
-        row = (
-            await self.session.execute(
-                select(Subdomain.target_id)
-                .where(Subdomain.scan_id == scan_id, Subdomain.name == name)
-                .limit(1)
-            )
-        ).scalar()
+    async def brief_asset(
+        self, scan_id: uuid.UUID, name: str, project_id: uuid.UUID | None = None
+    ) -> AskBrief | None:
+        query = select(Subdomain.target_id).where(
+            Subdomain.scan_id == scan_id, Subdomain.name == name
+        )
+        if project_id is not None:
+            query = query.where(Subdomain.project_id == project_id)
+        row = (await self.session.execute(query.limit(1))).scalar()
         if row is None:
             return None
         bundle = await asset_context.load(self.session, scan_id, row, name)
