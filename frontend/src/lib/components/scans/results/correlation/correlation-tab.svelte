@@ -122,8 +122,7 @@
 			r: 0,
 			hub,
 			x: 0,
-			y: 0,
-			born: 0
+			y: 0
 		};
 		selected = node;
 		chart?.focusNode(node.id);
@@ -139,8 +138,7 @@
 			host,
 			hostIndex: index,
 			x: 0,
-			y: 0,
-			born: 0
+			y: 0
 		};
 		chart?.focusNode(`host:${host.id}`);
 	}

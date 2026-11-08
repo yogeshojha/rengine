@@ -13,7 +13,6 @@
 		vy?: number;
 		fx?: number | null;
 		fy?: number | null;
-		born: number;
 	}
 	interface GraphLink {
 		source: GraphNode;
@@ -73,7 +72,6 @@
 	const FIT_PAD = 48;
 	const GRID = 24;
 	const BLOB_PAD = 14;
-	const POP_MS = 420;
 
 	let canvas = $state<HTMLCanvasElement | null>(null);
 	let width = $state(0);
@@ -113,7 +111,6 @@
 		font = getComputedStyle(document.body).fontFamily || font;
 	}
 	const tone = (kind: string, alpha = 1) => kindColor(kind, dark, alpha);
-	const ease = (t: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3);
 
 	function hubRadius(count: number, max: number): number {
 		const t = Math.sqrt(count / Math.max(1, max));
@@ -126,13 +123,12 @@
 		const next: GraphNode[] = [];
 		const cx = width / 2;
 		const cy = height / 2;
-		const now = performance.now();
 		const seed = (id: string, i: number) => {
 			const p = previous.get(id);
-			if (p) return { ...p, born: now - POP_MS };
+			if (p) return p;
 			const a = (i * 2.399963) % (Math.PI * 2);
 			const d = 20 + Math.sqrt(i) * 14;
-			return { x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, born: now + i * 6 };
+			return { x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d };
 		};
 		let i = 0;
 		for (const hub of hubs) {
@@ -202,7 +198,6 @@
 		if (reduced) {
 			simulation.stop();
 			simulation.tick(SETTLE_TICKS);
-			for (const n of nodes) n.born = 0;
 			fit();
 			draw();
 		} else {
@@ -307,13 +302,6 @@
 		}
 		const ctx = el.getContext('2d');
 		if (!ctx) return;
-		const now = performance.now();
-		let animating = false;
-		const grow = (n: GraphNode) => {
-			const t = (now - n.born) / POP_MS;
-			if (t < 1) animating = true;
-			return ease(t);
-		};
 
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		ctx.clearRect(0, 0, width, height);
@@ -348,7 +336,7 @@
 			if (!members.length) continue;
 			const on = !dim || lit.has(n.id);
 			const outline = hull([n, ...members]);
-			ctx.globalAlpha = (on ? (dim ? 0.16 : 0.09) : 0.03) * grow(n);
+			ctx.globalAlpha = on ? (dim ? 0.16 : 0.09) : 0.03;
 			ctx.fillStyle = tone(n.hub.kind);
 			ctx.strokeStyle = tone(n.hub.kind);
 			ctx.lineWidth = (BLOB_PAD + n.r) * 2;
@@ -362,8 +350,7 @@
 		// links
 		for (const l of links) {
 			const on = !dim || (lit.has(l.source.id) && lit.has(l.target.id));
-			const g = Math.min(grow(l.source), grow(l.target));
-			ctx.globalAlpha = (on ? (dim ? 0.7 : 0.28) : 0.05) * g;
+			ctx.globalAlpha = on ? (dim ? 0.7 : 0.28) : 0.05;
 			ctx.strokeStyle = tone(l.kind);
 			ctx.lineWidth = (on && dim ? 1.4 : 1) / k;
 			const mx = (l.source.x + l.target.x) / 2;
@@ -381,19 +368,13 @@
 		for (const n of nodes) {
 			if (n.kind !== 'host') continue;
 			const on = !dim || lit.has(n.id);
-			const g = grow(n);
-			const r = n.r * g;
+			const r = n.r;
 			const live = !!n.host?.live;
-			ctx.globalAlpha = (on ? 1 : 0.15) * g;
-			if (live) {
-				ctx.shadowColor = colors.ink;
-				ctx.shadowBlur = 6 / k;
-			}
+			ctx.globalAlpha = on ? 1 : 0.15;
 			ctx.beginPath();
 			ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
 			ctx.fillStyle = live ? colors.ink : colors.card;
 			ctx.fill();
-			ctx.shadowBlur = 0;
 			ctx.lineWidth = 1.2 / k;
 			ctx.strokeStyle = live ? colors.card : colors.muted;
 			ctx.stroke();
@@ -403,27 +384,15 @@
 		for (const n of nodes) {
 			if (n.kind !== 'hub' || !n.hub) continue;
 			const on = !dim || lit.has(n.id);
-			const g = grow(n);
 			const hot = n.id === focus?.id;
-			const r = n.r * g * (hot ? 1.08 : 1);
+			const r = n.r * (hot ? 1.08 : 1);
 			const color = tone(n.hub.kind);
 			const fade = n.hub.common || n.hub.platform ? 0.55 : 1;
-			ctx.globalAlpha = (on ? 1 : 0.12) * g * fade;
+			ctx.globalAlpha = (on ? 1 : 0.12) * fade;
 
-			ctx.shadowColor = tone(n.hub.kind, dark ? 0.55 : 0.4);
-			ctx.shadowBlur = (hot ? 28 : 16) / k;
 			ctx.beginPath();
 			ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-			ctx.fillStyle = tone(n.hub.kind, dark ? 0.28 : 0.2);
-			ctx.fill();
-			ctx.shadowBlur = 0;
-
-			const core = ctx.createRadialGradient(n.x - r * 0.3, n.y - r * 0.35, r * 0.1, n.x, n.y, r);
-			core.addColorStop(0, tone(n.hub.kind, dark ? 0.75 : 0.55));
-			core.addColorStop(1, tone(n.hub.kind, dark ? 0.22 : 0.16));
-			ctx.beginPath();
-			ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-			ctx.fillStyle = core;
+			ctx.fillStyle = tone(n.hub.kind, dark ? 0.32 : 0.24);
 			ctx.fill();
 
 			ctx.lineWidth = 1.5 / k;
@@ -459,14 +428,13 @@
 				n.kind === 'hub' &&
 				((n.hub?.count ?? 0) >= LABEL_MIN_COUNT || k >= LABEL_ZOOM || isFocus || (dim && on));
 			if (!showHost && !showHub) continue;
-			const g = grow(n);
 			const text = n.label.length > 30 ? `${n.label.slice(0, 29)}…` : n.label;
 			const w = ctx.measureText(text).width;
 			const padX = 6 / k;
 			const h = 18 / k;
 			const x = n.x + n.r + 6 / k;
 			const y = n.y - h / 2;
-			ctx.globalAlpha = (on ? 1 : 0.2) * g;
+			ctx.globalAlpha = on ? 1 : 0.2;
 			roundRect(ctx, x, y, w + padX * 2 + (n.kind === 'hub' ? 10 / k : 0), h, 6 / k);
 			ctx.fillStyle = colors.card;
 			ctx.fill();
@@ -485,7 +453,6 @@
 			ctx.fillText(text, tx, n.y);
 		}
 		ctx.globalAlpha = 1;
-		if (animating) schedule();
 	}
 
 	function toGraph(e: PointerEvent | WheelEvent): Point {
