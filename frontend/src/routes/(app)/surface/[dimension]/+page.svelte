@@ -41,9 +41,6 @@
 	let coverage = $derived(spec ? surfaceStore.coverage(spec.key) : null);
 	// nothing scanned yet: one empty state instead of a toolbar of zeroes
 	let unscanned = $derived(coverage !== null && coverage.targets_covered === 0);
-	let things = $derived(
-		spec?.key === SurfaceDimension.IPS ? 'IP addresses' : (spec?.nounPlural ?? '')
-	);
 
 	let visit = $state(0);
 	afterNavigate(({ type, from, to }) => {
@@ -122,11 +119,7 @@
 				</div>
 			</div>
 		{:else if unscanned}
-			<EmptyState
-				icon={spec.icon}
-				title="No {things} yet"
-				description="{things.charAt(0).toUpperCase()}{things.slice(1)} appear after a scan."
-			>
+			<EmptyState icon={spec.icon} title="Not scanned">
 				<Button
 					size="sm"
 					onclick={() => {

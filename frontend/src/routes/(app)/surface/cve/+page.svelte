@@ -236,7 +236,7 @@
 	<FindingsTabs value="cve" />
 
 	{#if unscanned}
-		<EmptyState icon={Bug} title="No CVEs yet" description="CVEs appear after a scan.">
+		<EmptyState icon={Bug} title="Not scanned">
 			<Button size="sm" href={ROUTES.targets}>
 				<Target class="size-3.5" />
 				Go to targets
