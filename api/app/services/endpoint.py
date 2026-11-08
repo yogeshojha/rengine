@@ -105,6 +105,7 @@ from shared.services.asset_query import (
     endpoint_is_new,
     endpoint_status_class,
     lead_cache,
+    page_rows,
     parse_query,
     query_error_for,
     syntax_error,
@@ -279,17 +280,12 @@ class EndpointService:
         size = max(1, min(f.size, 200))
         offset = max(0, (max(f.page, 1) - 1) * size)
         try:
-            counted = await self.session.scalar(
-                select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
-            )
-            rows = (
-                (
-                    await self.session.execute(
-                        self._order(base, f).limit(size).offset(offset)
-                    )
-                )
-                .scalars()
-                .all()
+            mapped, counted = await page_rows(
+                self.session,
+                base,
+                lambda q: self._order(q, f),
+                limit=size,
+                offset=offset,
             )
         except DBAPIError as exc:
             await self.session.rollback()
@@ -299,6 +295,7 @@ class EndpointService:
             logger.info("endpoint query rejected", error=str(exc.orig))
             return EndpointPage(error=rejected)
 
+        rows = [r[Endpoint] for r in mapped]
         total = int(counted or 0)
         capped = total > COUNT_CAP
         page = EndpointPage(
@@ -1283,18 +1280,14 @@ class EndpointService:
         await self.session.execute(text(NO_JIT))
         size = max(1, min(f.size, 200))
         offset = max(0, (max(f.page, 1) - 1) * size)
-        counted = await self.session.scalar(
-            select(func.count()).select_from(base.limit(COUNT_CAP + 1).subquery())
+        mapped, counted = await page_rows(
+            self.session,
+            base,
+            lambda q: self._order(q, f),
+            limit=size,
+            offset=offset,
         )
-        rows = (
-            (
-                await self.session.execute(
-                    self._order(base, f).limit(size).offset(offset)
-                )
-            )
-            .scalars()
-            .all()
-        )
+        rows = [r[Endpoint] for r in mapped]
         total = int(counted or 0)
         capped = total > COUNT_CAP
         return GonePage(
