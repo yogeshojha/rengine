@@ -205,7 +205,9 @@ class CorrelationFinder:
             .where(scope.match(Subdomain.scan_id), value.isnot(None))
         )
         if spec.asset:
-            base = base.join(HttpAsset, asset_join())
+            base = base.join(HttpAsset, asset_join()).where(
+                scope.match(HttpAsset.scan_id)
+            )
         if elements is not None:
             base = base.join(elements, true())
         if not spec.numeric:
@@ -239,7 +241,12 @@ class CorrelationFinder:
         spec = KINDS[kind]
         stmt = select(func.count()).select_from(Subdomain)
         if spec.asset:
-            held = select(1).where(asset_join(), spec.carried(), *spec.conditions())
+            held = select(1).where(
+                asset_join(),
+                scope.match(HttpAsset.scan_id),
+                spec.carried(),
+                *spec.conditions(),
+            )
             stmt = stmt.where(scope.match(Subdomain.scan_id), exists(held))
         else:
             stmt = stmt.where(scope.match(Subdomain.scan_id), spec.carried())
@@ -317,7 +324,9 @@ class CorrelationFinder:
                 )
             )
             if spec.asset:
-                stmt = stmt.join(HttpAsset, asset_join())
+                stmt = stmt.join(HttpAsset, asset_join()).where(
+                    scope.match(HttpAsset.scan_id)
+                )
             if elements is not None:
                 stmt = stmt.join(elements, true())
             if (holding := spec.holding(sorted(by_value))) is not None:
