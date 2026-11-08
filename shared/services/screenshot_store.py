@@ -110,7 +110,14 @@ def process_scan(session: Session, scan_id: UUID) -> tuple[int, int]:
             continue
         if done.path != path:
             reclaimed += max(0, before - _size(done.path))
-        changes.append({"b_old": path, "b_phash": done.phash, "b_path": done.path})
+        changes.append(
+            {
+                "b_scan": scan_id,
+                "b_old": path,
+                "b_phash": done.phash,
+                "b_path": done.path,
+            }
+        )
     return _apply(session, changes), reclaimed
 
 
@@ -144,7 +151,10 @@ def _paths_of(session: Session, scan_id: UUID) -> list[str]:
 
 _UPDATES = {
     model: update(model)
-    .where(model.screenshot_path == bindparam("b_old"))
+    .where(
+        model.scan_id == bindparam("b_scan"),
+        model.screenshot_path == bindparam("b_old"),
+    )
     .values(
         screenshot_phash=bindparam("b_phash"),
         screenshot_path=bindparam("b_path"),
