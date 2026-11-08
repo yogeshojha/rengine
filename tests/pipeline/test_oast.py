@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import uuid
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
 from shared.definitions.api_keys import API_PROVIDER_META
-from shared.definitions.oast import DEFAULT_WAIT_SECONDS, EVICTION_SLACK
+from shared.definitions.intensity import Transport
+from shared.definitions.oast import EVICTION_SLACK, OastConfig, OastMode
 from shared.enums.api_key import APIProvider
 from shared.services.scan_resolve import MASK, redact_command
+from shared.services.scan_surface import SurfacePlan
+from stages.base import NetOptions
+from stages.vulnerability_scan.config import VulnerabilityScanConfig
+from stages.vulnerability_scan.scanners.base import ScannerContext
+from stages.vulnerability_scan.scanners.nuclei import Job, NucleiScanner
 from tools.nuclei.client import NucleiClient, NucleiOptions
 
 pytestmark = pytest.mark.pipeline
@@ -47,15 +55,36 @@ def test_no_window_leaves_nuclei_on_its_own_defaults():
 
 
 def test_the_wait_is_paid_on_the_out_of_band_batch_alone():
-    assert (
-        _flag(
-            _args(interactsh=True, oast_wait_seconds=0), "-interactions-cooldown-period"
+    scanner = NucleiScanner(
+        ScannerContext(
+            session=None,
+            scan_id=uuid.uuid4(),
+            target_id=uuid.uuid4(),
+            project_id=uuid.uuid4(),
+            cfg=VulnerabilityScanConfig(interactsh=True),
+            transport=Transport(
+                tool="nuclei", rate=150, threads=25, timeout=10, retries=1
+            ),
+            resolved=SimpleNamespace(follow_redirects=None, tool_args=lambda _t: []),
+            net=NetOptions(),
+            surface=SurfacePlan(),
+            selection=None,
         )
-        is None
     )
-    long = _args(interactsh=True, oast_wait_seconds=DEFAULT_WAIT_SECONDS)
-    assert _flag(long, "-interactions-cooldown-period") == str(DEFAULT_WAIT_SECONDS)
-    assert int(_flag(long, "-interactions-eviction")) > DEFAULT_WAIT_SECONDS
+    scanner._oast = OastConfig(
+        mode=OastMode.SELF_HOSTED.value, server="oast.example.com", wait_seconds=300
+    )
+
+    def _wait(oast: bool) -> str | None:
+        job = Job(
+            tier="t", lane="l", batch=1, items=[], templates=[], rate=5, oast=oast
+        )
+        options = scanner._options(job, Path("t.txt"), None)
+        args = NucleiClient.args(SimpleNamespace(options=options))
+        return _flag(args, "-interactions-cooldown-period")
+
+    assert _wait(oast=True) == "300"
+    assert _wait(oast=False) is None
 
 
 def test_the_token_reaches_nuclei():
