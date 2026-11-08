@@ -248,7 +248,10 @@ def test_a_tag_over_the_length_cap_is_refused():
 
 def test_a_note_takes_a_bounded_number_of_tags():
     names = [f"t{n}" for n in range(MAX_NOTE_TAGS)]
-    assert len(NoteCreate(target_id=uuid.uuid4(), body="x", tags=names).tags) == 20
+    assert (
+        len(NoteCreate(target_id=uuid.uuid4(), body="x", tags=names).tags)
+        == MAX_NOTE_TAGS
+    )
     with pytest.raises(ValidationError, match=f"at most {MAX_NOTE_TAGS} tags"):
         NoteUpdate(tags=[*names, "one-more"])
     assert NoteUpdate(tags=[*names, *names]).tags == names
