@@ -29,6 +29,10 @@ export interface UserAccountUpdate {
 
 const cache = new Map<string, Promise<UserSummary>>();
 
+export function forgetUsers(): void {
+	cache.clear();
+}
+
 export const usersApi = {
 	list(): Promise<UserAccount[]> {
 		return api.get<UserAccount[]>('/users?limit=500');

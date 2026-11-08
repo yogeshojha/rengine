@@ -42,6 +42,7 @@ import { clearServiceLookup } from '$lib/utilities/service-lookup';
 import { clearFindings } from '$lib/components/scans/history/findings';
 import { forgetPeeks } from '$lib/components/scans/results/vulnerabilities/findings/peek';
 import { forgetBriefs } from '$lib/api/ask';
+import { forgetUsers } from '$lib/api/users';
 import { previousPage } from '$lib/stores/previous-page.svelte';
 
 export const NO_SESSION =
@@ -140,6 +141,7 @@ function createAuthStore() {
 		dashboardStore.clear();
 		breadcrumbStore.clear();
 		previousPage.clear();
+		forgetUsers();
 		recent.reset();
 		activityFeed.reset();
 		liveScans.clear();
