@@ -5,14 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from shared.definitions.investigate import (
+    CREDENTIAL_TAGS,
     MAX_PLAN_REQUESTS,
     RefusalReason,
     tag_refusal,
-)
-
-# nuclei tags for a check that authenticates against the target
-CREDENTIAL_TAGS: frozenset[str] = frozenset(
-    {"default-login", "default-logins", "brute-force", "bruteforce", "creds-stuffing"}
 )
 
 

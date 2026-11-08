@@ -151,6 +151,11 @@ REFUSED_TAGS: dict[str, RefusalReason] = {
     "fuzzing": RefusalReason.FUZZ,
 }
 
+# nuclei tags for a check that authenticates against the target
+CREDENTIAL_TAGS: frozenset[str] = frozenset(
+    {"default-login", "default-logins", "brute-force", "bruteforce", "creds-stuffing"}
+)
+
 
 def tag_refusal(tags: frozenset[str] | set[str]) -> RefusalReason | None:
     """The reason a check's tags keep it out of a replay, or None."""
