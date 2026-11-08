@@ -9,9 +9,9 @@ import {
 	type ScanActivityRead,
 	type ScanRead
 } from '$lib/types/scan';
-import { isLiveStatus } from '$lib/utilities/scan-status';
+import { isLiveStatus, isOpenStatus } from '$lib/utilities/scan-status';
 
-const LIVE_STATUSES = SCAN_STATUSES.filter(isLiveStatus);
+const OPEN_STATUSES = SCAN_STATUSES.filter(isOpenStatus);
 const REFRESH_DEBOUNCE_MS = 400;
 const FALLBACK_POLL_MS = 30_000;
 export const LIVE_PAGE_SIZE = 25;
@@ -50,6 +50,7 @@ function runFromActivities(activities: ScanActivityRead[]): LiveRun {
 function createLiveScansStore() {
 	let projectId = $state<string | undefined>(undefined);
 	let scans = $state<ScanRead[]>([]);
+	let paused = $state<ScanRead[]>([]);
 	let hasFetched = $state(false);
 	let fetchedAt = $state(0);
 	let completedTick = $state(0);
@@ -62,6 +63,7 @@ function createLiveScansStore() {
 	let pollTimer: ReturnType<typeof setTimeout> | undefined;
 	let seq = 0;
 
+	const open = $derived([...scans, ...paused]);
 	const count = $derived(scans.length);
 	const hasLive = $derived(count > 0);
 	const running = $derived(scans.filter((sc) => sc.status === 'running').length);
@@ -89,15 +91,16 @@ function createLiveScansStore() {
 		const mySeq = ++seq;
 		const requestedAt = Date.now();
 		try {
-			const live = await scansApi.list(pid, {
-				status: LIVE_STATUSES,
-				size: LIVE_PAGE_SIZE,
+			const page = await scansApi.list(pid, {
+				status: OPEN_STATUSES,
+				size: LIVE_PAGE_SIZE * 2,
 				sort_by: 'started',
 				sort_dir: 'desc',
 				include_focused: true
 			});
 			if (mySeq !== seq || pid !== projectId) return;
-			scans = live.items;
+			scans = page.items.filter((sc) => isLiveStatus(sc.status)).slice(0, LIVE_PAGE_SIZE);
+			paused = page.items.filter((sc) => !isLiveStatus(sc.status));
 			hasFetched = true;
 			fetchedAt = requestedAt;
 			void seedRuns(pid, mySeq);
@@ -234,6 +237,7 @@ function createLiveScansStore() {
 		queued = false;
 		projectId = undefined;
 		scans = [];
+		paused = [];
 		hasFetched = false;
 		fetchedAt = 0;
 		runs.clear();
@@ -243,6 +247,9 @@ function createLiveScansStore() {
 	return {
 		get scans() {
 			return scans;
+		},
+		get open() {
+			return open;
 		},
 		get hasFetched() {
 			return hasFetched;
