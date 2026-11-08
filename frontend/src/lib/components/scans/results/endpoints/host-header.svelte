@@ -20,7 +20,6 @@
 		STATUS_CLASS_FILL,
 		statusClassOf
 	} from '$lib/config/endpoints';
-	import { formatShortDate } from '$lib/utilities/dates';
 	import { bracketed } from '$lib/utilities/net';
 	import type { HostBrief, ParamStat } from '$lib/utilities/endpoints';
 	import type { Connector, ConnectorSpec } from '$lib/types/connector';
@@ -162,8 +161,7 @@
 			{#if brief.new}
 				<button type="button" class="hover:text-primary" onclick={onNew}>
 					<b class="font-semibold text-success tabular-nums">+{n(brief.new)}</b>
-					new{#if brief.previous_scan_at}
-						since {formatShortDate(brief.previous_scan_at)}{/if}
+					new
 				</button>
 			{/if}
 			{#if brief.findings && onFindings}

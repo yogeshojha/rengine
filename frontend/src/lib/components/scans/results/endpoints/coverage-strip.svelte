@@ -117,7 +117,7 @@
 			class="rounded-sm text-info hover:text-info/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowNew}
 		>
-			{n(summary.new)} new since the previous scan
+			{n(summary.new)} new
 		</button>
 	{/if}
 	{#if summary?.gone && onShowGone}
