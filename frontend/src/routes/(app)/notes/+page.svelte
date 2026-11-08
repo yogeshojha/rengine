@@ -309,10 +309,7 @@
 <svelte:window onkeydown={onKey} />
 
 <div class="flex flex-col gap-6">
-	<PageHeader
-		title={routeLabels.notes}
-		description="Notes on targets, scans and results across the project"
-	/>
+	<PageHeader title={routeLabels.notes} />
 
 	<Card.Root class="gap-0 overflow-hidden py-0">
 		{#if filtered || total > 0 || !loaded}
