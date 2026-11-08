@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import BEARER_HEADERS, CurrentUser, user_for_payload
+from app.api.deps import BEARER_HEADERS, CurrentUser, ensure_active, user_for_payload
 from app.api.v1.auth import (
     LoginResponse,
     reissue_session,
@@ -182,13 +182,7 @@ async def login_2fa(
             headers=BEARER_HEADERS,
         )
 
-    user = await user_for_payload(payload, session)
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers=BEARER_HEADERS,
-        )
+    user = ensure_active(await user_for_payload(payload, session))
 
     await check_code_budget(user)
 
