@@ -15,6 +15,31 @@ _KILL_SLACK_SECONDS = 120
 
 # katana spells it -H/-headers; httpx and nuclei spell it -header
 HEADER_FLAG = "-headers"
+# short spellings of the flags the stage sets, read off `katana -h` v1.7.0
+KATANA_ALIASES: dict[str, str] = {
+    "-H": HEADER_FLAG,
+    "-u": "-list",
+    "-o": "-output",
+    "-j": "-jsonl",
+    "-or": "-omit-raw",
+    "-ob": "-omit-body",
+    "-nc": "-no-color",
+    "-kf": "-known-files",
+    "-d": "-depth",
+    "-c": "-concurrency",
+    "-fs": "-field-scope",
+    "-cs": "-crawl-scope",
+    "-cos": "-crawl-out-scope",
+    "-ct": "-crawl-duration",
+    "-rl": "-rate-limit",
+    "-jsl": "-jsluice",
+    "-jc": "-js-crawl",
+    "-aff": "-automatic-form-fill",
+    "-iqp": "-ignore-query-params",
+    "-ef": "-extension-filter",
+    "-hl": "-headless",
+    "-scp": "-system-chrome-path",
+}
 
 _BASE_FLAGS = [
     "-jsonl",
@@ -84,7 +109,9 @@ class KatanaClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(KATANA_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                KATANA_BINARY, default_timeout=DEFAULT_TIMEOUT, aliases=KATANA_ALIASES
+            )
         except ToolNotFoundError as e:
             raise KatanaError(str(e)) from e
 
