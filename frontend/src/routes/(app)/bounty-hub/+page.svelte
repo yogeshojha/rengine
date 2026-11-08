@@ -54,6 +54,7 @@
 	import {
 		ProgramSource,
 		ProgramState,
+		ScopeFilter,
 		SubmissionState,
 		type BountyProgram,
 		type BountyProgramFilters,
@@ -99,7 +100,7 @@
 				bounty: bounty === 'true' ? true : bounty === 'false' ? false : null,
 				bookmarked: params.get('bookmarked') === 'true' ? true : null,
 				joined: params.get('joined') === 'true' ? true : null,
-				scope: oneOf('scope', ['importable', 'none'] as const),
+				scope: oneOf('scope', Object.values(ScopeFilter)),
 				sort:
 					oneOf<string>(
 						'sort',

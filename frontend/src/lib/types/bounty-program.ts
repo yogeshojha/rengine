@@ -33,6 +33,35 @@ export enum ScopeAccess {
 	Denied = 'denied'
 }
 
+export enum BountyEventKind {
+	ProgramAdded = 'program_added',
+	ProgramWentPublic = 'program_went_public',
+	SubmissionsOpened = 'submissions_opened',
+	SubmissionsClosed = 'submissions_closed',
+	BountiesStarted = 'bounties_started',
+	ScopeAdded = 'scope_added',
+	ScopeRemoved = 'scope_removed',
+	WentOutOfScope = 'went_out_of_scope',
+	CameIntoScope = 'came_into_scope',
+	PayoutChanged = 'payout_changed',
+	RulesChanged = 'rules_changed',
+	AssetBountyChanged = 'asset_bounty_changed',
+	AssetRulesChanged = 'asset_rules_changed'
+}
+
+// mirrors the tones shared/definitions/bounty_programs.py:EVENTS uses
+export enum EventTone {
+	Info = 'info',
+	Warning = 'warning',
+	Muted = 'muted'
+}
+
+// mirrors api/app/services/bounty_program.py scope filter
+export enum ScopeFilter {
+	Importable = 'importable',
+	None = 'none'
+}
+
 export enum AssetGroup {
 	Network = 'network',
 	Mobile = 'mobile',
@@ -240,6 +269,6 @@ export interface BountyProgramFilters {
 	joined?: boolean | null;
 	platforms?: string[];
 	sources?: string[];
-	scope?: 'importable' | 'none' | null;
+	scope?: ScopeFilter | null;
 	sort?: string;
 }

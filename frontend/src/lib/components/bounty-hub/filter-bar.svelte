@@ -20,6 +20,7 @@
 	import {
 		ProgramSource,
 		ProgramState,
+		ScopeFilter,
 		SubmissionState,
 		type BountyProgramFilters,
 		type PlatformCount
@@ -97,8 +98,8 @@
 	];
 	const SCOPE = [
 		{ value: SELECT_NONE, label: 'Any scope' },
-		{ value: 'importable', label: 'Has scannable assets' },
-		{ value: 'none', label: 'No scope recorded' }
+		{ value: ScopeFilter.Importable, label: 'Has scannable assets' },
+		{ value: ScopeFilter.None, label: 'No scope recorded' }
 	];
 
 	const ACTIVE = 'border-primary/50 bg-primary/5';
@@ -206,7 +207,7 @@
 	<Select.Root
 		type="single"
 		value={filters.scope ?? SELECT_NONE}
-		onValueChange={(v) => patch({ scope: v === SELECT_NONE ? null : (v as 'importable' | 'none') })}
+		onValueChange={(v) => patch({ scope: v === SELECT_NONE ? null : (v as ScopeFilter) })}
 	>
 		<Select.Trigger class={filters.scope ? ACTIVE : ''} aria-label="Scope"
 			>{label(SCOPE, filters.scope ?? SELECT_NONE)}</Select.Trigger

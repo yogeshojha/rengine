@@ -20,7 +20,7 @@
 	} from '$lib/config/bounty-programs';
 	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
-	import type { BountyEvent } from '$lib/types/bounty-program';
+	import { BountyEventKind, EventTone, type BountyEvent } from '$lib/types/bounty-program';
 
 	interface Props {
 		onOpenProgram: (handle: string, platform: string) => void;
@@ -35,7 +35,11 @@
 	let failed = $state<string | null>(null);
 	let filter = $state('all');
 
-	const TAB_KINDS = ['scope_added', 'program_added', 'went_out_of_scope'];
+	const TAB_KINDS = [
+		BountyEventKind.ScopeAdded,
+		BountyEventKind.ProgramAdded,
+		BountyEventKind.WentOutOfScope
+	];
 	let tabs = $derived([
 		{ key: 'all', label: 'Everything' },
 		...TAB_KINDS.map((kind) => ({ key: kind, label: bountyVocabulary.eventLabel(kind) }))
@@ -135,9 +139,9 @@
 							{event.program_name}
 							<ArrowUpRightIcon class="size-3" />
 						</button>
-						{#if event.actionable && event.tone !== 'muted'}
-							<Badge variant={event.tone === 'warning' ? 'warning' : 'info'}>
-								{event.tone === 'warning' ? 'Action needed' : 'Review'}
+						{#if event.actionable && event.tone !== EventTone.Muted}
+							<Badge variant={event.tone === EventTone.Warning ? 'warning' : 'info'}>
+								{event.tone === EventTone.Warning ? 'Action needed' : 'Review'}
 							</Badge>
 						{/if}
 					</div>

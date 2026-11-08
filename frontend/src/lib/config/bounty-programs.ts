@@ -26,7 +26,7 @@ import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
 
 import type { Tab } from '$lib/components/count-tabs.svelte';
 import type { IconComponent } from '$lib/config/icons';
-import { ProgramState, ScopeState, SubmissionState } from '$lib/types/bounty-program';
+import { EventTone, ProgramState, ScopeState, SubmissionState } from '$lib/types/bounty-program';
 
 export const ASSET_ICONS: Record<string, IconComponent> = {
 	globe: GlobeIcon,
@@ -57,15 +57,15 @@ export const ASSET_ICONS: Record<string, IconComponent> = {
 };
 
 export const EVENT_TONE: Record<string, string> = {
-	info: 'text-info',
-	warning: 'text-warning',
-	muted: 'text-muted-foreground'
+	[EventTone.Info]: 'text-info',
+	[EventTone.Warning]: 'text-warning',
+	[EventTone.Muted]: 'text-muted-foreground'
 };
 
 export const EVENT_TONE_BG: Record<string, string> = {
-	info: 'bg-info/10',
-	warning: 'bg-warning/10',
-	muted: 'bg-muted'
+	[EventTone.Info]: 'bg-info/10',
+	[EventTone.Warning]: 'bg-warning/10',
+	[EventTone.Muted]: 'bg-muted'
 };
 
 export function assetIcon(icon: string): IconComponent {
