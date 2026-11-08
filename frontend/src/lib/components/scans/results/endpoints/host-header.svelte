@@ -21,6 +21,7 @@
 		statusClassOf
 	} from '$lib/config/endpoints';
 	import { bracketed } from '$lib/utilities/net';
+	import { externalHref } from '$lib/utilities/links';
 	import type { HostBrief, ParamStat } from '$lib/utilities/endpoints';
 	import type { Connector, ConnectorSpec, HandoffResult } from '$lib/types/connector';
 
@@ -115,7 +116,7 @@
 				variant="outline"
 				size="sm"
 				class="h-8 gap-1.5 text-xs"
-				href={openUrl}
+				href={externalHref(openUrl)}
 				target="_blank"
 				rel="noopener noreferrer"
 			>
