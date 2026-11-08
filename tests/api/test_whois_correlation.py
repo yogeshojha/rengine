@@ -12,7 +12,6 @@ from shared.models.whois import WhoisNameserver, WhoisRecord, WhoisRecordSummary
 from shared.utils.datetime import utc_now
 from shared.utils.infra import is_shared_nameserver
 from shared.utils.privacy import registrant_key, registrant_key_sql
-from tools.whois.service import WhoisService
 
 pytestmark = pytest.mark.api
 
@@ -110,7 +109,7 @@ async def test_a_record_with_no_target_in_the_project_is_not_a_correlation(estat
     target = await _link(estate, f"a-{tag}.com", mine)
     await _link(estate, f"b-{tag}.com", sibling)
 
-    groups = await _target_correlations(estate.session, WhoisService(), target)
+    groups = await _target_correlations(estate.session, target)
 
     assert [(g.correlation_type, g.count) for g in groups] == [("registrant_name", 1)]
     assert [r.id for r in groups[0].records] == [sibling.id]
@@ -123,7 +122,7 @@ async def test_a_lone_standalone_record_yields_no_group(estate):
     await _record(estate, f"c-{tag}.com", registrant=owner)
     target = await _link(estate, f"a-{tag}.com", mine)
 
-    assert await _target_correlations(estate.session, WhoisService(), target) == []
+    assert await _target_correlations(estate.session, target) == []
 
 
 async def test_a_provider_nameserver_is_not_named_as_the_reason(estate):
@@ -135,7 +134,7 @@ async def test_a_provider_nameserver_is_not_named_as_the_reason(estate):
     target = await _link(estate, f"a-{tag}.com", mine)
     await _link(estate, f"b-{tag}.com", sibling)
 
-    groups = await _target_correlations(estate.session, WhoisService(), target)
+    groups = await _target_correlations(estate.session, target)
 
     assert [(g.correlation_type, g.correlation_value) for g in groups] == [
         ("nameserver", own_ns)

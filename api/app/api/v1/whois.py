@@ -1,9 +1,10 @@
 import uuid as _uuid
+from collections import defaultdict
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -15,17 +16,22 @@ from shared.http import egress_proxy
 from shared.models.target import Target
 from shared.models.whois import (
     WhoisCorrelationResult,
+    WhoisNameserver,
     WhoisRecord,
     WhoisRecordRead,
     WhoisRecordSummary,
 )
 from shared.utils.infra import is_shared_nameserver
-from tools.whois.service import WhoisError, WhoisService
+from shared.utils.privacy import registrant_key, registrant_key_sql
+from tools.whois.service import MAX_CORRELATION_RECORDS, WhoisError, WhoisService
 
 router = APIRouter(
     prefix="/tools/whois",
     tags=["tools/whois"],
 )
+
+
+_REGISTRANT_KEY = registrant_key_sql(WhoisRecord.registrant_name)
 
 
 def get_whois_service() -> WhoisService:
@@ -112,13 +118,105 @@ async def refresh_whois_record(
 
 
 async def _target_correlations(
-    session: AsyncSession, service: WhoisService, target: Target
+    session: AsyncSession, target: Target
 ) -> list[WhoisCorrelationResult]:
-    return (await _correlations_by_target(session, service, [target]))[str(target.id)]
+    return (await _correlations_by_target(session, [target]))[str(target.id)]
+
+
+def _capped(key, *where):
+    """Records matching on `key`, at most MAX_CORRELATION_RECORDS per value."""
+    rank = func.row_number().over(partition_by=key, order_by=WhoisRecord.id).label("n")
+    ranked = select(WhoisRecord.id, key.label("key"), rank).where(*where).subquery()
+    return (
+        select(WhoisRecord, ranked.c.key)
+        .join(ranked, ranked.c.id == WhoisRecord.id)
+        .where(ranked.c.n <= MAX_CORRELATION_RECORDS)
+    )
+
+
+async def _correlations(
+    session: AsyncSession, records: dict[_uuid.UUID, WhoisRecord]
+) -> dict[_uuid.UUID, dict[str, list[WhoisRecord]]]:
+    """Correlation groups for many records, one statement per kind."""
+    keys = {rid: registrant_key(r.registrant_name) for rid, r in records.items()}
+    by_key: dict[str, list[WhoisRecord]] = defaultdict(list)
+    if wanted := {k for k in keys.values() if k}:
+        for row, key in (
+            await session.execute(
+                _capped(
+                    _REGISTRANT_KEY,
+                    WhoisRecord.registrant_name != "",
+                    _REGISTRANT_KEY.in_(sorted(wanted)),
+                )
+            )
+        ).all():
+            by_key[key].append(row)
+
+    by_network: dict[str, list[WhoisRecord]] = defaultdict(list)
+    if cidrs := {r.network_cidr for r in records.values() if r.network_cidr}:
+        for row, cidr in (
+            await session.execute(
+                _capped(
+                    WhoisRecord.network_cidr,
+                    WhoisRecord.network_cidr != "",
+                    WhoisRecord.network_cidr.in_(sorted(cidrs)),
+                )
+            )
+        ).all():
+            by_network[cidr].append(row)
+
+    servers = {
+        rid: {
+            ns.strip().lower()
+            for ns in (r.nameservers or [])
+            if ns and not is_shared_nameserver(ns)
+        }
+        for rid, r in records.items()
+    }
+    by_server: dict[str, list[WhoisRecord]] = defaultdict(list)
+    if names := set().union(*servers.values()):
+        rank = (
+            func.row_number()
+            .over(partition_by=WhoisNameserver.nameserver, order_by=WhoisRecord.id)
+            .label("n")
+        )
+        ranked = (
+            select(WhoisRecord.id, WhoisNameserver.nameserver, rank)
+            .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
+            .where(WhoisNameserver.nameserver.in_(sorted(names)))
+            .subquery()
+        )
+        for row, nameserver in (
+            await session.execute(
+                select(WhoisRecord, ranked.c.nameserver)
+                .join(ranked, ranked.c.id == WhoisRecord.id)
+                .where(ranked.c.n <= MAX_CORRELATION_RECORDS + 1)
+            )
+        ).all():
+            by_server[nameserver].append(row)
+
+    out: dict[_uuid.UUID, dict[str, list[WhoisRecord]]] = {}
+    for rid, record in records.items():
+        groups: dict[str, list[WhoisRecord]] = {}
+        others = [r for r in by_key.get(keys[rid], []) if r.id != rid]
+        if keys[rid] and others:
+            groups["registrant_name"] = others
+        others = [r for r in by_network.get(record.network_cidr, []) if r.id != rid]
+        if record.network_cidr and others:
+            groups["network_cidr"] = others
+        shared: dict[_uuid.UUID, WhoisRecord] = {}
+        for nameserver in sorted(servers[rid]):
+            for r in by_server.get(nameserver, []):
+                if r.id != rid:
+                    shared.setdefault(r.id, r)
+        if shared:
+            groups["nameserver"] = list(shared.values())[:MAX_CORRELATION_RECORDS]
+        out[rid] = groups
+    return out
 
 
 async def _correlations_by_target(
-    session: AsyncSession, service: WhoisService, targets: list[Target]
+    session: AsyncSession, targets: list[Target]
 ) -> dict[str, list[WhoisCorrelationResult]]:
     out: dict[str, list[WhoisCorrelationResult]] = {str(t.id): [] for t in targets}
     record_ids = {t.whois_record_id for t in targets if t.whois_record_id}
@@ -133,10 +231,7 @@ async def _correlations_by_target(
             )
         ).scalars()
     }
-    correlations = {
-        record_id: await service.get_correlations_for_target(session, record_id)
-        for record_id in records
-    }
+    correlations = await _correlations(session, records)
     linked_ids = {
         r.id
         for groups in correlations.values()
@@ -224,7 +319,6 @@ def _grouped(
 async def get_targets_correlations(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    service: Annotated[WhoisService, Depends(get_whois_service)],
     ids: Annotated[str, Query(description="Comma-separated target IDs")],
 ):
     wanted = []
@@ -236,7 +330,7 @@ async def get_targets_correlations(
     if not wanted:
         return {}
     rows = await session.execute(select(Target).where(Target.id.in_(wanted[:100])))
-    return await _correlations_by_target(session, service, list(rows.scalars().all()))
+    return await _correlations_by_target(session, list(rows.scalars().all()))
 
 
 @router.get(
@@ -249,7 +343,6 @@ async def get_target_correlations(
     target_id: str,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    service: Annotated[WhoisService, Depends(get_whois_service)],
 ):
     try:
         tid = _uuid.UUID(target_id)
@@ -263,7 +356,7 @@ async def get_target_correlations(
     target = target_result.scalar_one_or_none()
     if not target:
         return []
-    return await _target_correlations(session, service, target)
+    return await _target_correlations(session, target)
 
 
 async def _correlation_results(
