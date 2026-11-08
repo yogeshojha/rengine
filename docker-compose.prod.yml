@@ -20,7 +20,7 @@ x-worker-base: &worker-base
   # without NET_RAW the file-capable naabu binary does not start
   cap_drop: [ALL]
   cap_add: [NET_RAW]
-  # under memory pressure the kernel takes a worker process before the database
+  # OOM victim order
   oom_score_adj: 300
   logging: *logging
   restart: unless-stopped

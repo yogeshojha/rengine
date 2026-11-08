@@ -37,7 +37,6 @@ fi
 
 INTERACTIVE=0
 attach_terminal() {
-  # a piped script cannot take /dev/tty: bash would read the script text from it
   if [ -t 0 ]; then
     INTERACTIVE=1
   elif [ -n "$SCRIPT_DIR" ] && [ -e /dev/tty ] && (exec </dev/tty) 2>/dev/null; then
@@ -672,7 +671,6 @@ EOF
 }
 
 write_ports() {
-  # IPv4 only: docker proxies an IPv6 client from the network gateway address
   {
     echo "# written by install.sh; every published port is decided here"
     echo "services:"
