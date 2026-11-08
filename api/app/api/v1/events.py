@@ -107,7 +107,7 @@ async def event_stream(
                             queue.get(), timeout=deadline - loop.time()
                         )
                     except TimeoutError:
-                        yield ": heartbeat\n\n"
+                        yield "event: heartbeat\ndata: {}\n\n"
                         continue
                     if message is STREAM_CLOSED:
                         break
