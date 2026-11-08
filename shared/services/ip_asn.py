@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import tempfile
 import time
@@ -18,6 +19,8 @@ from shared.definitions.datasets import DatasetKind
 from shared.http import download
 from shared.logging import get_logger
 from shared.models.ip_asn_range import IpAsnRange, IpCountryRange
+from shared.models.threat_intel import ThreatFeed
+from shared.redis import sync_client
 from shared.services import feed_ledger
 from shared.services.locks import dataset, sync_lock
 
@@ -89,10 +92,14 @@ _FILLS = (
 )
 _SCOPED = " AND base.ip = ANY(:ips)"
 _PENDING_SQL = """
-SELECT id, ip FROM ip_addresses
-WHERE asn IS NULL OR country IS NULL
-ORDER BY discovered_at DESC LIMIT :lim
+SELECT id, discovered_at FROM ip_addresses
+WHERE (asn IS NULL OR country IS NULL){after}
+ORDER BY discovered_at DESC, id DESC LIMIT :lim
 """
+_AFTER = " AND (discovered_at, id) < (CAST(:at AS timestamptz), CAST(:id AS uuid))"
+_CHUNK_SQL = "(SELECT id, ip FROM ip_addresses WHERE id = ANY(CAST(:ids AS uuid[])))"
+SWEEP_KEY = "ip-ranges:backfill"
+SWEEP_DONE = "done"
 _FOLD_ASSETS_SQL = """
 UPDATE http_assets h SET asn = a.asn, asn_org = a.asn_org
 FROM ip_addresses a
@@ -149,16 +156,60 @@ def fold_onto_hosts(session: Session, scan_ids: Sequence[UUID]) -> int:
     )
 
 
+def _sweep_state(synced: str) -> list | str | None:
+    try:
+        raw = sync_client().get(SWEEP_KEY)
+        state = json.loads(raw) if raw else None
+    except Exception:
+        logger.warning("ip range backfill cursor not read", exc_info=True)
+        return None
+    if not isinstance(state, dict) or state.get("synced") != synced:
+        return None
+    return state.get("cursor")
+
+
+def _save_sweep(synced: str, cursor: list | str) -> None:
+    try:
+        sync_client().set(SWEEP_KEY, json.dumps({"synced": synced, "cursor": cursor}))
+    except Exception:
+        logger.warning("ip range backfill cursor not saved", exc_info=True)
+
+
 def backfill_addresses(session: Session, limit: int = BACKFILL_LIMIT) -> Backfilled:
-    """Fill addresses left blank by a scan that ran before the ranges were loaded."""
+    """Try every blank address once against each range load, newest first."""
     if not ranges_ready(session):
         return Backfilled()
-    sql = _ENRICH_SQL.format(source=f"({_PENDING_SQL})", filter=_FILLS)
-    sql += " RETURNING a.scan_id"
-    filled = session.execute(text(sql).bindparams(lim=limit)).fetchall()
+    stamp = session.scalar(
+        select(ThreatFeed.last_synced_at).where(
+            ThreatFeed.kind == DatasetKind.IP_RANGES.value
+        )
+    )
+    synced = stamp.isoformat() if stamp else ""
+    cursor = _sweep_state(synced)
+    if cursor == SWEEP_DONE:
+        return Backfilled()
+    params: dict = {"lim": limit}
+    after = ""
+    if cursor:
+        after = _AFTER
+        params |= {"at": cursor[0], "id": cursor[1]}
+    chunk = session.execute(text(_PENDING_SQL.format(after=after)), params).fetchall()
+    filled = []
+    if chunk:
+        sql = _ENRICH_SQL.format(source=_CHUNK_SQL, filter=_FILLS)
+        sql += " RETURNING a.scan_id"
+        ids = [str(row.id) for row in chunk]
+        filled = session.execute(text(sql).bindparams(ids=ids)).fetchall()
     scans = sorted({row[0] for row in filled})
     hosts = fold_onto_hosts(session, scans)
     session.commit()
+    last = chunk[-1] if chunk else None
+    _save_sweep(
+        synced,
+        [last.discovered_at.isoformat(), str(last.id)]
+        if last is not None and len(chunk) >= limit
+        else SWEEP_DONE,
+    )
     return Backfilled(addresses=len(filled), hosts=hosts, scans=tuple(scans))
 
 
