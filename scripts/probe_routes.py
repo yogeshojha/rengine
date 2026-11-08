@@ -1,4 +1,4 @@
-"""Call every GET route of a running api with real ids and boundary values, and report 5xx, slow answers and leaked internals."""
+"""Call every GET route and the read-only POST searches with real ids and boundary values."""
 
 import http.cookiejar
 import json
@@ -28,6 +28,10 @@ LEAK = re.compile(
     re.I,
 )
 LONG = "a" * 5000
+READ_POSTS = re.compile(
+    r"/(search(/(counts|groups|leads|tabs|renders|issues))?|tree(/(hosts|leaves))?"
+    r"|timeline(/renders)?|gone)$"
+)
 OK = 200
 SERVER_ERROR = 500
 UNAUTHORIZED = 401
@@ -232,6 +236,47 @@ def edges(schema: dict) -> list:
     return out
 
 
+def resolve(spec: dict, schema: dict) -> dict:
+    ref = schema.get("$ref")
+    if ref:
+        return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
+    return schema
+
+
+def cases_for(spec: dict, op: dict, ids: dict):
+    params = op.get("parameters", [])
+    query = {
+        p["name"]: query_value(p["name"], p.get("schema", {}), ids)
+        for p in params
+        if p["in"] == "query" and (p.get("required") or p["name"] == "project_id")
+    }
+    body_schema = (
+        op.get("requestBody", {})
+        .get("content", {})
+        .get("application/json", {})
+        .get("schema")
+    )
+    body = None
+    props: dict = {}
+    if body_schema is not None:
+        body_schema = resolve(spec, body_schema)
+        props = body_schema.get("properties", {})
+        body = {
+            name: _sample(resolve(spec, props[name]))
+            for name in body_schema.get("required", [])
+            if name in props
+        }
+    yield "base", query, body
+    for p in params:
+        if p["in"] != "query" or p.get("required") or p["name"] in ids:
+            continue
+        for value in edges(p.get("schema", {})):
+            yield f"{p['name']}={str(value)[:24]}", {**query, p["name"]: value}, body
+    for name, prop in props.items():
+        for value in edges(resolve(spec, prop)):
+            yield f"body.{name}={str(value)[:24]}", query, {**(body or {}), name: value}
+
+
 def main() -> int:
     spec_path, project = sys.argv[1], sys.argv[2]
     spec = json.loads(Path(spec_path).read_text())
@@ -241,43 +286,35 @@ def main() -> int:
     print("ids", json.dumps(ids), flush=True)
     findings = 0
     for full, ops in sorted(spec["paths"].items()):
-        op = ops.get("get")
-        if not op or not full.startswith(PREFIX):
+        if not full.startswith(PREFIX):
             continue
         path = full[len(PREFIX) :]
         if SKIP.search(path):
             continue
-        params = op.get("parameters", [])
-        concrete = re.sub(
-            r"\{([^}]+)\}", lambda m, p=path: path_value(p, m.group(1), ids), path
-        )
-        base = {
-            p["name"]: query_value(p["name"], p.get("schema", {}), ids)
-            for p in params
-            if p["in"] == "query" and p.get("required")
-        }
-        cases = [("base", base)]
-        for p in params:
-            if p["in"] != "query" or p.get("required") or p["name"] in ids:
+        for method in ("get", "post"):
+            op = ops.get(method)
+            if not op or (method == "post" and not READ_POSTS.search(path)):
                 continue
-            for value in edges(p.get("schema", {})):
-                cases.append(
-                    (f"{p['name']}={str(value)[:24]}", {**base, p["name"]: value})
+            for label, query, body in cases_for(spec, op, ids):
+                concrete = re.sub(
+                    r"\{([^}]+)\}",
+                    lambda m, p=path: path_value(p, m.group(1), ids),
+                    path,
                 )
-        for label, query in cases:
-            code, took, raw = c.call("GET", concrete, query)
-            text = raw[:400].decode("utf-8", "replace")
-            bad = code >= SERVER_ERROR or code == 0 or took > SLOW_SECONDS
-            leak = code != OK and LEAK.search(text)
-            if bad or leak:
-                findings += 1
-                print(
-                    f"{code} {took:.1f}s GET {concrete} [{label}] {text[:200]!r}",
-                    flush=True,
-                )
-            if code == UNAUTHORIZED:
-                c.login()
-            time.sleep(PAUSE)
+                code, took, raw = c.call(method.upper(), concrete, query, body)
+                text = raw[:400].decode("utf-8", "replace")
+                bad = code >= SERVER_ERROR or code == 0 or took > SLOW_SECONDS
+                leak = code != OK and LEAK.search(text)
+                if bad or leak:
+                    findings += 1
+                    print(
+                        f"{code} {took:.1f}s {method.upper()} {concrete} [{label}] "
+                        f"{text[:200]!r}",
+                        flush=True,
+                    )
+                if code == UNAUTHORIZED:
+                    c.login()
+                time.sleep(PAUSE)
     print("findings", findings)
     return 1 if findings else 0
 
