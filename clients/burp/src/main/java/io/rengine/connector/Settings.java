@@ -5,7 +5,6 @@ import burp.api.montoya.persistence.Preferences;
 /** Extension configuration, persisted in Burp's own preference store. */
 final class Settings implements Sink.Config {
     static final String INGEST_PATH = "/api/v1/connectors/ingest";
-    static final String DEFAULT_ENDPOINT = "http://localhost:8000" + INGEST_PATH;
 
     private static final String KEY_ENDPOINT = "rengine.endpoint";
     private static final String KEY_TOKEN = "rengine.token";
@@ -21,7 +20,7 @@ final class Settings implements Sink.Config {
 
     private final Preferences preferences;
 
-    private volatile String endpoint = DEFAULT_ENDPOINT;
+    private volatile String endpoint = "";
     private volatile String token = "";
     private volatile boolean enabled = false;
     private volatile boolean captureProxy = true;
