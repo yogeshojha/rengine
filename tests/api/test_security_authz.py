@@ -21,7 +21,7 @@ from shared.enums.scan_context import AuthType
 from shared.enums.scan_schedule import ScheduleType
 from shared.enums.target import TargetType
 from shared.models.ip_address import IpAddress
-from shared.models.note import NoteCreate, NoteUpdate
+from shared.models.note import Note, NoteCreate, NoteUpdate
 from shared.models.proxy import Proxy
 from shared.models.scan import ScanCreate, SeedAsset
 from shared.models.scan_context import (
@@ -228,6 +228,7 @@ async def test_an_administrator_deletes_any_note(estate, flush_only):
     note = await _note(estate, author.id)
 
     await NoteService(flush_only).delete(note.id, estate.project_id, admin)
+    assert await flush_only.get(Note, note.id) is None
 
 
 # ---------- E5: proxy on a context ----------
