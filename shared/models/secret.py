@@ -233,6 +233,6 @@ class SecretFilter(BaseModel):
         default_factory=list, max_length=MAX_SELECTED_ROWS
     )
     limit: int = PydanticField(default=50, ge=1, le=500)
-    offset: int = PydanticField(default=0, ge=0)
-    sort: str | None = None
-    direction: str | None = None
+    offset: int = PydanticField(default=0, ge=0, le=100_000_000)
+    sort: str | None = PydanticField(default=None, max_length=20)
+    direction: str | None = PydanticField(default=None, max_length=4)

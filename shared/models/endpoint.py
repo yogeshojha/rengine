@@ -219,16 +219,16 @@ class EndpointFilter(BaseModel):
     host: str | None = PydanticField(default=None, max_length=MAX_HOST_LENGTH)
     dir_path: str | None = PydanticField(default=None, max_length=MAX_PATH_LENGTH)
     subtree: bool = True
-    endpoint_class: str | None = None
-    source: str | None = None
-    interest: str | None = None
-    status_class: str | None = None
+    endpoint_class: str | None = PydanticField(default=None, max_length=40)
+    source: str | None = PydanticField(default=None, max_length=40)
+    interest: str | None = PydanticField(default=None, max_length=40)
+    status_class: str | None = PydanticField(default=None, max_length=10)
     probed: bool | None = None
     new: bool = False
     hide_static: bool = False
     hide_root_only: bool = False
-    sort: str = "path"
-    direction: str = "asc"
+    sort: str = PydanticField(default="path", max_length=20)
+    direction: str = PydanticField(default="asc", max_length=4)
     page: int = PydanticField(default=1, ge=1, le=MAX_FILTER_PAGE)
     size: int = PydanticField(default=50, ge=1, le=MAX_FILTER_SIZE)
 

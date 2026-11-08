@@ -197,5 +197,5 @@ class SoftwareFilter(BaseModel):
     ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_SELECTED_ROWS)
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0, le=100_000_000)
-    sort: str | None = None
-    direction: str | None = None
+    sort: str | None = Field(default=None, max_length=20)
+    direction: str | None = Field(default=None, max_length=4)
