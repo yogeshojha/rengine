@@ -7,13 +7,19 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from shared.definitions.secrets import MAX_SIGHTINGS_PER_SECRET
 from shared.models.secret import Secret, SecretCoverage, SecretSighting
 from shared.utils.datetime import utc_now
+
+_COUNTS_SQL = text(
+    "UPDATE secrets s SET sightings = v.sightings, hosts = v.hosts "
+    "FROM unnest(CAST(:ids AS uuid[]), CAST(:sightings AS integer[]), "
+    "CAST(:hosts AS integer[])) AS v(id, sightings, hosts) WHERE s.id = v.id"
+)
 
 
 @dataclass(frozen=True)
@@ -189,18 +195,23 @@ class SecretInventory:
             self.session.flush()
         if sightings:
             self.session.execute(
-                pg_insert(SecretSighting)
-                .values([_sighting_values(row) for row in sightings])
-                .on_conflict_do_nothing(constraint="uq_sighting_secret_url")
+                pg_insert(SecretSighting.__table__).on_conflict_do_nothing(
+                    constraint="uq_sighting_secret_url"
+                ),
+                [_sighting_values(row) for row in sightings],
             )
-        for fp in touched:
+        if touched:
+            ordered = sorted(touched)
             self.session.execute(
-                update(Secret)
-                .where(Secret.id == self._ids[fp])
-                .values(
-                    sightings=self._sightings[fp],
-                    hosts=max(self._hosts_floor[fp], len(self._hosts[fp])),
-                )
+                _COUNTS_SQL,
+                {
+                    "ids": [str(self._ids[fp]) for fp in ordered],
+                    "sightings": [self._sightings[fp] for fp in ordered],
+                    "hosts": [
+                        max(self._hosts_floor[fp], len(self._hosts[fp]))
+                        for fp in ordered
+                    ],
+                },
             )
         self.session.commit()
         for obj in rows:
