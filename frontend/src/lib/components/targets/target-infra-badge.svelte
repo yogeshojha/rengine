@@ -21,6 +21,8 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import Share2 from '@lucide/svelte/icons/share-2';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { CORRELATION_REASON_LABELS, type CorrelationReason } from '$lib/types/whois';
+	import { plural } from '$lib/utilities/strings';
 
 	interface Props {
 		targetId: string;
@@ -29,13 +31,6 @@
 	}
 
 	let { targetId, whoisRecordId, onClick }: Props = $props();
-
-	const TYPE_LABELS: Record<string, string> = {
-		registrant_name: 'Registrant',
-		registrar_name: 'Registrar',
-		network_cidr: 'Network',
-		nameserver: 'Nameserver'
-	};
 
 	let total = $state(0);
 	let breakdown = $state<{ label: string; count: number }[]>([]);
@@ -60,7 +55,7 @@
 			breakdown = b;
 			loaded = true;
 		} catch {
-			//
+			loaded = false;
 		}
 	}
 
@@ -71,7 +66,9 @@
 			for (const r of group.records) ids.add(r.id);
 			if (group.count > 0) {
 				b.push({
-					label: TYPE_LABELS[group.correlation_type] ?? group.correlation_type,
+					label:
+						CORRELATION_REASON_LABELS[group.correlation_type as CorrelationReason]?.short ??
+						group.correlation_type,
 					count: group.count
 				});
 			}
@@ -104,7 +101,7 @@
 		<Tooltip.Content side="bottom" align="start">
 			<div class="space-y-1">
 				<p class="font-medium tabular-nums">
-					Shares infrastructure with {total} target{total === 1 ? '' : 's'}
+					Shares infrastructure with {plural(total, 'target')}
 				</p>
 				{#each breakdown as b (b.label)}
 					<p class="text-xs text-muted-foreground tabular-nums">{b.label}: {b.count}</p>
