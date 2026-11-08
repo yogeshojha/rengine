@@ -68,7 +68,7 @@ export interface SignalSpec {
 }
 
 export const SIGNAL: Record<string, SignalSpec> = {
-	kev_appeared: { label: 'Exploited in the wild', icon: Flame, tone: 'critical' },
+	kev_appeared: { label: 'Known exploited finding', icon: Flame, tone: 'critical' },
 	critical_appeared: { label: 'Critical or high finding', icon: ShieldAlert, tone: 'critical' },
 	finding_appeared: { label: 'New finding', icon: Bug, tone: 'warning' },
 	severity_raised: { label: 'Severity raised', icon: TrendingUp, tone: 'warning' },
