@@ -217,7 +217,7 @@
 
 		<div class="flex flex-wrap items-center gap-1.5">
 			<Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs" onclick={onCopy}>
-				<Copy class="size-3" /> Copy {n(brief.total)} URLs
+				<Copy class="size-3" /> Copy URLs
 			</Button>
 			<Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs" onclick={onWordlist}>
 				<ListOrdered class="size-3" /> Copy as wordlist
