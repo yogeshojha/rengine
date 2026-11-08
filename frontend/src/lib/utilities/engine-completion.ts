@@ -9,7 +9,7 @@ const TOP_LEVEL: { name: string; detail: string; info: string }[] = [
 	{
 		name: 'intensity',
 		detail: INTENSITIES.join(' | '),
-		info: 'Passive blocks every stage that sends traffic to the target.'
+		info: 'Passive turns off every stage that sends traffic to the target, and the active sources of the rest.'
 	},
 	{ name: 'stages', detail: 'mapping', info: 'Per-stage settings, keyed by stage name.' }
 ];
