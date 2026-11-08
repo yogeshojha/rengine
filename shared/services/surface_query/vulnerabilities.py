@@ -21,7 +21,7 @@ from shared.services.asset_query import (
     vuln_corroborated_ids,
     vuln_evidence,
     vuln_is_new,
-    vuln_state,
+    vuln_state_in,
     vuln_suppressed,
 )
 
@@ -75,7 +75,7 @@ def apply_filter(query, f: VulnerabilityFilter, scope: QueryScope):
     if f.proven:
         query = query.where(vuln_evidence(scope, Evidence.PROVEN.value))
     if f.states:
-        query = query.where(vuln_state(scope).in_(f.states))
+        query = query.where(vuln_state_in(scope, f.states))
     elif not f.include_suppressed:
         query = query.where(not_(vuln_suppressed(scope)))
     return query
