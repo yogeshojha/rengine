@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
@@ -11,6 +12,8 @@
 	import FlaskConicalIcon from '@lucide/svelte/icons/flask-conical';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import { notificationChannelsApi } from '$lib/api/notificationChannels';
 	import {
 		defaultNotificationPreference,
@@ -55,6 +58,7 @@
 	);
 
 	let pref = $state(defaultNotificationPreference());
+	let revealed = $state<Record<string, boolean>>({});
 	let busy = $state(false);
 
 	let severityLabel = $derived(CHANNEL_LEVELS.find((s) => s.value === pref.min_severity)?.label);
@@ -185,15 +189,42 @@
 						{#each meta.fields as field (field.key)}
 							<FormField label={field.label}>
 								{#snippet children({ id })}
-									<Input
-										{id}
-										value={d.config[field.key] ?? ''}
-										placeholder={field.placeholder}
-										autocomplete="off"
-										class="h-9 font-mono text-xs"
-										disabled={busy}
-										oninput={(e) => setField(meta.provider, field.key, e.currentTarget.value)}
-									/>
+									{#if field.kind === 'secret'}
+										{@const shownKey = `${meta.provider}.${field.key}`}
+										<InputGroup.Root class="h-9">
+											<InputGroup.Input
+												{id}
+												type={revealed[shownKey] ? 'text' : 'password'}
+												value={d.config[field.key] ?? ''}
+												placeholder={field.placeholder}
+												autocomplete="off"
+												class="font-mono text-xs"
+												disabled={busy}
+												oninput={(e) => setField(meta.provider, field.key, e.currentTarget.value)}
+											/>
+											<InputGroup.Addon align="inline-end">
+												<InputGroup.Button
+													size="icon-xs"
+													aria-label={revealed[shownKey] ? 'Hide value' : 'Show value'}
+													aria-pressed={!!revealed[shownKey]}
+													onclick={() =>
+														(revealed = { ...revealed, [shownKey]: !revealed[shownKey] })}
+												>
+													{#if revealed[shownKey]}<EyeOffIcon />{:else}<EyeIcon />{/if}
+												</InputGroup.Button>
+											</InputGroup.Addon>
+										</InputGroup.Root>
+									{:else}
+										<Input
+											{id}
+											value={d.config[field.key] ?? ''}
+											placeholder={field.placeholder}
+											autocomplete="off"
+											class="h-9 font-mono text-xs"
+											disabled={busy}
+											oninput={(e) => setField(meta.provider, field.key, e.currentTarget.value)}
+										/>
+									{/if}
 								{/snippet}
 							</FormField>
 						{/each}
