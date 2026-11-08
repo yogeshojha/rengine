@@ -62,7 +62,7 @@ async def rename(session: AsyncSession, row: Any, name: str, noun: str) -> None:
     if taken:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"A {noun.lower()} with this name exists in this project",
+            detail=f"{noun} {name} exists.",
         )
     row.name = name
     row.slug = await unique_slug(session, model, name, project_id=row.project_id)
