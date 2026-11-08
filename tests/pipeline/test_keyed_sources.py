@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
 from typing import ClassVar
@@ -29,7 +30,9 @@ from shared.enums.subdomain import SubdomainSource
 from shared.services.scan_resolve import ResolvedScanConfig
 from stages.subdomain.config import SubdomainConfig, tool_timeout
 from stages.subdomain.providers import ProviderContext, ProviderResult
+from stages.subdomain.providers import base as provider_base
 from stages.subdomain.providers.base import SourceStat
+from stages.subdomain.providers.netlas import NetlasProvider
 from stages.subdomain.providers.subfinder import (
     SubfinderProvider,
     max_time_minutes,
@@ -557,3 +560,19 @@ def test_one_key_is_enough_to_silence_the_warning():
 
 def test_a_support_stage_with_an_optional_key_never_warns():
     assert _preview_warnings("passive_ports", set()) == []
+
+
+def _proxies(opener) -> dict:
+    handler = next(
+        h for h in opener.handlers if isinstance(h, urllib.request.ProxyHandler)
+    )
+    return handler.proxies
+
+
+def test_a_keyed_source_takes_the_egress_proxy(monkeypatch):
+    monkeypatch.setattr(provider_base, "egress_proxy", lambda: "http://egress:3128")
+    provider = NetlasProvider(_ctx(proxy_url="http://burp:8080"))
+    assert _proxies(provider._opener()) == {
+        "http": "http://egress:3128",
+        "https": "http://egress:3128",
+    }

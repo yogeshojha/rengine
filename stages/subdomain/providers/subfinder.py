@@ -9,6 +9,7 @@ from pathlib import Path
 
 from shared.definitions.api_keys import SUBFINDER_SOURCES, subfinder_value
 from shared.enums.subdomain import SubdomainSource
+from shared.http import egress_proxy
 from stages.subdomain.providers.base import SourceStat, SubdomainProvider
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
 
@@ -102,8 +103,8 @@ class SubfinderProvider(SubdomainProvider):
         ]
         if config_path is not None:
             args += ["-provider-config", str(config_path)]
-        if self.ctx.proxy_url:
-            args += ["-proxy", self.ctx.proxy_url]
+        if proxy := egress_proxy():
+            args += ["-proxy", proxy]
         try:
             result = runner.run(
                 args=args,

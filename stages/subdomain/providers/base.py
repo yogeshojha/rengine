@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, ClassVar
 from shared.config import base_settings
 from shared.definitions.api_keys import API_PROVIDER_META
 from shared.definitions.tools import denied_flag, parse_tool_args
+from shared.http import egress_proxy
 from shared.logging import get_logger
 from tools.runner import tool_path
 
@@ -92,7 +93,7 @@ class SubdomainProvider(ABC):
     def _opener(
         self, *handlers: urllib.request.BaseHandler
     ) -> urllib.request.OpenerDirector:
-        proxy = self.ctx.proxy_url
+        proxy = egress_proxy() if self.requires_key else self.ctx.proxy_url
         opener = urllib.request.build_opener(
             *handlers,
             urllib.request.ProxyHandler(

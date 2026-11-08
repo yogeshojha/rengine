@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from shared.enums.api_key import APIProvider
 from shared.enums.subdomain import SubdomainSource
+from shared.http import egress_proxy
 from shared.services.proxy_resolve import proxy_env
 from stages.subdomain.providers.base import SubdomainProvider
 from tools.runner import CLIToolRunner, OutputFormat, ToolNotFoundError
@@ -16,7 +17,7 @@ class GithubProvider(SubdomainProvider):
     def discover(self) -> set[str]:
         runner = CLIToolRunner(self.binary, default_timeout=self.ctx.timeout)
         # token via env, never argv
-        env = dict(proxy_env(self.ctx.proxy_url) or {})
+        env = dict(proxy_env(egress_proxy()) or {})
         env["GITHUB_TOKEN"] = self.ctx.api_keys.get(APIProvider.GITHUB.value, "")
         try:
             result = runner.run(
