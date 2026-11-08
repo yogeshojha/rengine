@@ -185,7 +185,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
                     kind="partial",
                     text=(
                         f"The {row.group} scan covered "
-                        f"{row.hosts_scanned or 0} of {row.hosts_total} hosts."
+                        f"{row.hosts_scanned or 0} of {row.hosts_total} targets tested."
                     ),
                 )
             )
@@ -202,7 +202,7 @@ def _caveats(source: ReportSource) -> list[Caveat]:
                     kind="dropped",
                     text=(
                         f"{len(row.hosts_dropped)} "
-                        f"{'host was' if len(row.hosts_dropped) == 1 else 'hosts were'} "
+                        f"{'target was' if len(row.hosts_dropped) == 1 else 'targets were'} "
                         "dropped after repeated errors."
                     ),
                 )
