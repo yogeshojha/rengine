@@ -209,8 +209,8 @@
 	);
 	// EPP client* codes are set by the registrar, server* codes by the registry
 	function lockOwner(code: string): string {
-		if (/^client/i.test(code)) return ' (registrar)';
-		if (/^server/i.test(code)) return ' (registry)';
+		if (/^client/i.test(code)) return ' · registrar';
+		if (/^server/i.test(code)) return ' · registry';
 		return '';
 	}
 	let statuses = $derived(
