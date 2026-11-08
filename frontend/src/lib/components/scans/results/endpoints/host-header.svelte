@@ -9,6 +9,7 @@
 	import Layers from '@lucide/svelte/icons/layers';
 
 	import { Button } from '$lib/components/ui/button';
+	import LoadingButton from '$lib/components/loading-button.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Hint from '$lib/components/hint.svelte';
 	import TechIcon from '../tech-icon.svelte';
@@ -37,7 +38,7 @@
 		onWebAsset?: () => void;
 		onCopy: () => void;
 		onWordlist: () => void;
-		onVerify?: () => void;
+		onVerify?: () => Promise<void> | void;
 		onSend?: (connectorId: string, kind: ActionKind) => Promise<HandoffResult | null>;
 		onAcross: () => void;
 	}
@@ -61,6 +62,7 @@
 
 	const PARAM_LIMIT = 12;
 	let allParams = $state(false);
+	let verifying = $state(false);
 
 	let identity = $derived(brief?.identity ?? null);
 	let firstTech = $derived(identity?.tech[0] ?? '');
@@ -73,6 +75,16 @@
 	let openUrl = $derived(`https://${bracketed(host)}/`);
 
 	const n = (v: number) => v.toLocaleString();
+
+	async function verify() {
+		if (!onVerify || verifying) return;
+		verifying = true;
+		try {
+			await onVerify();
+		} finally {
+			verifying = false;
+		}
+	}
 
 	function paramClass(p: ParamStat): string {
 		if (!p.interest) return 'border-border/70 bg-muted/40';
@@ -223,9 +235,15 @@
 				<ListOrdered class="size-3" /> Copy as wordlist
 			</Button>
 			{#if onVerify && unchecked > 0}
-				<Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs" onclick={onVerify}>
+				<LoadingButton
+					variant="outline"
+					size="sm"
+					class="h-8 gap-1.5 text-xs"
+					loading={verifying}
+					onclick={verify}
+				>
 					<ShieldCheck class="size-3" /> Verify {n(unchecked)} unchecked
-				</Button>
+				</LoadingButton>
 			{/if}
 			{#if onSend && connectors.length}
 				<ProxySend {connectors} {catalog} {onSend} count={null} variant="outline" class="h-8" />
