@@ -1041,7 +1041,7 @@
 	title="Cancel scan"
 	description="The scan stops and is marked cancelled."
 	confirmLabel="Cancel scan"
-	cancelLabel="Keep running"
+	cancelLabel="Keep"
 	destructive
 	loading={cancelling}
 	loadingLabel="Cancelling"
