@@ -36,7 +36,7 @@
   <div class="label block">Ranked weaknesses</div>
   <p class="micro faint block">Ordered by severity, weighted for exploitation, reach and novelty.</p>
   <table class="table table--fixed">
-    <thead><tr><th style="width:8mm"></th><th>Weakness</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Hosts</th>{% if show_signals %}<th style="width:52mm">Signals</th>{% endif %}</tr></thead>
+    <thead><tr><th style="width:8mm"></th><th>Weakness</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Assets</th>{% if show_signals %}<th style="width:52mm">Signals</th>{% endif %}</tr></thead>
     <tbody>
       {% for risk in risks %}
       <tr>

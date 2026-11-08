@@ -8,7 +8,7 @@
       {{ m.sev(issue.severity) }}
       {% if issue.is_kev %}<span class="badge badge--critical">Known exploited</span>{% endif %}
       <span class="chip">{{ issue.count|num }} observed</span>
-      <span class="chip">{{ issue.hosts|length|num }} {{ issue.hosts|length|plural('host') }}</span>
+      <span class="chip">{{ issue.hosts|length|num }} {{ issue.hosts|length|plural('asset') }}</span>
       {% if issue.new_count %}<span class="chip chip--accent">{{ issue.new_count|num }} new</span>{% endif %}
     </div>
     <h3 class="finding__title">{{ issue.name }}</h3>
@@ -106,7 +106,7 @@
   <h3 class="sub__title">Observations</h3>
   <p class="micro faint block">Informational checks that fired.</p>
   <table class="table table--fixed">
-    <thead><tr><th style="width:17mm">Severity</th><th>Check</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Hosts</th><th style="width:58mm">First location</th></tr></thead>
+    <thead><tr><th style="width:17mm">Severity</th><th>Check</th><th class="num" style="width:16mm">Seen</th><th class="num" style="width:16mm">Assets</th><th style="width:58mm">First location</th></tr></thead>
     <tbody>
       {% for row in rolled %}
       <tr>
