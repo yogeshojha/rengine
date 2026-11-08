@@ -29,7 +29,6 @@
 	}: Props = $props();
 
 	let text = $derived(label ?? SEVERITY_LABELS[severity] ?? severity);
-	// zero counts go neutral rather than faded so the label stays readable
 	let tone = $derived(
 		count > 0
 			? (SEVERITY_CHIP[severity]?.chip ?? 'bg-muted text-foreground')

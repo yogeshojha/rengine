@@ -227,7 +227,6 @@
 			<p class="text-sm text-muted-foreground">Summary not loaded</p>
 		</div>
 	{:else}
-		<!-- the page header carries the one "Start scan" -->
 		<div class="flex items-center gap-3 rounded-xl border border-dashed px-4 py-3">
 			<p class="text-sm text-muted-foreground">Not scanned</p>
 		</div>

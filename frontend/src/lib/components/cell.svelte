@@ -74,7 +74,7 @@
 							size="icon-xs"
 							class={cn(
 								'text-muted-foreground opacity-0 group-hover/cell:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100',
-								// out of flow so the header link stays flush with the cell's edge
+								// out of flow
 								(href || tools) && 'absolute top-1/2 right-full me-1 -translate-y-1/2'
 							)}
 							aria-label="Hide {title}"

@@ -48,7 +48,6 @@
 		ROUTES.scanTab(asset.last_scan_id, WEB.tab, { [WEB.queryParam]: `host:${asset.name}` })
 	);
 	const width = (key: string) => columns.find((c) => c.key === key)?.width ?? '';
-	// same sizing as the list header's columnCell, so a long title never widens the row
 	const grow = (key: string) => {
 		const col = columns.find((c) => c.key === key);
 		if (!col?.grow) return 'shrink-0';
