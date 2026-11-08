@@ -201,7 +201,13 @@ class DashboardOverviewService:
         firsts, severity_firsts = await self._first_seen(scans, baselines)
         names = {t.id: t.target_value for t in targets}
 
-        signals = await self.signals.signals(project_id, scoped)
+        latest_cover = {
+            key: {tid: ids[0] for tid, ids in per_target.items() if ids}
+            for key, per_target in covered.items()
+        }
+        signals = await self.signals.signals(
+            project_id, scoped, list(latest_cover[WEB].values())
+        )
         out = DashboardOverview(
             generated_at=now,
             window=window,
@@ -222,10 +228,6 @@ class DashboardOverviewService:
         out.outcomes_in_window = dict(Counter(s.status for s in in_window))
         out.failed_in_window = out.outcomes_in_window.get(ScanStatus.FAILED.value, 0)
 
-        latest_cover = {
-            key: {tid: ids[0] for tid, ids in per_target.items() if ids}
-            for key, per_target in covered.items()
-        }
         out.surface = self._surface(counts, latest_cover)
         addresses = await self._addresses(list(latest_cover[IPS].values()))
         for metric in out.surface:

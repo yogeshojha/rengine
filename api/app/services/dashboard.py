@@ -25,48 +25,36 @@ class DashboardService:
         self.session = session
 
     async def signals(
-        self, project_id: UUID, targets: Targets = None
+        self, project_id: UUID, targets: Targets, web_scans: list[UUID]
     ) -> DashboardSignals:
         return DashboardSignals(
-            takeover=await self._takeover_candidates(project_id, targets),
+            takeover=await self._takeover_candidates(web_scans),
             spoofable=await self._spoofable_domains(project_id, targets),
         )
 
-    async def _takeover_candidates(
-        self, project_id: UUID, targets: Targets = None
-    ) -> TakeoverSignal:
-        conds = [
-            Subdomain.project_id == project_id,
-            Subdomain.cname.is_not(None),
-            Subdomain.cname != "",
-        ]
-        if targets is not None:
-            conds.append(Subdomain.target_id.in_(targets))
-        latest_sighting = (
-            select(
-                Subdomain.target_id,
-                Subdomain.name,
-                Subdomain.cname,
-                Subdomain.resolved_ips,
-                Subdomain.discovered_at,
-            )
-            .where(*conds)
-            .distinct(Subdomain.target_id, Subdomain.name)
-            .order_by(
-                Subdomain.target_id,
-                Subdomain.name,
-                Subdomain.discovered_at.desc(),
-                Subdomain.scan_id.desc(),
-            )
-            .subquery()
-        )
-        ips = cast(latest_sighting.c.resolved_ips, JSONB)
+    async def _takeover_candidates(self, web_scans: list[UUID]) -> TakeoverSignal:
+        """Unresolved names with a provider CNAME in each target's covering scan."""
+        if not web_scans:
+            return TakeoverSignal(count=0, items=[])
+        ips = cast(Subdomain.resolved_ips, JSONB)
         unresolved = case(
             (func.jsonb_typeof(ips) == "array", func.jsonb_array_length(ips) == 0),
             else_=true(),
         )
         rows = (
-            await self.session.execute(select(latest_sighting).where(unresolved))
+            await self.session.execute(
+                select(
+                    Subdomain.target_id,
+                    Subdomain.name,
+                    Subdomain.cname,
+                    Subdomain.discovered_at,
+                ).where(
+                    Subdomain.scan_id.in_(web_scans),
+                    Subdomain.cname.is_not(None),
+                    Subdomain.cname != "",
+                    unresolved,
+                )
+            )
         ).all()
 
         candidates: list[TakeoverCandidate] = []
