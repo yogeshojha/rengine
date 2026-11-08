@@ -552,16 +552,22 @@ class SubdomainService:
         clusters = cluster(histogram)
         shared = {h for found in clusters if found.count > 1 for h in found.hashes}
         total = await self.session.scalar(select(func.count()).select_from(scoped))
+        shown = clusters[:MAX_GROUPS]
+        samples = await self._render_hosts(
+            scoped, {h for found in shown for h in found.hashes}
+        )
         groups = [
             RenderGroup(
                 hash=found.digest,
                 label=detail[found.value][0],
                 count=found.count,
-                hosts=await self._render_hosts(scoped, found.hashes),
+                hosts=sorted(n for h in found.hashes for n in samples.get(h, ()))[
+                    :RENDER_SAMPLE_HOSTS
+                ],
                 screenshot_path=detail[found.value][2],
                 query=f"screenshot:{found.digest}",
             )
-            for found in clusters[:MAX_GROUPS]
+            for found in shown
         ]
         return RenderGroups(
             groups=groups,
@@ -576,16 +582,31 @@ class SubdomainService:
             unrendered=int(total or 0) - sum(histogram.values()),
         )
 
-    async def _render_hosts(self, scoped, hashes: tuple[int, ...]) -> list[str]:
-        rows = await self.session.execute(
-            select(Subdomain.name)
+    async def _render_hosts(self, scoped, hashes: set[int]) -> dict[int, list[str]]:
+        """The first host names by name under each hash."""
+        if not hashes:
+            return {}
+        rank = (
+            func.row_number()
+            .over(partition_by=Subdomain.screenshot_phash, order_by=Subdomain.name)
+            .label("rank")
+        )
+        ranked = (
+            select(Subdomain.screenshot_phash, Subdomain.name, rank)
             .select_from(Subdomain)
             .join(scoped, Subdomain.id == scoped.c.id)
             .where(Subdomain.screenshot_phash.in_(hashes))
-            .order_by(Subdomain.name)
-            .limit(RENDER_SAMPLE_HOSTS)
+            .subquery()
         )
-        return [name for (name,) in rows.all()]
+        rows = await self.session.execute(
+            select(ranked.c.screenshot_phash, ranked.c.name).where(
+                ranked.c.rank <= RENDER_SAMPLE_HOSTS
+            )
+        )
+        out: dict[int, list[str]] = {}
+        for raw, name in rows.all():
+            out.setdefault(int(raw), []).append(name)
+        return out
 
     async def _render_counts(
         self, scope: QueryScope, values: set[int]
