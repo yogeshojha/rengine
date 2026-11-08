@@ -89,10 +89,12 @@
 		untrack(() => load(query.project!.id));
 	});
 
+	let seq = 0;
 	async function load(projectId: string) {
+		const mine = ++seq;
 		loading = true;
 		try {
-			page = await targetsApi.searchAssets(targetId, projectId, {
+			const next = await targetsApi.searchAssets(targetId, projectId, {
 				search: debounced.trim() || null,
 				state: assetState,
 				live,
@@ -101,11 +103,14 @@
 				limit: PAGE_SIZE,
 				offset: pageIndex * PAGE_SIZE
 			});
+			if (mine !== seq) return;
+			page = next;
 			error = null;
 		} catch (e) {
+			if (mine !== seq) return;
 			error = e instanceof Error ? e.message : 'Web assets not loaded';
 		} finally {
-			loading = false;
+			if (mine === seq) loading = false;
 		}
 	}
 

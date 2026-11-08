@@ -61,15 +61,19 @@
 		untrack(() => load());
 	});
 
+	let seq = 0;
 	async function load() {
+		const mine = ++seq;
 		loading = true;
 		try {
-			seeds = await targetsApi.listSeeds(targetId);
+			const next = await targetsApi.listSeeds(targetId);
+			if (mine !== seq) return;
+			seeds = next;
 			failed = false;
 		} catch {
-			failed = true;
+			if (mine === seq) failed = true;
 		} finally {
-			loading = false;
+			if (mine === seq) loading = false;
 		}
 	}
 
