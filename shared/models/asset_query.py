@@ -1,4 +1,8 @@
+from typing import Annotated
+
 from pydantic import BaseModel, Field
+
+from shared.definitions.asset_query import MAX_QUERY_LENGTH
 
 
 class QueryFieldSpec(BaseModel):
@@ -40,7 +44,9 @@ class QueryLeads(BaseModel):
 
 
 class QueryCountRequest(BaseModel):
-    queries: list[str] = Field(default_factory=list, max_length=32)
+    queries: list[Annotated[str, Field(max_length=MAX_QUERY_LENGTH)]] = Field(
+        default_factory=list, max_length=32
+    )
 
 
 class QueryCounts(BaseModel):
