@@ -143,8 +143,8 @@
 	}
 
 	async function copy(value: string) {
-		await writeClipboard(value);
-		toast.success('Copied');
+		if (await writeClipboard(value)) toast.success('URL copied');
+		else toast.error('URL not copied');
 	}
 </script>
 
