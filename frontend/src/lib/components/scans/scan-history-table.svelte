@@ -52,6 +52,7 @@
 	import { eligibility } from '$lib/utilities/compare';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { ROUTES } from '$lib/config/routes';
+	import { REFUSAL } from '$lib/config/compare';
 	import { SEVERITY_LABELS } from '$lib/config/vulnerabilities';
 	import { plural, pluralWord } from '$lib/utilities/strings';
 	import type { ScanRead, ScanSortKey } from '$lib/types/scan';
@@ -482,7 +483,8 @@
 				break;
 			case 'c':
 				if (selectedScans.length === 2) openCompare();
-				else if (focused && !focused.is_first_scan) openCompare(focused);
+				else if (focused?.is_first_scan) toast.error(REFUSAL.NO_EARLIER_RUN);
+				else if (focused) openCompare(focused);
 				break;
 			case '?':
 				shortcutsOpen = true;

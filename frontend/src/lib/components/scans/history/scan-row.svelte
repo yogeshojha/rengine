@@ -13,6 +13,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import Hint from '$lib/components/hint.svelte';
 	import { ROUTES } from '$lib/config/routes';
+	import { REFUSAL } from '$lib/config/compare';
 	import { relativeTime, formatDateTime } from '$lib/utilities/dates';
 	import { durationLabel, isLiveStatus, isOpenStatus } from '$lib/utilities/scan-status';
 	import { INTENSITY_LABELS, type Intensity } from '$lib/types/scan-engine';
@@ -86,6 +87,7 @@
 	let highlight = $state<string | null>(null);
 	let compact = $derived(historyPrefs.density === 'compact');
 	let started = $derived(scan.started_at ?? scan.created_at);
+	let compareRefusal = $derived(scan.is_first_scan ? REFUSAL.NO_EARLIER_RUN : null);
 </script>
 
 <div
@@ -196,9 +198,15 @@
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content align="end" class="w-52">
 					<DropdownMenu.Item onSelect={onOpen}><ExternalLink /> Open results</DropdownMenu.Item>
-					<DropdownMenu.Item onSelect={onCompare} disabled={!!scan.is_first_scan}>
-						<GitCompare /> Compare with previous
-					</DropdownMenu.Item>
+					<Hint text={compareRefusal} side="left">
+						{#snippet child(props)}
+							<div {...props}>
+								<DropdownMenu.Item onSelect={onCompare} disabled={!!compareRefusal}>
+									<GitCompare /> Compare with previous
+								</DropdownMenu.Item>
+							</div>
+						{/snippet}
+					</Hint>
 					<DropdownMenu.Separator />
 					{#if scan.status === 'paused'}
 						<DropdownMenu.Item onSelect={onResume}><Play /> Resume</DropdownMenu.Item>
@@ -228,11 +236,21 @@
 					<Button size="sm" class="h-8 gap-1.5" href={ROUTES.scan(scan.id)}>
 						<ExternalLink class="size-3.5" /> Open results
 					</Button>
-					{#if !scan.is_first_scan}
-						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onCompare}>
-							<GitCompare class="size-3.5" /> Compare with previous
-						</Button>
-					{/if}
+					<Hint text={compareRefusal}>
+						{#snippet child(props)}
+							<span {...props} class="inline-flex">
+								<Button
+									size="sm"
+									variant="outline"
+									class="h-8 gap-1.5"
+									disabled={!!compareRefusal}
+									onclick={onCompare}
+								>
+									<GitCompare class="size-3.5" /> Compare with previous
+								</Button>
+							</span>
+						{/snippet}
+					</Hint>
 					{#if scan.status === 'running'}
 						<Hint text="Running stages restart on resume.">
 							{#snippet child(props)}
