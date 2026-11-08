@@ -581,9 +581,6 @@ class ScanCompareService:
             else_=literal(DEFAULT_RANK),
         ).label("rank")
 
-        total = await self.session.scalar(
-            select(func.count()).select_from(joined).where(where)
-        )
         order_keys = [
             func.coalesce(cast(b.c[key], Text), cast(a.c[key], Text))
             for key in spec.keys
@@ -595,6 +592,7 @@ class ScanCompareService:
                 gone.label("is_gone"),
                 *[a.c[name].label(f"a_{name}") for name in columns],
                 *[b.c[name].label(f"b_{name}") for name in columns],
+                func.count().over().label("total"),
             )
             .select_from(joined)
             .where(where)
@@ -602,10 +600,17 @@ class ScanCompareService:
             .offset((page - 1) * size)
             .limit(size)
         )
+        page_rows = result.all()
+        if page_rows:
+            total = page_rows[0]._mapping["total"]
+        else:
+            total = await self.session.scalar(
+                select(func.count()).select_from(joined).where(where)
+            )
 
         items = [
             self._row(spec, row._mapping, columns, confirmed, baseline.id, current.id)
-            for row in result.all()
+            for row in page_rows
         ]
         return ChangeRows(
             dimension=dimension,
