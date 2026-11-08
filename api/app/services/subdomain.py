@@ -13,6 +13,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    tuple_,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import DBAPIError
@@ -265,15 +266,9 @@ class SubdomainService:
             for ip, number in port_rows.all():
                 ports_by_ip.setdefault(ip, set()).add(number)
 
-        title_counts = await self._shared_counts(
+        title_counts, favicon_counts = await self._shared_counts(
             scope,
-            Subdomain.page_title,
             {s.page_title for s in rows if s.page_title},
-            pages=True,
-        )
-        favicon_counts = await self._shared_counts(
-            scope,
-            Subdomain.favicon_hash,
             {s.favicon_hash for s in rows if s.favicon_hash},
         )
         render_counts = await self._render_counts(
@@ -658,26 +653,44 @@ class SubdomainService:
         return {host: int(n) for host, n in rows.all()}
 
     async def _shared_counts(
-        self, scope: QueryScope, col, values: set, *, pages: bool = False
-    ) -> dict[object, tuple[int, int]]:
-        """How many rows in scope carry each value, and how many targets they sit under."""
-        if not values:
-            return {}
+        self, scope: QueryScope, titles: set, favicons: set
+    ) -> tuple[dict[object, tuple[int, int]], dict[object, tuple[int, int]]]:
+        """How many rows in scope carry each title and favicon, and how many targets they sit under."""
+        if not titles and not favicons:
+            return {}, {}
+        carried = [
+            col.in_(values)
+            for col, values in (
+                (Subdomain.page_title, titles),
+                (Subdomain.favicon_hash, favicons),
+            )
+            if values
+        ]
         rows = await self.session.execute(
             select(
-                col,
+                func.grouping(Subdomain.page_title).label("by_favicon"),
+                Subdomain.page_title,
+                Subdomain.favicon_hash,
                 func.count(),
                 func.count(distinct(Subdomain.target_id)),
                 func.array_agg(distinct(Subdomain.http_status)),
             )
-            .where(scope.match(Subdomain.scan_id), col.in_(values))
-            .group_by(col)
+            .where(scope.match(Subdomain.scan_id), or_(*carried))
+            .group_by(
+                func.grouping_sets(
+                    tuple_(Subdomain.page_title), tuple_(Subdomain.favicon_hash)
+                )
+            )
         )
-        return {
-            value: (int(n), int(targets))
-            for value, n, targets, statuses in rows.all()
-            if not (pages and generic_page(str(value), statuses or []))
-        }
+        by_title: dict[object, tuple[int, int]] = {}
+        by_favicon: dict[object, tuple[int, int]] = {}
+        for grouped, title, favicon, n, targets, statuses in rows.all():
+            if grouped:
+                if favicon in favicons:
+                    by_favicon[favicon] = (int(n), int(targets))
+            elif title in titles and not generic_page(str(title), statuses or []):
+                by_title[title] = (int(n), int(targets))
+        return by_title, by_favicon
 
     async def facets(self, project_id: UUID, scope: ScopeLike) -> SubdomainFacets:
         now = utc_now()
