@@ -35,12 +35,21 @@
 	const MAX_RUNS = 3;
 
 	let answering = $derived(overview.answering_hosts);
+	let targetsHref = $derived.by<string | null>(() => {
+		const { targetIds, organizationId, tagId } = routes.scope;
+		if (targetIds?.length) return targetIds.length === 1 ? ROUTES.target(targetIds[0]) : null;
+		const params = [
+			organizationId && `org=${encodeURIComponent(organizationId)}`,
+			tagId && `tag=${encodeURIComponent(tagId)}`
+		].filter(Boolean);
+		return params.length ? `${ROUTES.targets}?${params.join('&')}` : String(ROUTES.targets);
+	});
 	interface Row {
 		key: string;
 		label: string;
 		value: number;
 		sub: string | null;
-		href: string;
+		href: string | null;
 		fill: string;
 		ring: boolean;
 	}
@@ -51,7 +60,7 @@
 				label: 'Targets',
 				value: overview.targets_total,
 				sub: `${overview.targets_scanned} scanned`,
-				href: String(ROUTES.targets),
+				href: targetsHref,
 				fill: 'var(--series)',
 				ring: false
 			}
@@ -84,11 +93,13 @@
 	});
 
 	let names = $derived(new SvelteMap(overview.targets.map((t) => [t.id, t.value])));
-	let running = $derived(liveScans.scans);
+	let running = $derived(liveScans.scans.filter((s) => names.has(s.target_id)));
 	let overflow = $derived(running.length > MAX_RUNS);
 	let next = $derived.by(() => {
 		const upcoming = scanSchedulesStore.schedules
-			.filter((s) => s.next_run_at && s.status === 'active')
+			.filter(
+				(s) => s.next_run_at && s.status === 'active' && s.targets.some((t) => names.has(t.id))
+			)
 			.sort((a, b) => (a.next_run_at! < b.next_run_at! ? -1 : 1));
 		return upcoming[0] ?? null;
 	});
@@ -102,9 +113,12 @@
 <Cell id="inventory" class={className}>
 	<div class="grid grid-cols-2 gap-x-4 gap-y-2.5">
 		{#each rows as r (r.key)}
-			<a
+			<svelte:element
+				this={r.href ? 'a' : 'div'}
 				href={r.href}
-				class="group flex min-w-0 flex-col gap-0.5 rounded-md transition-colors hover:bg-muted/40 -mx-1.5 px-1.5 py-0.5"
+				class="group flex min-w-0 flex-col gap-0.5 rounded-md -mx-1.5 px-1.5 py-0.5 {r.href
+					? 'transition-colors hover:bg-muted/40'
+					: ''}"
 			>
 				<span class="flex items-center gap-1.5 text-xs text-muted-foreground">
 					{#if r.ring}
@@ -120,7 +134,7 @@
 					</span>
 					{#if r.sub}<span class="truncate text-2xs text-muted-foreground">{r.sub}</span>{/if}
 				</span>
-			</a>
+			</svelte:element>
 		{/each}
 	</div>
 
