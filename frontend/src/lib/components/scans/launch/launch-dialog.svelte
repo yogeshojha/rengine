@@ -91,6 +91,7 @@
 	let previewSeq = 0;
 	let planRestored = false;
 	let prefilledFor = '';
+	let newChecksTouched = false;
 	let restored = $state(false);
 	let baseline = $state<string | null>(null);
 	let contextDirty = $state(false);
@@ -147,7 +148,8 @@
 			launch.patch,
 			launch.intensity,
 			launch.contextId,
-			launch.tags
+			launch.tags,
+			launch.newChecks
 		]);
 	let dirty = $derived(
 		open &&
@@ -169,6 +171,7 @@
 			baseline = null;
 			contextDirty = false;
 			prefilledFor = '';
+			newChecksTouched = false;
 			view = 'launch';
 			whatRunsOpen = false;
 			preview = null;
@@ -321,8 +324,11 @@
 		void targetsApi
 			.get(id)
 			.then((t) => {
+				if (newChecksTouched) return;
 				if (launch.targets.length === 1 && launch.targets[0].id === id) {
+					const clean = baseline !== null && signature() === baseline;
 					launch.newChecks = t.new_checks;
+					if (clean) baseline = signature();
 				}
 			})
 			.catch(() => undefined);
@@ -509,7 +515,10 @@
 							<Switch
 								id="launch-new-checks"
 								checked={launch.newChecks === true}
-								onCheckedChange={(on) => (launch.newChecks = on)}
+								onCheckedChange={(on) => {
+									newChecksTouched = true;
+									launch.newChecks = on;
+								}}
 								disabled={launching}
 							/>
 							<Label for="launch-new-checks" class="font-normal">{NEW_CHECKS_TITLE}</Label>
