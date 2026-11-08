@@ -6,10 +6,10 @@ from datetime import UTC, datetime, timedelta
 import httpx
 import jwt
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from app.config import ALGORITHM, settings
-from app.core import throttle
+from app.core import ratelimit, throttle
 from app.core.security import (
     ACCESS_TOKEN_COOKIE,
     TOKEN_TYPE_ACCESS,
@@ -150,3 +150,37 @@ async def test_the_limiter_fails_open_when_redis_is_down(monkeypatch):
     monkeypatch.setattr(throttle, "async_client", down)
     monkeypatch.setattr(settings, "GLOBAL_RATE_LIMIT_PER_MINUTE", 1)
     assert await _statuses(3) == [200, 200, 200]
+
+
+async def test_an_unreachable_redis_is_waited_on_once(monkeypatch):
+    calls = 0
+
+    def hung():
+        nonlocal calls
+        calls += 1
+        msg = "Timeout reading from redis"
+        raise TimeoutError(msg)
+
+    monkeypatch.setattr(throttle, "async_client", hung)
+    monkeypatch.setattr(settings, "GLOBAL_RATE_LIMIT_PER_MINUTE", 1)
+    assert await _statuses(3) == [200, 200, 200]
+    assert calls == 1
+
+
+async def test_session_checks_refuse_at_once_while_redis_is_unreachable(monkeypatch):
+    calls = 0
+
+    def hung():
+        nonlocal calls
+        calls += 1
+        msg = "Timeout reading from redis"
+        raise TimeoutError(msg)
+
+    monkeypatch.setattr(ratelimit, "async_client", hung)
+    for _ in range(3):
+        with pytest.raises(HTTPException) as refused:
+            await ratelimit.is_token_revoked("jti")
+        assert refused.value.status_code == 503
+    with pytest.raises(HTTPException):
+        await ratelimit.tokens_valid_after(uuid.uuid4())
+    assert calls == 1

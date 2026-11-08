@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 from app.config import API_V1_PREFIX, settings
 from app.core.client_ip import client_id
 from app.core.security import ACCESS_TOKEN_COOKIE, TOKEN_TYPE_ACCESS, decode_token
-from shared.redis import async_client
+from shared.redis import async_client, state_available, state_failed
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
             limit <= 0
             or request.method == "OPTIONS"
             or any(path.startswith(p) for p in _EXEMPT_PREFIXES)
+            or not state_available()
         ):
             return await call_next(request)
 
@@ -56,6 +57,7 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
             pipe.expire(key, 60, nx=True)
             count, _ = await pipe.execute()
         except Exception as exc:
+            state_failed(exc)
             logger.warning("global rate limiter unavailable: %s", exc)
             return await call_next(request)
 

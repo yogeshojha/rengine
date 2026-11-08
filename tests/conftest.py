@@ -535,6 +535,13 @@ class PriceCache:
 
 
 @pytest.fixture(autouse=True)
+def _state_reachable(monkeypatch) -> None:
+    import shared.redis  # noqa: PLC0415
+
+    monkeypatch.setattr(shared.redis, "_state_down_until", 0.0)
+
+
+@pytest.fixture(autouse=True)
 def price_cache(monkeypatch) -> PriceCache:
     """No test reads the live price catalog over the network or from the shared cache."""
     from shared.services.ai import prices  # noqa: PLC0415

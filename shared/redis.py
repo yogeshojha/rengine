@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import redis
 import redis.asyncio as aioredis
 
@@ -50,3 +52,32 @@ def cache_client() -> aioredis.Redis:
             socket_timeout=CACHE_TIMEOUT_SECONDS,
         )
     return _cache
+
+
+STATE_RETRY_SECONDS = 5.0
+
+_state_down_until = 0.0
+
+
+_UNREACHABLE = (
+    redis.exceptions.ConnectionError,
+    redis.exceptions.TimeoutError,
+    OSError,
+    TimeoutError,
+)
+
+
+class StateUnavailableError(redis.exceptions.ConnectionError):
+    """The state instance failed a call within the last `STATE_RETRY_SECONDS`."""
+
+
+def state_available() -> bool:
+    return time.monotonic() >= _state_down_until
+
+
+def state_failed(exc: BaseException) -> None:
+    """Skip the state instance until `STATE_RETRY_SECONDS` have passed."""
+    global _state_down_until  # noqa: PLW0603
+    if isinstance(exc, StateUnavailableError) or not isinstance(exc, _UNREACHABLE):
+        return
+    _state_down_until = time.monotonic() + STATE_RETRY_SECONDS
