@@ -29,6 +29,7 @@
 	let { matches, suppress, onOpen }: Props = $props();
 
 	const MAX_CHIPS = 3;
+	let restOpen = $state(false);
 	const ICONS: Record<string, IconComponent> = {
 		body: FileCode,
 		header: ListTree,
@@ -120,15 +121,18 @@
 			</HoverCard.Root>
 		{/each}
 		{#if rest.length}
-			<HoverCard.Root openDelay={120}>
+			<HoverCard.Root openDelay={120} bind:open={restOpen}>
 				<HoverCard.Trigger>
 					{#snippet child({ props })}
-						<span
+						<button
 							{...props}
-							class="rounded border border-border px-1.5 py-px text-2xs text-muted-foreground"
+							type="button"
+							class="rounded border border-border px-1.5 py-px text-2xs text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+							aria-expanded={restOpen}
+							onclick={() => (restOpen = !restOpen)}
 						>
 							+{rest.length}
-						</span>
+						</button>
 					{/snippet}
 				</HoverCard.Trigger>
 				<HoverCard.Content
