@@ -107,13 +107,20 @@ async def engine(database: str):
 
 @pytest_asyncio.fixture
 async def session(engine) -> AsyncIterator[AsyncSession]:
-    """One transaction per test, rolled back."""
-    maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with maker() as s:
+    """One transaction per test, rolled back. A commit releases a savepoint inside it."""
+    async with engine.connect() as conn:
+        outer = await conn.begin()
+        s = AsyncSession(
+            bind=conn,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        )
         try:
             yield s
         finally:
-            await s.rollback()
+            await s.close()
+            if outer.is_active:
+                await outer.rollback()
 
 
 class Estate:
