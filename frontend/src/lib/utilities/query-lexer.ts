@@ -278,13 +278,18 @@ function spacedOperator(
 	};
 }
 
+const unescape = (value: string) => value.replace(/\\(.)/g, '$1');
+
 export function unquote(value: string): string {
-	if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) return value.slice(1, -1);
-	return value.startsWith('"') ? value.slice(1) : value;
+	const closed = /^"((?:[^"\\]|\\.)*)"$/.exec(value);
+	if (closed) return unescape(closed[1]);
+	return value.startsWith('"') ? unescape(value.slice(1)) : value;
 }
 
 export function quoteValue(value: string): string {
-	return /[\s()"[\]:=><~]/.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+	return /[\s()"[\]:=><~]/.test(value)
+		? `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+		: value;
 }
 
 export function replaceRange(source: string, start: number, end: number, insert: string): string {

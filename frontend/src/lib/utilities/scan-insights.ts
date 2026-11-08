@@ -162,7 +162,7 @@ export function queryChips(q: WebAssetQuery): FilterChip[] {
 }
 
 export function tokenize(search: string): string[] {
-	return search.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
+	return search.match(/(?:[^\s"]+|"(?:[^"\\]|\\.)*")+/g) ?? [];
 }
 
 export function filterToken(key: string, value: string): string {
