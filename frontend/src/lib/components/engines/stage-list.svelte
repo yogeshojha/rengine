@@ -4,6 +4,7 @@
 	import Ban from '@lucide/svelte/icons/ban';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { cn } from '$lib/utils';
+	import { PASSIVE_INTENSITY } from '$lib/config/intensity';
 	import {
 		DEFAULT_INTENSITY,
 		phaseLabel,
@@ -36,7 +37,7 @@
 			stage.always_on || (config?.[stage.name]?.enabled ?? stage.defaults.enabled)
 		);
 		if (!enabled) return 'off';
-		if (intensity === 'passive' && stage.touches_target && !stage.passive_capable) {
+		if (intensity === PASSIVE_INTENSITY && stage.touches_target && !stage.passive_capable) {
 			return 'blocked';
 		}
 		return 'on';
