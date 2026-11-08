@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Switch } from '$lib/components/ui/switch';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -99,6 +100,14 @@
 	<div class="head">
 		<span class="node" data-state={nodeState} aria-hidden="true"></span>
 
+		{#if support && !alwaysOn}
+			<Checkbox
+				checked={enabled}
+				onCheckedChange={(v) => onChange('enabled', v === true)}
+				aria-label="Enable {stage.title}"
+			/>
+		{/if}
+
 		<Collapsible.Trigger class="disclose" aria-label="{open ? 'Collapse' : 'Expand'} {stage.title}">
 			<ChevronRight size={14} class="chev" />
 			<span class="title">{stage.title}</span>
@@ -169,7 +178,7 @@
 						</span>
 					{/snippet}
 				</Hint>
-			{:else}
+			{:else if !support}
 				<Switch
 					checked={enabled}
 					onCheckedChange={(v) => onChange('enabled', v)}
