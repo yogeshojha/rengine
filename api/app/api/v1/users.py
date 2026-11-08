@@ -2,6 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -12,6 +13,7 @@ from app.core.ratelimit import revoke_user_tokens
 from app.core.security import hash_password_async
 from app.utils.validation import validate_password_strength, validate_username
 from shared.logging import get_logger
+from shared.models.scan_engine import ScanEngine
 from shared.models.user import (
     User,
     UserAdminCreate,
@@ -164,6 +166,11 @@ async def delete_user(
         )
 
     username = user.username
+    await session.execute(
+        update(ScanEngine)
+        .where(ScanEngine.created_by == user.id, ScanEngine.builtin.is_(True))
+        .values(created_by=current_user.id)
+    )
     await session.delete(user)
     try:
         await session.commit()

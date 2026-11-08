@@ -16,6 +16,7 @@ from app.services.ai_settings import AiSettingsService, _clean_base_url
 from app.services.instance_settings import InstanceSettingsService, _check_window
 from app.services.proxy import ProxyService, _summarize
 from app.services.scan_context import ScanContextService
+from app.services.scan_engine import ScanEngineService
 from shared.definitions.retention import KEEP_FOREVER, SCAN_RETENTION_DAYS
 from shared.enums.api_key import APIProvider
 from shared.models.ai import (
@@ -30,6 +31,7 @@ from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project
 from shared.models.proxy import Proxy, ProxyEndpoint, ProxyTestResult
 from shared.models.scan_context import ScanContext, ScanContextCreate
+from shared.models.scan_engine import ScanEngine
 from shared.models.user import User, UserAdminCreate, UserAdminUpdate
 from shared.services.ai import client
 from shared.services.api_key.async_api_key import APIKeyService
@@ -143,6 +145,33 @@ async def test_an_account_that_owns_records_is_not_deleted(estate, flush_only):
         )
     assert err.value.status_code == 409
     assert "Disable the account" in err.value.detail
+
+
+async def test_the_lazy_built_in_engine_belongs_to_the_project_creator(
+    estate, flush_only
+):
+    rows = await ScanEngineService(flush_only).list(estate.project_id, ensure=True)
+    builtin = await flush_only.scalar(
+        sa.select(ScanEngine).where(
+            ScanEngine.project_id == estate.project_id, ScanEngine.builtin.is_(True)
+        )
+    )
+    assert [row.id for row in rows if row.builtin] == [builtin.id]
+    assert builtin.created_by == estate.user_id
+
+
+async def test_a_built_in_engine_does_not_block_deleting_its_owner(estate, flush_only):
+    owner = await _member(flush_only)
+    engine = await ScanEngineService(flush_only).ensure_builtin(
+        estate.project_id, owner.id
+    )
+    admin = await _admin(estate)
+
+    await delete_user(str(owner.id), session=flush_only, current_user=admin)
+
+    assert await flush_only.get(User, owner.id) is None
+    await flush_only.refresh(engine)
+    assert engine.created_by == admin.id
 
 
 # ---------- api keys ----------

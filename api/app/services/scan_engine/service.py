@@ -33,6 +33,7 @@ from shared.definitions.default_engine import (
 )
 from shared.definitions.launch import CREDENTIAL_CHANGE, ENGINE_NOUN
 from shared.enums.scan import SCAN_OPEN_STATUSES, Intensity
+from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.scan_engine import (
     EngineUsage,
@@ -159,11 +160,17 @@ class ScanEngineService:
         await self.session.refresh(engine)
         return _to_read(engine, superuser=superuser)
 
-    async def ensure_builtin(self, project_id: UUID, created_by: UUID) -> ScanEngine:
-        """The project's built-in engine, created on first sight."""
+    async def ensure_builtin(
+        self, project_id: UUID, created_by: UUID | None = None
+    ) -> ScanEngine:
+        """The project's built-in engine, created on first sight and owned by the project's creator."""
         existing = await self._builtin_for(project_id)
         if existing is not None:
             return existing
+        if created_by is None:
+            created_by = await self.session.scalar(
+                select(Project.created_by).where(Project.id == project_id)
+            )
         engine = ScanEngine(
             project_id=project_id,
             created_by=created_by,
@@ -195,12 +202,12 @@ class ScanEngineService:
     async def list(
         self,
         project_id: UUID,
-        created_by: UUID | None = None,
         *,
+        ensure: bool = False,
         superuser: bool = False,
     ) -> list[ScanEngineRead]:
-        if created_by is not None:
-            await self.ensure_builtin(project_id, created_by)
+        if ensure:
+            await self.ensure_builtin(project_id)
             await self.session.commit()
         result = await self.session.execute(
             select(ScanEngine)

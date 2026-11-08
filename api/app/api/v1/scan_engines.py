@@ -60,7 +60,7 @@ async def list_engines(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     return await service.list(
-        project_id, created_by=current_user.id, superuser=current_user.is_superuser
+        project_id, ensure=True, superuser=current_user.is_superuser
     )
 
 
