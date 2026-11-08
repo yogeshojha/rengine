@@ -79,7 +79,7 @@ def test_chromium_profile_opens_only_the_sandbox_syscalls():
 
 
 def test_images_run_as_one_non_root_user():
-    for dockerfile in ("worker/Dockerfile", "api/Dockerfile"):
+    for dockerfile in ("worker/Dockerfile", "api/Dockerfile", "frontend/Dockerfile"):
         text = _text(dockerfile)
         production = text.split("AS production", 1)[1]
         assert "\nUSER rengine\n" in production, dockerfile
