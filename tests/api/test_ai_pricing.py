@@ -1295,15 +1295,6 @@ def test_the_report_receipt_counts_every_call_the_ledger_writes(book, monkeypatc
 # ---------- stored rates ----------
 
 
-@pytest.fixture
-def flush_only(estate, monkeypatch):
-    monkeypatch.setattr(estate.session, "commit", estate.session.flush)
-    monkeypatch.setattr(
-        estate.session.sync_session, "commit", estate.session.sync_session.flush
-    )
-    return estate.session
-
-
 def _stored(row) -> tuple:
     return (
         row.input_per_mtok,

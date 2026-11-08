@@ -68,12 +68,6 @@ def redis(monkeypatch):
     return fake
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    return session
-
-
 async def _user(session, **fields) -> User:
     tag = uuid.uuid4().hex[:8]
     user = User(

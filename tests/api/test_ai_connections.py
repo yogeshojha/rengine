@@ -41,12 +41,6 @@ ANTHROPIC_KEY = "sk-ant-api03-0123456789abcdef"
 ROUTER_KEY = "sk-or-v1-fedcba9876543210"
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    return session
-
-
 @pytest.fixture(autouse=True)
 def unlisted(monkeypatch):
     monkeypatch.setattr(client, "listed_rates", lambda _cfg: None)

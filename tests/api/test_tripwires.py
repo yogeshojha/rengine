@@ -51,13 +51,6 @@ WEB = SurfaceDimension.WEB_ASSETS.value
 VULN = SurfaceDimension.VULNERABILITIES.value
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    monkeypatch.setattr(session.sync_session, "commit", session.sync_session.flush)
-    return session
-
-
 async def _two_runs(estate, now):
     """One host answers 200 on both runs, one flips to 200, one appears."""
     earlier = now - timedelta(days=3)

@@ -37,7 +37,6 @@ from tests.api.test_ask_service import (
     _fp,
     _never,
     _not_over,
-    flush_only,  # noqa: F401
 )
 
 pytestmark = pytest.mark.api
@@ -507,7 +506,7 @@ async def test_start_scan_names_an_existing_target_by_id(estate):
 
 
 @pytest.fixture
-async def asked(estate, now, monkeypatch, flush_only):  # noqa: F811
+async def asked(estate, now, monkeypatch, flush_only):
     from app.services.ask import service as ask_service  # noqa: PLC0415
     from app.services.ask.service import AskService  # noqa: PLC0415
     from shared.models.ask import AskThreadCreate  # noqa: PLC0415

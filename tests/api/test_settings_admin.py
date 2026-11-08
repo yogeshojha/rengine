@@ -42,12 +42,6 @@ pytestmark = pytest.mark.api
 STRONG = "Vq7#mT9!pLx2@wRz"
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    return session
-
-
 async def _admin(estate) -> User:
     return await estate.session.get(User, estate.user_id)
 

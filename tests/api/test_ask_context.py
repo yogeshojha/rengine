@@ -29,7 +29,6 @@ from tests.api.test_ask_service import (
     _fp,
     _never,
     _not_over,
-    flush_only,  # noqa: F401
 )
 
 pytestmark = pytest.mark.api
@@ -90,7 +89,7 @@ def test_the_rules_are_what_the_model_reads_first():
 
 
 @pytest.fixture
-async def two(estate, now, monkeypatch, flush_only):  # noqa: F811
+async def two(estate, now, monkeypatch, flush_only):
     await estate.scan("example.com", "run", at=now)
     fp = _fp()
     await _finding(estate, at=now, fp=fp)
@@ -218,7 +217,7 @@ async def test_ask_on_a_web_asset_builds_its_own_context(
     estate,
     now,
     monkeypatch,
-    flush_only,  # noqa: F811
+    flush_only,
 ):
     await estate.scan("example.com", "run", at=now)
     await estate.hosts(

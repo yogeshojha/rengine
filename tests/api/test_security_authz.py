@@ -50,12 +50,6 @@ pytestmark = pytest.mark.api
 API = "/api/v1"
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    return session
-
-
 async def _user(session, *, superuser: bool = False) -> User:
     tag = uuid.uuid4().hex[:8]
     user = User(

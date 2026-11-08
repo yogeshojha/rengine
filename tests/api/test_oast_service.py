@@ -13,12 +13,6 @@ from shared.utils.crypto import encrypt_secret
 pytestmark = pytest.mark.api
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    return session
-
-
 async def _seed(session, server: str | None) -> OastService:
     row = await InstanceSettingsService(session).get_or_create()
     row.oast_server = server

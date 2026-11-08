@@ -22,12 +22,6 @@ KEY = "k3y-0000-secret"
 ORG = "1d8f0c2a-0000-4000-8000-000000000001"
 
 
-@pytest.fixture
-def flush_only(session, monkeypatch):
-    monkeypatch.setattr(session, "commit", session.flush)
-    return session
-
-
 class _Wire:
     def __init__(self, monkeypatch, response: httpx.Response | Exception) -> None:
         self.requests: list[httpx.Request] = []

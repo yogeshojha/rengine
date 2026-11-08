@@ -466,6 +466,14 @@ class Estate:
         await self.session.flush()
 
 
+@pytest.fixture
+def flush_only(session: AsyncSession, monkeypatch) -> AsyncSession:
+    """The test session with commit reduced to flush."""
+    monkeypatch.setattr(session, "commit", session.flush)
+    monkeypatch.setattr(session.sync_session, "commit", session.sync_session.flush)
+    return session
+
+
 @pytest_asyncio.fixture
 async def estate(session: AsyncSession) -> Estate:
     return await Estate(session).setup()

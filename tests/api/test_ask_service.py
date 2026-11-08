@@ -38,14 +38,6 @@ RESPONSE = (
 )
 
 
-@pytest.fixture
-def flush_only(estate, monkeypatch):
-    monkeypatch.setattr(estate.session, "commit", estate.session.flush)
-    monkeypatch.setattr(
-        estate.session.sync_session, "commit", estate.session.sync_session.flush
-    )
-
-
 def _fp() -> str:
     return uuid.uuid4().hex * 2
 
