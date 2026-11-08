@@ -4,7 +4,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from shared.definitions import routes
 from shared.definitions.bounty_programs import BountyEvent, event_spec
+from shared.definitions.routes import BountyHubTab, ScanTab
 from shared.definitions.stage_counts import HTTP_SERVICE_NOUN
 from shared.definitions.stage_counts import noun as _noun
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
@@ -32,8 +34,7 @@ MAX_LINK_LENGTH = 500
 
 
 def _scan_meta(scan_id: str, tab: str | None = None) -> dict:
-    url = f"/scans/{scan_id}" + (f"?tab={tab}" if tab else "")
-    return {"scan_id": str(scan_id), "url": url}
+    return {"scan_id": str(scan_id), "url": routes.scan(scan_id, tab)}
 
 
 _SCAN_COUNT_LABELS: dict[str, tuple[str, str]] = {
@@ -137,39 +138,45 @@ def _lead(target: str, d: ScanDeltas) -> _Lead:
             d.critical,
             _noun(vuln, before="critical"),
             err,
-            "vulnerabilities",
+            ScanTab.VULNERABILITIES.value,
         ),
         (
             "kev",
             d.kev,
             _noun(vuln, before="known exploited"),
             err,
-            "vulnerabilities",
+            ScanTab.VULNERABILITIES.value,
         ),
         (
             "secrets",
             d.new_secrets,
             ("exposed secret", "exposed secrets"),
             warn,
-            "secrets",
+            ScanTab.SECRETS.value,
         ),
-        ("high", d.high, _noun(vuln, before="high"), warn, "vulnerabilities"),
-        ("sensitive", d.sensitive_services, _ADMIN_PORT, warn, "services"),
+        (
+            "high",
+            d.high,
+            _noun(vuln, before="high"),
+            warn,
+            ScanTab.VULNERABILITIES.value,
+        ),
+        ("sensitive", d.sensitive_services, _ADMIN_PORT, warn, ScanTab.SERVICES.value),
         ("posture", d.posture_regressions, None, warn, None),
-        ("findings", _findings_total(d), finding, info, "vulnerabilities"),
+        ("findings", _findings_total(d), finding, info, ScanTab.VULNERABILITIES.value),
         (
             "hosts",
             d.new_hosts if d.baseline else 0,
             _noun(SurfaceDimension.WEB_ASSETS, before="new"),
             info,
-            "web-assets",
+            ScanTab.WEB_ASSETS.value,
         ),
         (
             "services",
             d.new_services if d.baseline else 0,
             _noun(SurfaceDimension.SERVICES, before="new"),
             info,
-            "services",
+            ScanTab.SERVICES.value,
         ),
         (
             "exposures",
@@ -178,9 +185,9 @@ def _lead(target: str, d: ScanDeltas) -> _Lead:
             if d.baseline
             else ("exposure", "exposures"),
             info,
-            "interesting",
+            ScanTab.INTERESTING.value,
         ),
-        ("partial", d.dropped_hosts, None, warn, "vulnerabilities"),
+        ("partial", d.dropped_hosts, None, warn, ScanTab.VULNERABILITIES.value),
     )
     for key, n, noun, severity, tab in ladder:
         if not n:
@@ -304,7 +311,7 @@ def schedule_not_started(name: str, failed: int, total: int) -> dict:
         "title": f"Scheduled scan not started · {name}",
         "message": f"{failed:,} of {_count(total, 'target', 'targets')} not started. "
         "Check the schedule and the worker log.",
-        "metadata": {"url": "/automation/schedules"},
+        "metadata": {"url": routes.SCHEDULES},
     }
 
 
@@ -342,7 +349,7 @@ def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
     shifts = distinct_findings(shifts)
     head = _count(len(shifts), *_FINDING)
     lines = [f"{s.cve} · {s.target} · {s.finding}" for s in shifts[:shown]]
-    query = "is%3Aexploitable" if exploited else "is%3Aweaponised"
+    query = "is:exploitable" if exploited else "is:weaponised"
     return {
         "type": NotificationType.SCAN,
         "severity": NotificationSeverity.ERROR
@@ -352,7 +359,9 @@ def intel_changed(shifts: list["IntelShift"], shown: int = 5) -> dict | None:
         if exploited
         else f"Public exploit available for {head}",
         "message": "\n".join(lines + _more(len(shifts), shown)),
-        "metadata": {"url": f"/surface/vulnerabilities?vuln_q={query}"},
+        "metadata": {
+            "url": routes.surface(ScanTab.VULNERABILITIES.value, {"vuln_q": query})
+        },
     }
 
 
@@ -392,9 +401,9 @@ def software_exposed(
     )
     lines = [f"{e.cve} · {e.host} · {e.name} {e.version}" for e in loud[:shown]]
     url = (
-        f"/surface/cve/{cves[0]}"
+        routes.cve(cves[0])
         if len(cves) == 1
-        else "/surface/software?sw_q=is%3Akev%20seen%3A%3C24h"
+        else routes.surface(ScanTab.SOFTWARE.value, {"sw_q": "is:kev seen:<24h"})
     )
     return {
         "type": NotificationType.VULNERABILITY,
@@ -472,7 +481,7 @@ def bounty_changes(
         else NotificationSeverity.INFO,
         "title": _bounty_title(by_kind),
         "message": "\n".join(lines + _more(sum(by_kind.values()), len(lines))),
-        "metadata": {"url": "/bounty-hub?tab=updates"},
+        "metadata": {"url": routes.bounty_hub(BountyHubTab.UPDATES.value)},
     }
 
 
@@ -521,7 +530,7 @@ def watch_alert(alert: WatchAlert) -> dict:
         "message": "\n".join(lines),
         "metadata": _scan_meta(alert.scan_id)
         if alert.scan_id
-        else {"target_id": alert.target_id, "url": f"/targets/{alert.target_id}"}
+        else {"target_id": alert.target_id, "url": routes.target(alert.target_id)}
         if alert.target_id
         else {},
     }
@@ -558,7 +567,7 @@ def new_checks_result(result: NewChecksResult) -> dict | None:
                 f"{_count(result.checks, 'new check', 'new checks')} tested",
             )
         ),
-        "metadata": _scan_meta(result.scan_id, "vulnerabilities"),
+        "metadata": _scan_meta(result.scan_id, ScanTab.VULNERABILITIES.value),
     }
 
 
@@ -634,7 +643,7 @@ def tripwire_fired(event: TripwireFired) -> dict:
         "severity": severity,
         "title": f"Tripwire · {event.name}",
         "message": "\n".join(lines),
-        "metadata": {"scan_id": event.scan_id, "url": f"/tripwires?run={event.run_id}"},
+        "metadata": {"scan_id": event.scan_id, "url": routes.tripwires(event.run_id)},
     }
 
 
@@ -657,5 +666,5 @@ def tripwire_run_result(result: TripwireRunResult) -> dict | None:
         "title": f"Tripwire · {result.name}",
         "message": f"Rescan of {result.target} · "
         + _findings_line(result.findings, result.by_severity, new=False),
-        "metadata": _scan_meta(result.scan_id, "vulnerabilities"),
+        "metadata": _scan_meta(result.scan_id, ScanTab.VULNERABILITIES.value),
     }
