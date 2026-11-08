@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy import cast, func, not_, select, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, defer
 
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import Targets
@@ -52,6 +52,12 @@ from shared.utils.datetime import utc_now
 MAX_LOCATIONS = 500
 MAX_INDEX_ROWS = 200
 DEFAULT_PAGE_SIZE = 50
+_DEFERRED = (
+    Vulnerability.request,
+    Vulnerability.response,
+    Vulnerability.curl_command,
+    Vulnerability.interaction,
+)
 
 _AGG = """
 WITH sw AS (
@@ -547,6 +553,7 @@ class CveExposureService:
                     corroborated.c.id.isnot(None).label("agreed"),
                     triage.state,
                 )
+                .options(*(defer(column) for column in _DEFERRED))
                 .outerjoin(corroborated, corroborated.c.id == Vulnerability.id)
                 .outerjoin(
                     triage,
