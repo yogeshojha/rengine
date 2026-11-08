@@ -40,7 +40,8 @@ class SurfaceRiskService:
         out = DashboardSurfaceRisk(targets_total=len(targets))
         if not targets:
             return out
-        runs_by_target, _ = await self.overview._runs(project_id, utc_now(), scoped)
+        run_ids, _ = await self.overview._run_ids(project_id, utc_now(), scoped)
+        runs_by_target = await self.overview._runs(run_ids)
         scans: dict[UUID, Scan] = {
             s.id: s for runs in runs_by_target.values() for s in runs
         }
