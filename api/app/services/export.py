@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from uuid import UUID
 
@@ -22,9 +23,11 @@ from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.services.celery_dispatch import dispatch_export
+from shared.utils.datetime import utc_now
 from shared.utils.files import purge_dir
 
 MAX_LIST = 100
+_NOT_QUEUED = "Export not queued. Check that the redis and worker services are running."
 
 
 class ExportService:
@@ -63,7 +66,7 @@ class ExportService:
         self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
-        dispatch_export(str(row.id))
+        await self._dispatch(row)
         return self._read(row)
 
     async def rerun(self, export_id: UUID, project_id: UUID) -> ExportRead:
@@ -86,8 +89,17 @@ class ExportService:
         self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
-        dispatch_export(str(row.id))
+        await self._dispatch(row)
         return self._read(row)
+
+    async def _dispatch(self, row: Export) -> None:
+        if await asyncio.to_thread(dispatch_export, str(row.id)):
+            return
+        row.status = ExportStatus.FAILED.value
+        row.step = "Failed"
+        row.error = _NOT_QUEUED
+        row.completed_at = utc_now()
+        await self.session.commit()
 
     async def list(
         self,

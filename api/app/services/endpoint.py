@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime
 from uuid import UUID
@@ -1347,8 +1348,8 @@ class EndpointService:
         if not unverified:
             return VerifyBranchResponse(queued=0, unverified=0, accepted=False)
         queued = min(unverified, body.limit)
-        accepted = dispatch_endpoint_verify(
-            str(scan_id), body.host, body.dir_path, queued
+        accepted = await asyncio.to_thread(
+            dispatch_endpoint_verify, str(scan_id), body.host, body.dir_path, queued
         )
         return VerifyBranchResponse(
             queued=queued if accepted else 0, unverified=unverified, accepted=accepted

@@ -850,7 +850,7 @@ class IssueFilingService:
             ) from None
         result.new_issues = len(created)
         if dispatch:
-            dispatch_issue_filing([str(i) for i in dispatch])
+            await asyncio.to_thread(dispatch_issue_filing, [str(i) for i in dispatch])
         if touched:
             await lead_cache.bump(touched)
         result.issues = await self._reads([row.id for row in created])
@@ -944,7 +944,7 @@ class IssueFilingService:
         row.error = None
         row.updated_at = utc_now()
         await self.session.commit()
-        dispatch_issue_filing([str(row.id)])
+        await asyncio.to_thread(dispatch_issue_filing, [str(row.id)])
         await lead_cache.bump([row.target_id])
         return (await self._reads([row.id]))[0]
 

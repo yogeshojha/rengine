@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from fastapi import HTTPException, status
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
@@ -118,7 +120,9 @@ class DatasetService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found."
             )
-        queued = dispatch_dataset_sync(spec.task, dict(spec.task_kwargs))
+        queued = await asyncio.to_thread(
+            dispatch_dataset_sync, spec.task, dict(spec.task_kwargs)
+        )
         return DatasetSyncResult(
             queued=queued,
             detail=None
