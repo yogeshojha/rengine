@@ -55,20 +55,6 @@
 		if (activeTab === 'duplicates') return duplicateResults;
 		return successResults;
 	});
-
-	function friendlyError(error: string | null): string {
-		if (!error) return 'Unknown error';
-		switch (error) {
-			case 'Target exists in this project':
-				return 'Already exists';
-			case 'Duplicate within import batch':
-				return 'Duplicate in batch';
-			case 'Empty target value':
-				return 'Empty value';
-			default:
-				return error;
-		}
-	}
 </script>
 
 <div class="space-y-4">
@@ -137,11 +123,11 @@
 
 						{#if result.error && activeTab !== 'imported'}
 							<span
-								class="max-w-[200px] shrink-0 truncate text-xs {activeTab === 'failed'
+								class="max-w-1/2 text-right text-xs wrap-anywhere {activeTab === 'failed'
 									? 'text-destructive'
 									: 'text-muted-foreground'}"
 							>
-								{friendlyError(result.error)}
+								{result.error}
 							</span>
 						{/if}
 					</li>
