@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from pydantic import Field
+import re
+
+from pydantic import Field, field_validator
 
 from shared.definitions.ports import (
+    MAX_PORT,
     PORT_PROFILES,
     SCAN_POLICY_LABELS,
     PortProfile,
@@ -12,6 +15,22 @@ from stages.config import StageConfig, advanced
 
 _PROFILE_LABELS = {spec.key: spec.label for spec in PORT_PROFILES}
 _SCAN_TYPES = {"connect": "Connect", "syn": "SYN"}
+_PORT_TOKEN = re.compile(r"(\d{1,5})(?:\s*-\s*(\d{1,5}))?")
+_PORT_ERROR = "Ports are numbers or ranges from 1 to 65535, separated by commas."
+
+
+def port_spec_error(value: str) -> str | None:
+    if not value.strip():
+        return None
+    for token in value.split(","):
+        match = _PORT_TOKEN.fullmatch(token.strip())
+        if match is None:
+            return _PORT_ERROR
+        low = int(match.group(1))
+        high = int(match.group(2) or low)
+        if not 1 <= low <= high <= MAX_PORT:
+            return _PORT_ERROR
+    return None
 
 
 class PortScanConfig(StageConfig):
@@ -72,6 +91,14 @@ class PortScanConfig(StageConfig):
         title="Address budget",
         description="Stop after this many addresses.",
     )
+
+    @field_validator("ports", "exclude_ports")
+    @classmethod
+    def _valid_ports(cls, value: str) -> str:
+        error = port_spec_error(value)
+        if error:
+            raise ValueError(error)
+        return value
 
 
 PORT_THRESHOLD = 500
