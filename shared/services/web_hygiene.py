@@ -386,21 +386,33 @@ def evaluate_asset(asset: HttpAsset) -> Hygiene:
 
 _FOLD_SQL = text(
     """
-    WITH per_host AS (
-      SELECT a.host,
-             coalesce(jsonb_agg(DISTINCT i.v ORDER BY i.v) FILTER (WHERE i.v IS NOT NULL), '[]'::jsonb) AS issues,
-             coalesce(jsonb_agg(DISTINCT c.v ORDER BY c.v) FILTER (WHERE c.v IS NOT NULL), '[]'::jsonb) AS checked
-      FROM http_assets a
-      LEFT JOIN LATERAL jsonb_array_elements_text(a.hygiene_issues::jsonb) i(v) ON true
-      LEFT JOIN LATERAL jsonb_array_elements_text(a.hygiene_checked::jsonb) c(v) ON true
-      WHERE a.scan_id = :scan_id AND a.hygiene_checked IS NOT NULL
+    WITH assets AS MATERIALIZED (
+      SELECT host, hygiene_issues::jsonb AS issues, hygiene_checked::jsonb AS checked
+      FROM http_assets
+      WHERE scan_id = :scan_id AND hygiene_checked IS NOT NULL
+    ), issues AS (
+      SELECT a.host, jsonb_agg(DISTINCT i.v ORDER BY i.v) AS issues
+      FROM assets a CROSS JOIN LATERAL jsonb_array_elements_text(a.issues) i(v)
       GROUP BY a.host
+    ), checked AS (
+      SELECT a.host, jsonb_agg(DISTINCT c.v ORDER BY c.v) AS checked
+      FROM assets a CROSS JOIN LATERAL jsonb_array_elements_text(a.checked) c(v)
+      GROUP BY a.host
+    ), per_host AS (
+      SELECT h.host,
+             coalesce(i.issues, '[]'::jsonb) AS issues,
+             coalesce(c.checked, '[]'::jsonb) AS checked
+      FROM (SELECT DISTINCT host FROM assets) h
+      LEFT JOIN issues i ON i.host = h.host
+      LEFT JOIN checked c ON c.host = h.host
     )
     UPDATE subdomains s
        SET hygiene_issues = per_host.issues::json,
            hygiene_checked = per_host.checked::json
       FROM per_host
      WHERE s.scan_id = :scan_id AND s.name = per_host.host
+       AND (s.hygiene_issues::jsonb IS DISTINCT FROM per_host.issues
+            OR s.hygiene_checked::jsonb IS DISTINCT FROM per_host.checked)
     """
 )
 
