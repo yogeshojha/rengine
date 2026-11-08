@@ -212,55 +212,56 @@
 	let related = $derived(corr?.related ?? []);
 	let relatedHosts = $derived(new Set(related.flatMap((r) => r.hosts)).size);
 
-	function loadCorrelation(name: string) {
+	function loadCorrelation(name: string, atScanId: string, key: string) {
 		corr = null;
 		corrErrored = false;
 		corrLoading = true;
+		const scope = scopeScanId ?? scanId;
 		subdomainsApi
-			.correlation(projectId, scopeScanId ?? scanId, name)
+			.correlation(projectId, scope && atScanId && atScanId !== scope ? atScanId : scope, name)
 			.then((c) => {
-				if (loadedFor === name) corr = c;
+				if (loadedFor === key) corr = c;
 			})
 			.catch(() => {
-				if (loadedFor === name) corrErrored = true;
+				if (loadedFor === key) corrErrored = true;
 			})
 			.finally(() => {
-				if (loadedFor === name) corrLoading = false;
+				if (loadedFor === key) corrLoading = false;
 			});
 	}
 
-	function loadDetail(assetId: string, forName: string) {
+	function loadDetail(assetId: string, forKey: string) {
 		detailFor = assetId;
 		detailLoading = true;
 		detailErrored = false;
 		httpAssetsApi
 			.detail(projectId, assetId)
 			.then((d) => {
-				if (loadedFor === forName) detail = d;
+				if (loadedFor === forKey) detail = d;
 			})
 			.catch(() => {
-				if (loadedFor !== forName) return;
+				if (loadedFor !== forKey) return;
 				detail = null;
 				detailErrored = true;
 			})
 			.finally(() => {
-				if (loadedFor === forName) detailLoading = false;
+				if (loadedFor === forKey) detailLoading = false;
 			});
 	}
 
 	$effect(() => {
 		if (!open || !sub) return;
-		const name = sub.name;
-		if (loadedFor !== name) {
-			loadedFor = name;
+		const key = sub.id;
+		if (loadedFor !== key) {
+			loadedFor = key;
 			detailFor = '';
 			detail = null;
 			detailLoading = false;
 			detailErrored = false;
-			loadCorrelation(name);
+			loadCorrelation(sub.name, sub.scan_id, key);
 		}
 		const assetId = corr?.primary_asset?.id;
-		if (assetId && detailFor !== assetId) loadDetail(assetId, name);
+		if (assetId && detailFor !== assetId) loadDetail(assetId, key);
 	});
 
 	let hasHttp = $derived(sub?.http_status != null);
