@@ -146,6 +146,7 @@ def _cert(cmp: Compare, ctx: QueryContext):
 def _status(cmp: Compare):
     branches = []
     numeric: list[str] = []
+    names_none = False
     for raw in cmp.values:
         bounds = status_range(raw)
         if bounds is not None:
@@ -156,6 +157,7 @@ def _status(cmp: Compare):
                 )
             )
         elif raw.lower() == "none":
+            names_none = True
             branches.append(Subdomain.http_status.is_(None))
         else:
             numeric.append(raw)
@@ -172,6 +174,8 @@ def _status(cmp: Compare):
         branches.append(number_match(Subdomain.http_status, positive, int_coerce(cmp)))
     matched = or_(*branches)
     if cmp.op is Op.NE:
+        if names_none:
+            return negate(matched)
         return or_(Subdomain.http_status.is_(None), negate(matched))
     return matched
 
