@@ -89,6 +89,8 @@ from shared.models.connector import (
 from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan, ScanCreate, SeedAsset
+from shared.models.scan_context import ScanContext
+from shared.models.scan_engine import ScanEngine
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.user import User
@@ -96,6 +98,7 @@ from shared.models.vulnerability import Vulnerability
 from shared.redis import async_client
 from shared.services import proxy_sync
 from shared.services.asset_query.tokens import token
+from shared.services.credential_access import launch_refusal, may_use
 from shared.services.scan_resolve import redact_message, unseal_headers
 from shared.services.scan_scope import census_only, covers
 from shared.utils.datetime import utc_now
@@ -959,6 +962,7 @@ class ConnectorService:
         project_id: uuid.UUID,
         body: HandoffRequest,
         scope=None,
+        user: User | None = None,
     ) -> HandoffResult:
         """Queue one request per chosen row for the proxy to collect."""
         row = await self.get(connector_id, project_id)
@@ -974,6 +978,9 @@ class ConnectorService:
                 else "Nothing selected."
             )
             raise ConnectorError(msg)
+        restorable = await self._restorable(
+            {item.scan_id for item in built if item.scan_id}, user
+        )
         queued = await self._queue_actions(
             row,
             [
@@ -987,7 +994,7 @@ class ConnectorService:
                     response=item.response,
                     notes=item.notes,
                     color=item.color,
-                    scan_id=item.scan_id,
+                    scan_id=item.scan_id if item.scan_id in restorable else None,
                 )
                 for item in built
             ],
@@ -998,6 +1005,58 @@ class ConnectorService:
             tool=ACTION_KIND_LABELS.get(body.kind, body.kind),
             online=await self._online(connector_id),
         )
+
+    async def _restorable(
+        self, scan_ids: set[uuid.UUID], user: User | None
+    ) -> set[uuid.UUID]:
+        """The runs whose sealed headers the user may hand to the proxy."""
+        if not scan_ids or user is None:
+            return set()
+        if user.is_superuser:
+            return scan_ids
+        runs = (
+            await self.session.execute(
+                select(Scan.id, Scan.created_by, Scan.context_id, Scan.engine_id).where(
+                    Scan.id.in_(scan_ids)
+                )
+            )
+        ).all()
+        context_ids = {r.context_id for r in runs if r.context_id}
+        engine_ids = {r.engine_id for r in runs if r.engine_id}
+        contexts = {
+            c.id: c
+            for c in (
+                await self.session.execute(
+                    select(ScanContext).where(ScanContext.id.in_(context_ids))
+                )
+            ).scalars()
+        }
+        engines = {
+            e.id: e
+            for e in (
+                await self.session.execute(
+                    select(ScanEngine).where(ScanEngine.id.in_(engine_ids))
+                )
+            ).scalars()
+        }
+        allowed: set[uuid.UUID] = set()
+        for run in runs:
+            context = contexts.get(run.context_id)
+            engine = engines.get(run.engine_id)
+            if (run.context_id and context is None) or (
+                run.engine_id and engine is None
+            ):
+                permitted = may_use(run.created_by, user.id, False)
+            else:
+                permitted = (
+                    launch_refusal(
+                        engine=engine, context=context, user_id=user.id, superuser=False
+                    )
+                    is None
+                )
+            if permitted:
+                allowed.add(run.id)
+        return allowed
 
     async def _built(
         self, row: Connector, project_id: uuid.UUID, body: HandoffRequest, scope

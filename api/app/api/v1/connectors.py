@@ -249,14 +249,16 @@ async def delete_connector(
 async def handoff_to_proxy(
     connector_id: UUID,
     body: HandoffRequest,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     service: Service,
     project_id: ProjectId,
     scope: EndpointScope,
 ):
     """Queue findings, web assets, hosts, endpoints or browsed shapes for the proxy."""
     try:
-        return await service.handoff(connector_id, project_id, body, scope)
+        return await service.handoff(
+            connector_id, project_id, body, scope, user=current_user
+        )
     except ConnectorError as exc:
         raise bad_request(exc) from exc
 

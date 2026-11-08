@@ -36,6 +36,7 @@ from shared.models.connector import (
 )
 from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.scan import Scan
+from shared.models.scan_context import ScanContext
 from shared.models.user import User
 from shared.models.vulnerability import Vulnerability
 from shared.services import proxy_sync
@@ -576,21 +577,72 @@ async def test_delivery_restores_the_run_credentials_only_when_asked(estate, now
     )
     await estate.session.flush()
     service, row = await _connector(estate)
+    owner = await estate.session.get(User, estate.user_id)
 
     await service.handoff(
-        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id])
+        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id]), user=owner
     )
     (masked,) = await service.take_actions(row)
     assert f"Authorization: Bearer {MASK}" in masked.request
 
     row.restore_credentials = True
     await service.handoff(
-        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id])
+        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id]), user=owner
     )
     (restored,) = await service.take_actions(row)
     assert "Authorization: Bearer real-token" in restored.request
     stored = await estate.session.scalar(select(ConnectorAction.request))
     assert "real-token" not in stored, "the queue row keeps the masked text"
+
+
+async def test_delivery_keeps_another_users_context_credentials_masked(estate, now):
+    other = User(
+        username=f"o{uuid.uuid4().hex[:8]}",
+        email=f"{uuid.uuid4().hex[:8]}@test.local",
+        hashed_password="x",
+    )
+    estate.session.add(other)
+    await estate.session.flush()
+    context = ScanContext(
+        project_id=estate.project_id,
+        created_by=estate.user_id,
+        name="Owner session",
+        extra_headers=[{"name": "Authorization", "value": "Bearer real-token"}],
+    )
+    estate.session.add(context)
+    await estate.session.flush()
+    sid = await estate.scan(
+        "example.com",
+        "census",
+        at=now - timedelta(hours=1),
+        config={"headers": seal_headers({"Authorization": "Bearer real-token"})},
+    )
+    (await estate.session.get(Scan, sid)).context_id = context.id
+    await estate.vulns("census", [("cve-x", "high")], at=now, host=HOST)
+    finding = await estate.session.scalar(
+        select(Vulnerability).where(Vulnerability.scan_id == sid)
+    )
+    finding.protocol = Protocol.HTTP.value
+    finding.request = (
+        f"GET / HTTP/1.1\r\nHost: {HOST}\r\nAuthorization: Bearer {MASK}\r\n\r\n"
+    )
+    await estate.session.flush()
+    service, row = await _connector(estate)
+    row.restore_credentials = True
+
+    await service.handoff(
+        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id]), user=other
+    )
+    (masked,) = await service.take_actions(row)
+    assert f"Authorization: Bearer {MASK}" in masked.request
+
+    owner = await estate.session.get(User, estate.user_id)
+    owner.is_superuser = False
+    await service.handoff(
+        row.id, estate.project_id, HandoffRequest(finding_ids=[finding.id]), user=owner
+    )
+    (restored,) = await service.take_actions(row)
+    assert "Authorization: Bearer real-token" in restored.request
 
 
 # ---------- hand-off across content types ----------
