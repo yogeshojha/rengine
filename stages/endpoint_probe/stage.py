@@ -237,7 +237,9 @@ class EndpointProbeStage(Stage):
             None,
         )
         logger.warning("httpx unavailable, endpoints stay unverified")
-        return StageResult(counts={"endpoints_probed": 0})
+        return StageResult(
+            counts={"endpoints_probed": 0}, warnings=[str(error)], partial=True
+        )
 
     def _pending(self, budget: int) -> list[str]:
         """The endpoints the probe has not answered: never-seen, new families and parameters first, hosts in turn."""
