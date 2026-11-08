@@ -557,6 +557,27 @@ class InterestReadService:
         note: str | None,
         user_id: uuid.UUID,
     ) -> None:
+        await self._dismiss(
+            target_id=target_id,
+            project_id=project_id,
+            host=host,
+            kind=kind,
+            note=note,
+            user_id=user_id,
+        )
+        await self.session.commit()
+        await lead_cache.bump((target_id,))
+
+    async def _dismiss(
+        self,
+        *,
+        target_id: uuid.UUID,
+        project_id: uuid.UUID,
+        host: str,
+        kind: str,
+        note: str | None,
+        user_id: uuid.UUID,
+    ) -> None:
         existing = await self.session.scalar(
             select(InterestDismissal).where(
                 InterestDismissal.target_id == target_id,
@@ -589,16 +610,14 @@ class InterestReadService:
                 bindparam("cap", MAX_SCORE),
             )
         )
-        await self.session.commit()
-        await lead_cache.bump((target_id,))
 
     async def dismiss_many(
         self,
         rows: list[tuple[uuid.UUID, uuid.UUID, str, str]],
         user_id: uuid.UUID,
     ) -> int:
-        for target_id, project_id, host, kind in rows:
-            await self.dismiss(
+        for target_id, project_id, host, kind in dict.fromkeys(rows):
+            await self._dismiss(
                 target_id=target_id,
                 project_id=project_id,
                 host=host,
@@ -606,6 +625,9 @@ class InterestReadService:
                 note=None,
                 user_id=user_id,
             )
+        await self.session.commit()
+        if rows:
+            await lead_cache.bump({target_id for target_id, *_ in rows})
         return len(rows)
 
     async def restore(self, dismissal_id: uuid.UUID) -> bool:
