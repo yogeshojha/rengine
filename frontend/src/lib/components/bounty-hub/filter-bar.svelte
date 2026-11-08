@@ -12,6 +12,7 @@
 		DEFAULT_PROGRAM_SORT,
 		PROGRAM_SORTS,
 		PROGRAM_STATE_LABELS,
+		SUBMISSION_STATE_LABELS,
 		SOURCE_LABELS
 	} from '$lib/config/bounty-programs';
 	import { SELECT_NONE } from '$lib/constants';
@@ -89,9 +90,10 @@
 	];
 	const SUBMISSION = [
 		{ value: SELECT_NONE, label: 'Any state' },
-		{ value: SubmissionState.Open, label: 'Accepting reports' },
-		{ value: SubmissionState.Paused, label: 'Paused' },
-		{ value: SubmissionState.Closed, label: 'Closed' }
+		...[SubmissionState.Open, SubmissionState.Paused, SubmissionState.Closed].map((value) => ({
+			value,
+			label: SUBMISSION_STATE_LABELS[value]
+		}))
 	];
 	const SCOPE = [
 		{ value: SELECT_NONE, label: 'Any scope' },
