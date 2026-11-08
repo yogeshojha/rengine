@@ -32,7 +32,11 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 
-USER node
+ARG RENGINE_UID=10001
+RUN groupadd --gid "$RENGINE_UID" rengine \
+    && useradd --uid "$RENGINE_UID" --gid rengine --create-home --shell /usr/sbin/nologin rengine
+
+USER rengine
 
 EXPOSE 3000
 
