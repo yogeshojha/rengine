@@ -1,12 +1,8 @@
-import Shield from '@lucide/svelte/icons/shield';
-import ShieldOff from '@lucide/svelte/icons/shield-off';
-import Mail from '@lucide/svelte/icons/mail';
 import CalendarClock from '@lucide/svelte/icons/calendar-clock';
 import CalendarPlus from '@lucide/svelte/icons/calendar-plus';
 import FileX from '@lucide/svelte/icons/file-x';
 import Lock from '@lucide/svelte/icons/lock';
 import LockOpen from '@lucide/svelte/icons/lock-open';
-import Server from '@lucide/svelte/icons/server';
 import Globe from '@lucide/svelte/icons/globe';
 import Radio from '@lucide/svelte/icons/radio';
 import CircleX from '@lucide/svelte/icons/circle-x';
@@ -28,7 +24,6 @@ import {
 	nameserverProvider,
 	registrarIcon,
 	spfPolicy,
-	txtPurpose,
 	verificationVendors
 } from '$lib/config/dns-providers';
 import { countryName } from '$lib/config/country-geo';
@@ -353,19 +348,6 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			});
 	}
 
-	if (whois && whois.dnssec != null)
-		checks.push(
-			whois.dnssec
-				? { key: 'dnssec', status: 'pass', label: 'DNSSEC enabled', icon: Shield, tab: 'whois' }
-				: {
-						key: 'dnssec',
-						status: 'warn',
-						label: 'DNSSEC not enabled',
-						icon: ShieldOff,
-						tab: 'whois'
-					}
-		);
-
 	if (statuses.length) {
 		const failing = statuses.find((s) => s.tone === 'fail');
 		const holding = statuses.find((s) => s.tone === 'warn');
@@ -441,49 +423,6 @@ function buildDomain(target: Target, detail: TargetDetailRead | null): TargetInt
 			label: 'DNS resolution failed',
 			detail: target.dns_error ? shortError(target.dns_error) : undefined,
 			icon: Globe,
-			tab: 'dns'
-		});
-
-	if (spf) {
-		const policy = spfPolicy(spf);
-		const weak = policy !== 'strict';
-		checks.push({
-			key: 'spf',
-			status: weak ? 'warn' : 'pass',
-			label: `SPF ${policy}`,
-			icon: Mail,
-			tab: 'dns'
-		});
-	} else if (dnsStatus === TaskStatus.SUCCESS && mx.length) {
-		const provider = mailProvider(mx);
-		checks.push({
-			key: 'spf',
-			status: 'warn',
-			label: 'No SPF record',
-			detail: `${plural(mx.length, 'MX record', 'MX records')}${provider ? ` at ${provider.name}` : ''}`,
-			icon: Mail,
-			tab: 'dns'
-		});
-	}
-
-	const dmarc = txt.find((v) => /^v=DMARC1\b/i.test(v));
-	if (dmarc) {
-		const policy = txtPurpose(dmarc).detail ?? '';
-		checks.push({
-			key: 'dmarc',
-			status: /p=(reject|quarantine)/.test(policy) ? 'pass' : 'warn',
-			label: `DMARC ${policy}`,
-			icon: Mail,
-			tab: 'dns'
-		});
-	}
-
-	if (dnsStatus === TaskStatus.SUCCESS && ns.length === 1)
-		checks.push({
-			key: 'ns',
-			status: 'warn',
-			label: 'Single nameserver',
-			icon: Server,
 			tab: 'dns'
 		});
 
