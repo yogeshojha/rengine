@@ -8,7 +8,17 @@ from pathlib import Path
 
 from fastapi import HTTPException, status
 from redis.exceptions import RedisError
-from sqlalchemy import and_, cast, delete, func, or_, select, tuple_, update
+from sqlalchemy import (
+    and_,
+    cast,
+    delete,
+    func,
+    literal_column,
+    or_,
+    select,
+    tuple_,
+    update,
+)
 from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -444,13 +454,8 @@ class ConnectorService:
     async def _upsert(self, rows: list[dict]) -> int:
         """Upsert by signature."""
         rows.sort(key=lambda r: r["signature"])
-        before = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorCandidate)
-            .where(ConnectorCandidate.connector_id == rows[0]["connector_id"])
-        )
         stmt = insert(ConnectorCandidate).values(rows)
-        await self.session.execute(
+        inserted = await self.session.scalars(
             stmt.on_conflict_do_update(
                 constraint="uq_connector_candidate_signature",
                 set_={
@@ -474,15 +479,9 @@ class ConnectorService:
                     "authenticated": ConnectorCandidate.authenticated
                     | stmt.excluded.authenticated,
                 },
-            )
+            ).returning(literal_column("xmax = 0"))
         )
-        await self.session.flush()
-        after = await self.session.scalar(
-            select(func.count())
-            .select_from(ConnectorCandidate)
-            .where(ConnectorCandidate.connector_id == rows[0]["connector_id"])
-        )
-        return max((after or 0) - (before or 0), 0)
+        return sum(1 for fresh in inserted if fresh)
 
     async def _sync_endpoints(self, row: Connector, signatures: list[str]) -> int:
         """Record the shapes as endpoints of each target's covering scan."""
