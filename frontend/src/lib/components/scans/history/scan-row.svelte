@@ -115,7 +115,7 @@
 			<Checkbox
 				checked={selected}
 				onCheckedChange={onSelect}
-				aria-label="Select run of {scan.execution_config.target_value}"
+				aria-label="Select scan of {scan.execution_config.target_value}"
 				class="transition-opacity {selected ? '' : REVEAL_SM}"
 			/>
 		</div>
@@ -187,7 +187,7 @@
 				variant="ghost"
 				size="icon"
 				class="size-7"
-				aria-label={expanded ? 'Collapse run brief' : 'Expand run brief'}
+				aria-label={expanded ? 'Collapse scan brief' : 'Expand scan brief'}
 				aria-expanded={expanded}
 				onclick={onToggle}
 			>
@@ -196,7 +196,7 @@
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger>
 					{#snippet child({ props })}
-						<Button {...props} variant="ghost" size="icon" class="size-7" aria-label="Run actions">
+						<Button {...props} variant="ghost" size="icon" class="size-7" aria-label="Scan actions">
 							<Ellipsis class="size-4" />
 						</Button>
 					{/snippet}
@@ -227,7 +227,7 @@
 					{#if open}
 						<DropdownMenu.Item onSelect={onCancel}><Ban /> Cancel</DropdownMenu.Item>
 					{:else if onRescan}
-						<DropdownMenu.Item onSelect={onRescan}><Play /> Run again</DropdownMenu.Item>
+						<DropdownMenu.Item onSelect={onRescan}><Play /> Rescan</DropdownMenu.Item>
 					{/if}
 					{#if open || onRescan}
 						<DropdownMenu.Separator />
@@ -287,7 +287,7 @@
 						</Button>
 					{:else if onRescan}
 						<Button size="sm" variant="outline" class="h-8 gap-1.5" onclick={onRescan}>
-							<Play class="size-3.5" /> Run again
+							<Play class="size-3.5" /> Rescan
 						</Button>
 					{/if}
 				</div>

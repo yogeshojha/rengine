@@ -99,7 +99,7 @@
 					}}
 				>
 					<ChevronRight class="size-3 transition-transform {earlierOpen ? 'rotate-90' : ''}" />
-					{earlier} earlier {pluralWord(earlier, 'run')}
+					{earlier} earlier {pluralWord(earlier, 'scan')}
 				</button>
 			{/if}
 			{#if scan.rescans && scan.rescans.total > 0}

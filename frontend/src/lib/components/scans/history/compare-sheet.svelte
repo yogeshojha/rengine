@@ -66,7 +66,7 @@
 	<Sheet.Content side="bottom" class="max-h-[70vh] gap-0 bg-card">
 		<Sheet.Header class="border-b pb-3">
 			<Sheet.Title class="flex flex-wrap items-center gap-2 text-base">
-				Compare runs
+				Compare scans
 				{#if data}
 					<span class="font-mono text-sm font-normal text-muted-foreground"
 						>{data.target_value}</span
@@ -110,16 +110,18 @@
 					{/if}
 					<div class="mb-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
 						<div>
-							<span class="font-medium text-foreground">Earlier</span> · {side(data.baseline)}
+							<span class="font-medium text-foreground">Baseline</span> · {side(data.baseline)}
 						</div>
-						<div><span class="font-medium text-foreground">Later</span> · {side(data.current)}</div>
+						<div>
+							<span class="font-medium text-foreground">Current</span> · {side(data.current)}
+						</div>
 					</div>
 					<Table.Root class="min-w-[560px] text-xs">
 						<Table.Header>
 							<Table.Row>
 								<Table.Head>Dimension</Table.Head>
-								<Table.Head class="text-right">Earlier</Table.Head>
-								<Table.Head class="text-right">Later</Table.Head>
+								<Table.Head class="text-right">Baseline</Table.Head>
+								<Table.Head class="text-right">Current</Table.Head>
 								<Table.Head class="text-right">Delta</Table.Head>
 								<Table.Head class="w-40"><span class="sr-only">Change</span></Table.Head>
 								<Table.Head>Note</Table.Head>

@@ -78,7 +78,7 @@
 	{#if targetCount > 0}
 		<Button variant="ghost" size="sm" class="font-medium" onclick={onRescan}>
 			<Play class="h-3.5 w-3.5 text-muted-foreground" />
-			Re-scan {plural(targetCount, 'target')}
+			Rescan {plural(targetCount, 'target')}
 		</Button>
 	{/if}
 

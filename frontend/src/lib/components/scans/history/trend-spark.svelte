@@ -41,7 +41,7 @@
 		viewBox="0 0 {W} {H}"
 		class="shrink-0 overflow-visible"
 		role="img"
-		aria-label="Findings over the last {points.length} completed runs"
+		aria-label="Findings over the last {points.length} completed scans"
 	>
 		<path d={area} fill="var(--series)" fill-opacity="0.12" />
 		<path d={line} fill="none" stroke="var(--series)" stroke-width="1.25" stroke-linejoin="round" />

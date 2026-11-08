@@ -322,7 +322,7 @@
 			const next = { ...earlier };
 			delete next[scan.id];
 			earlier = next;
-			toast.error('Earlier runs not loaded');
+			toast.error('Earlier scans not loaded');
 		}
 	}
 
@@ -499,12 +499,12 @@
 	}
 
 	const SHORTCUTS: Shortcut[] = [
-		['j / k', 'Move between runs'],
-		['o', 'Expand or collapse the run brief'],
+		['j / k', 'Move between scans'],
+		['o', 'Expand or collapse the scan brief'],
 		['1 to 4', 'Switch brief tab'],
 		['Enter', 'Open results'],
-		['x', 'Select run'],
-		['c', 'Compare runs'],
+		['x', 'Select scan'],
+		['c', 'Compare scans'],
 		['/', 'Search'],
 		['Esc', 'Collapse or clear selection']
 	];
@@ -581,7 +581,7 @@
 			<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
 				<div class="flex flex-col gap-0.5">
 					<span class="text-2xs tracking-wide text-muted-foreground uppercase"
-						>Runs · {HISTORY_DAYS} days</span
+						>Scans · {HISTORY_DAYS} days</span
 					>
 					<span class="flex h-8 items-center font-mono text-2xl font-semibold tabular-nums">
 						{#if windowTotals}
@@ -613,7 +613,7 @@
 				</div>
 				<div class="flex flex-col gap-1">
 					<span class="text-2xs tracking-wide text-muted-foreground uppercase"
-						>Runs with findings · {HISTORY_DAYS} days</span
+						>Scans with findings · {HISTORY_DAYS} days</span
 					>
 					<div class="flex h-8 items-center gap-1.5">
 						{#if windowTotals}
@@ -622,7 +622,7 @@
 									severity={s.sev}
 									count={s.n}
 									pressed={s.active}
-									aria-label="Runs with {SEVERITY_LABELS[s.sev].toLowerCase()} findings: {s.n}"
+									aria-label="Scans with {SEVERITY_LABELS[s.sev].toLowerCase()} findings: {s.n}"
 									onclick={() => toggleSeverity(s.sev)}
 								/>
 							{/each}
@@ -669,7 +669,7 @@
 					aria-label="View"
 					class="my-1.5"
 				>
-					<ToggleGroup.Item value="all" class="px-3 text-xs">All runs</ToggleGroup.Item>
+					<ToggleGroup.Item value="all" class="px-3 text-xs">All scans</ToggleGroup.Item>
 					<ToggleGroup.Item value="latest" class="px-3 text-xs">Latest per target</ToggleGroup.Item>
 				</ToggleGroup.Root>
 			{/if}
@@ -693,7 +693,7 @@
 							if (e.key === 'Enter') setQuery(queryText, true);
 							if (e.key === 'Escape') e.currentTarget.blur();
 						}}
-						aria-label="Search runs"
+						aria-label="Search scans"
 						aria-invalid={!!parseError}
 						aria-describedby={parseError ? 'scan-history-search-error' : undefined}
 					/>
@@ -926,7 +926,7 @@
 			</div>
 		</ScrollArea>
 	{:else if scans.length === 0 && filtered}
-		<EmptyState compact title="No runs match" class="border-0 bg-transparent py-16">
+		<EmptyState compact title="No scans match" class="border-0 bg-transparent py-16">
 			<Button size="sm" variant="outline" onclick={clearAll}>
 				<X class="size-4" /> Clear filters
 			</Button>
@@ -949,7 +949,7 @@
 							checked={selectAll === true}
 							indeterminate={selectAll === 'indeterminate'}
 							onCheckedChange={toggleSelectAll}
-							aria-label="Select all runs"
+							aria-label="Select all scans"
 						/>
 					</div>
 					<div class={COL.target} role="columnheader">{targetId ? 'Engine' : 'Target'}</div>
@@ -1018,7 +1018,7 @@
 			total={pagination.totalItems}
 			page={pagination.currentPage - 1}
 			pageSize={pagination.pageSize}
-			noun={latest ? 'target' : 'run'}
+			noun={latest ? 'target' : 'scan'}
 			sizes={PAGE_SIZES}
 			onPage={(p) => scansStore.setPage(p + 1)}
 			onPageSize={(size) => scansStore.setPageSize(size)}

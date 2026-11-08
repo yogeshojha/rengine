@@ -145,7 +145,7 @@
 			>
 				<div class="font-medium">{formatShortDate(tip.day, true)}</div>
 				<div class="font-mono text-muted-foreground">
-					{plural(tip.runs, 'run')}{tip.failed ? ` · ${tip.failed} failed` : ''}
+					{plural(tip.runs, 'scan')}{tip.failed ? ` · ${tip.failed} failed` : ''}
 					{#each historyPrefs.severities as s (s)}
 						{#if tip[s as 'critical']}<span class={SEVERITY_CHIP[s].ink}>
 								· {tip[s as 'critical']} with {s} findings</span
@@ -156,11 +156,11 @@
 		{/if}
 	</div>
 	<span class="sr-only" aria-live="polite">
-		{tip ? `${formatShortDate(tip.day, true)}, ${plural(tip.runs, 'run')}` : ''}
+		{tip ? `${formatShortDate(tip.day, true)}, ${plural(tip.runs, 'scan')}` : ''}
 	</span>
 	<div class="flex justify-between font-mono text-2xs text-muted-foreground">
 		<span>{days.length ? formatShortDate(days[0].day, true) : ''}</span>
-		<span>max {plural(max, 'run')} a day</span>
+		<span>max {plural(max, 'scan')} a day</span>
 		<span>Today</span>
 	</div>
 </div>
