@@ -155,7 +155,7 @@ export interface BulkTriageResult {
 }
 
 export const VULN_VIEWS = [
-	{ key: 'issues', label: 'Issues' },
+	{ key: 'issues', label: 'Checks' },
 	{ key: 'findings', label: 'Findings' },
 	{ key: 'timeline', label: 'Timeline' }
 ] as const;

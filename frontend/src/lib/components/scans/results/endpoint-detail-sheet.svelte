@@ -151,7 +151,7 @@
 	});
 
 	async function copyCurl(e: EndpointRead) {
-		if (await writeClipboard(curlFor(e))) toast.success('curl command copied');
+		if (await writeClipboard(curlFor(e))) toast.success('Curl command copied');
 	}
 </script>
 
