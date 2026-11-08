@@ -31,6 +31,7 @@ from shared.services.secret_mining.inventory import (
 )
 from shared.services.secret_mining.record import context, fingerprint
 from shared.utils.datetime import utc_now
+from shared.utils.text import REFUSED_ROW
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,8 @@ _CHUNK = 200
 _PROGRESS_EVERY = 500
 CANCELLED = "The scan was cancelled."
 BUSY = "Secrets not mined. Another secret mining run is in progress on the same scan."
+REFUSED = "Secrets not written. The database refused a row."
+NOT_MINED = "Secrets not mined."
 
 
 @dataclass
@@ -225,7 +228,12 @@ def _mine_locked(
             session.rollback()
             miner.buffer.clear()
             facts.status = CoverageStatus.FAILED.value
-            facts.error = str(exc)[:2000]
+            facts.error = REFUSED if isinstance(exc, REFUSED_ROW) else NOT_MINED
+            logger.warning(
+                "secret mining failed",
+                source=corpus.source,
+                error=type(exc).__name__,
+            )
             done.append(facts)
             _finish(inventory, done, outcome)
             raise
