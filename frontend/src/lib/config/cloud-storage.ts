@@ -48,7 +48,7 @@ export const SOURCE_ORDER: readonly Source[] = [Source.REFERENCED, Source.HOSTNA
 
 export const SOURCE_LABELS: Record<string, string> = {
 	[Source.REFERENCED]: 'Referenced',
-	[Source.HOSTNAME]: 'Named after a host',
+	[Source.HOSTNAME]: 'Named after a hostname',
 	[Source.GUESSED]: 'Guessed'
 };
 

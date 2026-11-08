@@ -100,7 +100,7 @@ SOURCES: tuple[SourceSpec, ...] = (
     ),
     SourceSpec(
         Source.HOSTNAME.value,
-        "Named after a host",
+        "Named after a hostname",
         "A discovered hostname is also the bucket name.",
     ),
     SourceSpec(
