@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.api.scope import VulnScope
 from app.core.database import get_session
+from app.core.validation_errors import validation_detail
 from app.services.finding_timeline import FindingTimelineService
 from app.services.vulnerability import VulnerabilityService
 from shared.definitions.vulnerabilities import VULN_STATES
@@ -45,8 +46,11 @@ def _check_state(state: str) -> None:
     if state not in VULN_STATES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Unknown review state '{state}'. Expected one of "
-            f"{', '.join(sorted(VULN_STATES))}.",
+            detail=validation_detail(
+                ["body", "state"],
+                f"Unknown review state '{state}'. Expected one of "
+                f"{', '.join(sorted(VULN_STATES))}.",
+            ),
         )
 
 

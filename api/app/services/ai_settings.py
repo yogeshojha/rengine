@@ -13,6 +13,7 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.validation_errors import validation_detail
 from app.services.instance_settings import InstanceSettingsService
 from shared.definitions.ai import (
     AI_FEATURES,
@@ -125,7 +126,8 @@ def call_cursor(before: str | None) -> tuple[datetime, uuid.UUID] | None:
         row_id = uuid.UUID(id_text)
     except ValueError:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, _BAD_CURSOR
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            validation_detail(["query", "before"], _BAD_CURSOR),
         ) from None
     return (at if at.tzinfo else at.replace(tzinfo=UTC)), row_id
 

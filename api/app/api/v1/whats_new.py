@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.core.validation_errors import validation_detail
 from app.services.instance_settings import InstanceSettingsService
 from app.services.whats_new import WhatsNewService
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS
@@ -39,7 +40,7 @@ def _zone(tz: str) -> None:
     except (ZoneInfoNotFoundError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Unknown time zone {tz}.",
+            detail=validation_detail(["query", "tz"], f"Unknown time zone {tz}."),
         ) from exc
 
 
@@ -47,17 +48,23 @@ def _check_range(window: str | None, day: date | None, day_to: date | None) -> N
     if window is not None and window not in NEW_WINDOWS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Window must be one of {', '.join(NEW_WINDOWS)}.",
+            detail=validation_detail(
+                ["query", "window"], f"Window must be one of {', '.join(NEW_WINDOWS)}."
+            ),
         )
     if day_to is not None and (day is None or day_to < day):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="day_to needs a day at or before it.",
+            detail=validation_detail(
+                ["query", "day_to"], "day_to needs a day at or before it."
+            ),
         )
     if date.max in (day, day_to):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Days must be before {date.max.isoformat()}.",
+            detail=validation_detail(
+                ["query", "day"], f"Days must be before {date.max.isoformat()}."
+            ),
         )
 
 
@@ -91,7 +98,9 @@ async def whats_new(
     if wanted and not wanted <= set(KIND_ORDER):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Kinds must be among {', '.join(KIND_ORDER)}.",
+            detail=validation_detail(
+                ["query", "kinds"], f"Kinds must be among {', '.join(KIND_ORDER)}."
+            ),
         )
     return await service.feed(
         project_id,

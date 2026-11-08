@@ -11,6 +11,7 @@ from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.core.ratelimit import revoke_user_tokens
 from app.core.security import hash_password_async
+from app.core.validation_errors import validation_detail
 from app.utils.validation import validate_password_strength, validate_username
 from shared.logging import get_logger
 from shared.models.scan_engine import ScanEngine
@@ -67,12 +68,13 @@ async def create_user(
         validate_password_strength(data.password, user_inputs=[email, username])
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=validation_detail(["body"], str(e)),
         ) from e
     if "@" not in email:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Enter a valid email address.",
+            detail=validation_detail(["body", "email"], "Enter a valid email address."),
         )
     taken = await session.scalar(
         select(User).where((User.email == email) | (User.username == username))

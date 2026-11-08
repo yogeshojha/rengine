@@ -10,6 +10,11 @@ def _part(value: object) -> str | int:
     return value if isinstance(value, str | int) else str(value)
 
 
+def validation_detail(loc: list[str | int], msg: str) -> list[dict]:
+    """A 422 detail in the request validation shape."""
+    return [{"loc": loc, "msg": msg, "type": "value_error"}]
+
+
 async def validation_error_handler(
     _request: Request, exc: RequestValidationError
 ) -> JSONResponse:

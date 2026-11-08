@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_session
+from app.core.validation_errors import validation_detail
 from app.services.surface_scope import SurfaceScopeService
 from app.services.target_scope import TargetFilter, resolve_targets
 from shared.definitions.surface import SurfaceDimension
@@ -52,7 +53,8 @@ async def resolve_scope(
         return QueryScope((scan_id,), project_id=project_id)
     if project_id is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=_MISSING
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=validation_detail(["query", "project_id"], _MISSING),
         )
     targets = await resolve_targets(session, project_id, spec)
     return await SurfaceScopeService(session).scope(

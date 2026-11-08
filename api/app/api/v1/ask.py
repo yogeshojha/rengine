@@ -11,6 +11,7 @@ from app.api.deps import CurrentUser, StreamUser
 from app.api.scope import TargetFilterDep, VulnScope
 from app.api.v1.events import STREAM_HEADERS
 from app.core.database import async_db_session, get_session
+from app.core.validation_errors import validation_detail
 from app.services.ask.estate import service as estate
 from app.services.ask.estate.service import EstateService
 from app.services.ask.service import AskService, stream_reply
@@ -96,7 +97,9 @@ def _dimension(value: str) -> str:
     if value not in ASK_DIMENSIONS:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
-            "Ask is not offered on that dimension.",
+            validation_detail(
+                ["query", "dimension"], "Ask is not offered on that dimension."
+            ),
         )
     return value
 

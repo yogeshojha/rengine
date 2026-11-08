@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
+from app.core.validation_errors import validation_detail
 from shared.definitions.wordlists import (
     KIND_LABELS,
     MAX_WORDLIST_BYTES,
@@ -57,7 +58,10 @@ async def upload_wordlists(
     if kind not in KIND_LABELS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Unknown wordlist kind. Kinds: {', '.join(sorted(KIND_LABELS))}.",
+            detail=validation_detail(
+                ["body", "kind"],
+                f"Unknown wordlist kind. Kinds: {', '.join(sorted(KIND_LABELS))}.",
+            ),
         )
     result = WordlistUploadResult()
     for item in body.files:

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
 from app.core.database import get_session
+from app.core.validation_errors import validation_detail
 from app.services.cve_exposure import DEFAULT_PAGE_SIZE, CveExposureService
 from shared.definitions.surface import MAX_PAGE
 from shared.definitions.vulnerabilities import CVE_ID
@@ -68,6 +69,8 @@ async def cve_exposure(
     if not CVE_ID.match(cleaned):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"{cve} is not a CVE identifier.",
+            detail=validation_detail(
+                ["path", "cve"], f"{cve} is not a CVE identifier."
+            ),
         )
     return await service.exposure(project_id, cleaned)
