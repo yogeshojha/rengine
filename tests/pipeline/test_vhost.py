@@ -92,3 +92,23 @@ def test_wordlist_gains_discovered_labels(tmp_path: Path) -> None:
     assert {"admin", "dev", "secret"} <= words
     assert total == len(words)
     path.unlink()
+
+
+def _stage_with_subdomains(
+    subs: list[SimpleNamespace], excluded: list[str]
+) -> VhostStage:
+    stage = VhostStage.__new__(VhostStage)
+    stage.session = _Session(subs)
+    stage.ctx = SimpleNamespace(
+        scan_id="s", resolved=SimpleNamespace(excluded_ips=excluded)
+    )
+    return stage
+
+
+def test_candidate_ips_drop_excluded_addresses() -> None:
+    subs = [
+        SimpleNamespace(is_wildcard=False, resolved_ips=["192.0.2.10", "192.0.2.20"]),
+        SimpleNamespace(is_wildcard=True, resolved_ips=["198.51.100.5"]),
+    ]
+    stage = _stage_with_subdomains(subs, ["192.0.2.0/28", "198.51.100.5"])
+    assert stage._candidate_ips() == ["192.0.2.20"]

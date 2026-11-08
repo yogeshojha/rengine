@@ -12,7 +12,7 @@ from shared.enums.scan import AssetKind, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
 from shared.models.subdomain import Subdomain
-from shared.services.scope_filter import matches_any
+from shared.services.scope_filter import ip_excluded, matches_any
 from shared.services.wordlists import WordlistError, lookup, resolve_path
 from shared.utils.datetime import utc_now
 from shared.utils.validation import normalize_host
@@ -185,10 +185,11 @@ class VhostStage(Stage):
         resolvable: list[str] = []
         wildcard: list[str] = []
         seen: set[str] = set()
+        excluded = self.ctx.resolved.excluded_ips or []
         for sub in subs:
             bucket = wildcard if sub.is_wildcard else resolvable
             for ip in sub.resolved_ips or []:
-                if ip not in seen:
+                if ip not in seen and not ip_excluded(ip, excluded):
                     seen.add(ip)
                     bucket.append(ip)
         return (resolvable + wildcard)[:_MAX_IPS]
