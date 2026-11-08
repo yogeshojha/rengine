@@ -55,6 +55,6 @@
 	</Tooltip.Trigger>
 
 	<Tooltip.Content>
-		<p>{copied ? 'Copied' : failed ? 'Copy failed' : 'Copy'}</p>
+		<p>{copied ? 'Copied' : failed ? 'Copy failed' : label}</p>
 	</Tooltip.Content>
 </Tooltip.Root>
