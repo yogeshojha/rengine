@@ -207,14 +207,18 @@ class EndpointDetail(EndpointRead):
     siblings: int = 0
 
 
+MAX_FILTER_PAGE = 500_000
+MAX_FILTER_SIZE = 200
+
+
 class EndpointFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     q: str | None = PydanticField(default=None, max_length=MAX_QUERY_LENGTH)
     ids: list[uuid.UUID] = PydanticField(
         default_factory=list, max_length=MAX_SELECTED_ROWS
     )
-    host: str | None = None
-    dir_path: str | None = None
+    host: str | None = PydanticField(default=None, max_length=MAX_HOST_LENGTH)
+    dir_path: str | None = PydanticField(default=None, max_length=MAX_PATH_LENGTH)
     subtree: bool = True
     endpoint_class: str | None = None
     source: str | None = None
@@ -226,8 +230,8 @@ class EndpointFilter(BaseModel):
     hide_root_only: bool = False
     sort: str = "path"
     direction: str = "asc"
-    page: int = 1
-    size: int = 50
+    page: int = PydanticField(default=1, ge=1, le=MAX_FILTER_PAGE)
+    size: int = PydanticField(default=50, ge=1, le=MAX_FILTER_SIZE)
 
     def has_facets(self) -> bool:
         return any(
