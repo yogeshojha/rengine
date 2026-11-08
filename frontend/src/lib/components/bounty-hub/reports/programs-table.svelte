@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { ROUTES } from '$lib/config/routes';
 	import { SEVERITY_CHIP, SEVERITY_LABELS, Severity } from '$lib/config/vulnerabilities';
 	import { REPORT_STAGE_FILL, REPORT_STAGE_ORDER, formatMonies } from '$lib/config/bounty-reports';
@@ -100,7 +101,7 @@
 {#if rows.length === 0}
 	<EmptyState title="No programs match" compact class="border-0 bg-transparent py-16" />
 {:else}
-	<div class="overflow-x-auto">
+	<ScrollArea orientation="horizontal">
 		<div class="w-full min-w-[640px]" role="table" aria-label="Programs">
 			<div
 				class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -227,5 +228,5 @@
 				</div>
 			{/each}
 		</div>
-	</div>
+	</ScrollArea>
 {/if}

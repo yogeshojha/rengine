@@ -631,20 +631,22 @@
 				</div>
 			</ScrollArea>
 
-			<aside class="hidden overflow-y-auto border-l bg-muted/25 md:block">
-				<div class="space-y-4 px-5 py-5">
-					{#if preview}
-						<ThemePreview theme={preview} variant="cover" class="shadow-sm" />
-						<div>
-							<p class="text-sm font-medium">{preview.name}</p>
-							<p class="mt-0.5 text-xs text-muted-foreground">{preview.description}</p>
-						</div>
-					{:else}
-						<Skeleton class="aspect-[1/1.414] w-full" />
-					{/if}
+			<aside class="hidden min-h-0 border-l bg-muted/25 md:block">
+				<ScrollArea class="h-full">
+					<div class="space-y-4 px-5 py-5">
+						{#if preview}
+							<ThemePreview theme={preview} variant="cover" class="shadow-sm" />
+							<div>
+								<p class="text-sm font-medium">{preview.name}</p>
+								<p class="mt-0.5 text-xs text-muted-foreground">{preview.description}</p>
+							</div>
+						{:else}
+							<Skeleton class="aspect-[1/1.414] w-full" />
+						{/if}
 
-					{@render estimateBlock('border-t pt-4')}
-				</div>
+						{@render estimateBlock('border-t pt-4')}
+					</div>
+				</ScrollArea>
 			</aside>
 		</div>
 
