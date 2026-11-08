@@ -34,12 +34,13 @@ async def test_host_matches_whatever_case_the_query_is_typed_in(estate, now):
 
 
 async def test_a_host_name_is_refused_unless_lowercase(estate, now):
-    await estate.scan("example.com", "run", at=now)
+    sid = await estate.scan("example.com", "run", at=now)
     await estate.hosts("run", ["api.example.com"], at=now)
 
     with pytest.raises(IntegrityError):
         await estate.session.execute(
-            text("UPDATE subdomains SET name = 'API.example.com'")
+            text("UPDATE subdomains SET name = 'API.example.com' WHERE scan_id = :sid"),
+            {"sid": sid},
         )
 
 
