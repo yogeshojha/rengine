@@ -14,6 +14,7 @@ from shared.definitions.toolbox import (
     ToolGroup,
 )
 from shared.enums.api_key import APIProvider
+from shared.http import egress_proxy
 from shared.utils.validation import normalize_domain, validate_domain
 from stages.subdomain.parser import merge_and_filter
 from stages.subdomain.providers.assetfinder import AssetfinderProvider
@@ -113,7 +114,7 @@ class SubdomainFinder(Tool):
             domain=args.domain,
             timeout=TOOL_TIMEOUT,
             threads=20,
-            proxy_url=None,
+            proxy_url=egress_proxy(),
             api_keys={name: key for name, (key, _) in credentials.items()},
             key_meta={name: meta for name, (_, meta) in credentials.items()},
         )
