@@ -405,6 +405,24 @@ def test_a_service_refusal_keeps_its_wording():
     assert server.failed("Compare runs", exc) == "The runs are not comparable."
 
 
+def test_a_listed_refusal_keeps_its_wording():
+    exc = HTTPException(
+        status_code=422,
+        detail=[
+            {"loc": ["query"], "msg": "The runs differ.", "type": "value_error"},
+            {"loc": ["query"], "msg": "Pick another run.", "type": "value_error"},
+        ],
+    )
+    assert server.failed("Compare runs", exc) == "The runs differ. Pick another run."
+
+
+def test_an_empty_list_refusal_names_the_error_type():
+    exc = HTTPException(status_code=422, detail=[{"loc": ["query"]}])
+    assert server.failed("Compare runs", exc) == (
+        "Compare runs did not complete. Error type: HTTPException."
+    )
+
+
 # ---------- C7 ----------
 
 
