@@ -686,7 +686,7 @@ class ReportService:
         return self.to_read(report)
 
     async def _dispatch(self, report: Report) -> None:
-        if dispatch_report(str(report.id)):
+        if await asyncio.to_thread(dispatch_report, str(report.id)):
             return
         report.status = ReportStatus.FAILED.value
         report.step = "Failed"

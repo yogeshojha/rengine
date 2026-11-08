@@ -1,9 +1,12 @@
+import asyncio
 import contextlib
 import csv
 import io
 import itertools
+import logging
 import re
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
@@ -117,6 +120,24 @@ _CSV_POSITIONS = ["target_value", "tags", "organizations", "display_name"]
 
 _VALUE_TOO_LONG = f"Target value is longer than {MAX_TARGET_VALUE_LEN} characters"
 _NAME_TOO_LONG = f"Display name is longer than {MAX_DISPLAY_NAME_LEN} characters"
+
+
+logger = logging.getLogger(__name__)
+
+QUEUE_REFUSED = (
+    "The task queue did not accept the lookup. "
+    "Check that the worker services are running."
+)
+
+
+async def _queue(send: Callable[[list[str]], None], ids: list[str]) -> None:
+    try:
+        await asyncio.to_thread(send, ids)
+    except Exception as exc:
+        logger.warning("Enrichment dispatch failed", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=QUEUE_REFUSED
+        ) from exc
 
 
 @dataclass
@@ -459,13 +480,13 @@ class TargetService:
         ids = [str(t.id) for t in eligible]
         if ids:
             if kind == EnrichmentKind.WHOIS:
-                dispatch_whois_lookups(ids)
+                await _queue(dispatch_whois_lookups, ids)
             elif kind == EnrichmentKind.DNS:
-                dispatch_dns_lookups(ids)
+                await _queue(dispatch_dns_lookups, ids)
             elif kind == EnrichmentKind.INFOSTEALER:
-                dispatch_infostealer_lookups(ids)
+                await _queue(dispatch_infostealer_lookups, ids)
             else:
-                dispatch_ripestat_enrichment(ids)
+                await _queue(dispatch_ripestat_enrichment, ids)
         return len(ids)
 
     async def bulk_add_tags(
@@ -587,7 +608,7 @@ class TargetService:
         )
         await self.session.commit()
 
-        self._dispatch_post_target_creation([target])
+        await asyncio.to_thread(self._dispatch_post_target_creation, [target])
 
         return self._to_target_read(target, stored)
 
@@ -652,7 +673,7 @@ class TargetService:
 
         await self._log_added(created, project_id, user_id)
         await self.session.commit()
-        self._dispatch_post_target_creation(created)
+        await asyncio.to_thread(self._dispatch_post_target_creation, created)
         return [found[value] for value in wanted]
 
     async def _log_added(
@@ -780,7 +801,7 @@ class TargetService:
         )
         await self.session.commit()
 
-        self._dispatch_post_target_creation(created_targets)
+        await asyncio.to_thread(self._dispatch_post_target_creation, created_targets)
 
         return TargetBulkCreateResponse(
             total=len(items),
@@ -1101,7 +1122,7 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        dispatch_dns_lookups([str(target.id)])
+        await _queue(dispatch_dns_lookups, [str(target.id)])
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
@@ -1118,7 +1139,7 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        dispatch_whois_lookups([str(target.id)])
+        await _queue(dispatch_whois_lookups, [str(target.id)])
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
@@ -1143,7 +1164,7 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        dispatch_infostealer_lookups([str(target.id)])
+        await _queue(dispatch_infostealer_lookups, [str(target.id)])
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
@@ -1165,7 +1186,7 @@ class TargetService:
         target.updated_at = utc_now()
         await self.session.commit()
 
-        dispatch_ripestat_enrichment([str(target.id)])
+        await _queue(dispatch_ripestat_enrichment, [str(target.id)])
 
         return EnrichmentRefreshResponse(
             target_id=target.id,
@@ -1507,16 +1528,15 @@ class TargetService:
     def _dispatch_post_target_creation(self, targets: list[Target]) -> None:
         if not targets:
             return
-
         all_ids = [str(t.id) for t in targets]
-        dispatch_whois_lookups(all_ids)
-
-        dns_ids = [str(t.id) for t in targets if t.target_type in HOSTNAME_TARGET_TYPES]
-        if dns_ids:
-            dispatch_dns_lookups(dns_ids)
-
-        bgp_ids = [str(t.id) for t in targets if t.target_type in NETWORK_TARGET_TYPES]
-        if bgp_ids:
-            dispatch_ripestat_enrichment(bgp_ids)
-
-        dispatch_infostealer_lookups(all_ids)
+        try:
+            dispatch_whois_lookups(all_ids)
+            dispatch_dns_lookups(
+                [str(t.id) for t in targets if t.target_type in HOSTNAME_TARGET_TYPES]
+            )
+            dispatch_ripestat_enrichment(
+                [str(t.id) for t in targets if t.target_type in NETWORK_TARGET_TYPES]
+            )
+            dispatch_infostealer_lookups(all_ids)
+        except Exception:
+            logger.warning("Enrichment dispatch failed", exc_info=True)
