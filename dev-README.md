@@ -2,7 +2,7 @@
 
 ```
 cp .env.example .env
-sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
+for k in SECRET_KEY JWT_SECRET_KEY POSTGRES_PASSWORD ADMIN_PASSWORD FLOWER_PASSWORD; do sed -i "s/^$k=.*/$k=$(openssl rand -hex 32)/" .env; done
 make up
 make migrate        # then restart the api
 ```

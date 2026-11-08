@@ -11,7 +11,10 @@ import urllib.request
 BASE = os.environ.get("RENGINE_API", "http://localhost:8000/api/v1")
 PID = os.environ.get("RENGINE_PROJECT_ID", "")
 USER = os.environ.get("RENGINE_USER", "rengine")
-PASSWORD = os.environ.get("RENGINE_PASSWORD", "rengine@123")
+PASSWORD = os.environ.get("RENGINE_PASSWORD", "")
+if not PASSWORD:
+    print("Set RENGINE_PASSWORD to the password of RENGINE_USER.")
+    raise SystemExit(2)
 if not PID:
     print("Set RENGINE_PROJECT_ID to the project to walk.")
     raise SystemExit(2)
