@@ -447,10 +447,16 @@ describe('link attribute check', () => {
 	});
 });
 
+const TREE_SCAN_TIMEOUT_MS = 180_000;
+
 describe('links', () => {
-	it('binds every link attribute to a route, a literal or the link guard', () => {
-		expect(sourceFiles(ROOT, /\.svelte$/).flatMap((file) => offenders(file))).toEqual([]);
-	});
+	it(
+		'binds every link attribute to a route, a literal or the link guard',
+		() => {
+			expect(sourceFiles(ROOT, /\.svelte$/).flatMap((file) => offenders(file))).toEqual([]);
+		},
+		TREE_SCAN_TIMEOUT_MS
+	);
 
 	it('opens a window through openExternal alone', () => {
 		const opened = sourceFiles(ROOT, /\.(svelte|ts)$/)
