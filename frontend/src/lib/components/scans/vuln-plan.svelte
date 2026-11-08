@@ -4,6 +4,7 @@
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { Button } from '$lib/components/ui/button';
 	import Hint from '$lib/components/hint.svelte';
 	import SeverityBar from './results/vulnerabilities/severity-bar.svelte';
 	import { vulnTemplatesApi } from '$lib/api/vulnerabilities';
@@ -29,6 +30,7 @@
 
 	let stats = $state<TemplateLibraryStats | null>(null);
 	let statsLoading = $state(true);
+	let statsFailed = $state(false);
 	let preview = $state<SelectionPreview | null>(null);
 	let previewLoading = $state(false);
 	let open = $state(false);
@@ -69,12 +71,21 @@
 		if (!engineCatalogStore.hasFetched) untrack(() => engineCatalogStore.fetch());
 	});
 
-	$effect(() => {
+	function loadStats() {
+		statsLoading = true;
+		statsFailed = false;
 		vulnTemplatesApi
 			.stats()
 			.then((res) => (stats = res))
-			.catch(() => (stats = null))
+			.catch(() => {
+				stats = null;
+				statsFailed = true;
+			})
 			.finally(() => (statsLoading = false));
+	}
+
+	$effect(() => {
+		untrack(loadStats);
 	});
 
 	function toggleSeverity(value: string) {
@@ -150,6 +161,13 @@
 	<div class="space-y-2">
 		{#if statsLoading}
 			<Skeleton class="h-9 w-full rounded-md" />
+		{:else if statsFailed}
+			<div
+				class="flex items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs"
+			>
+				<p class="text-muted-foreground">Check library not loaded</p>
+				<Button size="sm" variant="outline" class="h-7" onclick={() => loadStats()}>Retry</Button>
+			</div>
 		{:else if !ready}
 			<div
 				class="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs"
