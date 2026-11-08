@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from shared.definitions.ai import AIOffCode, off_reasons
+from shared.definitions.ai import AIFeatureKey, AIOffCode, off_reasons
 from shared.definitions.surface import SurfaceDimension
 
-INVESTIGATE_FEATURE = "investigate"
+INVESTIGATE_FEATURE = AIFeatureKey.INVESTIGATE.value
 INVESTIGATE_CLIENT = "investigate"
 
 # the dimension Investigate runs on

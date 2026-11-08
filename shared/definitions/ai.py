@@ -388,6 +388,14 @@ OPENAI_NOT_CHAT: tuple[str, ...] = (
 GOOGLE_GENERATE = "generateContent"
 
 
+class AIFeatureKey(StrEnum):
+    REPORT_NARRATIVE = "report_narrative"
+    ASSET_JUDGEMENT = "asset_judgement"
+    RULE_SUGGESTIONS = "rule_suggestions"
+    ASK = "ask"
+    INVESTIGATE = "investigate"
+
+
 @dataclass(frozen=True)
 class AIFeature:
     key: str
@@ -398,28 +406,28 @@ class AIFeature:
 
 AI_FEATURES: tuple[AIFeature, ...] = (
     AIFeature(
-        "report_narrative",
+        AIFeatureKey.REPORT_NARRATIVE.value,
         "Report narrative",
         "Executive summary, risk narrative and remediation plan. Sends the target, "
         "counts, check names and the web assets named on attack paths.",
         True,
     ),
     AIFeature(
-        "asset_judgement",
+        AIFeatureKey.ASSET_JUDGEMENT.value,
         "Asset judgement",
         "Flags exposures after a scan, with a reason. Sends web asset names, status "
         "codes, page titles and technologies.",
         False,
     ),
     AIFeature(
-        "rule_suggestions",
+        AIFeatureKey.RULE_SUGGESTIONS.value,
         "Rule suggestions",
         "Proposes exposure rules from judgement results, each held for review. Sends "
         "web asset names and judgement reasons.",
         False,
     ),
     AIFeature(
-        "ask",
+        AIFeatureKey.ASK.value,
         "Ask",
         "Answers questions about the estate on the Ask page, and about a finding or "
         "a web asset in its sheet. Sends the question, a finding's request and "
@@ -427,7 +435,7 @@ AI_FEATURES: tuple[AIFeature, ...] = (
         True,
     ),
     AIFeature(
-        "investigate",
+        AIFeatureKey.INVESTIGATE.value,
         "Investigate",
         "Verifies a finding after a scan and reaches a verdict. Proposes re-running a "
         "check through the scanner, which a person approves before it runs. Sends a "
@@ -442,18 +450,18 @@ DEFAULT_AI_FEATURES: dict[str, bool] = {f.key: f.default for f in AI_FEATURES}
 TEST_FEATURE = "connection_test"
 
 TASK_FEATURE: dict[str, str] = {
-    AITask.EXECUTIVE_SUMMARY.value: "report_narrative",
-    AITask.RISK_NARRATIVE.value: "report_narrative",
-    AITask.REMEDIATION_PLAN.value: "report_narrative",
-    AITask.ISSUE_EXPLAINER.value: "report_narrative",
-    AITask.ATTACK_PATH.value: "report_narrative",
-    AITask.SURFACE_NARRATIVE.value: "report_narrative",
-    AITask.ASSET_JUDGEMENT.value: "asset_judgement",
-    AITask.RULE_SUGGESTION.value: "rule_suggestions",
-    AITask.ASK.value: "ask",
-    AITask.ASK_DEEP.value: "ask",
-    AITask.ASK_FOLLOW_UPS.value: "ask",
-    AITask.INVESTIGATE.value: "investigate",
+    AITask.EXECUTIVE_SUMMARY.value: AIFeatureKey.REPORT_NARRATIVE.value,
+    AITask.RISK_NARRATIVE.value: AIFeatureKey.REPORT_NARRATIVE.value,
+    AITask.REMEDIATION_PLAN.value: AIFeatureKey.REPORT_NARRATIVE.value,
+    AITask.ISSUE_EXPLAINER.value: AIFeatureKey.REPORT_NARRATIVE.value,
+    AITask.ATTACK_PATH.value: AIFeatureKey.REPORT_NARRATIVE.value,
+    AITask.SURFACE_NARRATIVE.value: AIFeatureKey.REPORT_NARRATIVE.value,
+    AITask.ASSET_JUDGEMENT.value: AIFeatureKey.ASSET_JUDGEMENT.value,
+    AITask.RULE_SUGGESTION.value: AIFeatureKey.RULE_SUGGESTIONS.value,
+    AITask.ASK.value: AIFeatureKey.ASK.value,
+    AITask.ASK_DEEP.value: AIFeatureKey.ASK.value,
+    AITask.ASK_FOLLOW_UPS.value: AIFeatureKey.ASK.value,
+    AITask.INVESTIGATE.value: AIFeatureKey.INVESTIGATE.value,
     AITask.CONNECTION_TEST.value: TEST_FEATURE,
 }
 
