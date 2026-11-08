@@ -31,6 +31,7 @@ _FORM = "application/x-www-form-urlencoded"
 _JSON = "application/json"
 _XML = "application/xml"
 _BOUNDARY = "----reNgineFormBoundary"
+_UNSAFE_NAME = frozenset('\r\n"<>&')
 _LABEL_MAX = 120
 
 
@@ -144,6 +145,10 @@ def _sample_values(samples: list[dict]) -> dict[str, str]:
     return values
 
 
+def _markup_names(names: list[str]) -> list[str]:
+    return [name for name in names if not _UNSAFE_NAME & set(name)]
+
+
 def _multipart(names: list[str], values: dict[str, str]) -> str:
     parts = [
         f'--{_BOUNDARY}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'
@@ -179,9 +184,10 @@ def body_for(
     if "json" in declared:
         return json.dumps({name: values.get(name, "") for name in names}), _JSON
     if "multipart" in declared:
-        return _multipart(names, values), f"multipart/form-data; boundary={_BOUNDARY}"
+        body = _multipart(_markup_names(names), values)
+        return body, f"multipart/form-data; boundary={_BOUNDARY}"
     if "xml" in declared:
-        return _xml(names, values), content_type or _XML
+        return _xml(_markup_names(names), values), content_type or _XML
     body = "&".join(
         f"{quote(name, safe='')}={quote(values.get(name, ''), safe='')}"
         for name in names
