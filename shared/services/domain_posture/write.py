@@ -101,6 +101,8 @@ _CLEAR_SQL = text(
     """
     UPDATE subdomains SET posture_issues = NULL, posture_checked = NULL
      WHERE scan_id = :scan_id
+       AND (posture_issues IS NOT NULL OR posture_checked IS NOT NULL)
+       AND name <> ALL(:keep)
     """
 )
 
@@ -110,13 +112,14 @@ _FOLD_SQL = text(
        SET posture_issues = CAST(:issues AS json),
            posture_checked = CAST(:checked AS json)
      WHERE scan_id = :scan_id AND name = ANY(:names)
+       AND (posture_issues::jsonb IS DISTINCT FROM CAST(:issues AS jsonb)
+            OR posture_checked::jsonb IS DISTINCT FROM CAST(:checked AS jsonb))
     """
 )
 
 
 def fold_onto_hosts(session: Session, scan_id: UUID) -> int:
     """Every host carries the checks of the longest zone it sits under."""
-    session.execute(_CLEAR_SQL, {"scan_id": scan_id})
     zones = session.execute(
         select(
             DomainPosture.zone,
@@ -124,17 +127,18 @@ def fold_onto_hosts(session: Session, scan_id: UUID) -> int:
             DomainPosture.posture_checked,
         ).where(DomainPosture.scan_id == scan_id)
     ).all()
-    if not zones:
-        return 0
     by_zone = {z.zone: (z.posture_issues, z.posture_checked) for z in zones}
-    names = session.scalars(
-        select(Subdomain.name).where(Subdomain.scan_id == scan_id)
-    ).all()
     grouped: dict[str, list[str]] = defaultdict(list)
-    for name in names:
-        zone = zone_of(name, by_zone)
-        if zone is not None:
-            grouped[zone].append(name)
+    if by_zone:
+        names = session.scalars(
+            select(Subdomain.name).where(Subdomain.scan_id == scan_id)
+        ).all()
+        for name in names:
+            zone = zone_of(name, by_zone)
+            if zone is not None:
+                grouped[zone].append(name)
+    keep = [name for members in grouped.values() for name in members]
+    session.execute(_CLEAR_SQL, {"scan_id": scan_id, "keep": keep})
     folded = 0
     for zone, members in grouped.items():
         issues, checked = by_zone[zone]
