@@ -16,7 +16,6 @@ from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
 from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.utils.datetime import normalize_datetime, utc_now
-from shared.utils.infra import is_shared_nameserver
 from shared.utils.net import is_registry_routable
 from shared.utils.privacy import (
     registrant_key,
@@ -448,58 +447,6 @@ class WhoisService:
             .where(WhoisNameserver.nameserver == nameserver.strip().lower())
             .distinct()
             .limit(limit)
-        )
-        return list(result.scalars().all())
-
-    async def get_correlations_for_target(
-        self, session: AsyncSession, whois_record_id: uuid.UUID
-    ) -> dict[str, list[WhoisRecord]]:
-        """Correlation groups for a record."""
-        result = await session.execute(
-            select(WhoisRecord).where(WhoisRecord.id == whois_record_id)
-        )
-        record = result.scalar_one_or_none()
-        if not record:
-            return {}
-
-        correlations: dict[str, list[WhoisRecord]] = {}
-
-        related = await self.find_by_registrant(session, record.registrant_name)
-        others = [r for r in related if r.id != record.id]
-        if others:
-            correlations["registrant_name"] = others
-
-        if record.network_cidr:
-            related = await self.find_by_network(session, record.network_cidr)
-            others = [r for r in related if r.id != record.id]
-            if others:
-                correlations["network_cidr"] = others
-
-        ns_related = await self._find_nameserver_correlations(session, record)
-        if ns_related:
-            correlations["nameserver"] = ns_related
-
-        return correlations
-
-    async def _find_nameserver_correlations(
-        self, session: AsyncSession, record: WhoisRecord
-    ) -> list[WhoisRecord]:
-        """Other records sharing a non-shared nameserver with record."""
-        correlatable = [
-            ns.strip().lower()
-            for ns in (record.nameservers or [])
-            if ns and not is_shared_nameserver(ns)
-        ]
-        if not correlatable:
-            return []
-
-        result = await session.execute(
-            select(WhoisRecord)
-            .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
-            .where(WhoisNameserver.nameserver.in_(correlatable))
-            .where(WhoisRecord.id != record.id)
-            .distinct()
-            .limit(MAX_CORRELATION_RECORDS)
         )
         return list(result.scalars().all())
 
