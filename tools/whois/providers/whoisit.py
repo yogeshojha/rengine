@@ -2,7 +2,6 @@
 
 import contextlib
 import logging
-import os
 import threading
 from typing import Any
 
@@ -18,7 +17,6 @@ for _name in ("bootstrap", "parser", "query", "utils"):
     _library_logger.handlers.clear()
     _library_logger.setLevel(logging.WARNING)
 
-_PROXY_ENV = ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")
 _PROXY_LOCK = threading.Lock()
 
 
@@ -86,17 +84,15 @@ class RDAPProvider:
             yield
             return
         with _PROXY_LOCK:
-            previous = {name: os.environ.get(name) for name in _PROXY_ENV}
-            for name in _PROXY_ENV:
-                os.environ[name] = self._proxy_url
+            previous = whoisit.get_proxy()
+            whoisit.set_proxy(self._proxy_url)
             try:
                 yield
             finally:
-                for name, value in previous.items():
-                    if value is None:
-                        os.environ.pop(name, None)
-                    else:
-                        os.environ[name] = value
+                if previous is None:
+                    whoisit.clear_proxy()
+                else:
+                    whoisit.set_proxy(previous)
 
     @property
     def is_bootstrapped(self) -> bool:
@@ -148,7 +144,7 @@ class RDAPProvider:
         try:
             self.ensure_bootstrapped()
             with _BOOTSTRAP_LOCK.shared(), self._proxied():
-                return whoisit.domain(domain, allow_insecure_ssl=True)
+                return whoisit.domain(domain)
         except RDAPProviderError:
             raise
         except UnsupportedError as e:
@@ -166,7 +162,7 @@ class RDAPProvider:
         try:
             self.ensure_bootstrapped()
             with _BOOTSTRAP_LOCK.shared(), self._proxied():
-                return whoisit.ip(ip, allow_insecure_ssl=True)
+                return whoisit.ip(ip)
         except RDAPProviderError:
             raise
         except QueryError as e:
@@ -181,7 +177,7 @@ class RDAPProvider:
         try:
             self.ensure_bootstrapped()
             with _BOOTSTRAP_LOCK.shared(), self._proxied():
-                return whoisit.asn(asn, allow_insecure_ssl=True)
+                return whoisit.asn(asn)
         except RDAPProviderError:
             raise
         except QueryError as e:
