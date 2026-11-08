@@ -50,7 +50,7 @@ API_PROVIDER_META: dict[APIProvider, dict] = {
     APIProvider.SECURITYTRAILS: {
         "group": ProviderGroup.SUBDOMAINS.value,
         "name": "SecurityTrails",
-        "description": "DNS, domain and subdomain history intelligence",
+        "description": "Subdomains from SecurityTrails DNS history",
         "docs_url": "https://securitytrails.com",
         "icon": "route",
         "subfinder": SubfinderSource("securitytrails"),
@@ -157,7 +157,7 @@ API_PROVIDER_META: dict[APIProvider, dict] = {
     APIProvider.NETLAS: {
         "group": ProviderGroup.INTERNET_SCANS.value,
         "name": "Netlas",
-        "description": "Internet-wide asset and attack-surface intelligence",
+        "description": "Subdomains from the Netlas internet scan index",
         "docs_url": "https://netlas.io",
         "icon": "globe",
         "setup": True,
