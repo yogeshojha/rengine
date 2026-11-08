@@ -372,12 +372,30 @@ def check(
         tripwire.last_fired_at = now
         if not was_fired:
             tripwire.fired_count += 1
-    session.flush()
+    session.commit()
     if result.fired and act is not None:
+        tripwire_id, scan_id, run_id = tripwire.id, scan.id, run.id
         outcomes = act(session, tripwire, run, scan, result.fired)
-        run.outcomes = list(run.outcomes or []) + [
-            o.model_dump(mode="json") for o in outcomes
-        ]
+        run = _record_outcomes(session, tripwire_id, scan_id, run_id, outcomes)
+    return run
+
+
+def _record_outcomes(
+    session: Session, tripwire_id, scan_id, run_id, outcomes: list
+) -> TripwireRun:
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(:key)"),
+        {"key": tripwire_check(tripwire_id, scan_id)},
+    )
+    run = session.execute(
+        select(TripwireRun)
+        .where(TripwireRun.id == run_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    ).scalar_one()
+    run.outcomes = list(run.outcomes or []) + [
+        o.model_dump(mode="json") for o in outcomes
+    ]
     session.commit()
     return run
 

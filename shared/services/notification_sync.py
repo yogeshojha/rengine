@@ -28,6 +28,7 @@ class SyncNotificationPublisher:
         channel_ids=None,
         attach: str | None = None,
         dispatch: bool = True,
+        commit: bool = True,
     ) -> Notification:
         if isinstance(metadata, NotificationMetadata):
             metadata_dict = metadata.model_dump(exclude_none=True)
@@ -50,8 +51,11 @@ class SyncNotificationPublisher:
         )
 
         session.add(notification)
-        session.commit()
-        session.refresh(notification)
+        if commit:
+            session.commit()
+            session.refresh(notification)
+        else:
+            session.flush()
 
         self._event_publisher.publish(
             channel=SSEChannel.BROADCAST,

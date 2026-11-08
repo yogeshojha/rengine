@@ -139,6 +139,7 @@ def notify(
             metadata=payload.get("metadata"),
             project_id=scan.project_id,
             dispatch=False,
+            commit=False,
         )
     except Exception:
         logger.warning("tripwire notification failed", exc_info=True)
@@ -440,6 +441,7 @@ def run_actions(
         return outcomes
     rescanning = False
     for action in sorted(actions, key=lambda a: a.kind == ActionKind.NOTIFY.value):
+        savepoint = session.begin_nested()
         try:
             if action.kind == ActionKind.SCAN.value:
                 seeds = seeds_of(tripwire.dimension, rows)
@@ -458,8 +460,13 @@ def run_actions(
                         live=live,
                     )
                 )
+            if savepoint.is_active:
+                savepoint.commit()
         except Exception:
-            session.rollback()
+            if savepoint.is_active:
+                savepoint.rollback()
+            else:
+                session.rollback()
             logger.warning("tripwire action failed", action=action.kind, exc_info=True)
             outcomes.append(
                 Outcome(
