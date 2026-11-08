@@ -134,16 +134,16 @@ class ScreenshotStage(Stage):
         warnings = []
         if cut_short:
             warnings.append(
-                f"the renderer stalled and was stopped. {captured:,} of "
+                f"The renderer stalled and was stopped. {captured:,} of "
                 f"{len(selected):,} web assets were captured."
             )
         if failed:
-            warnings.append(f"{failed:,} web assets did not render an image")
+            warnings.append(f"{failed:,} web assets did not render an image.")
         if no_answer:
-            warnings.append(f"{no_answer:,} web assets did not answer during capture")
+            warnings.append(f"{no_answer:,} web assets did not answer during capture.")
         if skipped:
             warnings.append(
-                f"{skipped:,} web assets beyond the {budget:,} screenshot budget were not captured"
+                f"{skipped:,} web assets beyond the {budget:,} screenshot budget were not captured."
             )
         return StageResult(
             counts={"screenshots": captured},

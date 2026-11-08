@@ -182,7 +182,7 @@ class HttpProbeStage(Stage):
                 f"pairs were queued, {count:,} answered."
             )
         if rejected:
-            warnings.append(f"{rejected:,} responses could not be stored")
+            warnings.append(f"{rejected:,} responses could not be stored.")
         if mention.skipped:
             warnings.append(
                 f"{mention.skipped:,} referenced hostnames not resolved. "

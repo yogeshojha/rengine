@@ -105,9 +105,9 @@ class OriginProbeStage(Stage):
                 f"httpx stalled and was stopped. {len(targets):,} addresses queued."
             )
         if rejected:
-            warnings.append(f"{rejected:,} responses could not be stored")
+            warnings.append(f"{rejected:,} responses could not be stored.")
         if unchecked:
-            warnings.append(f"{unchecked:,} origin candidates were not rechecked")
+            warnings.append(f"{unchecked:,} origin candidates were not rechecked.")
         return StageResult(
             counts={
                 "probed": len(targets),
