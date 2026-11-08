@@ -7,9 +7,11 @@ from sqlalchemy import (
     Text,
     and_,
     cast,
+    false,
     func,
     or_,
     select,
+    union_all,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -25,7 +27,7 @@ from shared.models.ip_address import IpAddress
 from shared.models.vulnerability import Vulnerability
 
 from . import predicates as preds
-from .ast import Compare
+from .ast import Compare, Term
 from .scope import QueryScope
 from .terms import (
     address_match,
@@ -39,7 +41,7 @@ from .terms import (
     target_match,
 )
 from .values import asn_number
-from .walk import flags, walker
+from .walk import as_compare, compare_with, flags, free_text_fields, walker
 
 
 @dataclass(frozen=True)
@@ -178,4 +180,22 @@ _VULN_BUILDERS = {
 }
 
 
-compile_vuln_query = walker(VULN_QUERY, _VULN_BUILDERS)
+def _free_text(term: Term, ctx: VulnQueryContext):
+    """One id lookup per free-text field."""
+    branches = [
+        compare_with(_VULN_BUILDERS, as_compare(term, field), ctx)
+        for field in free_text_fields(VULN_QUERY)
+    ]
+    if not branches:
+        return false()
+    reach = ctx.scope.match(Vulnerability.scan_id)
+    reachable = union_all(
+        *[
+            select(Vulnerability.id).where(reach, branch).correlate(None)
+            for branch in branches
+        ]
+    ).subquery()
+    return Vulnerability.id.in_(select(reachable.c.id))
+
+
+compile_vuln_query = walker(VULN_QUERY, _VULN_BUILDERS, term=_free_text)
