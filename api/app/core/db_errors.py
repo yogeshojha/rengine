@@ -1,11 +1,12 @@
-"""Map a Postgres data exception to a 400."""
+"""Map a Postgres data exception to a 400 and a statement timeout to a 503."""
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
-from starlette.status import HTTP_400_BAD_REQUEST
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_503_SERVICE_UNAVAILABLE
 
 from shared.logging import get_logger
+from shared.services.asset_query import TIMEOUT_SQLSTATE
 
 logger = get_logger(__name__)
 
@@ -17,6 +18,7 @@ _MESSAGES = {
     "22021": "A value in the request contains a NUL byte.",
 }
 _FALLBACK = "A value in the request is not valid for its field."
+_TIMEOUT = "The query timed out. Narrow the filter and try again."
 
 
 def _sqlstate(exc: DBAPIError) -> str | None:
@@ -28,6 +30,13 @@ def _sqlstate(exc: DBAPIError) -> str | None:
 
 async def data_exception_handler(request: Request, exc: DBAPIError) -> JSONResponse:
     state = _sqlstate(exc)
+    if state == TIMEOUT_SQLSTATE:
+        logger.warning(
+            "statement timed out", path=request.url.path, method=request.method
+        )
+        return JSONResponse(
+            status_code=HTTP_503_SERVICE_UNAVAILABLE, content={"detail": _TIMEOUT}
+        )
     if not state or not state.startswith(_DATA_EXCEPTION):
         raise exc
     logger.info(
