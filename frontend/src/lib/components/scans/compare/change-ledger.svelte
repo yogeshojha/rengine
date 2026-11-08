@@ -10,6 +10,7 @@
 	import ChangeRowItem from './change-row.svelte';
 	import type { ChangeRow } from '$lib/types/compare';
 	import { plural } from '$lib/utilities/strings';
+	import { MAX_ROWS_PAGE } from '$lib/config/compare';
 
 	interface Props {
 		rows: ChangeRow[];
@@ -50,6 +51,8 @@
 		onOpen,
 		onPage
 	}: Props = $props();
+
+	let pageable = $derived(Math.min(total, MAX_ROWS_PAGE * size));
 </script>
 
 {#if loading && !rows.length}
@@ -106,7 +109,8 @@
 		{/if}
 	{:else}
 		<ResultsPagination
-			{total}
+			total={pageable}
+			capped={pageable < total}
 			page={page - 1}
 			pageSize={size}
 			{noun}

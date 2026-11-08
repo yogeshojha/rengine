@@ -21,6 +21,7 @@ from app.services.scan import (
 from app.services.scan_compare import ScanCompareService
 from shared.definitions.compare import (
     DEFAULT_ROWS_PER_PAGE,
+    MAX_ROWS_PAGE,
     MAX_ROWS_PER_PAGE,
     VERB_ORDER,
     ChangeVerb,
@@ -292,7 +293,7 @@ async def compare_scan_rows(
         list[ChangeVerb] | None,
         Query(description=f"Any of: {', '.join(VERB_ORDER)}. Omit for every change."),
     ] = None,
-    page: Annotated[int, Query(ge=1)] = 1,
+    page: Annotated[int, Query(ge=1, le=MAX_ROWS_PAGE)] = 1,
     size: Annotated[int, Query(ge=1, le=MAX_ROWS_PER_PAGE)] = DEFAULT_ROWS_PER_PAGE,
 ):
     return await service.rows(

@@ -33,6 +33,7 @@ export const COMPARE_MODES = ['ledger', 'diff'] as const;
 export type CompareMode = (typeof COMPARE_MODES)[number];
 export const COMPARE_DIGEST_SIZE = 50;
 export const COMPARE_PAGE_SIZE = 50;
+export const MAX_ROWS_PAGE = 200;
 
 export interface VerbSpec {
 	key: ChangeVerb;

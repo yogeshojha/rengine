@@ -41,6 +41,7 @@
 		COMPARE_MODES,
 		COMPARE_PAGE_SIZE,
 		COMPARE_TAB_ALL,
+		MAX_ROWS_PAGE,
 		type CompareMode
 	} from '$lib/config/compare';
 	import { SURFACE_ORDER, SurfaceDimension } from '$lib/config/surface';
@@ -150,7 +151,7 @@
 		activeTab = dim && SURFACE_ORDER.some((s) => s.key === dim) ? dim : COMPARE_TAB_ALL;
 		const verbs = sp.getAll('verb').filter((v) => LISTED_VERBS.includes(v as ChangeVerb));
 		activeVerbs = verbs.length ? (verbs as ChangeVerb[]) : [...LISTED_VERBS];
-		pageNumber = Math.max(1, Number(sp.get('page') ?? 1) || 1);
+		pageNumber = Math.min(MAX_ROWS_PAGE, Math.max(1, Number(sp.get('page') ?? 1) || 1));
 		const asked = sp.get('mode');
 		mode = COMPARE_MODES.includes(asked as CompareMode) ? (asked as CompareMode) : 'ledger';
 	}
