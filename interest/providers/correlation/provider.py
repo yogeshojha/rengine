@@ -199,8 +199,8 @@ class CorrelationProvider(InterestProvider):
         for row in rows:
             org = row.asn_org or f"AS{row.asn}"
             reason = (
-                f"On {org}, a network with {_plural(row.matches, 'web asset')} "
-                f"of the {row.estate} resolved."
+                f"On {org}, a network holding {row.matches} of the {row.estate} "
+                "resolved names."
             )
             yield self._signal(
                 row, InterestKind.NETWORK_OUTLIER.value, reason, f"asn:{row.asn}"
