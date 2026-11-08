@@ -55,11 +55,10 @@ def _asset(condition):
 
 
 def _asset_by_host(ctx: VulnQueryContext, condition):
+    reach = ctx.scope.match(HttpAsset.scan_id)
     return or_(
-        _asset(condition),
-        Vulnerability.host.in_(
-            select(HttpAsset.host).where(ctx.scope.match(HttpAsset.scan_id), condition)
-        ),
+        _asset(and_(reach, condition)),
+        Vulnerability.host.in_(select(HttpAsset.host).where(reach, condition)),
     )
 
 
