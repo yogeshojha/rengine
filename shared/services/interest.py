@@ -58,9 +58,13 @@ def _band_case(column: str) -> str:
 
 
 _RESET_SQL = """
-UPDATE subdomains
+UPDATE subdomains s
 SET interest_score = 0, interest_band = NULL, interest_kinds = '[]'::json
-WHERE scan_id = :sid AND (interest_score <> 0 OR interest_band IS NOT NULL)
+WHERE s.scan_id = :sid AND (s.interest_score <> 0 OR s.interest_band IS NOT NULL)
+  AND NOT EXISTS (
+      SELECT 1 FROM interest_signals g
+      WHERE g.scan_id = :sid AND g.subdomain_id = s.id
+  )
 """
 
 _ROLLUP_SQL = f"""
@@ -78,6 +82,8 @@ SET interest_score = agg.score,
     interest_kinds = agg.kinds::text::json
 FROM agg
 WHERE s.id = agg.subdomain_id AND s.scan_id = :sid
+  AND (s.interest_score, s.interest_band, s.interest_kinds::jsonb)
+      IS DISTINCT FROM (agg.score, {_band_case("agg.score")}, agg.kinds)
 """  # noqa: S608
 
 
