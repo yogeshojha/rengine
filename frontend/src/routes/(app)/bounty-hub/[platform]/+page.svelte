@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import { pageTitle } from '$lib/utilities/page-title';
-	import { untrack, tick } from 'svelte';
+	import { onDestroy, untrack, tick } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -264,6 +264,9 @@
 		untrack(() => loadCounts(platform, filters));
 	});
 
+	let destroyed = false;
+	onDestroy(() => (destroyed = true));
+
 	async function refresh() {
 		const p = platform;
 		refreshingFor = p;
@@ -274,16 +277,16 @@
 			let done = false;
 			for (let i = 0; i < REFRESH_POLLS && !done; i++) {
 				await new Promise((r) => setTimeout(r, REFRESH_POLL_MS));
-				if (platform !== p) return;
+				if (destroyed || platform !== p) return;
 				const next = await bountyReportsApi.summary(p).catch(() => null);
-				if (platform !== p) return;
+				if (destroyed || platform !== p) return;
 				if (next && (next.synced_at !== before || (next.error && next.error !== beforeError))) {
 					summary = next;
 					done = true;
 				}
 			}
 			const progs = await bountyReportsApi.programs(p);
-			if (platform !== p) return;
+			if (destroyed || platform !== p) return;
 			programs = progs;
 			await loadList(p, filters, pageIndex, pageSize);
 			loadCounts(p, filters);

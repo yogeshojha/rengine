@@ -4,7 +4,7 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import Bug from '@lucide/svelte/icons/bug';
 	import Target from '@lucide/svelte/icons/target';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
@@ -84,6 +84,9 @@
 	let errored = $state(false);
 	let searchRef = $state<HTMLInputElement | null>(null);
 	let timer: ReturnType<typeof setTimeout> | null = null;
+	onDestroy(() => {
+		if (timer) clearTimeout(timer);
+	});
 	let reqId = 0;
 
 	async function load(id: string) {

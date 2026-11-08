@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { pageTitle } from '$lib/utilities/page-title';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
@@ -410,10 +410,15 @@
 
 	const anyConnected = $derived((status?.platforms ?? []).some((p) => p.configured));
 
+	let destroyed = false;
+	onDestroy(() => (destroyed = true));
+
 	async function settled(before: string | null): Promise<boolean> {
 		for (let i = 0; i < REFRESH_POLLS; i++) {
 			await new Promise((r) => setTimeout(r, REFRESH_POLL_MS));
+			if (destroyed) return false;
 			const next = await bountyProgramsApi.status().catch(() => null);
+			if (destroyed) return false;
 			if (!next) continue;
 			status = next;
 			if (next.last_synced_at !== before) return true;
@@ -430,6 +435,7 @@
 				bountyProgramsApi.syncFeed()
 			]);
 			const done = await settled(before);
+			if (destroyed) return;
 			await loadPrograms(filters, pageIndex, pageSize, projectId);
 			toast.success(done ? 'Programs refreshed' : 'Refresh running');
 		} catch (error) {

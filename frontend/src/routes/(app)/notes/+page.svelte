@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -105,6 +105,7 @@
 	let draft = $state('');
 	let searchEl = $state<HTMLInputElement | null>(null);
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
+	onDestroy(() => clearTimeout(searchTimer));
 
 	$effect(() => {
 		const applied = query;

@@ -2,7 +2,7 @@
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { page } from '$app/state';
 	import { goto, replaceState } from '$app/navigation';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet, SvelteURLSearchParams } from 'svelte/reactivity';
 	import { toast } from 'svelte-sonner';
 	import Check from '@lucide/svelte/icons/check';
@@ -165,6 +165,7 @@
 	const targetPool = new SvelteMap<string, string>();
 	let poolFor = '';
 	let targetSearchTimer: ReturnType<typeof setTimeout> | undefined;
+	onDestroy(() => clearTimeout(targetSearchTimer));
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
 	let projectSlug = $derived(projectsStore.activeProject?.slug ?? '');
