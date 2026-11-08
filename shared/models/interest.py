@@ -64,9 +64,7 @@ class InterestSignal(SQLModel, table=True):
         foreign_key="targets.id", index=True, ondelete="CASCADE"
     )
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
-    subdomain_id: uuid.UUID = Field(
-        foreign_key="subdomains.id", index=True, ondelete="CASCADE"
-    )
+    subdomain_id: uuid.UUID = Field(index=True)
     host: str = Field(max_length=500, index=True)
 
     source: str = Field(max_length=16, index=True)

@@ -6,7 +6,9 @@ from fastapi import HTTPException
 
 from app.services.surface_delete import SurfaceDeleteService
 from shared.definitions.surface import SurfaceDimension
+from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.http_asset import HttpAsset
+from shared.models.interest import InterestSignal
 from shared.models.secret import Secret, SecretSighting
 from shared.models.subdomain import Subdomain
 from shared.models.vulnerability import Vulnerability
@@ -57,6 +59,71 @@ async def test_a_deleted_web_asset_takes_its_stored_responses(estate, now):
         )
     )
     assert left == 1
+
+
+async def _count(estate, model, *where) -> int:
+    return await estate.session.scalar(
+        sa.select(sa.func.count()).select_from(model).where(*where)
+    )
+
+
+async def test_a_deleted_web_asset_takes_its_interest_signals(estate, now):
+    await _seed(estate, now)
+    scan_id = estate.scans["run"]
+    doomed = await _host_id(estate, "run", "www.example.com")
+    kept = await _host_id(estate, "run", "api.example.com")
+    for host_id, host in ((doomed, "www.example.com"), (kept, "api.example.com")):
+        estate.session.add(
+            InterestSignal(
+                scan_id=scan_id,
+                target_id=await estate._target_of(scan_id),
+                project_id=estate.project_id,
+                subdomain_id=host_id,
+                host=host,
+                source="rule",
+                key="admin-panel",
+                kind="admin",
+            )
+        )
+    await estate.session.flush()
+
+    await SurfaceDeleteService(estate.session).delete(
+        _scope(estate, "run"), SurfaceDimension.WEB_ASSETS.value, [str(doomed)]
+    )
+
+    assert (
+        await _count(estate, InterestSignal, InterestSignal.subdomain_id == doomed) == 0
+    )
+    assert (
+        await _count(estate, InterestSignal, InterestSignal.subdomain_id == kept) == 1
+    )
+
+
+async def test_a_deleted_endpoint_takes_its_stored_response(estate, now):
+    await _seed(estate, now)
+    scan_id = estate.scans["run"]
+    await estate.endpoints("run", ["/login", "/about"], at=now, status=200)
+    rows = (
+        await estate.session.execute(
+            sa.select(Endpoint.id, Endpoint.path).where(Endpoint.scan_id == scan_id)
+        )
+    ).all()
+    ids = {row.path: row.id for row in rows}
+    for endpoint_id in ids.values():
+        estate.session.add(
+            EndpointResponse(
+                endpoint_id=endpoint_id, scan_id=scan_id, response_body="<html>"
+            )
+        )
+    await estate.session.flush()
+
+    result = await SurfaceDeleteService(estate.session).delete(
+        _scope(estate, "run"), SurfaceDimension.ENDPOINTS.value, [str(ids["/login"])]
+    )
+
+    assert result.deleted == 1
+    left = await estate.session.scalars(sa.select(EndpointResponse.endpoint_id))
+    assert set(left.all()) == {ids["/about"]}
 
 
 async def test_a_row_outside_the_scope_is_not_deleted(estate, now):

@@ -26,7 +26,7 @@ from shared.definitions.endpoints import (
 )
 from shared.definitions.ports import SCHEME_PORTS
 from shared.logging import get_logger
-from shared.models.endpoint import Endpoint
+from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.http_asset import HttpAsset
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
@@ -187,11 +187,11 @@ def judge(
     if verdicts:
         ids = sorted(verdicts, key=str)
         for start in range(0, len(ids), _DELETE_CHUNK):
+            chunk = ids[start : start + _DELETE_CHUNK]
             session.execute(
-                delete(Endpoint).where(
-                    Endpoint.id.in_(ids[start : start + _DELETE_CHUNK])
-                )
+                delete(EndpointResponse).where(EndpointResponse.endpoint_id.in_(chunk))
             )
+            session.execute(delete(Endpoint).where(Endpoint.id.in_(chunk)))
         session.commit()
     return Counter(verdicts.values())
 

@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from sqlalchemy import bindparam, cast, delete, not_, or_, update
+from sqlalchemy import bindparam, cast, delete, not_, or_, select, update
 from sqlalchemy.dialects.postgresql import JSONB, insert
 
 from shared.definitions.api_keys import SUBFINDER_SOURCES
@@ -24,6 +24,7 @@ from shared.enums.api_key import APIProvider
 from shared.enums.scan import AssetKind, Intensity, Phase, StageGroup, StageRole
 from shared.enums.subdomain import SubdomainSource
 from shared.logging import get_logger
+from shared.models.interest import InterestSignal
 from shared.models.subdomain import Subdomain
 from shared.services import infostealer, target_seeds
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
@@ -802,9 +803,14 @@ class SubdomainStage(Stage):
                 for source in SEED_SOURCES
             ]
         )
+        doomed = (Subdomain.scan_id == self.ctx.scan_id, not_(seeded))
         self.session.execute(
-            delete(Subdomain).where(Subdomain.scan_id == self.ctx.scan_id, not_(seeded))
+            delete(InterestSignal).where(
+                InterestSignal.scan_id == self.ctx.scan_id,
+                InterestSignal.subdomain_id.in_(select(Subdomain.id).where(*doomed)),
+            )
         )
+        self.session.execute(delete(Subdomain).where(*doomed))
         self._cleared = True
 
     def _write_names(self, merged: dict[str, set[str]]) -> int:

@@ -99,9 +99,7 @@ class EndpointResponse(SQLModel, table=True):
 
     __tablename__ = "endpoint_responses"
 
-    endpoint_id: uuid.UUID = Field(
-        primary_key=True, foreign_key="endpoints.id", ondelete="CASCADE"
-    )
+    endpoint_id: uuid.UUID = Field(primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
     raw_response_header: str | None = text_column()
     response_body: str | None = text_column()

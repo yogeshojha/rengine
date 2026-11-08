@@ -8,8 +8,9 @@ from fastapi import HTTPException, status
 from sqlalchemy import Uuid, delete, select, tuple_
 
 from shared.definitions.surface import SurfaceDimension
-from shared.models.endpoint import Endpoint
+from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.http_asset import HttpAsset
+from shared.models.interest import InterestSignal
 from shared.models.ip_address import IpAddress
 from shared.models.port import Port
 from shared.models.secret import Secret
@@ -31,11 +32,16 @@ class DeleteSpec:
 
     model: Any
     keys: tuple[str, ...]
+    children: tuple[Any, ...] = ()
 
 
 SPECS: dict[str, DeleteSpec] = {
-    SurfaceDimension.WEB_ASSETS.value: DeleteSpec(Subdomain, ("id", "name")),
-    SurfaceDimension.ENDPOINTS.value: DeleteSpec(Endpoint, ("id", "signature")),
+    SurfaceDimension.WEB_ASSETS.value: DeleteSpec(
+        Subdomain, ("id", "name"), (InterestSignal.subdomain_id,)
+    ),
+    SurfaceDimension.ENDPOINTS.value: DeleteSpec(
+        Endpoint, ("id", "signature"), (EndpointResponse.endpoint_id,)
+    ),
     SurfaceDimension.SERVICES.value: DeleteSpec(Port, ("id",)),
     SurfaceDimension.IPS.value: DeleteSpec(IpAddress, ("ip",)),
     SurfaceDimension.VULNERABILITIES.value: DeleteSpec(
@@ -109,6 +115,10 @@ class SurfaceDeleteService:
         if not doomed:
             return result
 
+        for child in spec.children:
+            await self.session.execute(
+                delete(child.class_).where(child.in_(select(model.id).where(*where)))
+            )
         removed = await self.session.execute(delete(model).where(*where))
         result.deleted = removed.rowcount or 0
         if web_assets:

@@ -4,7 +4,7 @@ import pytest
 import sqlalchemy as sa
 
 from shared.definitions.endpoints import EndpointSource, NoiseRule
-from shared.models.endpoint import Endpoint
+from shared.models.endpoint import Endpoint, EndpointResponse
 from shared.models.http_asset import HttpAsset
 from shared.services import endpoint_inventory, endpoint_judge
 from shared.services.endpoint_inventory import EndpointObservation
@@ -102,6 +102,38 @@ async def test_soft_404s_match_the_canary_and_are_deleted(estate, now):
 
     assert dropped == {NoiseRule.NOT_FOUND.value: 2}
     assert await _paths(estate, "run") == {"/", "/real", "/ghost-3"}
+
+
+async def test_a_deleted_endpoint_takes_its_stored_response(estate, now):
+    await estate.scan("example.com", "run", at=now)
+    await estate.assets("run", [HOST], at=now)
+    await _write(estate, "run", ["/", "/real", "/gone"])
+    await _probe(
+        estate,
+        "run",
+        {"/": _ok("root"), "/real": _ok("real"), "/gone": {"status_code": 404}},
+    )
+    sid = estate.scans["run"]
+    for endpoint_id in await estate.session.scalars(
+        sa.select(Endpoint.id).where(Endpoint.scan_id == sid)
+    ):
+        estate.session.add(
+            EndpointResponse(endpoint_id=endpoint_id, scan_id=sid, response_body="x")
+        )
+    await estate.session.flush()
+
+    await _judge(estate, "run")
+
+    kept = await estate.session.scalars(
+        sa.select(Endpoint.path)
+        .join(EndpointResponse, EndpointResponse.endpoint_id == Endpoint.id)
+        .where(Endpoint.scan_id == sid)
+    )
+    responses = await estate.session.scalar(
+        sa.select(sa.func.count()).select_from(EndpointResponse)
+    )
+    assert set(kept.all()) == {"/", "/real"}
+    assert responses == 2
 
 
 async def test_404s_and_archive_rot_are_deleted_without_a_canary(estate, now):
