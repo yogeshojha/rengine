@@ -34,6 +34,7 @@ ISSUE_TRACKER = 0x49540001
 # tripwire_check() spans TRIPWIRE_CHECK .. TRIPWIRE_CHECK + 0xFFFF
 TRIPWIRE_CHECK = 0x54570001
 PROXY_DEFAULT = 0x70726F78
+ESTATE_ENRICH = 0x45450001
 
 
 def bounty_platform(platform: str) -> int:

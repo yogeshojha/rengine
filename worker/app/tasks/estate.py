@@ -13,6 +13,7 @@ from shared.logging import get_logger
 from shared.models.target import Target
 from shared.services import estate_dossier
 from shared.services.asset_query.lead_cache import bump_sync
+from shared.services.locks import ESTATE_ENRICH, sync_lock
 from shared.utils.datetime import utc_now
 from tools.dnsx.service import DnsxService, DnsxServiceError
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions
@@ -59,7 +60,9 @@ def enrich(limit: int = MAX_ENRICH_PER_TICK) -> dict:
     rdap = RDAPProvider(proxy_url=proxy_url)
     done = 0
     projects: set = set()
-    with get_sync_session() as session:
+    with get_sync_session() as session, sync_lock(session, ESTATE_ENRICH) as held:
+        if not held:
+            return {"skipped": "busy"}
         rows = estate_dossier.pending(session, limit=limit)
         for row in rows:
             resolves, a, aaaa, cname = _resolve(dns, row.domain)
