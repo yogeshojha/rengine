@@ -61,6 +61,8 @@ def _test_url(driver: str = "postgresql+asyncpg") -> str:
 @asynccontextmanager
 async def _own_the_database() -> AsyncIterator[None]:
     """Recreate the test database and hold the lock for the whole run."""
+    if TEST_DB == BaseAppSettings().POSTGRES_DB or not TEST_DB.endswith("_test"):
+        pytest.exit(f"POSTGRES_TEST_DB must end in _test: {TEST_DB}", returncode=2)
     engine = create_async_engine(_admin_url(), isolation_level="AUTOCOMMIT")
     try:
         async with engine.connect() as conn:
