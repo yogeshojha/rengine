@@ -921,13 +921,26 @@ def posture_applies(key: str):
     return json_has(Subdomain.posture_checked, key)
 
 
-def resolved_by(scope: QueryScope, ip, condition):
-    """The address is one that a host matching `condition` resolves to."""
+def _resolved_addresses(scope: QueryScope, condition):
     ips = array_elements(Subdomain.resolved_ips, "resolved")
-    return ip.in_(
+    return (
         select(ips.c.value)
         .distinct()
         .select_from(Subdomain)
         .join(ips, true())
         .where(scope.match(Subdomain.scan_id), condition)
     )
+
+
+def resolved_by(scope: QueryScope, ip, condition, held: dict | None = None, key=None):
+    """The address is one that a host matching `condition` resolves to."""
+    if held is None or key is None:
+        return ip.in_(_resolved_addresses(scope, condition))
+    slot = ("resolved_by", key)
+    if slot not in held:
+        held[slot] = (
+            _resolved_addresses(scope, condition)
+            .cte(f"resolved_by_{len(held)}")
+            .prefix_with("MATERIALIZED")
+        )
+    return ip.in_(select(held[slot].c.value))

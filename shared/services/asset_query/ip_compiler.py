@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import datetime
 from typing import Any
 
@@ -37,6 +38,7 @@ class IpQueryContext:
     scope: QueryScope
     now: datetime
     source: Any
+    held: dict = dataclass_field(default_factory=dict, compare=False, repr=False)
 
 
 def _inet(ctx: IpQueryContext):
@@ -93,7 +95,11 @@ _IP_BUILDERS = {
     "service": lambda c, ctx: _port_exists(ctx, string_match(Port.service_name, c)),
     "ports": lambda c, ctx: number_match(ctx.source.c.port_count, c, int_coerce(c)),
     "host": lambda c, ctx: preds.resolved_by(
-        ctx.scope, ctx.source.c.ip, folded_match(Subdomain.name, c)
+        ctx.scope,
+        ctx.source.c.ip,
+        folded_match(Subdomain.name, c),
+        ctx.held,
+        (c.op, c.values),
     ),
     "hosts": lambda c, ctx: number_match(ctx.source.c.host_count, c, int_coerce(c)),
     "assets": lambda c, ctx: number_match(ctx.source.c.asset_count, c, int_coerce(c)),

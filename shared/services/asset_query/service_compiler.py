@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import datetime
 from typing import Any
 
@@ -42,6 +43,7 @@ class ServiceQueryContext:
     scope: QueryScope
     now: datetime
     source: Any
+    held: dict = dataclass_field(default_factory=dict, compare=False, repr=False)
 
 
 def _within(ctx: ServiceQueryContext, cidr: str):
@@ -121,7 +123,11 @@ _SERVICE_BUILDERS = {
     "country": lambda c, ctx: string_match(ctx.source.c.country, c),
     "cdn": lambda c, ctx: cdn_match(ctx.source.c.cdn_name, ctx.source.c.is_cdn, c),
     "host": lambda c, ctx: preds.resolved_by(
-        ctx.scope, ctx.source.c.ip, folded_match(Subdomain.name, c)
+        ctx.scope,
+        ctx.source.c.ip,
+        folded_match(Subdomain.name, c),
+        ctx.held,
+        (c.op, c.values),
     ),
     "status": lambda c, ctx: number_match(ctx.source.c.status_code, c, int_coerce(c)),
     "vuln": lambda c, ctx: preds.service_vuln(
