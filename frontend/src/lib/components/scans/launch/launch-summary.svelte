@@ -75,7 +75,7 @@
 		{/each}
 		{#each preview?.warnings ?? [] as warning (warning)}
 			<p class="flex items-start gap-1.5 text-2xs text-warning">
-				<TriangleAlert class="mt-px size-3 shrink-0" />
+				<span class="flex h-4 shrink-0 items-center"><TriangleAlert class="size-3" /></span>
 				<span>{warning}</span>
 			</p>
 		{/each}

@@ -223,7 +223,7 @@
 			{/if}
 		{/if}
 	{:else}
-		<div class="-mt-1 flex items-center justify-between gap-2">
+		<div class="flex items-center justify-between gap-2">
 			<p class="text-xs text-muted-foreground">Dependent stages are included automatically.</p>
 			<div class="flex shrink-0 items-center gap-1">
 				<Button
