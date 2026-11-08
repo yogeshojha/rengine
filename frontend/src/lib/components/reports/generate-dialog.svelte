@@ -238,7 +238,10 @@
 			.catch((e) => {
 				if (mine !== estimateSeq) return;
 				estimate = null;
-				estimateError = e instanceof Error ? e.message : 'Request failed.';
+				estimateError =
+					e instanceof Error
+						? e.message
+						: 'The API did not respond. Check that the api service is running.';
 			})
 			.finally(() => {
 				if (mine === estimateSeq) estimating = false;

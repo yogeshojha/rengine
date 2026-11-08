@@ -101,7 +101,10 @@
 			}
 		} catch (error) {
 			if (!isCurrent(handle, platform)) return;
-			loadError = error instanceof Error ? error.message : 'Request failed.';
+			loadError =
+				error instanceof Error
+					? error.message
+					: 'The API did not respond. Check that the api service is running.';
 			toast.error(error instanceof Error ? error.message : 'Program not loaded');
 			detail = null;
 		} finally {

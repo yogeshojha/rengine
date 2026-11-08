@@ -52,7 +52,10 @@
 			]);
 			loadError = null;
 		} catch (e) {
-			loadError = e instanceof Error ? e.message : 'Request failed.';
+			loadError =
+				e instanceof Error
+					? e.message
+					: 'The API did not respond. Check that the api service is running.';
 		}
 	}
 
