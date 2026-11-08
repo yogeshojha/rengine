@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi_pagination.ext.sqlalchemy import paginate
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.capability import require_capability
@@ -54,6 +54,7 @@ from shared.services.celery_dispatch import (
     dispatch_bounty_program_sync,
     dispatch_bounty_sync,
 )
+from shared.utils.datetime import normalize_datetime
 
 router = APIRouter(prefix="/bounty-programs", tags=["bounty programs"])
 
@@ -76,6 +77,19 @@ def get_watches(
 WatchDep = Annotated[WatchService, Depends(get_watches)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 PlatformPath = Annotated[str, Path(description="Bug bounty platform key")]
+
+
+_OUT_OF_RANGE = "Date is out of range."
+
+
+def _utc(value: datetime | None) -> datetime | None:
+    try:
+        return normalize_datetime(value)
+    except OverflowError:
+        raise ValueError(_OUT_OF_RANGE) from None
+
+
+Since = Annotated[datetime | None, AfterValidator(_utc)]
 
 
 @router.get("/vocabulary")
@@ -375,7 +389,7 @@ async def list_watch_hosts(
     watches: WatchDep,
     session: SessionDep,
     state: Annotated[str | None, Query(max_length=32)] = None,
-    since: datetime | None = None,
+    since: Since = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
 ) -> Page[WatchHostRead]:
     await require_capability(session, CAP_PROGRAM_WATCHES)
@@ -394,7 +408,7 @@ async def watch_host_counts(
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
-    since: datetime | None = None,
+    since: Since = None,
 ) -> WatchHostCounts:
     await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.host_counts(watch_id, project_id, since)
@@ -421,7 +435,7 @@ async def list_watch_events(
     watches: WatchDep,
     session: SessionDep,
     kind: Annotated[str | None, Query(max_length=32)] = None,
-    since: datetime | None = None,
+    since: Since = None,
 ) -> Page[WatchEventRead]:
     await require_capability(session, CAP_PROGRAM_WATCHES)
     await watches.ensure(watch_id, project_id)
