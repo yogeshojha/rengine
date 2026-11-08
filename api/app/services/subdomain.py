@@ -582,7 +582,6 @@ class SubdomainService:
         )
 
     async def _render_hosts(self, scoped, hashes: set[int]) -> dict[int, list[str]]:
-        """The first host names by name under each hash."""
         if not hashes:
             return {}
         rank = (
