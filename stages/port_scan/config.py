@@ -42,7 +42,7 @@ class PortScanConfig(StageConfig):
     profile: PortProfile = Field(
         default=PortProfile.EXPOSURE,
         title="Port set",
-        description="Ports to probe. Web and sensitive covers the web surface plus administrative and datastore ports.",
+        description="Ports to probe. Web and sensitive covers the web surface plus administrative and database ports.",
         json_schema_extra={"option_labels": _PROFILE_LABELS},
     )
     ports: str = Field(
