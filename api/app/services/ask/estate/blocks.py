@@ -300,7 +300,7 @@ async def rows(
         out.total = 0
         return out
     f = _filter(dim, resolved, block.query, limit=limit, offset=offset)
-    page = await dim.search(session, scope, f, project_id)
+    page = await facts.search(session, dim, scope, f, project_id)
     if getattr(page, "error", None):
         raise BlockError(_explain(page.error, block.query or ""))
     out.total = page.total

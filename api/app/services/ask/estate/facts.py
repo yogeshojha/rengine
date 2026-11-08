@@ -2,20 +2,61 @@
 
 from __future__ import annotations
 
+import inspect
 import uuid
+from functools import cache
 from typing import Any
 
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.ask.estate.reading import fields_of, joined
-from mcp.dimensions import Dimension
+from mcp.dimensions import Dimension, dimension
 from shared.definitions.ask import BLOCK_FACTS, MAX_BLOCK_QUERY, MAX_FACTS
+from shared.definitions.surface import SurfaceDimension
 from shared.logging import get_logger
 from shared.models.ask import BlockFactRead
+from shared.services.asset_query import lead_cache
 
 logger = get_logger(__name__)
 
 Counted = tuple[int, bool]
+
+SEARCH_CACHED = frozenset(
+    {
+        SurfaceDimension.WEB_ASSETS.value,
+        SurfaceDimension.IPS.value,
+        SurfaceDimension.SERVICES.value,
+        SurfaceDimension.VULNERABILITIES.value,
+        SurfaceDimension.SOFTWARE.value,
+        SurfaceDimension.ENDPOINTS.value,
+    }
+)
+
+
+@cache
+def _page_model(key: str) -> type[BaseModel]:
+    search = dimension(key).service(None).__class__.search
+    return inspect.signature(search, eval_str=True).return_annotation
+
+
+async def search(
+    session: AsyncSession, dim: Dimension, scope: Any, f: Any, project_id: uuid.UUID
+) -> Any:
+    """One search page through the cache entry the dimension's search route writes."""
+    if dim.key not in SEARCH_CACHED:
+        return await dim.search(session, scope, f, project_id)
+    body = f.model_dump_json()
+    return await lead_cache.cached(
+        session,
+        name=f"search:{dim.key}",
+        scans=scope.ids,
+        facets=f"{project_id}|{body}" if dim.needs_project else body,
+        model=_page_model(dim.key),
+        build=lambda: dim.search(session, scope, f, project_id),
+        ttl=lead_cache.SEARCH_TTL_SECONDS,
+        live_ttl=None,
+    )
 
 
 async def count(
@@ -26,7 +67,7 @@ async def count(
     query: str | None,
 ) -> Counted | None:
     f = dim.build_filter(query, limit=1, offset=0)
-    page = await dim.search(session, scope, f, project_id)
+    page = await search(session, dim, scope, f, project_id)
     if getattr(page, "error", None):
         return None
     return int(page.total or 0), bool(page.total_capped)
