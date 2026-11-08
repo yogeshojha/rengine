@@ -11,7 +11,6 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 from alembic import op
-from shared.definitions.surface import SurfaceDimension
 
 revision: str = "3f8b2d6c1a94"
 down_revision: str | None = None
@@ -115,13 +114,13 @@ RESULT_TABLES = (
 )
 
 REVISION_TABLES = {
-    "subdomains": SurfaceDimension.WEB_ASSETS.value,
-    "endpoints": SurfaceDimension.ENDPOINTS.value,
-    "ports": SurfaceDimension.SERVICES.value,
-    "ip_addresses": SurfaceDimension.IPS.value,
-    "vulnerabilities": SurfaceDimension.VULNERABILITIES.value,
-    "software_cves": SurfaceDimension.SOFTWARE.value,
-    "secrets": SurfaceDimension.SECRETS.value,
+    "subdomains": "web_assets",
+    "endpoints": "endpoints",
+    "ports": "services",
+    "ip_addresses": "ips",
+    "vulnerabilities": "vulnerabilities",
+    "software_cves": "software",
+    "secrets": "secrets",
 }
 
 BUMP = """
