@@ -177,7 +177,7 @@ export function serviceQueryChips(q: ServiceQuery, facets: ServiceFacetSet): Ser
 	if (q.cdn !== 'any')
 		chips.push({
 			id: 'cdn',
-			label: q.cdn === 'yes' ? 'On a CDN' : 'Not on a CDN',
+			label: q.cdn === 'yes' ? 'Behind CDN' : 'Not behind CDN',
 			remove: (x) => ({ ...x, cdn: 'any' })
 		});
 	if (q.http !== 'any')
