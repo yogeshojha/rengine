@@ -297,7 +297,7 @@
 							loadingLabel="Disabling"
 							disabled={!canDisable}
 						>
-							Disable 2FA
+							Disable two-factor
 						</LoadingButton>
 						<Button
 							variant="ghost"
@@ -358,7 +358,11 @@
 				<div class="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-start">
 					<div class="flex flex-col items-center gap-2">
 						{#if setupQr}
-							<img src={setupQr} alt="2FA QR code" class="size-40 rounded-md border bg-white p-2" />
+							<img
+								src={setupQr}
+								alt="Two-factor enrollment QR code"
+								class="size-40 rounded-md border bg-white p-2"
+							/>
 						{/if}
 					</div>
 					<div class="space-y-4">
@@ -433,7 +437,7 @@
 					loadingLabel="Preparing"
 					disabled={!setupPassword}
 				>
-					Enable 2FA
+					Enable two-factor
 				</LoadingButton>
 			</form>
 		{/if}
