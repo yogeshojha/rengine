@@ -10,6 +10,7 @@ from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
 PROXY_SCHEMES = tuple(p.value for p in ProxyProtocol)
+MAX_DESCRIPTION = 500
 
 
 class ProxyEndpoint(BaseModel):
@@ -25,7 +26,7 @@ class Proxy(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=120)
-    description: str | None = Field(default=None, max_length=500)
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     is_active: bool = Field(default=True)
     is_default: bool = Field(default=False)
     endpoints_encrypted: str
@@ -49,7 +50,7 @@ class ProxyEndpointRead(BaseModel):
 
 class ProxyCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     is_active: bool = True
     is_default: bool = False
     endpoints: list[ProxyEndpoint] = Field(min_length=1)
@@ -59,7 +60,7 @@ class ProxyCreate(BaseModel):
 
 class ProxyUpdate(BaseModel):
     name: str | None = None
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     is_active: bool | None = None
     is_default: bool | None = None
     endpoints: list[ProxyEndpoint] | None = None

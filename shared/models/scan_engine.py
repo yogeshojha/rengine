@@ -10,7 +10,7 @@ from sqlmodel import Field, SQLModel
 
 from shared.definitions.intensity import clean_transport_overrides
 from shared.enums.scan import Intensity
-from shared.models.scan_context import HttpProtocol, ScanContextCreate
+from shared.models.scan_context import MAX_DESCRIPTION, HttpProtocol, ScanContextCreate
 from shared.models.types import EncryptedJSON
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
@@ -23,7 +23,7 @@ class ScanEngine(SQLModel, table=True):
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     created_by: uuid.UUID = Field(foreign_key="users.id")
     name: str = Field(max_length=200)
-    description: str | None = Field(default=None, max_length=1000)
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     intensity: str = Field(default=Intensity.NORMAL.value)
     global_headers: list = Field(
         default_factory=list, sa_column=Column(EncryptedJSON, nullable=False)
@@ -44,7 +44,7 @@ class ScanEngine(SQLModel, table=True):
 
 class ScanEngineCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: str | None = PydanticField(default=None, max_length=MAX_DESCRIPTION)
     intensity: str = Intensity.NORMAL.value
     global_headers: list[str] = PydanticField(default_factory=list)
     stages: dict[str, dict] = PydanticField(default_factory=dict)
@@ -60,7 +60,7 @@ class ScanEngineCreate(BaseModel):
 
 class ScanEngineUpdate(BaseModel):
     name: str | None = None
-    description: str | None = None
+    description: str | None = PydanticField(default=None, max_length=MAX_DESCRIPTION)
     intensity: str | None = None
     global_headers: list[str] | None = None
     stages: dict[str, dict] | None = None

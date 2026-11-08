@@ -19,6 +19,10 @@ from shared.definitions.interest import (
 from shared.definitions.surface import MAX_SELECTED_ROWS
 from shared.utils.datetime import utc_now
 
+MAX_DESCRIPTION = 300
+MAX_NOTE = 300
+MAX_KIND = 40
+
 
 class InterestRule(SQLModel, table=True):
     __tablename__ = "interest_rules"
@@ -31,7 +35,7 @@ class InterestRule(SQLModel, table=True):
         default=None, foreign_key="projects.id", index=True, ondelete="CASCADE"
     )
     name: str = Field(max_length=MAX_RULE_NAME)
-    description: str | None = Field(default=None, max_length=300)
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     mode: str = Field(default=RuleMode.QUERY.value, max_length=16)
     query: str = Field(default="", max_length=MAX_QUERY_LENGTH)
     keywords: list = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
@@ -39,7 +43,7 @@ class InterestRule(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
     live_only: bool = Field(default=False)
-    kind: str = Field(max_length=40)
+    kind: str = Field(max_length=MAX_KIND)
     weight: int | None = Field(default=None)
     enabled: bool = Field(default=True, index=True)
     builtin: bool = Field(default=False, index=True)
@@ -69,7 +73,7 @@ class InterestSignal(SQLModel, table=True):
 
     source: str = Field(max_length=16, index=True)
     key: str = Field(max_length=120)
-    kind: str = Field(max_length=40, index=True)
+    kind: str = Field(max_length=MAX_KIND, index=True)
     weight: int = Field(default=0)
     label: str = Field(default="", max_length=MAX_RULE_NAME)
     reason: str = Field(default="", max_length=MAX_REASON)
@@ -92,15 +96,15 @@ class InterestDismissal(SQLModel, table=True):
     )
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     host: str = Field(max_length=500, index=True)
-    kind: str = Field(default="", max_length=40)
-    note: str | None = Field(default=None, max_length=300)
+    kind: str = Field(default="", max_length=MAX_KIND)
+    note: str | None = Field(default=None, max_length=MAX_NOTE)
     created_by: uuid.UUID | None = Field(default=None, foreign_key="users.id")
     created_at: datetime = Field(default_factory=utc_now)
 
 
 class InterestRuleCreate(BaseModel):
     name: str = PField(min_length=1, max_length=MAX_RULE_NAME)
-    description: str | None = None
+    description: str | None = PField(default=None, max_length=MAX_DESCRIPTION)
     mode: str = RuleMode.QUERY.value
     query: str = PField(default="", max_length=MAX_QUERY_LENGTH)
     keywords: list[str] = PField(default_factory=list, max_length=MAX_KEYWORDS)
@@ -114,8 +118,8 @@ class InterestRuleCreate(BaseModel):
 
 
 class InterestRuleUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
+    name: str | None = PField(default=None, min_length=1, max_length=MAX_RULE_NAME)
+    description: str | None = PField(default=None, max_length=MAX_DESCRIPTION)
     query: str | None = PField(default=None, max_length=MAX_QUERY_LENGTH)
     keywords: list[str] | None = PField(default=None, max_length=MAX_KEYWORDS)
     keyword_fields: list[str] | None = None
@@ -265,8 +269,8 @@ class RuleSuggestion(BaseModel):
 class DismissRequest(BaseModel):
     host: str = PField(min_length=1, max_length=500)
     target_id: uuid.UUID
-    kind: str = ""
-    note: str | None = None
+    kind: str = PField(default="", max_length=MAX_KIND)
+    note: str | None = PField(default=None, max_length=MAX_NOTE)
 
 
 class BulkDismissRequest(BaseModel):

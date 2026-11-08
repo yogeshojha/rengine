@@ -12,6 +12,8 @@ from shared.models.types import EncryptedJSON
 from shared.utils.datetime import utc_now
 from shared.utils.validation import clean_name, clean_optional_name
 
+MAX_DESCRIPTION = 1000
+
 AUTH_TYPES: tuple[str, ...] = tuple(t.value for t in AuthType)
 HTTP_PROTOCOLS: tuple[str, ...] = tuple(p.value for p in HttpProtocol)
 
@@ -49,7 +51,7 @@ class ScanContext(SQLModel, table=True):
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
     created_by: uuid.UUID = Field(foreign_key="users.id")
     name: str = Field(max_length=200)
-    description: str | None = Field(default=None, max_length=1000)
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     auth_type: str = Field(default=AuthType.NONE.value)
     auth: dict = Field(
         default_factory=dict, sa_column=Column(EncryptedJSON, nullable=False)
@@ -86,7 +88,7 @@ class ScanContext(SQLModel, table=True):
 
 class ScanContextCreate(BaseModel):
     name: str
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     auth_type: str = AuthType.NONE.value
     auth: AuthConfig | None = None
     extra_headers: list[AuthHeader] = Field(default_factory=list)
@@ -107,7 +109,7 @@ class ScanContextCreate(BaseModel):
 
 class ScanContextUpdate(BaseModel):
     name: str | None = None
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=MAX_DESCRIPTION)
     auth_type: str | None = None
     auth: AuthConfig | None = None
     extra_headers: list[AuthHeader] | None = None
