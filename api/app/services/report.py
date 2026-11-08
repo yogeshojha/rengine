@@ -19,7 +19,12 @@ from reports.registry import section as lookup_section
 from reports.theme import ThemeError, builtin_source, builtin_themes, theme_summary
 from reports.theme import parse as parse_theme
 from reports.theme_store import builtin_values
-from shared.definitions.ai import REPORT_TASKS, TASK_OUTPUT_TOKENS, Usage
+from shared.definitions.ai import (
+    REPORT_TASKS,
+    TASK_OUTPUT_TOKENS,
+    AIFeatureKey,
+    Usage,
+)
 from shared.definitions.report_fonts import (
     FONT_ROLE_HELP,
     FONT_ROLE_LABELS,
@@ -139,7 +144,7 @@ class ReportService:
             ],
             depths=[{"key": k, "label": v} for k, v in DEPTH_LABELS.items()],
             densities=[{"key": k, "label": v} for k, v in DENSITY_LABELS.items()],
-            ai_available=bool(cfg and cfg.allows("report_narrative")),
+            ai_available=bool(cfg and cfg.allows(AIFeatureKey.REPORT_NARRATIVE.value)),
         )
 
     async def _theme_summaries(self) -> list[ThemeSummary]:
@@ -622,7 +627,9 @@ class ReportService:
             (template.narrative if template else {}) or {}
         )
         cfg = await load_config_async(self.session)
-        if narrative.ai_enabled and not (cfg and cfg.allows("report_narrative")):
+        if narrative.ai_enabled and not (
+            cfg and cfg.allows(AIFeatureKey.REPORT_NARRATIVE.value)
+        ):
             narrative.ai_enabled = False
 
         title = (
