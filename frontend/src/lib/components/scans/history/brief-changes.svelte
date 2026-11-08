@@ -122,6 +122,7 @@
 			</Table.Header>
 			<Table.Body>
 				{#each data.dimensions as d (d.dimension)}
+					{@const both = d.verdict.covered_baseline && d.verdict.covered_current}
 					<Table.Row>
 						<Table.Cell class="whitespace-normal">
 							<a href={ROUTES.compare(scan.id, data.baseline.scan_id)} class="hover:text-primary"
@@ -135,15 +136,18 @@
 						<Table.Cell
 							class="text-right font-mono tabular-nums {d.appeared
 								? 'font-semibold'
-								: 'text-muted-foreground'}">{d.appeared ? `+${n(d.appeared)}` : '0'}</Table.Cell
+								: 'text-muted-foreground'}"
+							>{!both ? '' : d.appeared ? `+${n(d.appeared)}` : '0'}</Table.Cell
 						>
 						<Table.Cell class="text-right font-mono text-muted-foreground tabular-nums"
-							>{n(d.changed)}</Table.Cell
+							>{both ? n(d.changed) : ''}</Table.Cell
 						>
 						<Table.Cell class="text-right font-mono text-muted-foreground tabular-nums"
-							>{d.disappeared ? `−${n(d.disappeared)}` : '0'}</Table.Cell
+							>{!both ? '' : d.disappeared ? `−${n(d.disappeared)}` : '0'}</Table.Cell
 						>
-						<Table.Cell class="text-right font-mono tabular-nums">{n(d.total_current)}</Table.Cell>
+						<Table.Cell class="text-right font-mono tabular-nums"
+							>{d.verdict.covered_current ? n(d.total_current) : 'Not scanned'}</Table.Cell
+						>
 					</Table.Row>
 				{/each}
 			</Table.Body>
