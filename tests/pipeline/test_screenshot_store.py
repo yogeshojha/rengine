@@ -71,7 +71,15 @@ async def test_a_rewritten_path_reaches_both_tables(durable_estate, now):
 
     await durable_estate.session.run_sync(
         lambda s: screenshot_store._apply(
-            s, [{"b_old": _SHOT, "b_phash": _HASH, "b_path": _DONE}]
+            s,
+            [
+                {
+                    "b_scan": durable_estate.scans["done"],
+                    "b_old": _SHOT,
+                    "b_phash": _HASH,
+                    "b_path": _DONE,
+                }
+            ],
         )
     )
 
