@@ -6,10 +6,14 @@ from sqlalchemy import BigInteger, Column, Text
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
+from shared.definitions.endpoints import MAX_HOST_LENGTH, MAX_URL_LENGTH
 from shared.definitions.evidence import Evidence
 from shared.definitions.software import (
+    MAX_CPE,
+    MAX_NAME,
     MAX_PRODUCT,
     MAX_VENDOR,
+    MAX_VERSION,
     Confidence,
     VersionSource,
 )
@@ -18,7 +22,6 @@ from shared.definitions.vulnerabilities import Severity
 from shared.models.asset_query import QueryError
 from shared.models.fields import json_list
 from shared.utils.datetime import utc_now
-from shared.utils.software import MAX_CPE, MAX_NAME, MAX_VERSION
 
 
 class NvdCve(SQLModel, table=True):
@@ -98,10 +101,10 @@ class SoftwareCve(SQLModel, table=True):
     fixed_in_assets: int | None = Field(default=None)
 
     # where it is
-    host: str | None = Field(default=None, max_length=500, index=True)
+    host: str | None = Field(default=None, max_length=MAX_HOST_LENGTH, index=True)
     ip: str | None = Field(default=None, max_length=45, index=True)
     port: int | None = Field(default=None)
-    url: str | None = Field(default=None, max_length=2000)
+    url: str | None = Field(default=None, max_length=MAX_URL_LENGTH)
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
     port_id: uuid.UUID | None = Field(default=None, index=True)
 

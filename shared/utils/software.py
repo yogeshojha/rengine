@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import re
 
-from shared.definitions.software import MAX_COMPONENTS_PER_ASSET, VersionSource
+from shared.definitions.software import (
+    MAX_COMPONENTS_PER_ASSET,
+    MAX_NAME,
+    MAX_VERSION,
+    VersionSource,
+)
 
-MAX_NAME = 120
-MAX_VERSION = 64
-MAX_CPE = 300
 _SEGMENTS = 16
 _PAD = 8
 _ZERO = "0" * _PAD
