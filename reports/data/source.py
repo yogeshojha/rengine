@@ -5,7 +5,7 @@ from functools import cached_property
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, case, cast, distinct, func, select, text
+from sqlalchemy import and_, case, cast, distinct, exists, false, func, select, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import Session, aliased
@@ -296,29 +296,37 @@ class ReportSource:
 
     # ---------- baselines ----------
 
-    def _baseline_keys(self, dimension: str) -> set[tuple]:
-        key = f"baseline:{dimension}"
-        if key in self._memo:
-            return self._memo[key]
+    def _earlier(self, dimension: str) -> tuple:
         table = _TABLE[dimension]
-        columns = _KEY[dimension]
-        cutoff = self.cutoff
-        found: set[tuple] = set()
-        if cutoff is not None:
-            scan_id = self.scan_for(dimension)
-            query = (
-                select(*columns)
-                .distinct()
-                .where(table.target_id == self.target.id, table.discovered_at < cutoff)
-            )
-            if scan_id is not None:
-                query = query.where(table.scan_id != scan_id)
-            found = {tuple(row) for row in self.session.execute(query)}
-        self._memo[key] = found
-        return found
+        earlier = aliased(table)
+        conditions = [
+            earlier.target_id == self.target.id,
+            earlier.discovered_at < self.cutoff,
+        ]
+        scan_id = self.scan_for(dimension)
+        if scan_id is not None:
+            conditions.append(earlier.scan_id != scan_id)
+        return earlier, conditions
 
     def has_baseline(self, dimension: str) -> bool:
-        return bool(self._baseline_keys(dimension))
+        key = f"baseline:{dimension}"
+        if key not in self._memo:
+            found = False
+            if self.cutoff is not None:
+                _, conditions = self._earlier(dimension)
+                found = bool(
+                    self.session.execute(select(exists().where(*conditions))).scalar()
+                )
+            self._memo[key] = found
+        return self._memo[key]
+
+    def _is_new(self, dimension: str):
+        """A row whose key no earlier run of the target recorded."""
+        if not self.has_baseline(dimension):
+            return false().label("is_new")
+        earlier, conditions = self._earlier(dimension)
+        same = [getattr(earlier, c.key) == c for c in _KEY[dimension]]
+        return (~exists().where(*conditions, *same)).label("is_new")
 
     # ---------- vulnerabilities ----------
 
@@ -343,26 +351,20 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.VULNERABILITIES.value)
         if scan_id is None:
             return []
-        rows = (
-            self.session.execute(
-                select(Vulnerability)
-                .where(Vulnerability.scan_id == scan_id, self._not_suppressed())
-                .order_by(
-                    surface_vulns.severity_rank(),
-                    Vulnerability.is_kev.desc(),
-                    Vulnerability.epss_score.desc().nulls_last(),
-                    Vulnerability.id,
-                )
-                .limit(MAX_REPORT_ROWS)
+        rows = self.session.execute(
+            select(Vulnerability, self._is_new(_DIM.VULNERABILITIES.value))
+            .where(Vulnerability.scan_id == scan_id, self._not_suppressed())
+            .order_by(
+                surface_vulns.severity_rank(),
+                Vulnerability.is_kev.desc(),
+                Vulnerability.epss_score.desc().nulls_last(),
+                Vulnerability.id,
             )
-            .scalars()
-            .all()
-        )
-        baseline = self._baseline_keys(_DIM.VULNERABILITIES.value)
-        known = self.has_baseline(_DIM.VULNERABILITIES.value)
-        assets = self._asset_context({r.host for r in rows if r.host})
+            .limit(MAX_REPORT_ROWS)
+        ).all()
+        assets = self._asset_context({r.host for r, _ in rows if r.host})
         out: list[Finding] = []
-        for row in rows:
+        for row, new in rows:
             asset = assets.get(row.host or "")
             out.append(
                 Finding(
@@ -382,7 +384,7 @@ class ReportSource:
                     cvss_score=row.cvss_score,
                     epss_score=row.epss_score,
                     is_kev=row.is_kev,
-                    is_new=known and (row.fingerprint,) not in baseline,
+                    is_new=new,
                     extracted=[str(v) for v in (row.extracted_results or [])],
                     request=row.request,
                     response=row.response,
@@ -472,18 +474,16 @@ class ReportSource:
         )
         asset = aliased(HttpAsset, newest)
         rows = self.session.execute(
-            select(Subdomain, asset)
+            select(Subdomain, asset, self._is_new(_DIM.WEB_ASSETS.value))
             .outerjoin(asset, newest.c.host == Subdomain.name)
             .where(Subdomain.scan_id == scan_id)
             .order_by(Subdomain.http_status.is_(None), Subdomain.name)
             .limit(MAX_REPORT_ROWS)
         ).all()
 
-        baseline = self._baseline_keys(_DIM.WEB_ASSETS.value)
-        known = self.has_baseline(_DIM.WEB_ASSETS.value)
         by_host = self.findings_by_host
         out: list[Host] = []
-        for sub, asset in rows:
+        for sub, asset, new in rows:
             found = by_host.get(sub.name)
             out.append(
                 Host(
@@ -501,7 +501,7 @@ class ReportSource:
                     tls_not_after=(asset.tls_not_after if asset else None)
                     or sub.tls_not_after,
                     screenshot=sub.screenshot_path,
-                    is_new=known and (sub.name,) not in baseline,
+                    is_new=new,
                     findings=found[0] if found else 0,
                 )
             )
@@ -534,20 +534,14 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.IPS.value)
         if scan_id is None:
             return []
-        rows = (
-            self.session.execute(
-                select(IpAddress)
-                .where(IpAddress.scan_id == scan_id)
-                .order_by(IpAddress.ip)
-                .limit(MAX_REPORT_ROWS)
-            )
-            .scalars()
-            .all()
-        )
+        rows = self.session.execute(
+            select(IpAddress, self._is_new(_DIM.IPS.value))
+            .where(IpAddress.scan_id == scan_id)
+            .order_by(IpAddress.ip)
+            .limit(MAX_REPORT_ROWS)
+        ).all()
         ports = self._ports_per_ip()
         hosts = self._hosts_per_ip()
-        baseline = self._baseline_keys(_DIM.IPS.value)
-        known = self.has_baseline(_DIM.IPS.value)
         return [
             Address(
                 ip=row.ip,
@@ -560,9 +554,9 @@ class ReportSource:
                 ptr=list(row.ptr_hostnames or []),
                 open_ports=ports.get(row.ip, 0),
                 hosts=hosts.get(row.ip, []),
-                is_new=known and (row.ip,) not in baseline,
+                is_new=new,
             )
-            for row in rows
+            for row, new in rows
         ]
 
     def _ports_per_ip(self) -> dict[str, int]:
@@ -645,18 +639,12 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.ENDPOINTS.value)
         if scan_id is None:
             return []
-        rows = (
-            self.session.execute(
-                select(Endpoint)
-                .where(Endpoint.scan_id == scan_id)
-                .order_by(Endpoint.host, Endpoint.path)
-                .limit(MAX_REPORT_ROWS)
-            )
-            .scalars()
-            .all()
-        )
-        baseline = self._baseline_keys(_DIM.ENDPOINTS.value)
-        known = self.has_baseline(_DIM.ENDPOINTS.value)
+        rows = self.session.execute(
+            select(Endpoint, self._is_new(_DIM.ENDPOINTS.value))
+            .where(Endpoint.scan_id == scan_id)
+            .order_by(Endpoint.host, Endpoint.path)
+            .limit(MAX_REPORT_ROWS)
+        ).all()
         return [
             EndpointRow(
                 host=row.host,
@@ -665,9 +653,9 @@ class ReportSource:
                 endpoint_class=row.endpoint_class,
                 params=list(row.params or []),
                 interest=list(row.interest or []),
-                is_new=known and (row.signature,) not in baseline,
+                is_new=new,
             )
-            for row in rows
+            for row, new in rows
         ]
 
     # ---------- hygiene ----------
