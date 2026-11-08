@@ -52,8 +52,6 @@
 	let templateToken = $derived(exactToken('template', v.template_id));
 	let hostTotal = $derived(Object.values(v.host_findings ?? {}).reduce((a, n) => a + n, 0));
 
-	let checkTotal = $state(0);
-
 	$effect(() => {
 		const id = v.id;
 		return () => findingBriefTabs.close(id);
@@ -227,7 +225,7 @@
 				class="ml-auto text-2xs text-primary hover:text-primary/80"
 				onclick={() => onFilter(templateToken)}
 			>
-				All {checkTotal || ''} findings from this check
+				All findings from this check
 			</button>
 		</div>
 		{#if v.corroborated_by.length}
@@ -264,7 +262,6 @@
 					sort="host"
 					main={(f) => f.host ?? locationLabel(f)}
 					{onOpen}
-					onTotal={(n) => (checkTotal = n)}
 				/>
 			</ScrollArea>
 		{/if}
