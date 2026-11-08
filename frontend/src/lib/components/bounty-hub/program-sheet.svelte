@@ -189,7 +189,7 @@
 			toast.success(
 				created > 0
 					? `Added ${plural(created, 'target')}${grouped}`
-					: `No targets added. Each selected asset is a target${grouped}`
+					: 'Targets exist for every selected asset.'
 			);
 			importOpen = false;
 			await load(program.handle, program.platform);
