@@ -456,6 +456,25 @@ FEATURE_LABELS: dict[str, str] = {
 }
 
 
+class AIOffCode(StrEnum):
+    SWITCHED_OFF = "switched_off"
+    NO_PROVIDER = "no_provider"
+    NO_KEY = "no_key"
+    UNSUPPORTED = "unsupported"
+    FEATURE_OFF = "feature_off"
+
+
+def off_reasons(feature: str) -> dict[str, str]:
+    """Why an AI feature is unavailable, per off code."""
+    return {
+        AIOffCode.SWITCHED_OFF.value: "AI is switched off.",
+        AIOffCode.NO_PROVIDER.value: "No AI provider is in use.",
+        AIOffCode.NO_KEY.value: "No AI provider key is set.",
+        AIOffCode.UNSUPPORTED.value: "The AI provider is not supported.",
+        AIOffCode.FEATURE_OFF.value: f"{feature} is switched off in AI settings.",
+    }
+
+
 def feature_switches(stored: dict | None) -> dict[str, bool]:
     """Every feature switch, stored values over the defaults."""
     saved = stored or {}

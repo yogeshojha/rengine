@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.definitions.ai import AIOffCode, off_reasons
 from shared.definitions.surface import SURFACE_NOUN, SurfaceDimension
 
 ASK_CLIENT = "ask"
@@ -138,21 +139,8 @@ ABOUT_SEPARATOR = ":"
 # ---------- the estate ----------
 
 
-class AskOffCode(StrEnum):
-    SWITCHED_OFF = "switched_off"
-    NO_PROVIDER = "no_provider"
-    NO_KEY = "no_key"
-    UNSUPPORTED = "unsupported"
-    FEATURE_OFF = "feature_off"
-
-
-ASK_OFF_REASONS: dict[str, str] = {
-    AskOffCode.SWITCHED_OFF.value: "AI is switched off.",
-    AskOffCode.NO_PROVIDER.value: "No AI provider is in use.",
-    AskOffCode.NO_KEY.value: "No AI provider key is set.",
-    AskOffCode.UNSUPPORTED.value: "The AI provider is not supported.",
-    AskOffCode.FEATURE_OFF.value: "Ask is switched off in AI settings.",
-}
+AskOffCode = AIOffCode
+ASK_OFF_REASONS: dict[str, str] = off_reasons("Ask")
 
 
 class AskSubject(StrEnum):

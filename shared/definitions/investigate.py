@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from shared.definitions.ai import AIOffCode, off_reasons
 from shared.definitions.surface import SurfaceDimension
 
 INVESTIGATE_FEATURE = "investigate"
@@ -199,18 +200,5 @@ class StreamEvent(StrEnum):
 # ---------- availability ----------
 
 
-class InvestigateOffCode(StrEnum):
-    SWITCHED_OFF = "switched_off"
-    NO_PROVIDER = "no_provider"
-    NO_KEY = "no_key"
-    UNSUPPORTED = "unsupported"
-    FEATURE_OFF = "feature_off"
-
-
-INVESTIGATE_OFF_REASONS: dict[str, str] = {
-    InvestigateOffCode.SWITCHED_OFF.value: "AI is switched off.",
-    InvestigateOffCode.NO_PROVIDER.value: "No AI provider is in use.",
-    InvestigateOffCode.NO_KEY.value: "No AI provider key is set.",
-    InvestigateOffCode.UNSUPPORTED.value: "The AI provider is not supported.",
-    InvestigateOffCode.FEATURE_OFF.value: "Investigate is switched off in AI settings.",
-}
+InvestigateOffCode = AIOffCode
+INVESTIGATE_OFF_REASONS: dict[str, str] = off_reasons("Investigate")
