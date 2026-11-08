@@ -180,7 +180,7 @@
 				{#if lastChange}
 					<button
 						type="button"
-						class="truncate rounded-sm text-left text-xs text-muted-foreground underline-offset-2 outline-none hover:text-foreground hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/70"
+						class="truncate rounded-sm text-left text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/70"
 						aria-label="Open {host.name} as recorded when its screenshot last changed"
 						onclick={openLastChange}
 					>
