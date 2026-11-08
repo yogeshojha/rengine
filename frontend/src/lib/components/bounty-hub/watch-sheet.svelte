@@ -177,7 +177,6 @@
 				((initialFilter === WatchHostFilter.Arrived && w.new_hosts > 0) ||
 					(initialFilter === WatchHostFilter.Alerted && w.new_alerts > 0) ||
 					(initialTab === 'activity' && w.scope_changes > 0));
-			void loadHosts();
 			void loadEvents();
 			void watchesApi
 				.markSeen(id, projectId)
@@ -190,7 +189,8 @@
 		void filter;
 		void sinceSeen;
 		void hostPage;
-		if (!open) return;
+		const id = watch?.id;
+		if (!open || !id) return;
 		untrack(() => void loadHosts());
 	});
 
