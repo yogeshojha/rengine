@@ -164,8 +164,10 @@ class TargetEstateService:
         dismissed: set[str] | None = None,
         with_programs: bool = False,
         persist: bool = False,
+        targets: dict[UUID, Target] | None = None,
     ) -> TargetEstate:
-        targets = await self._targets(project_id)
+        if targets is None:
+            targets = await self._targets(project_id)
         target = targets.get(target_id)
         if target is None:
             return TargetEstate(target_id=target_id)
@@ -255,7 +257,12 @@ class TargetEstateService:
                 continue
             examined += 1
             estate = await self.for_target(
-                project_id, target_id, scan_id, relations=False, dismissed=dismissed
+                project_id,
+                target_id,
+                scan_id,
+                relations=False,
+                dismissed=dismissed,
+                targets=targets,
             )
             for d in estate.domains:
                 if d.target_id is not None:
