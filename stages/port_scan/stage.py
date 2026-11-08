@@ -3,7 +3,7 @@ from __future__ import annotations
 import ipaddress
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from shared.definitions.intensity import TransportTool
 from shared.definitions.ports import (
@@ -23,6 +23,7 @@ from shared.services import ip_inventory, port_inventory
 from shared.services.port_inventory import ServiceObservation
 from shared.services.scope_filter import ip_excluded
 from shared.utils.net import is_registry_routable
+from shared.utils.text import counted
 from stages.base import ALL_TARGETS, Stage, StageResult
 from stages.port_scan.config import PORT_THRESHOLD, PortScanConfig
 from tools.naabu.client import NaabuClient, NaabuError, NaabuOptions, port_args
@@ -70,6 +71,14 @@ class PortScanStage(Stage):
         if not rows:
             return StageResult(counts={"open_ports": 0, "scanned": 0})
 
+        over = self._over_budget(len(rows))
+        budget = (
+            [
+                f"{counted(over, 'address', 'addresses')} over the address budget not scanned."
+            ]
+            if over
+            else []
+        )
         plan = self._plan(rows, cfg)
         self.session.commit()
         full = [ip for ip, d in plan.items() if d.policy == ScanPolicy.FULL.value]
@@ -78,7 +87,9 @@ class PortScanStage(Stage):
         if not full and not edge:
             self.emit_progress(f"no address in scope to scan, {skipped} excluded")
             return StageResult(
-                counts={"open_ports": 0, "scanned": 0, "skipped": skipped}
+                counts={"open_ports": 0, "scanned": 0, "skipped": skipped},
+                warnings=budget,
+                partial=bool(budget),
             )
 
         try:
@@ -151,6 +162,7 @@ class PortScanStage(Stage):
             raise RuntimeError("; ".join(failures))
         self.emit_progress(f"{count} open ports across {scanned} addresses")
         warnings = [client.proxy_warning] if client.proxy_warning else []
+        warnings += budget
         return StageResult(
             counts={
                 "open_ports": count,
@@ -207,6 +219,16 @@ class PortScanStage(Stage):
             .scalars()
             .all()
         )
+
+    def _over_budget(self, taken: int) -> int:
+        if taken < self.cfg.max_addresses:
+            return 0
+        total = self.session.execute(
+            select(func.count())
+            .select_from(IpAddress)
+            .where(IpAddress.scan_id == self.ctx.scan_id)
+        ).scalar_one()
+        return max(0, total - taken)
 
     def _named_private_seed(self) -> bool:
         """The target names a private address or netblock."""
