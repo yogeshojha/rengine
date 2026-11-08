@@ -364,7 +364,7 @@ class ChannelService:
             msg = "The account does not exist or is inactive."
             raise ChannelConfigError(msg)
         project = await self.session.get(Project, data.project_id)
-        if project is None:
+        if project is None or not project.is_active:
             msg = "The project does not exist."
             raise ChannelConfigError(msg)
 
@@ -439,7 +439,8 @@ class ChannelService:
             msg = "Only an active chat can be changed."
             raise ChannelConfigError(msg)
         if data.project_id is not None:
-            if await self.session.get(Project, data.project_id) is None:
+            project = await self.session.get(Project, data.project_id)
+            if project is None or not project.is_active:
                 msg = "The project does not exist."
                 raise ChannelConfigError(msg)
             row.project_id = data.project_id
