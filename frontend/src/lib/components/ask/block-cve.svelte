@@ -113,7 +113,7 @@
 			</ul>
 		{/if}
 		{#if !record.finding_scans}
-			<span class="text-xs text-muted-foreground">No scan in scope ran vulnerability checks.</span>
+			<span class="text-xs text-muted-foreground">Not scanned</span>
 		{:else if !record.checks && !record.assets}
 			<span class="text-xs text-muted-foreground"
 				>No check in the library tests for {record.cve}.</span
