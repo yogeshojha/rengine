@@ -30,7 +30,7 @@ class ListTargets(Tool):
     value_field = "contains"
     title = "List targets"
     group = ToolGroup.ORIENT.value
-    description = "The targets this token can reach, with project and type."
+    description = "The targets in scope, with project and type."
     Input = Input
     examples = ("list_targets", "list_targets contains=acme")
 
@@ -102,7 +102,7 @@ class ListProjects(Tool):
     name = "list_projects"
     title = "List projects"
     group = ToolGroup.ORIENT.value
-    description = "The projects this token can reach."
+    description = "The projects in scope."
     examples = ("list_projects",)
 
     async def run(self, ctx: ToolContext, args: ToolInput) -> ToolResult:  # noqa: ARG002

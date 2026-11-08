@@ -110,7 +110,7 @@ class StartScan(Tool):
             caveats=[
                 _traffic_note(scan),
                 "scan_status follows the run. cancel_scan stops it.",
-                f"Started by agent token '{ctx.token.name}' via MCP.",
+                f"Started by {ctx.token.name}.",
             ],
             blocks=[
                 hero(f"Scan started on {target}", sub=scan.engine_name),

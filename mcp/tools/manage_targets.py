@@ -253,7 +253,7 @@ class DeleteTarget(Tool):
             summary=f"Deleted {value} and everything recorded against it",
             data={"value": value, "scans_deleted": scans, "results_deleted": holdings},
             pivot=links.targets(ctx.ui_base_url),
-            caveats=[f"Deleted by agent token '{ctx.token.name}' via MCP."],
+            caveats=[f"Deleted by {ctx.token.name}."],
         )
 
 

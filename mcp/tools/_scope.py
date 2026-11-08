@@ -118,7 +118,7 @@ async def find_target(ctx: ToolContext, value: str) -> Target:
     if match is None:
         rows = (await ctx.session.execute(_scoped(select(Target)))).scalars().all()
         if not rows:
-            msg = "No targets in this token's scope."
+            msg = "No targets in scope."
             raise ToolError(msg)
         match = _pick(rows, needle)
         if match is None:

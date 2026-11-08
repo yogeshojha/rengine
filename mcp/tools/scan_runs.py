@@ -155,7 +155,7 @@ class CancelScan(Tool):
             caveats=[
                 "Results written before the stop are kept.",
                 "Dimensions the remaining stages would have covered are not scanned.",
-                f"Stopped by agent token '{ctx.token.name}' via MCP.",
+                f"Stopped by {ctx.token.name}.",
             ],
         )
 
@@ -218,7 +218,7 @@ class PauseScan(Tool):
             caveats=[
                 "Stages that were running re-run from the start on resume.",
                 "resume_scan continues the run at its first unfinished stage.",
-                f"Paused by agent token '{ctx.token.name}' via MCP.",
+                f"Paused by {ctx.token.name}.",
             ],
         )
 
@@ -279,7 +279,7 @@ class ResumeScan(Tool):
             blocks=[hero(headline, sub=short_id(result.id))],
             caveats=[
                 "The worker picks the run up. scan_status reports it running.",
-                f"Resumed by agent token '{ctx.token.name}' via MCP.",
+                f"Resumed by {ctx.token.name}.",
             ],
         )
 

@@ -60,12 +60,12 @@ class ToolContext:
 
     def check_project(self, project_id: uuid.UUID) -> uuid.UUID:
         if self.token.project_id is not None and project_id != self.token.project_id:
-            msg = "The project is outside this token's scope."
+            msg = "The project is out of scope."
             raise ScopeError(msg)
         return project_id
 
     def check_target(self, target_id: uuid.UUID | None) -> None:
         targets = self.token.targets
         if targets is not None and target_id not in targets:
-            msg = "The target is outside this token's scope."
+            msg = "The target is out of scope."
             raise ScopeError(msg)

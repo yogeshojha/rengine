@@ -96,6 +96,6 @@ class RecordTriage(Tool):
             pivot=links.scan_tab(ctx.ui_base_url, scan_id, dim.tab),
             caveats=[
                 "This decision applies to every later scan of this target.",
-                f"Recorded by agent token '{ctx.token.name}' via MCP.",
+                f"Recorded by {ctx.token.name}.",
             ],
         )

@@ -635,8 +635,7 @@ class Dispatcher:
         for name, spec in commands.by_tool().items():
             text = re.sub(rf"\b{re.escape(name)}\b", f"/{spec.name}", text)
         text = _UUID_IN_TEXT.sub(lambda m: short_id(m.group(0)), text)
-        text = _STAMP_IN_TEXT.sub(r"\1 \2", text)
-        return text.replace("via MCP", "from chat")
+        return _STAMP_IN_TEXT.sub(r"\1 \2", text)
 
     async def _chat(self, session: Any, external_id: str) -> ChannelChat | None:
         statement = select(ChannelChat).where(

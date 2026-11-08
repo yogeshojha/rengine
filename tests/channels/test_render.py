@@ -131,11 +131,11 @@ def test_caveats_are_respelled_for_the_chat():
     text = Dispatcher._chat_text(
         "Observed 2026-09-15 14:31:24.119329+00:00 by scan "
         "da2e7cdd-d11d-4e66-a1ba-3843469deb18. Start one with start_scan. "
-        "scan_status follows the run. Started by agent token 'x' via MCP."
+        "scan_status follows the run. Started by x."
     )
     assert text == (
         "Observed 2026-09-15 14:31 by scan da2e7cdd. Start one with /scan. "
-        "/progress follows the run. Started by agent token 'x' from chat."
+        "/progress follows the run. Started by x."
     )
 
 
