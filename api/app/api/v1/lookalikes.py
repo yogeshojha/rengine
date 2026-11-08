@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.lookalikes import LookalikeService
+from app.services.target_scope import require_target
 from shared.models.lookalike import LookalikeSummary, LookalikeTriageUpdate
 from shared.models.target import Target
 
@@ -44,6 +45,7 @@ async def target_lookalikes(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     """The target's newest settled run that checked lookalikes."""
+    await require_target(service.session, project_id, target_id)
     return await service.for_target(project_id, target_id)
 
 

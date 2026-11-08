@@ -420,6 +420,7 @@ async def get_target_summary(
     service: Annotated[TargetSummaryService, Depends(get_summary_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
+    await require_target(service.session, project_id, target_id)
     return await service.summary(target_id=target_id, project_id=project_id)
 
 
@@ -431,6 +432,7 @@ async def search_target_assets(
     service: Annotated[TargetAssetService, Depends(get_asset_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
+    await require_target(service.session, project_id, target_id)
     return await service.page(project_id=project_id, target_id=target_id, f=body)
 
 
@@ -451,6 +453,7 @@ async def get_target_relations(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     """Other targets in the project shown to be the same estate."""
+    await require_target(session, project_id, target_id)
     return await TargetRelationService(session).for_target(project_id, target_id)
 
 
@@ -480,6 +483,7 @@ async def get_target_programs(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     """Bounty programs whose scope covers this target."""
+    await require_target(session, project_id, target_id)
     return await ProgramCoverageService(session).for_target(project_id, target_id)
 
 

@@ -8,7 +8,7 @@ from app.api.deps import CurrentUser
 from app.api.scope import TargetFilterDep, WebAssetScope
 from app.core.database import get_session
 from app.services.domain_posture import DomainPostureService
-from app.services.target_scope import resolve_targets
+from app.services.target_scope import require_target, resolve_targets
 from shared.models.domain_posture import DomainPostureSummary
 from shared.services.asset_query import lead_cache
 
@@ -59,4 +59,5 @@ async def target_domain_posture(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     """The target's newest settled run that checked its zones."""
+    await require_target(service.session, project_id, target_id)
     return await service.for_target(project_id=project_id, target_id=target_id)

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.cloud_storage import CloudStorageService
+from app.services.target_scope import require_target
 from shared.models.cloud_storage import CloudBucketSummary, CloudBucketTriageUpdate
 from shared.models.target import Target
 
@@ -44,6 +45,7 @@ async def target_cloud_storage(
     project_id: Annotated[UUID, Query(description="Project ID")],
 ):
     """The target's newest settled run that checked cloud storage."""
+    await require_target(service.session, project_id, target_id)
     return await service.for_target(project_id, target_id)
 
 

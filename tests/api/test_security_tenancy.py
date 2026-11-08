@@ -5,8 +5,15 @@ import uuid
 import pytest
 from fastapi import HTTPException
 
+from app.api.v1 import cloud_storage, domain_posture, lookalikes
 from app.api.v1 import targets as targets_api
+from app.services.cloud_storage import CloudStorageService
+from app.services.domain_posture import DomainPostureService
+from app.services.lookalikes import LookalikeService
+from app.services.target_assets import TargetAssetService
 from app.services.target_scope import require_target
+from app.services.target_summary import TargetSummaryService
+from shared.models.target_asset import TargetAssetFilter
 
 pytestmark = pytest.mark.api
 
@@ -40,3 +47,50 @@ async def test_the_estate_refuses_a_scan_of_another_target(estate, now):
     )
     assert detail == "Scan not found."
     await require_target(estate.session, estate.project_id, own, estate.scans["own"])
+
+
+async def test_target_reads_refuse_a_target_of_another_project(estate):
+    tid = await estate.target("example.com")
+    other = uuid.uuid4()
+    s = estate.session
+    calls = [
+        targets_api.get_target_summary(
+            target_id=tid,
+            _current_user=None,
+            service=TargetSummaryService(s),
+            project_id=other,
+        ),
+        targets_api.search_target_assets(
+            target_id=tid,
+            body=TargetAssetFilter(),
+            _current_user=None,
+            service=TargetAssetService(s),
+            project_id=other,
+        ),
+        targets_api.get_target_relations(
+            target_id=tid, _current_user=None, session=s, project_id=other
+        ),
+        targets_api.get_target_programs(
+            target_id=tid, _current_user=None, session=s, project_id=other
+        ),
+        domain_posture.target_domain_posture(
+            _current_user=None,
+            service=DomainPostureService(s),
+            target_id=tid,
+            project_id=other,
+        ),
+        cloud_storage.target_cloud_storage(
+            _current_user=None,
+            service=CloudStorageService(s),
+            target_id=tid,
+            project_id=other,
+        ),
+        lookalikes.target_lookalikes(
+            _current_user=None,
+            service=LookalikeService(s),
+            target_id=tid,
+            project_id=other,
+        ),
+    ]
+    for call in calls:
+        assert await _refused(call) == "Target not found."
