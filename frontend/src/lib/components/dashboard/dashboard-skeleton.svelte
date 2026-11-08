@@ -6,6 +6,11 @@
 
 	const show = (id: string) => dashboardLayout.visible(id);
 	const shape = (id: string) => widgetSpec(id)?.skeleton ?? 'text';
+
+	let risk = $derived(show('surface-risk'));
+	let geo = $derived(show('geo'));
+	let changes = $derived(show('changes'));
+	let inventory = $derived(show('inventory'));
 </script>
 
 {#snippet cell(id: string, width: string, rows = 5)}
@@ -25,12 +30,15 @@
 
 <div class="flex flex-col gap-6" aria-busy="true">
 	<div class="grid grid-cols-12 overflow-hidden rounded-xl border bg-card">
-		{#if show('surface-risk')}{@render cell('surface-risk', 'col-span-12 xl:col-span-8')}{/if}
-		{#if show('geo')}{@render cell('geo', 'col-span-12 lg:col-span-6 xl:col-span-4')}{/if}
-		{#if show('changes')}{@render cell('changes', 'col-span-12 xl:col-span-8')}{/if}
-		{#if show('inventory')}{@render cell(
+		{#if risk}{@render cell('surface-risk', `col-span-12 ${geo ? 'xl:col-span-8' : ''}`)}{/if}
+		{#if geo}{@render cell(
+				'geo',
+				`col-span-12 ${inventory ? 'lg:col-span-6' : ''} ${risk ? 'xl:col-span-4' : 'xl:col-span-12'}`
+			)}{/if}
+		{#if changes}{@render cell('changes', `col-span-12 ${inventory ? 'xl:col-span-8' : ''}`)}{/if}
+		{#if inventory}{@render cell(
 				'inventory',
-				'col-span-12 lg:col-span-6 xl:col-span-4',
+				`col-span-12 ${geo ? 'lg:col-span-6' : ''} ${changes ? 'xl:col-span-4' : 'xl:col-span-12'}`,
 				6
 			)}{/if}
 	</div>
