@@ -74,11 +74,8 @@ recorded there, how many of those were opened, and how many were not.
 
 Findings, web assets, endpoints and browsed requests carry a Burp control named after the tool,
 **Repeater** by default: on the finding sheet, the web asset sheet, the endpoint rows and branches,
-and every selection bar. Its dot is green while the extension polls. The arrow beside it picks
-another tool, and the control keeps the last one chosen. The pencil opens the request in an
-editor first. The edited request is sent in place of the stored one, to the same host, with its
-`Content-Length` recomputed. With Burp offline the request is queued and the control reads
-**Queued**.
+and every selection bar. The arrow beside it picks another tool, and the control keeps the last
+one chosen. The control then reads **Sent**, or **Queued** with Burp offline.
 
 | Tool | What arrives |
 |---|---|
@@ -133,8 +130,8 @@ with `scanner = manual`. Reporting the same thing twice is one finding.
 | Endpoint | The reNgine URL to post to. |
 | Token | Authenticates the connector. Stored in Burp's preference store. |
 | Send captured requests to reNgine | The master switch. |
-| Proxy traffic | Capture requests made through the proxy. |
-| Repeater requests | Capture requests sent by hand. |
+| Proxy | Capture requests made through the proxy. |
+| Repeater | Capture requests sent by hand. |
 | Only hosts in Burp's target scope | Pre-filter using Burp's own scope. reNgine applies its own regardless. |
 | Read page titles from HTML responses | Extract `<title>` from HTML bodies up to 256 KB. |
 | Send request headers | Add the request line and headers to each record, credential values masked. |
