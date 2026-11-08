@@ -85,7 +85,7 @@ from shared.models.whats_new import (
 from shared.services.asset_query import vuln_seen_earlier, vuln_suppressed
 from shared.services.asset_query.tokens import token
 from shared.services.scan_scope import census_only
-from shared.utils.datetime import utc_now
+from shared.utils.datetime import normalize_datetime, utc_now
 
 
 def _new_conds(baseline: list[UUID]) -> list:
@@ -338,7 +338,7 @@ class WhatsNewService:
             cutoff = _day_start(day_from, zone)
             until = _day_start((day_to or day_from) + timedelta(days=1), zone)
         elif since is not None:
-            basis, cutoff = NewBasis.MARK.value, since
+            basis, cutoff = NewBasis.MARK.value, normalize_datetime(since)
         elif window:
             basis, cutoff = NewBasis.WINDOW.value, now - NEW_WINDOWS[window]
         elif marked_at is not None:

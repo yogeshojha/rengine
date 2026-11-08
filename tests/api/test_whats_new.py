@@ -495,3 +495,17 @@ async def test_the_route_rejects_a_bad_window(estate):
             window="1y",
         )
     assert bad_window.value.status_code == 422
+
+
+async def test_a_naive_since_reads_as_utc(estate, now):
+    await _rescan(estate, now, [("old-check", "low"), ("solr-rce", "critical")])
+    naive = (now - timedelta(hours=1)).replace(tzinfo=None)
+
+    out = await _service(estate).feed(estate.project_id, estate.user_id, since=naive)
+    visual = await _service(estate).visual(
+        estate.project_id, estate.user_id, since=naive
+    )
+
+    assert out.counts[NewKind.FINDING.value] == 1
+    assert out.since.tzinfo is not None
+    assert visual.since.tzinfo is not None
