@@ -131,7 +131,7 @@ def render_html(ctx: RenderContext) -> RenderedDocument:
                 body = _body(env, ctx, spec, config, payload)
         except Exception as exc:
             logger.warning("section failed", section=spec.name, error=str(exc)[:300])
-            doc.warnings.append(f"{spec.title} not rendered: {exc}")
+            doc.warnings.append(f"{spec.title} not rendered.")
             continue
 
         if payload is None:
