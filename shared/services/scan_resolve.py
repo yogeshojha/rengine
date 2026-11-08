@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 from shared.definitions.constants import MAX_RATE
 from shared.definitions.intensity import tool_rate
 from shared.definitions.tools import denied_flag, parse_tool_args
+from shared.enums.scan import Intensity
 from shared.enums.scan_context import AuthType, HttpProtocol
 from shared.utils.net import redact_url_queries
 
@@ -408,7 +409,7 @@ class ResolvedScanConfig(BaseModel):
     included_subdomains: list[str] = Field(default_factory=list)
     follow_redirects: bool | None = None
     http_protocol: str = HttpProtocol.BOTH.value
-    intensity: str = "normal"
+    intensity: str = Intensity.NORMAL.value
     proxy_url: str | None = None
     tool_options: dict[str, str] = Field(default_factory=dict)
     overrides: dict[str, dict] = Field(default_factory=dict)
@@ -534,7 +535,7 @@ def merge_engine_context(
     overrides: dict | None = None,
     intensity: str | None = None,
 ) -> ResolvedScanConfig:
-    from shared.enums.scan import INTENSITIES, Intensity  # noqa: PLC0415
+    from shared.enums.scan import INTENSITIES  # noqa: PLC0415
     from stages.registry import rate_tools  # noqa: PLC0415
     from stages.registry import stages as stage_specs  # noqa: PLC0415
 
