@@ -7,10 +7,9 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Column, SQLModel
 from sqlmodel import Field as SQLField
 
+from shared.definitions.notifications import MAX_LINK_LENGTH
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.utils.datetime import utc_now
-
-MAX_URL_LENGTH = 500
 
 
 class NotificationMetadata(BaseModel):
@@ -30,8 +29,8 @@ class NotificationMetadata(BaseModel):
         ):
             msg = "URL must start with /, http:// or https://"
             raise ValueError(msg)
-        if len(v) > MAX_URL_LENGTH:
-            msg = f"URL is longer than {MAX_URL_LENGTH} characters"
+        if len(v) > MAX_LINK_LENGTH:
+            msg = f"URL is longer than {MAX_LINK_LENGTH} characters"
             raise ValueError(msg)
         return v
 

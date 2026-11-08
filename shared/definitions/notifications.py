@@ -28,6 +28,7 @@ def _more(total: int, shown: int) -> list[str]:
 
 
 ENRICHMENT_FAILED = "The lookup did not complete. Check the worker log."
+MAX_LINK_LENGTH = 500
 
 
 def _scan_meta(scan_id: str, tab: str | None = None) -> dict:
