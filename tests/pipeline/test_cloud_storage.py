@@ -99,5 +99,3 @@ def test_open_and_owned_sets_are_coherent():
     assert {Access.LISTABLE.value, Access.READABLE.value} == OPEN_ACCESS
     assert {Source.REFERENCED.value, Source.HOSTNAME.value} == OWNED_SOURCES
     assert Provider.R2.value not in GUESSABLE_PROVIDERS
-    assert cloud_storage.is_owned(Source.GUESSED.value) is False
-    assert cloud_storage.is_owned(Source.HOSTNAME.value) is True

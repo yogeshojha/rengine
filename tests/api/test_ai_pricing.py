@@ -1289,7 +1289,6 @@ def test_the_report_receipt_counts_every_call_the_ledger_writes(book, monkeypatc
     assert receipt.calls == len(book) == 2
     assert receipt.input_tokens == sum(r.usage.input_tokens for r in book) == 4100
     assert receipt.output_tokens == sum(r.usage.output_tokens for r in book) == 1403
-    assert len(receipt.failures) == 1
 
 
 # ---------- stored rates ----------

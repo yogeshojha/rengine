@@ -19,7 +19,6 @@ from shared.definitions.cloud_storage import (
     MAX_CANDIDATES,
     MAX_NAME_LENGTH,
     MAX_URL_LENGTH,
-    OWNED_SOURCES,
     PROBE_USER_AGENT,
     STORED_ACCESS,
     Access,
@@ -423,7 +422,3 @@ def replace_rows(
         )
     session.flush()
     return len(buckets)
-
-
-def is_owned(source: str) -> bool:
-    return source in OWNED_SOURCES

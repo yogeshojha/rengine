@@ -337,7 +337,6 @@ class AIUsage:
     cached: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
-    failures: list[str] = field(default_factory=list)
 
     def record(self, result: AIResult) -> None:
         if result.cached:
@@ -347,13 +346,12 @@ class AIUsage:
         self.input_tokens += result.input_tokens
         self.output_tokens += result.output_tokens
 
-    def failed(self, task: str, exc: Exception) -> None:
+    def failed(self, exc: Exception) -> None:
         """A call that raised, with the tokens it spent."""
         spent = exc.usage if isinstance(exc, AIError) else UNREPORTED
         self.calls += 1
         self.input_tokens += spent.input_tokens
         self.output_tokens += spent.output_tokens
-        self.failures.append(f"{task}: {exc}"[:300])
 
 
 def complete(cfg: AIConfig, *, system: str, prompt: str, task: str) -> AIResult:

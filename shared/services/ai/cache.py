@@ -115,7 +115,7 @@ def narrate(
             "ai narration failed", task=task, error=scrub_error(str(exc), cfg)
         )
         if usage is not None:
-            usage.failed(task, exc)
+            usage.failed(exc)
         return None
 
     if usage is not None:
