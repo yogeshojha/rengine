@@ -98,118 +98,88 @@
 	let isDomain = $derived(type === TargetType.DOMAIN);
 	let signature = $derived([scanId, projectId, scan.status].join(':'));
 
-	function loadInsights() {
-		if (!scanId || !projectId) return;
+	let generation = 0;
+
+	function into<T>(mine: number, request: Promise<T>, apply: (value: T | null) => void) {
+		return request.then(
+			(value) => {
+				if (mine === generation) apply(value);
+			},
+			() => {
+				if (mine === generation) apply(null);
+			}
+		);
+	}
+
+	function loadInsights(mine: number) {
 		if (!insights) loading = true;
 		errored = false;
-		subdomainsApi
+		return subdomainsApi
 			.insights(projectId, scanId)
 			.then((d) => {
+				if (mine !== generation) return;
 				insights = d;
 				errored = false;
 			})
 			.catch(() => {
-				if (!insights) errored = true;
+				if (mine === generation && !insights) errored = true;
 			})
-			.finally(() => (loading = false));
+			.finally(() => {
+				if (mine === generation) loading = false;
+			});
 	}
 
-	function loadExposure() {
-		if (!scanId || !projectId) return;
-		servicesApi
-			.exposure(projectId, scanId)
-			.then((d) => (exposure = d))
-			.catch(() => (exposure = null));
-	}
-
-	function loadStructure() {
-		if (!scanId || !projectId) return;
-		endpointsApi
-			.structure(projectId, scanId)
-			.then((d) => (structure = d))
-			.catch(() => (structure = null));
-	}
-
-	function loadVulns() {
-		if (!scanId || !projectId) return;
-		vulnerabilitiesApi
-			.overview(projectId, scanId)
-			.then((d) => (vulns = d))
-			.catch(() => (vulns = null));
-	}
-
-	function loadOrigins() {
-		if (!scanId || !projectId) return;
-		servicesApi
-			.origins(projectId, scanId)
-			.then((d) => (origins = d))
-			.catch(() => (origins = null));
-	}
+	const loadExposure = (mine: number) =>
+		into(mine, servicesApi.exposure(projectId, scanId), (d) => (exposure = d));
+	const loadStructure = (mine: number) =>
+		into(mine, endpointsApi.structure(projectId, scanId), (d) => (structure = d));
+	const loadVulns = (mine: number) =>
+		into(mine, vulnerabilitiesApi.overview(projectId, scanId), (d) => (vulns = d));
+	const loadOrigins = (mine: number) =>
+		into(mine, servicesApi.origins(projectId, scanId), (d) => (origins = d));
 
 	let hygiene = $state<HygieneSummary | null>(null);
-	function loadHygiene() {
-		if (!scanId || !projectId) return;
-		subdomainsApi
-			.hygiene(projectId, scanId)
-			.then((d) => (hygiene = d))
-			.catch(() => (hygiene = null));
-	}
+	const loadHygiene = (mine: number) =>
+		into(mine, subdomainsApi.hygiene(projectId, scanId), (d) => (hygiene = d));
 
 	let posture = $state<DomainPostureSummary | null>(null);
-	function loadPosture() {
-		if (!scanId || !projectId) return;
-		domainPostureApi
-			.scan(projectId, scanId)
-			.then((d) => (posture = d))
-			.catch(() => (posture = null));
-	}
+	const loadPosture = (mine: number) =>
+		into(mine, domainPostureApi.scan(projectId, scanId), (d) => (posture = d));
 
 	let hosting = $state<HostingComposition | null>(null);
-	function loadHosting() {
-		if (!scanId || !projectId) return;
-		subdomainsApi
-			.hosting(projectId, scanId)
-			.then((d) => (hosting = d))
-			.catch(() => (hosting = null));
-	}
+	const loadHosting = (mine: number) =>
+		into(mine, subdomainsApi.hosting(projectId, scanId), (d) => (hosting = d));
 
-	function loadEstate() {
-		if (!scanId || !projectId) return;
-		targetsApi
-			.getEstate(scan.target_id, projectId, scanId)
-			.then((e) => (estate = e))
-			.catch(() => (estate = null));
-	}
+	const loadEstate = (mine: number) =>
+		into(mine, targetsApi.getEstate(scan.target_id, projectId, scanId), (e) => (estate = e));
 
 	let lookalikes = $state<LookalikeSummary | null>(null);
-	function loadLookalikes() {
-		if (!scanId || !projectId || !isDomain) return;
-		lookalikesApi
-			.scan(projectId, scanId)
-			.then((l) => (lookalikes = l))
-			.catch(() => (lookalikes = null));
-	}
+	const loadLookalikes = (mine: number) =>
+		isDomain
+			? into(mine, lookalikesApi.scan(projectId, scanId), (l) => (lookalikes = l))
+			: Promise.resolve();
 
-	function reload() {
-		loadInsights();
-		loadEstate();
-		loadLookalikes();
-		loadHosting();
-		loadHygiene();
-		loadPosture();
-		loadExposure();
-		loadStructure();
-		loadVulns();
-		loadOrigins();
+	async function reload() {
+		if (!scanId || !projectId) return;
+		const mine = ++generation;
+		const waves = [
+			[loadInsights, loadVulns, loadStructure],
+			[loadExposure, loadOrigins, loadHosting, loadHygiene],
+			[loadPosture, loadEstate, loadLookalikes]
+		];
+		for (const wave of waves) {
+			if (mine !== generation) return;
+			await Promise.allSettled(wave.map((load) => load(mine)));
+		}
 	}
 
 	$effect(() => {
 		void signature;
 		if (!seen) return;
-		untrack(reload);
+		untrack(() => void reload());
 	});
 
-	const liveRefresh = new LiveRefresh(reload, LIVE_OVERVIEW_MS);
+	const liveRefresh = new LiveRefresh(() => void reload(), LIVE_OVERVIEW_MS);
 	$effect(() => {
 		liveRefresh.notify(revision, seen);
 	});
