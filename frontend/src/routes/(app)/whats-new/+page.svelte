@@ -677,13 +677,13 @@
 			toast.success(
 				wanted.length === 1
 					? first.muted
-						? 'Host muted'
+						? 'Name muted'
 						: 'Alerts resumed'
-					: `${wanted.length} hosts updated`
+					: `${wanted.length} names updated`
 			);
 			selection.clear();
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Host not updated');
+			toast.error(e instanceof Error ? e.message : 'Name not updated');
 		} finally {
 			for (const i of wanted) busy.delete(i.id);
 		}
@@ -1213,7 +1213,7 @@
 			onclick={() => muteHosts(pickedHosts)}
 		>
 			{pickedHosts.every((h) => h.muted) ? 'Unmute' : 'Mute'}
-			{pickedHosts.length === 1 ? 'host' : `${pickedHosts.length} hosts`}
+			{pickedHosts.length === 1 ? 'name' : `${pickedHosts.length} names`}
 		</Button>
 	{/if}
 </SelectionActionBar>
