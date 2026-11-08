@@ -24,6 +24,7 @@
 	import { surfaceStore } from '$lib/stores/surface.svelte';
 	import {
 		FINDINGS_TABS,
+		SURFACE,
 		SURFACE_ORDER,
 		SurfaceDimension,
 		type FindingsTab,
@@ -32,6 +33,7 @@
 	import { ROUTES, routeLabels } from '$lib/config/routes';
 	import type { TableColumn } from '$lib/components/scans/results/table/columns';
 
+	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
 	let spec = $derived(SURFACE_ORDER.find((s) => s.tab === page.params.dimension) ?? null);
 	const FINDINGS_KEYS = new Set<string>(FINDINGS_TABS.map((t) => t.key));
 	let findingsTab = $derived(
@@ -87,7 +89,7 @@
 
 {#if !spec}
 	<EmptyState title="Unknown dimension">
-		<Button variant="outline" size="sm" href={ROUTES.surface('web-assets')}>Web assets</Button>
+		<Button variant="outline" size="sm" href={ROUTES.surface(WEB.tab)}>{WEB.label}</Button>
 	</EmptyState>
 {:else}
 	<div class="flex flex-col gap-6">
