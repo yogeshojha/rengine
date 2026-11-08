@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import RowSkeleton from '$lib/components/skeleton/row-skeleton.svelte';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import BellOffIcon from '@lucide/svelte/icons/bell-off';
@@ -17,6 +18,7 @@
 		EVENT_TONE_BG,
 		assetIcon
 	} from '$lib/config/bounty-programs';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import { relativeTime } from '$lib/utilities/dates';
 	import type { BountyEvent } from '$lib/types/bounty-program';
 
@@ -33,12 +35,15 @@
 	let failed = $state<string | null>(null);
 	let filter = $state('all');
 
-	const TABS = [
+	const TAB_KINDS = ['scope_added', 'program_added', 'went_out_of_scope'];
+	let tabs = $derived([
 		{ key: 'all', label: 'Everything' },
-		{ key: 'scope_added', label: 'Scope added' },
-		{ key: 'program_added', label: 'New programs' },
-		{ key: 'went_out_of_scope', label: 'Now out of scope' }
-	];
+		...TAB_KINDS.map((kind) => ({ key: kind, label: bountyVocabulary.eventLabel(kind) }))
+	]);
+
+	$effect(() => {
+		untrack(() => void bountyVocabulary.load());
+	});
 
 	let seq = 0;
 
@@ -84,7 +89,7 @@
 
 <Card.Root class="gap-0 overflow-hidden py-0">
 	<div class="border-b px-2">
-		<CountTabs tabs={TABS} value={filter} onChange={onFilter} />
+		<CountTabs {tabs} value={filter} onChange={onFilter} />
 	</div>
 
 	{#if loading}
