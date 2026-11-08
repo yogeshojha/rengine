@@ -38,11 +38,17 @@ export async function loadTripwireFacets(
 			case SurfaceDimension.IPS:
 				return (await ipsApi.facets(projectId, '', target)) as unknown as Record<string, Facet[]>;
 			case SurfaceDimension.SERVICES:
-				return (await servicesApi.facets(projectId, '')) as unknown as Record<string, Facet[]>;
+				return (await servicesApi.facets(projectId, '', target)) as unknown as Record<
+					string,
+					Facet[]
+				>;
 			case SurfaceDimension.ENDPOINTS:
-				return (await endpointsApi.facets(projectId, '')) as unknown as Record<string, Facet[]>;
+				return (await endpointsApi.facets(projectId, '', null, target)) as unknown as Record<
+					string,
+					Facet[]
+				>;
 			case SurfaceDimension.VULNERABILITIES:
-				return facetsAsRecord(await vulnerabilitiesApi.facets(projectId, ''));
+				return facetsAsRecord(await vulnerabilitiesApi.facets(projectId, '', target));
 			case SurfaceDimension.SOFTWARE: {
 				const f = await softwareApi.facets(projectId, '', target);
 				return {
@@ -55,7 +61,7 @@ export async function loadTripwireFacets(
 				};
 			}
 			case SurfaceDimension.SECRETS: {
-				const f = await secretsApi.facets(projectId, '');
+				const f = await secretsApi.facets(projectId, '', target);
 				return {
 					state: keyed(f.state),
 					group: keyed(f.group),

@@ -1,5 +1,5 @@
 import { api } from './client';
-import { scopeQuery } from '$lib/utilities/surface-scope';
+import { scopeQuery, type TargetScope } from '$lib/utilities/surface-scope';
 import type { FindingTimelineFilter, FindingTimelineResult } from '$lib/types/timeline';
 import type { QueryCounts, QueryGroups, QueryLeads } from '$lib/types/asset-query';
 import type {
@@ -105,8 +105,10 @@ export const vulnerabilitiesApi = {
 		);
 	},
 
-	async facets(projectId: string, scanId: string): Promise<VulnFacetSet> {
-		return api.get<VulnFacetSet>(`/vulnerabilities/facets?${scopeQuery({ projectId, scanId })}`);
+	async facets(projectId: string, scanId: string, scope: TargetScope = {}): Promise<VulnFacetSet> {
+		return api.get<VulnFacetSet>(
+			`/vulnerabilities/facets?${scopeQuery({ projectId, scanId, ...scope })}`
+		);
 	},
 
 	async overview(projectId: string, scanId: string): Promise<ScanVulnerabilities> {

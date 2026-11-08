@@ -145,8 +145,12 @@ export const servicesApi = {
 		);
 	},
 
-	async facets(projectId: string, scanId: string): Promise<ServiceFacetSet> {
-		return api.get<ServiceFacetSet>(`/ports/facets?${scopeQuery({ projectId, scanId })}`);
+	async facets(
+		projectId: string,
+		scanId: string,
+		scope: TargetScope = {}
+	): Promise<ServiceFacetSet> {
+		return api.get<ServiceFacetSet>(`/ports/facets?${scopeQuery({ projectId, scanId, ...scope })}`);
 	},
 
 	async exposure(projectId: string, scanId: string): Promise<ScanExposure> {
@@ -217,10 +221,15 @@ export const endpointsApi = {
 		);
 	},
 
-	async facets(projectId: string, scanId: string, q?: string | null): Promise<EndpointFacetSet> {
+	async facets(
+		projectId: string,
+		scanId: string,
+		q?: string | null,
+		scope: TargetScope = {}
+	): Promise<EndpointFacetSet> {
 		const search = q ? `&q=${encodeURIComponent(q)}` : '';
 		return api.get<EndpointFacetSet>(
-			`/endpoints/facets?${scopeQuery({ projectId, scanId })}${search}`
+			`/endpoints/facets?${scopeQuery({ projectId, scanId, ...scope })}${search}`
 		);
 	},
 
@@ -329,8 +338,8 @@ export const secretsApi = {
 		});
 	},
 
-	async facets(projectId: string, scanId: string): Promise<SecretFacets> {
-		return api.get<SecretFacets>(`/secrets/facets?${scopeQuery({ projectId, scanId })}`);
+	async facets(projectId: string, scanId: string, scope: TargetScope = {}): Promise<SecretFacets> {
+		return api.get<SecretFacets>(`/secrets/facets?${scopeQuery({ projectId, scanId, ...scope })}`);
 	},
 
 	async coverage(projectId: string, scanId: string): Promise<SecretCoverage> {
