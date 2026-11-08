@@ -97,6 +97,9 @@
 				if (chip) onAdd(chip);
 				else rejected.push(value);
 			}
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Target not checked';
+			return;
 		} finally {
 			adding = false;
 		}
