@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from datetime import timedelta
 
 from pydantic import ValidationError
-from sqlalchemy import exists, select, text, tuple_
+from sqlalchemy import exists, func, select, text, tuple_
 from sqlalchemy.orm import Session, defer
 from sqlalchemy.orm.exc import StaleDataError
 
@@ -662,13 +662,18 @@ def _stages_ran(session: Session, scan: Scan) -> dict[str, str] | None:
     return ran
 
 
-def _scanned_hosts(session: Session, scan: Scan) -> set[tuple[str, int | None]]:
-    """Each scanned (host, port), and (host, None) for every scanned host."""
+def _scanned_hosts(
+    session: Session, scan: Scan, hosts: set[str]
+) -> set[tuple[str, int | None]]:
+    """Each scanned (host, port) among these hosts, and (host, None) for each."""
     out: set[tuple[str, int | None]] = set()
+    if not hosts:
+        return out
     for host, port in session.execute(
         select(ScanSurfaceItem.host, ScanSurfaceItem.port).where(
             ScanSurfaceItem.scan_id == scan.id,
             ScanSurfaceItem.state.in_(SCANNED_STATES),
+            func.lower(ScanSurfaceItem.host).in_(sorted(hosts)),
         )
     ).all():
         if host:
@@ -799,7 +804,13 @@ def observe_scan(session: Session, scan_id: uuid.UUID) -> int:
     ran = _stages_ran(session, scan)
     missing = [lk for lk, _ in rows if lk.present and lk.fingerprint not in seen]
     earlier = latest_vulns(session, [(lk.target_id, lk.fingerprint) for lk in missing])
-    hosts = _scanned_hosts(session, scan) if ran and missing else set()
+    hosts = (
+        _scanned_hosts(
+            session, scan, {v.host.lower() for v in earlier.values() if v.host}
+        )
+        if ran and missing
+        else set()
+    )
     selected = (
         _selected_checks(session, scan, ran, earlier.values())
         if ran and missing
