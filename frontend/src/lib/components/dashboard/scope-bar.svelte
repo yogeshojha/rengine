@@ -28,6 +28,7 @@
 	let targetsLoading = $state(false);
 	let organizations = $state<PickerItem[]>([]);
 	let tags = $state<PickerItem[]>([]);
+	const NAME_PAGE_SIZE = 100;
 	let seq = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -42,13 +43,23 @@
 
 	$effect(() => {
 		const missing = (scope.targetIds ?? []).filter((id) => !untrack(() => names.has(id)));
-		for (const id of missing) {
+		if (missing.length) untrack(() => void nameTargets(missing, projectSlug));
+	});
+
+	async function nameTargets(ids: string[], slug: string) {
+		if (ids.length > 1) {
+			const page = await targetsApi
+				.list({ project_slug: slug, size: NAME_PAGE_SIZE })
+				.catch(() => null);
+			for (const t of page?.items ?? []) names.set(t.id, t.target_value);
+		}
+		for (const id of ids.filter((i) => !names.has(i))) {
 			targetsApi
 				.get(id)
 				.then((t) => names.set(t.id, t.target_value))
 				.catch(() => {});
 		}
-	});
+	}
 
 	async function loadLabels(slug: string) {
 		const [orgs, tagRows] = await Promise.all([
