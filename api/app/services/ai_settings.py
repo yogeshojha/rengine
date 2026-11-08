@@ -13,7 +13,7 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.validation_errors import validation_detail
+from app.core.validation_errors import detail_text, validation_detail
 from app.services.instance_settings import InstanceSettingsService
 from shared.definitions.ai import (
     AI_FEATURES,
@@ -542,7 +542,7 @@ class AiSettingsService:
             try:
                 base_url = _clean_base_url(requested or "")
             except HTTPException as exc:
-                return AiModelList(error=str(exc.detail))
+                return AiModelList(error=detail_text(exc.detail))
             if not base_url:
                 return AiModelList(error=_NO_URL)
         key = _draft_key(data.api_key, row, provider, base_url)

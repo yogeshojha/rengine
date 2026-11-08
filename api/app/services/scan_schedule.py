@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.validation_errors import detail_text
 from app.services.scan import ScanService
 from shared.definitions.schedule_constants import MAX_INTERVAL, TIME_RE
 from shared.enums.scan_schedule import (
@@ -379,7 +380,7 @@ class ScanScheduleService:
                 )
                 spawned.append(scan)
             except HTTPException as exc:
-                errors.append(f"{t}: {exc.detail}")
+                errors.append(f"{t}: {detail_text(exc.detail)}")
         if not spawned:
             msg = "; ".join(errors)[:500] or "No scans were launched."
             raise _bad(msg)

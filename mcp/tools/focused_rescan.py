@@ -55,6 +55,7 @@ class FocusedRescan(Tool):
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
         from fastapi import HTTPException  # noqa: PLC0415
 
+        from app.core.validation_errors import detail_text  # noqa: PLC0415
         from app.services.rescan import RescanService, rescan_schema  # noqa: PLC0415
         from shared.models.scan import RescanCreate  # noqa: PLC0415
 
@@ -93,7 +94,7 @@ class FocusedRescan(Tool):
                 created_by=issued_by,
             )
         except HTTPException as exc:
-            msg = f"Rescan not started: {exc.detail}"
+            msg = f"Rescan not started: {detail_text(exc.detail)}"
             raise ToolError(msg) from exc
         except ValidationError as exc:
             reason = str(exc.errors()[0].get("msg", "invalid input")).rstrip(".")

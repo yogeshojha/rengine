@@ -16,6 +16,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.validation_errors import detail_text
 from app.services.bounty_program import BountyProgramService
 from app.services.scan import ScanService
 from app.services.scan_context import ScanContextService
@@ -414,7 +415,9 @@ class WatchService:
                 )
                 launched += 1
             except HTTPException as exc:
-                watch.last_error = f"{target.target_value}: {exc.detail}"[:500]
+                watch.last_error = f"{target.target_value}: {detail_text(exc.detail)}"[
+                    :500
+                ]
         return launched
 
     # ---------- read ----------

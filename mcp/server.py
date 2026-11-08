@@ -214,16 +214,10 @@ def failed(title: str, exc: BaseException) -> str:
     """A service refusal's own wording, else the error type without its text."""
     from fastapi import HTTPException  # noqa: PLC0415
 
-    if isinstance(exc, HTTPException) and isinstance(exc.detail, str):
-        return exc.detail
-    if isinstance(exc, HTTPException) and isinstance(exc.detail, list):
-        text = " ".join(
-            str(item["msg"])
-            for item in exc.detail
-            if isinstance(item, dict) and item.get("msg")
-        )
-        if text:
-            return text
+    from app.core.validation_errors import detail_text  # noqa: PLC0415
+
+    if isinstance(exc, HTTPException) and detail_text(exc.detail):
+        return detail_text(exc.detail)
     return f"{title} did not complete. Error type: {type(exc).__name__}."
 
 

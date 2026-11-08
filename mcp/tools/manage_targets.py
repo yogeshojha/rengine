@@ -261,10 +261,12 @@ async def _guard(awaitable):
     """Turn a service HTTPException into a message the model can act on."""
     from fastapi import HTTPException  # noqa: PLC0415
 
+    from app.core.validation_errors import detail_text  # noqa: PLC0415
+
     try:
         return await awaitable
     except HTTPException as exc:
-        raise ToolError(str(exc.detail)) from exc
+        raise ToolError(detail_text(exc.detail)) from exc
 
 
 def _describe(ctx: ToolContext, row: Target) -> dict:

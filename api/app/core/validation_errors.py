@@ -15,6 +15,19 @@ def validation_detail(loc: list[str | int], msg: str) -> list[dict]:
     return [{"loc": loc, "msg": msg, "type": "value_error"}]
 
 
+def detail_text(detail: object) -> str:
+    """A refusal's wording from a string or a listed detail."""
+    if isinstance(detail, str):
+        return detail
+    if isinstance(detail, list):
+        return " ".join(
+            str(item["msg"])
+            for item in detail
+            if isinstance(item, dict) and item.get("msg")
+        )
+    return ""
+
+
 async def validation_error_handler(
     _request: Request, exc: RequestValidationError
 ) -> JSONResponse:
