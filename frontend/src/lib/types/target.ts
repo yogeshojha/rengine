@@ -99,6 +99,13 @@ export type SeedKind = 'host' | 'address' | 'url';
 
 export type EnrichmentKind = 'whois' | 'dns' | 'bgp' | 'infostealer';
 
+export const ENRICHMENT_STATUS_FIELD = {
+	whois: 'whois_status',
+	dns: 'dns_status',
+	bgp: 'bgp_status',
+	infostealer: 'infostealer_status'
+} as const satisfies Record<EnrichmentKind, keyof Target>;
+
 export const HOSTNAME_TARGET_TYPES: readonly TargetType[] = [TargetType.DOMAIN, TargetType.URL];
 export const NETWORK_TARGET_TYPES: readonly TargetType[] = [
 	TargetType.IP,

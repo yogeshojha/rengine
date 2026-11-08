@@ -5,7 +5,12 @@ import {
 	type OrganizationUpdate
 } from '$lib/api/organizations';
 import { tagsApi, type Tag, type TagUpdate } from '$lib/api/tags';
-import { TargetType, type EnrichmentKind, type Target } from '$lib/types/target';
+import {
+	ENRICHMENT_STATUS_FIELD,
+	TargetType,
+	type EnrichmentKind,
+	type Target
+} from '$lib/types/target';
 import { TaskStatus } from '$lib/types/task-status';
 import type { PaginatedResponse, TargetCounts } from '$lib/types/pagination';
 import {
@@ -36,6 +41,12 @@ interface PaginationState {
 	totalItems: number;
 	totalPages: number;
 }
+
+const emptyCounts = (): TargetCounts =>
+	({
+		all: 0,
+		...Object.fromEntries(Object.values(TargetType).map((type) => [type, 0]))
+	}) as TargetCounts;
 
 function createTargetsStore() {
 	let targets = $state<Target[]>([]);
@@ -68,14 +79,7 @@ function createTargetsStore() {
 		totalPages: 0
 	});
 
-	let counts = $state<TargetCounts>({
-		all: 0,
-		domain: 0,
-		ip: 0,
-		ip_range: 0,
-		asn: 0,
-		url: 0
-	});
+	let counts = $state<TargetCounts>(emptyCounts());
 
 	let signalSummary = $state<TargetSummary>({ ...EMPTY_TARGET_SUMMARY });
 
@@ -445,9 +449,7 @@ function createTargetsStore() {
 			const set = new Set(ids);
 			targets = targets.map((t) => {
 				if (!set.has(t.id)) return t;
-				if (kind === 'whois') return { ...t, whois_status: TaskStatus.PENDING };
-				if (kind === 'dns') return { ...t, dns_status: TaskStatus.PENDING };
-				return { ...t, bgp_status: TaskStatus.PENDING };
+				return { ...t, [ENRICHMENT_STATUS_FIELD[kind]]: TaskStatus.PENDING };
 			});
 			return res.queued;
 		},
@@ -566,14 +568,7 @@ function createTargetsStore() {
 			organizations = [];
 			tags = [];
 			organizationsSlug = tagsSlug = undefined;
-			counts = {
-				all: 0,
-				domain: 0,
-				ip: 0,
-				ip_range: 0,
-				asn: 0,
-				url: 0
-			};
+			counts = emptyCounts();
 			filters = {
 				searchQuery: '',
 				activeTab: 'all',
