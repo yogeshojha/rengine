@@ -223,7 +223,7 @@ restore() {
   redis_db="$(grep -E '^REDIS_DB=' .env | cut -d= -f2- || true)"
   [[ "$redis_db" =~ ^[0-9]+$ ]] || redis_db=0
   docker compose exec -T redis sh -c \
-    "redis-cli \${REDIS_PASSWORD:+-a \"\$REDIS_PASSWORD\"} --no-auth-warning -n $redis_db INCR rev:global" >/dev/null \
+    "[ -z \"\$REDIS_PASSWORD\" ] || export REDISCLI_AUTH=\"\$REDIS_PASSWORD\"; redis-cli -n $redis_db INCR rev:global" >/dev/null \
     || say "cached aggregates not cleared"
 
   if [ -f "$work/scan_media.tar" ]; then

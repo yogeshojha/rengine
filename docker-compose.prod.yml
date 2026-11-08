@@ -100,7 +100,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} --no-auth-warning ping | grep -q PONG",
+          "[ -z \"$$REDIS_PASSWORD\" ] || export REDISCLI_AUTH=\"$$REDIS_PASSWORD\"; redis-cli ping | grep -q PONG",
         ]
       interval: 5s
       timeout: 5s
@@ -123,7 +123,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "redis-cli $${REDIS_PASSWORD:+-a \"$$REDIS_PASSWORD\"} --no-auth-warning ping | grep -q PONG",
+          "[ -z \"$$REDIS_PASSWORD\" ] || export REDISCLI_AUTH=\"$$REDIS_PASSWORD\"; redis-cli ping | grep -q PONG",
         ]
       interval: 5s
       timeout: 5s
