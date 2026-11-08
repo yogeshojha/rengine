@@ -81,16 +81,28 @@ export function catalogLabel(
 	return list?.find((i) => i.key === key)?.label ?? key;
 }
 
+export const FontRole = {
+	SANS: 'sans',
+	SERIF: 'serif',
+	MONO: 'mono'
+} as const;
+
+// mirrors shared/definitions/report_fonts.py:MAX_FACES
+export const MAX_FONT_FACES = 12;
+// mirrors shared/models/report.py:FontFaceUpload.content
+export const MAX_FACE_BASE64 = 3_000_000;
+export const MAX_FACE_BYTES = (MAX_FACE_BASE64 / 4) * 3;
+
 export const FONT_ROLE_STACKS: Record<string, string> = {
-	sans: 'ui-sans-serif, system-ui, sans-serif',
-	serif: 'Georgia, "Times New Roman", serif',
-	mono: 'ui-monospace, SFMono-Regular, Menlo, monospace'
+	[FontRole.SANS]: 'ui-sans-serif, system-ui, sans-serif',
+	[FontRole.SERIF]: 'Georgia, "Times New Roman", serif',
+	[FontRole.MONO]: 'ui-monospace, SFMono-Regular, Menlo, monospace'
 };
 
 /** Browser fallback stack for a report face. */
 export function fontStack(slug: string, fonts: { slug: string; name: string; role: string }[]) {
 	const font = fonts.find((f) => f.slug === slug);
-	const fallback = FONT_ROLE_STACKS[font?.role ?? 'sans'] ?? FONT_ROLE_STACKS.sans;
+	const fallback = FONT_ROLE_STACKS[font?.role ?? FontRole.SANS] ?? FONT_ROLE_STACKS[FontRole.SANS];
 	return font ? `"${font.name}", ${fallback}` : fallback;
 }
 

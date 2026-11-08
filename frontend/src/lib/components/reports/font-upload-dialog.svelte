@@ -15,14 +15,20 @@
 	import { toast } from 'svelte-sonner';
 	import { reportsApi } from '$lib/api/reports';
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
-	import { catalogLabel } from '$lib/config/reports';
+	import {
+		FontRole,
+		MAX_FACE_BASE64,
+		MAX_FACE_BYTES,
+		MAX_FONT_FACES,
+		catalogLabel
+	} from '$lib/config/reports';
 	import { formatBytes } from '$lib/utilities/format';
 	import type { FontFaceUpload } from '$lib/types/report';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
 
 	const WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
-	const DEFAULT_ROLE = 'sans';
+	const DEFAULT_ROLE: string = FontRole.SANS;
 	const ROLES = $derived(reportCatalog.catalog?.font_roles ?? []);
 
 	let name = $state('');
@@ -81,6 +87,14 @@
 	async function pick(event: Event) {
 		const chosen = Array.from((event.target as HTMLInputElement).files ?? []);
 		for (const file of chosen) {
+			if (faces.length >= MAX_FONT_FACES) {
+				toast.error(`${file.name} not added. A typeface holds ${MAX_FONT_FACES} faces.`);
+				break;
+			}
+			if (Math.ceil(file.size / 3) * 4 > MAX_FACE_BASE64) {
+				toast.error(`${file.name} is over ${formatBytes(MAX_FACE_BYTES)}.`);
+				continue;
+			}
 			const buffer = await file.arrayBuffer();
 			let binary = '';
 			const bytes = new Uint8Array(buffer);

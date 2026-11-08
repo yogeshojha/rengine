@@ -11,6 +11,7 @@
 	import { reportCatalog } from '$lib/stores/report-catalog.svelte';
 	import UploadIcon from '@lucide/svelte/icons/upload';
 	import {
+		FontRole,
 		LibraryOrigin,
 		MAX_EMBEDDED_IMAGE_KB,
 		catalogLabel,
@@ -23,8 +24,8 @@
 	let { style = $bindable() }: { style: ReportStyle } = $props();
 
 	const catalog = $derived(reportCatalog.catalog);
-	const textFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role !== 'mono'));
-	const monoFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role === 'mono'));
+	const textFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role !== FontRole.MONO));
+	const monoFonts = $derived((catalog?.fonts ?? []).filter((f) => f.role === FontRole.MONO));
 	const activeTheme = $derived(reportCatalog.theme(style.theme));
 
 	let coverInput = $state<HTMLInputElement | null>(null);
