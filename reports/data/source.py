@@ -603,7 +603,7 @@ class ReportSource:
             .limit(MAX_REPORT_ROWS)
         ).all()
         ports = self._ports_per_ip()
-        hosts = self._hosts_per_ip()
+        hosts = self._hosts_per_ip
         return [
             Address(
                 ip=row.ip,
@@ -632,6 +632,7 @@ class ReportSource:
         ).all()
         return {row[0]: int(row[1]) for row in rows}
 
+    @cached_property
     def _hosts_per_ip(self) -> dict[str, list[str]]:
         scan_id = self.scan_for(_DIM.WEB_ASSETS.value)
         if scan_id is None:
@@ -666,7 +667,7 @@ class ReportSource:
             .scalars()
             .all()
         )
-        hosts = self._hosts_per_ip()
+        hosts = self._hosts_per_ip
         return [
             Service(
                 ip=port.ip,
