@@ -1,5 +1,3 @@
-"""The policy that decides whether a proposed plan may run automatically."""
-
 from __future__ import annotations
 
 import pytest
@@ -40,7 +38,6 @@ def test_a_plain_in_scope_check_is_allowed():
 
 
 def test_out_of_scope_is_refused_before_anything_else():
-    # an intrusive tag on an out-of-scope host still reports out of scope first
     assert refuses(_plan(in_scope=False, tags=frozenset({"intrusive"}))) == (
         RefusalReason.OUT_OF_SCOPE
     )
@@ -93,7 +90,6 @@ def test_an_unknown_request_count_costs_one():
     assert plan_cost(None) == 1
     assert plan_cost(0) == 1
     assert plan_cost(7) == 7
-    # a None count still clears a budget of one
     assert refuses(_plan(request_count=None, budget_remaining=1)) is None
     assert (
         refuses(_plan(request_count=None, budget_remaining=0)) == RefusalReason.BUDGET
@@ -101,7 +97,6 @@ def test_an_unknown_request_count_costs_one():
 
 
 def test_an_offensive_tag_outranks_the_budget():
-    # the reason reported is the tag, not the spent budget
     assert (
         refuses(
             _plan(tags=frozenset({"intrusive"}), request_count=99, budget_remaining=0)

@@ -46,11 +46,9 @@ def test_candidates_keep_a_name_once_at_its_strongest_source():
         guess=True,
     )
     by_name = {(c.provider, c.name): c for c in found.items}
-    # The referenced AWS bucket keeps its provider and its strong source.
     assert by_name[(Provider.AWS_S3.value, "example-assets")].source == (
         Source.REFERENCED.value
     )
-    # A provider-less hostname is still offered to every guessable provider.
     assert (None, "cdn") in by_name
     assert by_name[(None, "cdn")].source == Source.HOSTNAME.value
 

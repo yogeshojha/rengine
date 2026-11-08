@@ -1,5 +1,3 @@
-"""The URL seed a replay builds keeps the finding's port and brackets IPv6."""
-
 from __future__ import annotations
 
 from types import SimpleNamespace

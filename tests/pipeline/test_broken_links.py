@@ -80,11 +80,9 @@ def test_a_domain_under_a_public_suffix_is_checked(domain: str) -> None:
 
 
 def test_quorum_requires_agreement(monkeypatch) -> None:
-    # every resolver says NXDOMAIN.
     monkeypatch.setattr(broken_links, "_rcode", lambda _name, _server: 3)
     assert is_unregistered("gone.example", ("a", "b"))
 
-    # one resolver still resolves the domain
     monkeypatch.setattr(
         broken_links, "_rcode", lambda _name, server: 3 if server == "a" else 0
     )
@@ -92,7 +90,6 @@ def test_quorum_requires_agreement(monkeypatch) -> None:
 
 
 def test_below_quorum_is_not_claimed(monkeypatch) -> None:
-    # only one resolver answered.
     monkeypatch.setattr(
         broken_links, "_rcode", lambda _name, server: 3 if server == "a" else None
     )

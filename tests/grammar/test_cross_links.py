@@ -20,7 +20,6 @@ pytestmark = pytest.mark.grammar
 
 TARGET = uuid.uuid4()
 
-# measured across four unrelated estates on 2026-09-12: every cross-target title was one of these
 MEASURED_GENERIC = [
     ("404 Not Found", 404),
     ("403 Forbidden", 403),
