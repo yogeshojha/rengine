@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid as uuid_module
 from collections import defaultdict
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from uuid import UUID
 
@@ -249,6 +250,77 @@ class TargetEstateService:
             providers=self._providers(providers),
             neighbours=sorted(neighbours, key=lambda n: -n.names),
         )
+
+    async def cached_for_target(
+        self,
+        project_id: UUID,
+        target_id: UUID,
+        scan_id: UUID | None = None,
+        *,
+        with_programs: bool = False,
+    ) -> TargetEstate:
+        """The target page's estate; candidates are written when it is built."""
+        targets = await project_targets(self.session, project_id)
+        if target_id not in targets:
+            return TargetEstate(target_id=target_id)
+        covering = await self.scopes.scans_by_target(
+            project_id, SurfaceDimension.WEB_ASSETS.value
+        )
+        if scan_id is None:
+            scan_id = covering.get(target_id)
+        addresses = await self.scopes.scope(project_id, SurfaceDimension.IPS.value)
+        lookups = dict(
+            (
+                await self.session.execute(
+                    select(Target.id, Target.dns_lookup_id).where(
+                        Target.project_id == project_id
+                    )
+                )
+            ).all()
+        )
+        scans = tuple(
+            dict.fromkeys(
+                [
+                    *([scan_id] if scan_id is not None else []),
+                    *sorted(covering.values(), key=str),
+                    *addresses.ids,
+                ]
+            )
+        )
+        stamp = sorted(
+            (
+                str(t.id),
+                t.target_value,
+                str(t.whois_record_id),
+                str(lookups.get(t.id)),
+                t.updated_at.isoformat(),
+            )
+            for t in targets.values()
+        )
+
+        def build(session: AsyncSession) -> Awaitable[TargetEstate]:
+            return TargetEstateService(session).for_target(
+                project_id,
+                target_id,
+                scan_id,
+                dossier=False,
+                persist=True,
+                targets=targets,
+            )
+
+        estate = await lead_cache.cached(
+            self.session,
+            name="target_estate",
+            scans=scans,
+            facets=lead_cache.fingerprint(project_id, target_id, scan_id, stamp),
+            model=TargetEstate,
+            build=lambda: build(self.session),
+            rebuild=build,
+        )
+        if with_programs:
+            await self._attach_programs(estate.domains)
+        await self._attach_dossier(project_id, estate.domains)
+        return estate
 
     async def for_project(self, project_id: UUID) -> ProjectEstate:
         covering = await self.scopes.scans_by_target(

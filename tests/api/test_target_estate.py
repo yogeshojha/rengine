@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from app.services.target_estate import TargetEstateService, provider_of
-from shared.definitions.estate import EstateReason
+from shared.definitions.estate import EstateReason, EstateTriageState
 from shared.definitions.relations import TargetRelation
 from shared.enums.dns import DnsRecordType
 from shared.models.dns import DnsLookup, DnsRecord
@@ -339,3 +339,58 @@ async def test_infostealer_candidates_rank_by_credentials(estate, now):
 
     assert [d.domain for d in out.domains] == ["emtelco.co", "acsendo.com", "webex.com"]
     assert out.domains[0].signals[0].count == 32
+
+
+async def _cached(estate, value: str, scan: str):
+    return await TargetEstateService(estate.session).cached_for_target(
+        estate.project_id, estate.targets[value], estate.scans[scan]
+    )
+
+
+async def test_the_target_page_estate_is_built_once_per_revision(
+    estate, now, monkeypatch
+):
+    await estate.scan("gov.cy", "a", at=now)
+    await _asset(estate, "a", "x.gov.cy", at=now, final_url="https://other.cy/")
+    built = 0
+    original = TargetEstateService.for_target
+
+    async def _counted(self, *args, **kwargs):
+        nonlocal built
+        built += 1
+        return await original(self, *args, **kwargs)
+
+    monkeypatch.setattr(TargetEstateService, "for_target", _counted)
+
+    first = await _cached(estate, "gov.cy", "a")
+    second = await _cached(estate, "gov.cy", "a")
+
+    assert [d.domain for d in first.domains] == ["other.cy"]
+    assert second == first
+    assert built == 1
+
+
+async def test_triage_reaches_the_cached_target_estate(estate, now):
+    await estate.scan("gov.cy", "a", at=now)
+    await _asset(estate, "a", "x.gov.cy", at=now, final_url="https://other.cy/")
+    before = await _cached(estate, "gov.cy", "a")
+
+    await TargetEstateService(estate.session).triage(
+        estate.project_id, ["other.cy"], EstateTriageState.DISMISSED.value
+    )
+    after = await _cached(estate, "gov.cy", "a")
+
+    assert (before.counts.untracked, after.counts.untracked) == (1, 0)
+    assert after.domains[0].state == EstateTriageState.DISMISSED.value
+
+
+async def test_a_new_target_reaches_the_cached_target_estate(estate, now):
+    await estate.scan("gov.cy", "a", at=now)
+    await _asset(estate, "a", "x.gov.cy", at=now, final_url="https://other.cy/")
+    before = await _cached(estate, "gov.cy", "a")
+
+    await estate.scan("other.cy", "b", at=now)
+    after = await _cached(estate, "gov.cy", "a")
+
+    assert before.domains[0].target_id is None
+    assert after.domains[0].target_id == estate.targets["other.cy"]

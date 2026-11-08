@@ -470,8 +470,8 @@ async def get_target_estate(
     with_programs = await InstanceSettingsService(session).has_capability(
         CAP_BOUNTY_PROGRAMS
     )
-    return await TargetEstateService(session).for_target(
-        project_id, target_id, scan_id, with_programs=with_programs, persist=True
+    return await TargetEstateService(session).cached_for_target(
+        project_id, target_id, scan_id, with_programs=with_programs
     )
 
 
