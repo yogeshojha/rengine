@@ -5,6 +5,7 @@
 	import TechIcon from '../tech-icon.svelte';
 	import CrossLinks from '$lib/components/cross-links.svelte';
 	import { screenshotUrl } from '$lib/utilities/media';
+	import { plural } from '$lib/utilities/strings';
 	import { providerFor, PROVIDER_KIND_ICONS } from '$lib/config/hosting-providers';
 	import { httpStatusClass, httpStatusReason, STATUS_DOT } from '$lib/utilities/scan-correlation';
 	import type { SubdomainRead } from '$lib/types/subdomain';
@@ -97,7 +98,7 @@
 				{/if}
 				{#if (sub.title_count ?? 0) > 1}
 					<p class="text-muted-foreground">
-						Same title on {(sub.title_count ?? 0) - 1} other web assets
+						Same title on {plural((sub.title_count ?? 0) - 1, 'other web asset')}
 					</p>
 				{/if}
 				{#if sub.cross_links?.length}
@@ -109,11 +110,12 @@
 					<div class="flex flex-col gap-1">
 						<p class="text-muted-foreground tabular-nums">
 							{[
-								hygieneCounts.warning ? `${hygieneCounts.warning} warning` : '',
+								`${plural(hygiene.length, 'hygiene check')} ${hygiene.length === 1 ? 'fails' : 'fail'}`,
+								hygieneCounts.warning ? plural(hygieneCounts.warning, 'warning') : '',
 								hygieneCounts.info ? `${hygieneCounts.info} info` : ''
 							]
 								.filter(Boolean)
-								.join(' · ')} hygiene {hygiene.length === 1 ? 'check fails' : 'checks fail'}
+								.join(' · ')}
 						</p>
 						<div class="flex flex-wrap gap-1">
 							{#each hygiene.slice(0, MAX_HYGIENE) as key (key)}
