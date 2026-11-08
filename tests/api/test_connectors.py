@@ -146,7 +146,7 @@ async def test_known_matches_on_host_and_shape(estate, now):
     rows = await _candidates(estate.session, row.id)
 
     assert out.accepted == 3
-    assert rows["/artists.php"].known, "same path, different param set is still known"
+    assert rows["/artists.php"].known
     assert NoticeKind.NEW_PARAMS.value in rows["/artists.php"].notices
     assert rows["/api/users/{id}"].known, "an id-bearing path matches by shape"
     assert not rows["/secret/backup.sql"].known

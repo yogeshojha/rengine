@@ -569,7 +569,7 @@ async def test_a_counted_change_always_renders_a_field(estate, now):
 
     assert _dim(report, WEB).changed == rows.total == 1
     assert rows.items[0].verb == ChangeVerb.CHANGED.value
-    assert rows.items[0].fields, "a counted change must name the field that moved"
+    assert rows.items[0].fields
 
 
 async def test_rows_prove_coverage_when_the_rollup_columns_are_wrong(estate, now):
@@ -588,7 +588,7 @@ async def test_rows_prove_coverage_when_the_rollup_columns_are_wrong(estate, now
     )
 
     web = _dim(report, WEB)
-    assert web.verdict.covered_baseline is True, "rows exist, so it was covered"
+    assert web.verdict.covered_baseline is True
     assert web.total_baseline == 2
     assert web.disappeared == 1
 

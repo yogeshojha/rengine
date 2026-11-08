@@ -23,15 +23,12 @@ MIRROR = Path("/app/frontend-config/correlation.ts")
 
 @pytest.mark.parametrize("kind", list(CORRELATION_KIND_ORDER))
 def test_every_kind_is_drawable_and_searchable(kind: str):
-    assert kind in CORRELATION_KIND_LABELS, "the graph has no label for it"
-    assert kind in CORRELATION_KIND_HELP, "the chip has nothing to say about it"
-    assert kind in CORRELATION_RELATION_PHRASE, "Related has nothing to call it"
-    assert kind in KINDS, "the engine cannot build a hub"
-    assert kind in {
-        *_DIMENSIONS,
-        *DERIVED_DIMENSIONS,
-    }, "a hub could not carry a drill-down token"
-    assert HOST_QUERY.by_name.get(kind) is not None, "the token would not compile"
+    assert kind in CORRELATION_KIND_LABELS
+    assert kind in CORRELATION_KIND_HELP
+    assert kind in CORRELATION_RELATION_PHRASE
+    assert kind in KINDS
+    assert kind in {*_DIMENSIONS, *DERIVED_DIMENSIONS}
+    assert HOST_QUERY.by_name.get(kind) is not None
 
 
 @pytest.mark.parametrize("kind", list(CORRELATION_KIND_ORDER))

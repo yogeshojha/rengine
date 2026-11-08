@@ -30,7 +30,7 @@ async def test_a_first_scan_contributes_nothing_new(estate, now):
 
     web = _metric(out, WEB)
     assert web.value == 2
-    assert _new(out, WEB) == 0, "no baseline, so nothing counts as new"
+    assert _new(out, WEB) == 0
 
 
 async def test_only_the_scan_that_first_saw_a_host_is_credited(estate, now):
@@ -60,9 +60,7 @@ async def test_a_repeat_finding_is_never_counted_twice(estate, now):
         estate.project_id, "30d"
     )
 
-    assert _new(out, WEB) == 0, (
-        "the only scan that first saw it has no baseline of its own"
-    )
+    assert _new(out, WEB) == 0
 
 
 async def test_newness_is_judged_per_target(estate, now):
@@ -98,7 +96,7 @@ async def test_answering_hosts_counts_every_http_answer_not_only_2xx(estate, now
         estate.project_id, "7d"
     )
 
-    assert out.answering_hosts == 2, "a 403 answered; is:live would have hidden it"
+    assert out.answering_hosts == 2
 
 
 async def test_retired_counts_what_the_previous_run_held(estate, now):

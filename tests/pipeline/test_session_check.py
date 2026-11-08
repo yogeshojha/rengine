@@ -144,8 +144,8 @@ def test_the_control_request_is_actually_sent_without_the_credentials():
 
     (_url, signed), (_url2, bare) = stage.sent[0], stage.sent[1]
     assert signed["Authorization"] == "Bearer t"
-    assert "Authorization" not in bare, "the control must not carry the credentials"
-    assert bare["X-Scan"] == "rengine", "and must keep everything else"
+    assert "Authorization" not in bare
+    assert bare["X-Scan"] == "rengine"
 
 
 def test_both_requests_go_to_the_same_url():
@@ -178,7 +178,7 @@ def test_it_runs_before_anything_expensive():
 def test_it_declares_that_it_may_not_be_deferred():
     spec = stage_by_name()["session_check"]
     assert spec.deferrable is False
-    assert spec.touches_target is True, "without this the deferral rule never sees it"
+    assert spec.touches_target is True
 
 
 def test_a_stage_may_be_deferred_by_default():

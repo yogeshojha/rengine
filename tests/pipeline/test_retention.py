@@ -63,7 +63,7 @@ async def test_a_run_past_the_window_goes_with_its_rows(durable_estate, now):
             Subdomain.scan_id == durable_estate.scans["ancient"]
         )
     )
-    assert not list(left), "the scan's rows must cascade away with it"
+    assert not list(left)
 
 
 async def test_a_target_never_loses_its_only_run(durable_estate, now):
@@ -131,7 +131,7 @@ async def test_evidence_ages_out_before_the_run_does(durable_estate, now):
 
     result = await _run(durable_estate, scans=90, shots=30)
 
-    assert result.scans_removed == 0, "the run itself is still inside its window"
+    assert result.scans_removed == 0
     assert result.bodies_removed == 2
     left = await durable_estate.session.scalars(
         sa.select(HttpAsset.response_body).where(

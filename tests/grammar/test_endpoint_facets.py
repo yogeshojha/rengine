@@ -46,9 +46,7 @@ async def test_status_keeps_its_declared_order_not_a_count_order(estate, now):
 
     order = [f.value for f in facets.status_class]
     assert order == sorted(order, key=_STATUS_CLASSES.index)
-    assert order[0] == "2xx", (
-        "the most common class here is 'none', which must not lead"
-    )
+    assert order[0] == "2xx"
 
 
 async def test_a_narrowed_reach_agrees_with_an_unnarrowed_one(estate, now):
@@ -110,5 +108,5 @@ async def test_hide_static_narrows_the_host_rollup(estate, now):
     without_static = await service.hosts(scan, EndpointFilter(hide_static=True))
 
     assert everything.total_endpoints == 8
-    assert without_static.total_endpoints == 6, "the two style rows must be gone"
+    assert without_static.total_endpoints == 6
     assert without_static.items[0].subtree_count == 6

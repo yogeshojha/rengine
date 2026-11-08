@@ -114,9 +114,7 @@ def test_a_check_is_judged_on_what_it_references_not_its_tag():
 def test_a_service_check_that_needs_a_callback_keeps_its_own_protocol_lane():
     rows = [_row("net-oob", ["cve"], needs_oast=True, protocol="network")]
     plan = split(rows)
-    assert [r.template_id for r in plan.services] == ["net-oob"], (
-        "a network check in the http invocation runs against the wrong input"
-    )
+    assert [r.template_id for r in plan.services] == ["net-oob"]
     assert not plan.oast
 
 
@@ -132,9 +130,7 @@ def test_an_origin_never_plans_a_tier_that_cannot_run():
         ]
     )
     assert Tier.OAST.value in _planned_tiers(plan, True, heard=True)
-    assert Tier.OAST.value not in _planned_tiers(plan, True, heard=False), (
-        "a planned tier with no batches settles as scanned"
-    )
+    assert Tier.OAST.value not in _planned_tiers(plan, True, heard=False)
 
 
 def test_an_out_of_band_batch_sweeps_for_longer_so_the_wait_is_paid_less():
@@ -188,14 +184,14 @@ def test_a_check_that_cannot_run_is_never_selected():
     off = _scanner(OastConfig(reason="No self-hosted server is set."))
     kept, unheard = off._selectable(rows)
     assert [r.template_id for r in kept] == ["plain-cve"]
-    assert unheard == 2, "nuclei refuses the request, so the check did not run"
+    assert unheard == 2
 
 
 def test_the_checks_that_could_not_run_get_one_row_that_says_so():
     off = _scanner(OastConfig(reason="No self-hosted server is set."))
     row = off._unheard_row(615)
     assert row.status == "skipped"
-    assert row.tier is None, "it must not merge with the tier's batches"
+    assert row.tier is None
     assert "615 checks need a callback and did not run." in row.error
     assert "No self-hosted server is set." in row.error
 
@@ -209,7 +205,7 @@ def test_the_note_lands_on_the_tier_rows_and_never_a_row_of_its_own():
         Coverage(group="Standard rate", tier=Tier.MATCHED.value, hosts_total=4),
     ]
     scanner._note_callbacks(rows)
-    assert len(rows) == 2, "a second row would read as an invocation of its own"
+    assert len(rows) == 2
     assert rows[0].error is not None
     assert "oast.acme.net" in rows[0].error
     assert rows[0].status == "completed"

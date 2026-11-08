@@ -24,7 +24,7 @@ def _before(steps: list[tuple[str, ...]]) -> dict[str, set[str]]:
 def test_the_plan_runs_every_stage_exactly_once():
     names = [name for step in execution_plan() for name in step]
     assert sorted(names) == sorted(_specs())
-    assert len(names) == len(set(names)), "a stage must not be dispatched twice"
+    assert len(names) == len(set(names))
 
 
 def test_every_dependency_completes_before_its_dependent_starts():
@@ -79,7 +79,7 @@ def test_a_resumed_plan_omits_what_finished_and_keeps_the_order():
     done = frozenset({"seed_resolution", "subdomain_discovery", "host_discovery"})
     plan = execution_plan(done=done)
     before = _before(plan)
-    assert not (done & set(before)), "a finished stage must not be dispatched again"
+    assert not (done & set(before))
     for name, spec in _specs().items():
         if name in done:
             continue

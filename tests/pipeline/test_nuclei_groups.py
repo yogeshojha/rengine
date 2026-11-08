@@ -432,4 +432,4 @@ def test_blind_is_scheduled_even_when_the_budget_is_zero(monkeypatch):
     tiers = split(rows)
     assert scanner._blind_budget(plan) == 0
     core = scanner._blind_core(plan, tiers)
-    assert len(core) == 1, "blind still schedules its top check when planned"
+    assert len(core) == 1

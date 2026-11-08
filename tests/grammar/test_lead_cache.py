@@ -63,7 +63,7 @@ async def test_a_finished_scan_is_computed_once(estate, now):
     second = await _leads(estate, "done", build)
 
     assert first.total == second.total == 7
-    assert build.calls == 1, "the second read must come from the cache"
+    assert build.calls == 1
 
 
 async def test_a_running_scan_is_held_briefly(estate, now):

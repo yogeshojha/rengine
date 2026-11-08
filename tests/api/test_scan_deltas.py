@@ -55,7 +55,7 @@ async def test_a_stored_count_is_read_back_without_recounting(durable_estate, no
         lambda s: scan_deltas.first_seen(s, WEB, [one, two, three])
     )
 
-    assert not fill, "every count was valid, so nothing was computed"
+    assert not fill
     assert len(await _stored_rows(durable_estate.session)) == 3
 
 
@@ -231,7 +231,7 @@ async def test_the_backfill_finds_settled_runs_until_they_are_warm(durable_estat
         )
     after = await durable_estate.session.run_sync(pending)
 
-    assert before == {one, two, three}, "a live run is never backfilled"
+    assert before == {one, two, three}
     assert after == set()
     retired = await stored.retired(durable_estate.session, WEB, [(three, two)])
     assert retired == {(three, two): 0}

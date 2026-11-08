@@ -42,7 +42,7 @@ MEASURED_REAL = [
 def test_every_kind_can_be_drawn_and_searched(kind: str):
     assert kind in CORRELATION_KIND_LABELS, "the chip has no label for it"
     assert kind in _DIMENSIONS, "a link could not carry a drill-down token"
-    assert HOST_QUERY.by_name.get(kind) is not None, "the token would not compile"
+    assert HOST_QUERY.by_name.get(kind) is not None
     assert _DIMENSIONS[kind][2] == "=", "the token uses another op"
 
 

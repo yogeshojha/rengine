@@ -71,7 +71,7 @@ async def test_an_aggregated_range_leaves_the_prefix_unknown(estate, now):
     await _enrich(estate, "run")
 
     row = await _row(estate, "198.51.100.9")
-    assert row.asn == 64501, "the ASN is still known"
+    assert row.asn == 64501
     assert row.prefix is None, "the prefix is not"
 
 

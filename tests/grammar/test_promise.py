@@ -99,7 +99,7 @@ async def test_every_lead_count_equals_its_search(estate, now):
     service = SubdomainService(estate.session)
 
     leads = await service.leads(estate.project_id, scan, SubdomainFilter())
-    assert leads.computed, "the lead set must be computed, not timed out"
+    assert leads.computed
     counted = [lead for lead in leads.leads if lead.count]
     assert counted, "the fixture should match at least one lead"
 
@@ -132,9 +132,7 @@ async def test_every_group_count_equals_its_drill_down(estate, now):
                 f"search says {found.total}"
             )
             checked += 1
-    assert checked >= len(HOST_QUERY.dimensions), (
-        "the fixture should populate every dimension"
-    )
+    assert checked >= len(HOST_QUERY.dimensions)
 
 
 async def test_a_flag_and_its_negation_partition_the_scan(estate, now):
@@ -161,7 +159,7 @@ async def test_a_flag_and_its_negation_partition_the_scan(estate, now):
 
 
 async def _tab_rows(tabs, opened):
-    assert tabs.computed, "the tab counts must be computed"
+    assert tabs.computed
     for key, count in tabs.counts.items():
         found = await opened(key)
         assert found.error is None, f"{key}: {found.error}"

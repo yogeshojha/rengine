@@ -140,7 +140,7 @@ def test_anything_that_is_not_an_http_url_is_refused(url: str):
 
 def test_it_is_a_registered_source_that_sends_requests():
     assert URL_PROVIDERS[EndpointSource.JS.value] is SourceMapProvider
-    assert SourceMapProvider.touches_target is True, "a passive scan must skip it"
+    assert SourceMapProvider.touches_target is True
     assert SourceMapProvider.uses_session is True, "it reads the scan's own bundles"
 
 

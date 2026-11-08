@@ -77,7 +77,7 @@ def test_a_guessed_path_is_stored_as_observed():
 
     assert obs.is_probed is True
     assert obs.status_code == 302
-    assert obs.found_on is None, "nothing linked to it; that is the point"
+    assert obs.found_on is None
     assert "Common paths and files" in obs.detail
 
 
@@ -163,8 +163,8 @@ def test_the_shipped_list_is_ranked_and_real():
         .splitlines()
     )
     assert len(lines) > 1000
-    assert "admin" in lines[:200], "the ranking must put what matters near the top"
-    assert all("/" not in w for w in lines), "a word is one segment, never a path"
+    assert "admin" in lines[:200]
+    assert all("/" not in w for w in lines)
 
 
 def _outcome(host: str, hits: int, tried: int) -> _Outcome:

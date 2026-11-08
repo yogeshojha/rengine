@@ -269,7 +269,7 @@ async def test_a_host_that_did_not_answer_keeps_what_the_scan_found(estate, now)
     assert (state.answered, state.changed) == (0, 0)
     await estate.session.refresh(row)
     assert row.tls_not_after == expires, "the scan's observation stands"
-    assert row.tls_checked_at is not None, "but it is not asked again in four hours"
+    assert row.tls_checked_at is not None
     assert await _due(estate) == []
 
 
