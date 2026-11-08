@@ -8,6 +8,15 @@ from tools.runner.models import CommandRecorder
 TLSX_BINARY = "tlsx"
 DEFAULT_TIMEOUT = 10
 DEFAULT_CONCURRENCY = 50
+TLSX_ALIASES: dict[str, str] = {
+    "-c": "-concurrency",
+    "-l": "-list",
+    "-o": "-output",
+    "-j": "-json",
+    "-ex": "-expired",
+    "-ss": "-self-signed",
+    "-ro": "-resp-only",
+}
 
 
 class TlsxError(Exception):
@@ -27,7 +36,9 @@ class TlsxClient:
         self.recorder = recorder
         self.extra_args = extra_args or []
         try:
-            self._runner = CLIToolRunner(TLSX_BINARY, default_timeout=timeout)
+            self._runner = CLIToolRunner(
+                TLSX_BINARY, default_timeout=timeout, aliases=TLSX_ALIASES
+            )
         except ToolNotFoundError as e:
             raise TlsxError(str(e)) from e
 

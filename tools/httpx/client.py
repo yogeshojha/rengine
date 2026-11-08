@@ -20,6 +20,22 @@ HTTPX_ALIASES: dict[str, str] = {
     "-t": "-threads",
     "-sr": "-store-response",
     "-td": "-tech-detect",
+    "-http-proxy": "-proxy",
+    "-s": "-stream",
+    "-sc": "-status-code",
+    "-server": "-web-server",
+    "-cl": "-content-length",
+    "-ct": "-content-type",
+    "-bp": "-body-preview",
+    "-irr": "-include-response",
+    "-rstr": "-response-size-to-read",
+    "-nc": "-no-color",
+    "-fr": "-follow-redirects",
+    "-nfs": "-no-fallback-scheme",
+    "-j": "-json",
+    "-ss": "-screenshot",
+    "-esb": "-exclude-screenshot-bytes",
+    "-srd": "-store-response-dir",
 }
 HEADER_FLAG = "-header"
 

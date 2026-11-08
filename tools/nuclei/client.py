@@ -66,6 +66,9 @@ NUCLEI_ALIASES: dict[str, str] = {
     "-srd": "-store-resp-dir",
     "-ss": "-scan-strategy",
     "-t": "-templates",
+    "-hpd": "-honeypot-detect",
+    "-hpt": "-honeypot-threshold",
+    "-shp": "-suppress-honeypot",
 }
 
 _DROPPED = re.compile(
