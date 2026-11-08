@@ -8,7 +8,7 @@ f="$d/$(date +%s%N)-$$"
            JSON_FILENAME TEXT_FILENAME NOT_BEFORE_RFC3339 NOT_AFTER_RFC3339 \
            ISSUER_DN SUBJECT_DN SERIAL; do
     eval "v=\${$k}"
-    [ -n "$v" ] && printf '%s=%s\n' "$k" "$v"
+    [ -n "$v" ] && printf '%s=%s\n' "$k" "$(printf '%s' "$v" | base64 | tr -d '\n')"
   done
   :
 } > "$f.tmp" && mv "$f.tmp" "$f.env"

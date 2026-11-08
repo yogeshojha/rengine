@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import os
 import shutil
@@ -51,8 +53,12 @@ def _parse_env(path: Path) -> dict[str, str]:
     out: dict[str, str] = {}
     for line in path.read_text(errors="replace").splitlines():
         key, sep, value = line.partition("=")
-        if sep:
-            out[key] = value
+        if not sep:
+            continue
+        try:
+            out[key] = base64.b64decode(value, validate=True).decode(errors="replace")
+        except binascii.Error:
+            continue
     return out
 
 
