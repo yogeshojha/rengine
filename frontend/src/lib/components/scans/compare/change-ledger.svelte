@@ -96,14 +96,9 @@
 
 	{#if digest}
 		{#if rows.length < total}
-			<div
-				class="flex flex-col gap-0.5 border-t bg-muted/20 px-6 py-3 text-xs text-muted-foreground"
-			>
-				<p class="tabular-nums">
-					{rows.length.toLocaleString()} of {total.toLocaleString()} changes
-				</p>
-				<p>Pick a dimension above to page through every change.</p>
-			</div>
+			<p class="border-t bg-muted/20 px-6 py-3 text-xs text-muted-foreground tabular-nums">
+				{rows.length.toLocaleString()} of {total.toLocaleString()} changes
+			</p>
 		{:else}
 			<p class="border-t bg-muted/20 px-6 py-3 text-xs text-muted-foreground">
 				{plural(total, 'change')}
