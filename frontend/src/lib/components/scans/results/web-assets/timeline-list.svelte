@@ -68,9 +68,7 @@
 	let last = $derived(scans.length - 1);
 	let highlight = $state(-1);
 	let windowNote = $derived(
-		result.runs > scans.length && scans[0]?.started_at
-			? `Last ${scans.length} of ${result.runs} runs · earlier runs open from ${formatMonthDay(scans[0].started_at)}`
-			: ''
+		result.runs > scans.length ? `Last ${scans.length} of ${result.runs} scans` : ''
 	);
 
 	// the viewed scan, the first scan, then every few columns from the right, each kept clear of the others
@@ -108,7 +106,7 @@
 	function scanHint(i: number): string {
 		const at = scans[i]?.started_at;
 		const when = at ? formatDateTime(at) : '';
-		return i === last ? `${when} · This scan` : `${when} · Open this run's Timeline`;
+		return i === last ? `${when} · This scan` : `${when} · Open this scan's Timeline`;
 	}
 	function legendPick(state: WebAssetState) {
 		if (state === WebAssetState.GONE) return onGone();

@@ -1525,10 +1525,10 @@
 			{#if gonePage}
 				<span>
 					{gonePage.total.toLocaleString()}
-					{gonePage.total === 1 ? 'endpoint' : 'endpoints'} from the scan on
+					{gonePage.total === 1 ? 'endpoint' : 'endpoints'} from
 					{gonePage.previous_scan_at
-						? formatShortDate(gonePage.previous_scan_at)
-						: 'the previous run'}
+						? `the scan on ${formatShortDate(gonePage.previous_scan_at)}`
+						: 'the previous scan'}
 					not found in this scan.
 				</span>
 			{:else if goneLoading || !goneFailed}
