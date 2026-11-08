@@ -20,9 +20,7 @@ class Port(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    target_id: uuid.UUID = Field(
-        foreign_key="targets.id", index=True, ondelete="CASCADE"
-    )
+    target_id: uuid.UUID = Field(foreign_key="targets.id", ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
     ip: str = Field(max_length=45, index=True)
@@ -35,7 +33,7 @@ class Port(SQLModel, table=True):
     )
     source: str = Field(max_length=30)
 
-    is_http: bool = Field(default=False, index=True)
+    is_http: bool = Field(default=False)
     tls: bool = Field(default=False)
     product: str | None = Field(default=None, max_length=200)
     version: str | None = Field(default=None, max_length=100)

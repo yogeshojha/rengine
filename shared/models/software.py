@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import BigInteger, Column, Text
+from sqlalchemy import BigInteger, Column, Index, Text
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
@@ -30,11 +30,11 @@ class NvdCve(SQLModel, table=True):
     __tablename__ = "nvd_cves"
 
     cve: str = Field(max_length=30, primary_key=True)
-    severity: str | None = Field(default=None, max_length=16, index=True)
+    severity: str | None = Field(default=None, max_length=16)
     cvss_score: float | None = Field(default=None)
     cvss_vector: str | None = Field(default=None, max_length=200)
     description: str | None = Field(default=None, sa_column=Column(Text))
-    published_at: datetime | None = Field(default=None, index=True)
+    published_at: datetime | None = Field(default=None)
     last_modified_at: datetime | None = Field(default=None)
 
 
@@ -64,13 +64,12 @@ class SoftwareCve(SQLModel, table=True):
     __tablename__ = "software_cves"
     __table_args__ = (
         UniqueConstraint("scan_id", "fingerprint", name="uq_software_scan_fingerprint"),
+        Index("ix_software_cves_scan_host", "scan_id", "host"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    target_id: uuid.UUID = Field(
-        foreign_key="targets.id", index=True, ondelete="CASCADE"
-    )
+    target_id: uuid.UUID = Field(foreign_key="targets.id", ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
     fingerprint: str = Field(max_length=64, index=True)
@@ -101,12 +100,12 @@ class SoftwareCve(SQLModel, table=True):
     fixed_in_assets: int | None = Field(default=None)
 
     # where it is
-    host: str | None = Field(default=None, max_length=MAX_HOST_LENGTH, index=True)
+    host: str | None = Field(default=None, max_length=MAX_HOST_LENGTH)
     ip: str | None = Field(default=None, max_length=45, index=True)
     port: int | None = Field(default=None)
     url: str | None = Field(default=None, max_length=MAX_URL_LENGTH)
-    http_asset_id: uuid.UUID | None = Field(default=None, index=True)
-    port_id: uuid.UUID | None = Field(default=None, index=True)
+    http_asset_id: uuid.UUID | None = Field(default=None)
+    port_id: uuid.UUID | None = Field(default=None)
 
     discovered_at: datetime = Field(default_factory=utc_now, index=True)
     created_at: datetime = Field(default_factory=utc_now)

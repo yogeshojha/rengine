@@ -30,13 +30,12 @@ class Endpoint(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("scan_id", "signature", name="uq_endpoint_scan_signature"),
         Index("ix_endpoints_scan_family", "scan_id", "family"),
+        Index("ix_endpoints_scan_host", "scan_id", "host"),
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    target_id: uuid.UUID = Field(
-        foreign_key="targets.id", index=True, ondelete="CASCADE"
-    )
+    target_id: uuid.UUID = Field(foreign_key="targets.id", ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
     signature: str = Field(max_length=64, index=True)
@@ -88,7 +87,7 @@ class Endpoint(SQLModel, table=True):
     interest: list = json_list()
 
     http_asset_id: uuid.UUID | None = Field(default=None, index=True)
-    subdomain_id: uuid.UUID | None = Field(default=None, index=True)
+    subdomain_id: uuid.UUID | None = Field(default=None)
 
     archive_last_seen: datetime | None = Field(default=None)
     discovered_at: datetime = Field(default_factory=utc_now, index=True)

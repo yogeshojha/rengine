@@ -34,9 +34,7 @@ class Secret(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    target_id: uuid.UUID = Field(
-        foreign_key="targets.id", index=True, ondelete="CASCADE"
-    )
+    target_id: uuid.UUID = Field(foreign_key="targets.id", ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
     fingerprint: str = Field(max_length=64, index=True)
@@ -54,7 +52,7 @@ class Secret(SQLModel, table=True):
     # where it was read, first sighting
     host: str = Field(max_length=MAX_HOST_LENGTH, index=True)
     url: str = Field(max_length=MAX_URL_LENGTH)
-    http_asset_id: uuid.UUID | None = Field(default=None, index=True)
+    http_asset_id: uuid.UUID | None = Field(default=None)
     source: str = Field(default=SecretSource.BODY.value, max_length=16)
     context: str | None = text_column()
 

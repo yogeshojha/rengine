@@ -22,9 +22,7 @@ class Subdomain(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
-    target_id: uuid.UUID = Field(
-        foreign_key="targets.id", index=True, ondelete="CASCADE"
-    )
+    target_id: uuid.UUID = Field(foreign_key="targets.id", ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
     name: str = Field(max_length=500, index=True)
@@ -33,9 +31,9 @@ class Subdomain(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSON, nullable=False)
     )
     cname: str | None = Field(default=None, max_length=500)
-    is_active: bool = Field(default=False, index=True)
+    is_active: bool = Field(default=False)
     is_wildcard: bool = Field(default=False)
-    is_excluded: bool = Field(default=False, index=True)
+    is_excluded: bool = Field(default=False)
     is_important: bool = Field(default=False)
 
     http_url: str | None = Field(default=None, max_length=2000)

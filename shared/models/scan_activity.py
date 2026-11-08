@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, computed_field
-from sqlalchemy import Column, Text
+from sqlalchemy import Column, Index, Text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
@@ -13,14 +13,22 @@ from shared.utils.datetime import utc_now
 
 class ScanActivity(SQLModel, table=True):
     __tablename__ = "scan_activities"
+    __table_args__ = (
+        Index(
+            "ix_scan_activities_scan_name",
+            "scan_id",
+            "name",
+            postgresql_include=["status"],
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
+    scan_id: uuid.UUID = Field(foreign_key="scans.id", ondelete="CASCADE")
     project_id: uuid.UUID = Field(foreign_key="projects.id", index=True)
 
-    name: str = Field(max_length=100, index=True)
+    name: str = Field(max_length=100)
     title: str = Field(max_length=200)
-    status: str = Field(default=ScanActivityStatus.PENDING.value, index=True)
+    status: str = Field(default=ScanActivityStatus.PENDING.value)
     celery_task_id: str | None = Field(default=None, max_length=100)
     error: str | None = Field(default=None, max_length=2000)
     traceback: str | None = Field(default=None, sa_column=Column(Text))
