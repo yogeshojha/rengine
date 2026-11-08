@@ -343,7 +343,7 @@ async def build_tree(
         if root is None:
             root = _Node(
                 key=root_key,
-                name="All hosts" if merged else run.host,
+                name="All web assets" if merged else run.host,
                 path="/",
                 host=None if merged else run.host,
                 depth=0,

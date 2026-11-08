@@ -165,7 +165,7 @@ class EndpointStructureService:
                 label=INTEREST_LABELS.get(row.interest, row.interest),
                 detail=(
                     f"{row.n} {plural(row.n, 'path')} across {row.hosts} "
-                    f"{plural(row.hosts, 'host')}."
+                    f"{plural(row.hosts, 'web asset')}."
                 ),
                 count=int(row.n),
                 query=_token("interest", ":", row.interest),
