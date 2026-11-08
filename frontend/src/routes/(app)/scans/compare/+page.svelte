@@ -31,6 +31,8 @@
 	import { seedKindFor } from '$lib/utilities/rechecks';
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatSeconds } from '$lib/utilities/format';
+	import { MS_PER_DAY } from '$lib/utilities/dates';
+	import { requestPool } from '$lib/utilities/request-pool';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { plural } from '$lib/utilities/strings';
 	import { ROUTES, routeLabels } from '$lib/config/routes';
@@ -118,7 +120,8 @@
 		const b = comparison?.current.started_at;
 		if (!a || !b) return '';
 		const seconds = Math.abs(new Date(b).getTime() - new Date(a).getTime()) / 1000;
-		if (seconds >= 48 * 3600) return `${plural(Math.round(seconds / 86400), 'day')} apart`;
+		const days = (seconds * 1000) / MS_PER_DAY;
+		if (days >= 2) return `${plural(Math.round(days), 'day')} apart`;
 		return `${formatSeconds(seconds)} apart`;
 	});
 
@@ -154,7 +157,11 @@
 
 	// ---------- loading ----------
 
+	let comparisonSeq = 0;
+	let rowsSeq = 0;
+
 	async function loadComparison() {
+		const mine = ++comparisonSeq;
 		if (!currentId) {
 			loading = false;
 			return;
@@ -164,7 +171,9 @@
 		error = null;
 		failed = false;
 		try {
-			comparison = await compareApi.comparison(projectId, currentId, baselineId);
+			const fresh = await compareApi.comparison(projectId, currentId, baselineId);
+			if (mine !== comparisonSeq) return;
+			comparison = fresh;
 			if (
 				activeTab !== COMPARE_TAB_ALL &&
 				!comparison.dimensions.some((d) => d.dimension === activeTab)
@@ -172,11 +181,12 @@
 				activeTab = COMPARE_TAB_ALL;
 			}
 		} catch (e) {
+			if (mine !== comparisonSeq) return;
 			comparison = null;
 			error = e instanceof Error ? e.message : 'Comparison not loaded.';
 			failed = isTransient(e);
 		} finally {
-			loading = false;
+			if (mine === comparisonSeq) loading = false;
 		}
 	}
 
@@ -194,6 +204,7 @@
 	}
 
 	async function loadRows() {
+		const mine = ++rowsSeq;
 		if (!comparison || !currentId || !projectId || mode === 'diff') return;
 		if (!activeVerbs.length) {
 			rows = [];
@@ -210,18 +221,22 @@
 				const wanted = comparison.dimensions.filter(
 					(d) => d.verdict.comparability !== COMPARABILITY.NOT_COVERED && listedCount(d) > 0
 				);
+				const run = requestPool();
 				const pages = await Promise.all(
 					wanted.map((d) =>
-						compareApi.rows({
-							projectId,
-							current: currentId,
-							baseline,
-							dimension: d.dimension,
-							verbs: activeVerbs,
-							size: COMPARE_DIGEST_SIZE
-						})
+						run(() =>
+							compareApi.rows({
+								projectId,
+								current: currentId,
+								baseline,
+								dimension: d.dimension,
+								verbs: activeVerbs,
+								size: COMPARE_DIGEST_SIZE
+							})
+						)
 					)
 				);
+				if (mine !== rowsSeq) return;
 				const merged = pages
 					.flatMap((p) => p.items)
 					.sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title));
@@ -238,15 +253,17 @@
 					page: pageNumber,
 					size: COMPARE_PAGE_SIZE
 				});
+				if (mine !== rowsSeq) return;
 				rows = result.items;
 				rowTotal = result.total;
 			}
 		} catch (e) {
+			if (mine !== rowsSeq) return;
 			rows = [];
 			rowTotal = 0;
 			rowsError = e instanceof Error ? e.message : 'Changes not loaded';
 		} finally {
-			rowsLoading = false;
+			if (mine === rowsSeq) rowsLoading = false;
 		}
 	}
 
