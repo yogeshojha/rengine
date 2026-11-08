@@ -36,7 +36,7 @@ class ResolveTarget(Tool):
     examples = ("resolve_target target=example.com",)
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
-        scope = await resolve(ctx, args.target)
+        scope = await resolve(ctx, args.target, full=True)
         summary = scope.summary
 
         surface = []

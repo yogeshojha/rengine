@@ -5,16 +5,20 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import func
+from sqlalchemy import exists, func, not_
 from sqlmodel import col, select
 
 from mcp.context import ToolContext
 from mcp.dimensions import Dimension
 from mcp.errors import ScopeError, ToolError
+from shared.definitions.surface import SURFACE_ORDER, SurfaceDimension
+from shared.enums.scan import SCAN_LIVE_STATUSES
 from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.models.target_summary import SurfaceMetric, TargetSummaryRead
+from shared.models.vulnerability import Vulnerability
+from shared.services.asset_query import vuln_suppressed
 
 
 @dataclass
@@ -33,26 +37,20 @@ class Coverage:
 @dataclass
 class Scope:
     target: Target
-    summary: TargetSummaryRead
+    surface: dict[str, Coverage]
+    summary: TargetSummaryRead | None = None
 
     @property
     def project_id(self) -> uuid.UUID:
         return self.target.project_id
 
     def metric(self, dimension: str) -> SurfaceMetric | None:
+        if self.summary is None:
+            return None
         return next((m for m in self.summary.surface if m.key == dimension), None)
 
     def coverage(self, dimension: str) -> Coverage:
-        metric = self.metric(dimension)
-        if metric is None:
-            return Coverage(None, False, None, None, False)
-        return Coverage(
-            scan_id=metric.scan_id,
-            covered=metric.covered,
-            value=metric.value,
-            observed_at=metric.observed_at,
-            current=metric.current,
-        )
+        return self.surface.get(dimension) or Coverage(None, False, None, None, False)
 
     def require(self, dim: Dimension) -> uuid.UUID:
         found = self.coverage(dim.key)
@@ -77,15 +75,83 @@ class Scope:
         return notes
 
 
-async def resolve(ctx: ToolContext, value: str) -> Scope:
-    """A target and what every dimension's most recent covering scan found."""
+async def resolve(
+    ctx: ToolContext, value: str, *, full: bool = False, counts: bool = False
+) -> Scope:
+    """A target and each dimension's most recent covering scan; `full` adds the target summary."""
+    match = await find_target(ctx, value)
+    if full:
+        from app.services.target_summary import TargetSummaryService  # noqa: PLC0415
+
+        summary = await TargetSummaryService(ctx.session).summary(
+            match.id, match.project_id
+        )
+        surface = {
+            m.key: Coverage(m.scan_id, m.covered, m.value, m.observed_at, m.current)
+            for m in summary.surface
+        }
+        return Scope(target=match, surface=surface, summary=summary)
+    surface = await _covering(ctx, match, counts=counts)
+    return Scope(target=match, surface=surface)
+
+
+async def _covering(
+    ctx: ToolContext, target: Target, *, counts: bool
+) -> dict[str, Coverage]:
+    """The target summary's covering-scan pick, counting only the picked scans."""
+    from app.services import scan_deltas  # noqa: PLC0415
+    from app.services.surface_scope import TABLES  # noqa: PLC0415
     from app.services.target_summary import TargetSummaryService  # noqa: PLC0415
 
-    match = await find_target(ctx, value)
-    summary = await TargetSummaryService(ctx.session).summary(
-        match.id, match.project_id
-    )
-    return Scope(target=match, summary=summary)
+    session = ctx.session
+    service = TargetSummaryService(session)
+    runs = await service._runs(target.id, target.project_id)
+    if not runs:
+        return {}
+    ids = [r.id for r in runs]
+    vuln = SurfaceDimension.VULNERABILITIES.value
+    held: dict[str, dict[uuid.UUID, int]] = {vuln: {}}
+    for key, model in TABLES.items():
+        if key == vuln:
+            continue
+        found = await session.execute(
+            select(Scan.id).where(
+                col(Scan.id).in_(ids),
+                exists(select(1).where(model.scan_id == Scan.id)),
+            )
+        )
+        held[key] = dict.fromkeys(found.scalars(), 1)
+    covered = await service._covered(runs, held)
+    by_id = {r.id: r for r in runs}
+    live = frozenset(r.id for r in runs if r.status in SCAN_LIVE_STATUSES)
+    out: dict[str, Coverage] = {}
+    for key in SURFACE_ORDER:
+        if not covered[key]:
+            continue
+        scan = by_id[covered[key][0]]
+        value = None
+        if counts and key == vuln:
+            value = await session.scalar(
+                select(func.count())
+                .select_from(Vulnerability)
+                .where(
+                    Vulnerability.scan_id == scan.id,
+                    not_(vuln_suppressed(ids[0])),
+                )
+            )
+        elif counts:
+            rows = await scan_deltas.row_counts(
+                session, key, [scan.id], live & {scan.id}
+            )
+            value = rows.get(scan.id, (0, None))[0]
+        out[key] = Coverage(
+            scan_id=scan.id,
+            covered=True,
+            value=int(value or 0) if counts else None,
+            observed_at=scan.started_at or scan.created_at,
+            current=scan.id == runs[0].id,
+        )
+    return out
 
 
 async def find_target(ctx: ToolContext, value: str) -> Target:

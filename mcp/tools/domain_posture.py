@@ -8,7 +8,7 @@ from mcp import links
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import resolve
+from mcp.tools._scope import find_target
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.domain_posture import CHECK_BY_KEY, SPF_ALL_LABELS
 from shared.utils.text import counted
@@ -40,13 +40,13 @@ class DomainPosture(Tool):
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
         from app.services.domain_posture import DomainPostureService  # noqa: PLC0415
 
-        scope = await resolve(ctx, args.target)
+        target = await find_target(ctx, args.target)
         summary = await DomainPostureService(ctx.session).for_target(
-            scope.project_id, scope.target.id
+            target.project_id, target.id
         )
         if not summary.covered:
             msg = (
-                f"Domain posture of {scope.target.target_value} has not been checked. "
+                f"Domain posture of {target.target_value} has not been checked. "
                 "Report it as not scanned, not as passing. Run a scan with the "
                 "Domain posture stage enabled."
             )
@@ -80,7 +80,7 @@ class DomainPosture(Tool):
         if summary.mail_hosts:
             checked += f" and {counted(summary.mail_hosts, 'mail host')}"
         line = (
-            f"{checked} checked for {scope.target.target_value}: "
+            f"{checked} checked for {target.target_value}: "
             f"{summary.warning} with a warning, {summary.spoofable} spoofable, "
             f"{summary.clean} clean"
         )
@@ -93,7 +93,7 @@ class DomainPosture(Tool):
         return ToolResult(
             summary=line,
             data={
-                "target": scope.target.target_value,
+                "target": target.target_value,
                 "scan_id": str(summary.scan_id),
                 "zones_checked": summary.zone_count,
                 "mail_hosts_checked": summary.mail_hosts,
@@ -115,7 +115,7 @@ class DomainPosture(Tool):
                 ],
                 "zones": rows,
             },
-            pivot=links.target(ctx.ui_base_url, scope.target.id),
+            pivot=links.target(ctx.ui_base_url, target.id),
             caveats=caveats,
             untrusted=True,
         )

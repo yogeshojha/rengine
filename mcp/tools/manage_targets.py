@@ -10,7 +10,7 @@ from mcp.capabilities import Capability
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import operator, parse_id, project_for, resolve
+from mcp.tools._scope import find_target, operator, parse_id, project_for, resolve
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.models.project import Project
 from shared.models.target import Target
@@ -180,10 +180,10 @@ class UpdateTarget(Tool):
             msg = "Nothing to change. Pass display_name, tags or organizations."
             raise ToolError(msg)
 
-        scope = await resolve(ctx, args.target)
+        target = await find_target(ctx, args.target)
         result = await _guard(
             TargetService(ctx.session).update_target(
-                str(scope.target.id),
+                str(target.id),
                 TargetUpdate(
                     display_name=args.display_name,
                     tag_names=args.tags,
@@ -231,7 +231,7 @@ class DeleteTarget(Tool):
         from app.services.target import TargetService  # noqa: PLC0415
 
         operator(ctx)
-        scope = await resolve(ctx, args.target)
+        scope = await resolve(ctx, args.target, full=True)
         value = scope.target.target_value
         holdings = {
             metric.label: metric.value

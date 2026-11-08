@@ -50,7 +50,7 @@ class ScanCoverage(Tool):
                 f"Use one of: {', '.join(_COVERAGE_DIMENSIONS)}."
             )
             raise ToolError(msg)
-        scope = await resolve(ctx, args.target)
+        scope = await resolve(ctx, args.target, counts=True)
         scan_id = scope.require(dim)
 
         service = dim.service(ctx.session)
