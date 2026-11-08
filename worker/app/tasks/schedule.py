@@ -69,17 +69,18 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
         for tid in target_ids:
             label = labels.get(tid, tid)
             try:
-                scan = build_scan_for_target_sync(
-                    session,
-                    project_id=sched.project_id,
-                    target_id=tid,
-                    engine_id=sched.engine_id,
-                    context_id=sched.context_id,
-                    created_by=sched.created_by,
-                    schedule_id=sched.id,
-                    schedule_type=sched.schedule_type,
-                    intensity=sched.intensity,
-                )
+                with session.begin_nested():
+                    scan = build_scan_for_target_sync(
+                        session,
+                        project_id=sched.project_id,
+                        target_id=tid,
+                        engine_id=sched.engine_id,
+                        context_id=sched.context_id,
+                        created_by=sched.created_by,
+                        schedule_id=sched.id,
+                        schedule_type=sched.schedule_type,
+                        intensity=sched.intensity,
+                    )
                 queued.append((str(scan.id), scan.run_epoch))
             except Exception as exc:
                 reason = (
