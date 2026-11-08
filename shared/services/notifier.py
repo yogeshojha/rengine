@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
+import mimetypes
+import os
 import re
+import threading
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -25,7 +30,7 @@ from shared.enums.notification_channel import (
     DIRECT_POST_PROVIDERS,
     NotificationProvider,
 )
-from shared.http import get_public_client, get_sync_client
+from shared.http import egress_proxy, get_public_client, get_sync_client
 from shared.models.notification_channel import NotificationChannel
 from shared.utils.crypto import try_decrypt
 from shared.utils.datetime import utc_now
@@ -43,7 +48,19 @@ _CARD_COLOR = {
     NotificationSeverity.ERROR.value: "Attention",
     NotificationSeverity.WARNING.value: "Warning",
 }
+_HTML_COLOR = {
+    NotificationSeverity.INFO.value: "#3AA3E3",
+    NotificationSeverity.WARNING.value: "#CACF29",
+    NotificationSeverity.ERROR.value: "#A32037",
+}
 _TELEGRAM_API = "https://api.telegram.org/bot{token}/{method}"
+_SLACK_HOOK = re.compile(r"hooks\.slack\.com/services/(.+)$")
+_SLACK_API = "https://hooks.slack.com/services/{path}"
+_DISCORD_HOOK = re.compile(r"/webhooks/(\d+)/([\w-]+)")
+_DISCORD_API = "https://discord.com/api/webhooks/{id}/{token}"
+_SLACK_ESCAPES = str.maketrans({"&": "&amp;", "<": "&lt;", ">": "&gt;"})
+_PROXY_VARS = ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")
+_PROXY_ENV_LOCK = threading.Lock()
 INVALID_CONFIG = "Invalid channel settings"
 
 
@@ -135,12 +152,10 @@ def _shared_bot_targets(targets: list[dict], lookup) -> None:
 def build_apprise_url(provider: str, config: dict) -> str | None:
     config = config or {}
     if provider == NotificationProvider.SLACK.value:
-        m = re.search(
-            r"hooks\.slack\.com/services/(.+)$", config.get("webhook_url", "")
-        )
+        m = _SLACK_HOOK.search(config.get("webhook_url", ""))
         return f"slack://{m.group(1)}?footer=no&image=no&format=text" if m else None
     if provider == NotificationProvider.DISCORD.value:
-        m = re.search(r"/webhooks/(\d+)/([\w-]+)", config.get("webhook_url", ""))
+        m = _DISCORD_HOOK.search(config.get("webhook_url", ""))
         return (
             f"discord://{m.group(1)}/{m.group(2)}?avatar=no&format=text" if m else None
         )
@@ -181,6 +196,8 @@ def send_one(provider: str, config: dict, message: Outbound) -> tuple[bool, str]
     try:
         if provider in DIRECT_POST_PROVIDERS:
             return _send_direct(provider, config, message)
+        if provider in _HOOK_SENDERS:
+            return _HOOK_SENDERS[provider](config or {}, message)
         url = build_apprise_url(provider, config)
         if url is None:
             return False, INVALID_CONFIG
@@ -188,12 +205,13 @@ def send_one(provider: str, config: dict, message: Outbound) -> tuple[bool, str]
         if not client.add(url):
             return False, INVALID_CONFIG
         title, body = _apprise_text(provider, message)
-        ok = client.notify(
-            title=title,
-            body=body,
-            notify_type=_NOTIFY_TYPE.get(message.severity, apprise.NotifyType.INFO),
-            attach=message.attach or None,
-        )
+        with _egress_env():
+            ok = client.notify(
+                title=title,
+                body=body,
+                notify_type=_NOTIFY_TYPE.get(message.severity, apprise.NotifyType.INFO),
+                attach=message.attach or None,
+            )
         return (True, "") if ok else (False, "Provider did not accept the message")
     except Exception as exc:
         logger.warning("notifier send error (%s): %s", provider, type(exc).__name__)
@@ -216,6 +234,80 @@ def _apprise_text(provider: str, message: Outbound) -> tuple[str, str]:
     if not body:
         return "", message.title
     return message.title, body
+
+
+@contextlib.contextmanager
+def _egress_env() -> Iterator[None]:
+    proxy = egress_proxy()
+    if not proxy:
+        yield
+        return
+    with _PROXY_ENV_LOCK:
+        saved = {name: os.environ.get(name) for name in _PROXY_VARS}
+        os.environ.update(dict.fromkeys(_PROXY_VARS, proxy))
+        try:
+            yield
+        finally:
+            for name, value in saved.items():
+                if value is None:
+                    os.environ.pop(name, None)
+                else:
+                    os.environ[name] = value
+
+
+def _send_slack(config: dict, message: Outbound) -> tuple[bool, str]:
+    """The payload Apprise sends with footer=no, image=no and format=text."""
+    m = _SLACK_HOOK.search(config.get("webhook_url", ""))
+    if m is None:
+        return False, INVALID_CONFIG
+    title, body = _apprise_text(NotificationProvider.SLACK.value, message)
+    payload = {
+        "mrkdwn": False,
+        "attachments": [
+            {
+                "title": title.translate(_SLACK_ESCAPES),
+                "text": body,
+                "color": _HTML_COLOR.get(
+                    message.severity, _HTML_COLOR[NotificationSeverity.INFO.value]
+                ),
+            }
+        ],
+    }
+    with get_public_client() as client:
+        resp = client.post(_SLACK_API.format(path=m.group(1)), json=payload)
+    return (True, "") if resp.is_success else (False, f"HTTP {resp.status_code}")
+
+
+def _send_discord(config: dict, message: Outbound) -> tuple[bool, str]:
+    """The payload Apprise sends with avatar=no and format=text."""
+    m = _DISCORD_HOOK.search(config.get("webhook_url", ""))
+    if m is None:
+        return False, INVALID_CONFIG
+    url = _DISCORD_API.format(id=m.group(1), token=m.group(2))
+    _title, body = _apprise_text(NotificationProvider.DISCORD.value, message)
+    payload: dict = {"tts": False, "wait": True}
+    with get_public_client() as client:
+        resp = client.post(url, json={**payload, "content": body})
+        if not resp.is_success:
+            return False, f"HTTP {resp.status_code}"
+        attach = Path(message.attach) if message.attach else None
+        if attach is not None and attach.is_file():
+            kind = mimetypes.guess_type(attach.name)[0] or "application/octet-stream"
+            with attach.open("rb") as fh:
+                upload = client.post(
+                    url,
+                    data={"payload_json": json.dumps(payload)},
+                    files=[("files[0]", (attach.name, fh, kind))],
+                )
+            if not upload.is_success:
+                return False, f"HTTP {upload.status_code}"
+    return True, ""
+
+
+_HOOK_SENDERS = {
+    NotificationProvider.SLACK.value: _send_slack,
+    NotificationProvider.DISCORD.value: _send_discord,
+}
 
 
 def _send_direct(provider: str, config: dict, message: Outbound) -> tuple[bool, str]:
