@@ -341,6 +341,8 @@ services:
       target: production
     environment:
       - ORIGIN=${PUBLIC_ORIGIN:-http://localhost}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     logging: *logging
     restart: unless-stopped
     healthcheck:
@@ -361,6 +363,9 @@ services:
     networks:
       default:
         ipv4_address: ${CADDY_ADDR:-172.29.0.253}
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
     logging: *logging
     restart: unless-stopped
     depends_on:
