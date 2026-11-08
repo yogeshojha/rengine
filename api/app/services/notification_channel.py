@@ -11,6 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.validation_errors import validation_detail
 from shared.enums.api_key import APIProvider
 from shared.enums.notification import NotificationSeverity, NotificationType
 from shared.enums.notification_channel import (
@@ -108,8 +109,11 @@ def _check_fields(provider: str, config: dict) -> None:
     if unknown:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=f"Unknown {provider} setting '{unknown[0]}'. Expected one of "
-            f"{', '.join(sorted(known))}.",
+            detail=validation_detail(
+                ["body", "config", unknown[0]],
+                f"Unknown {provider} setting '{unknown[0]}'. Expected one of "
+                f"{', '.join(sorted(known))}.",
+            ),
         )
 
 

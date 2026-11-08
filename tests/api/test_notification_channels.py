@@ -118,7 +118,7 @@ def test_an_unknown_setting_is_refused_by_name():
             {"webhook_url": "https://hooks.example.com/x", "auth_token": "t"},
         )
     assert err.value.status_code == 422
-    assert "'auth_token'" in err.value.detail
+    assert "'auth_token'" in err.value.detail[0]["msg"]
 
 
 @pytest.mark.parametrize(
