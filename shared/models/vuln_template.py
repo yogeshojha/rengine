@@ -140,6 +140,11 @@ class TemplateFilter(BaseModel):
     limit: int = PydanticField(default=50, ge=1, le=200)
     offset: int = PydanticField(default=0, ge=0, le=1_000_000)
 
+    @field_validator("sets")
+    @classmethod
+    def _known_sets(cls, value: list[str]) -> list[str]:
+        return reject_unknown(value, TEMPLATE_SET_KEYS, "check set")
+
 
 class TemplatePage(BaseModel):
     items: list[VulnTemplateRead] = PydanticField(default_factory=list)
