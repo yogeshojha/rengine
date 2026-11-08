@@ -8,7 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 from uuid import UUID
 
-from sqlalchemy import delete, exists, func, select, update
+from sqlalchemy import delete, exists, func, or_, select, update
 from sqlalchemy.orm import Session, aliased
 
 from shared.definitions.retention import (
@@ -105,6 +105,18 @@ def _media_dir(scan_id: UUID) -> Path:
     return MEDIA_ROOT / str(scan_id)
 
 
+def _media_scan_ids() -> list[UUID]:
+    if not MEDIA_ROOT.is_dir():
+        return []
+    ids = []
+    for entry in MEDIA_ROOT.iterdir():
+        try:
+            ids.append(UUID(entry.name))
+        except ValueError:
+            continue
+    return ids
+
+
 def _drop_media(scan_id: UUID) -> int:
     """Remove a scan's screenshots and report the bytes reclaimed."""
     directory = _media_dir(scan_id)
@@ -150,13 +162,26 @@ def prune_evidence(session: Session, days: int) -> EvidencePrune:
     if not window_active(days):
         return out
     cutoff = utc_now() - timedelta(days=days)
+    held = [
+        exists().where(
+            HttpAsset.scan_id == Scan.id, HttpAsset.response_body.isnot(None)
+        ),
+        exists().where(EndpointResponse.scan_id == Scan.id),
+    ]
+    media = _media_scan_ids()
+    if media:
+        held.append(Scan.id.in_(media))
     scans = session.execute(
-        select(Scan.id).where(
+        select(Scan.id)
+        .where(
             Scan.status.in_(SCAN_TERMINAL_STATUSES),
             func.coalesce(Scan.completed_at, Scan.created_at) < cutoff,
+            or_(*held),
         )
+        .order_by(func.coalesce(Scan.completed_at, Scan.created_at).asc())
+        .limit(MAX_SCANS_PER_RUN)
     ).scalars()
-    for scan_id in scans:
+    for scan_id in scans.all():
         had_media = _media_dir(scan_id).is_dir()
         if had_media:
             out.media_bytes += _drop_media(scan_id)
