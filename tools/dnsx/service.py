@@ -6,13 +6,19 @@ from collections import Counter
 from sqlalchemy.orm import Session
 
 from shared.enums.dns import DnsRecordType
+from shared.logging import get_logger
 from shared.models.dns import DnsLookup, DnsLookupSummary, DnsRecord
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
+from shared.utils.text import scrub
 from tools.dnsx.client import DnsxClient, DnsxError
 from tools.dnsx.models import DnsxReconResponse
 from tools.dnsx.parser import parse_dnsx_jsonl
 from tools.runner.models import CommandRecorder
+
+logger = get_logger(__name__)
+
+_VALUE_CAP = DnsRecord.__table__.c.value.type.length
 
 
 class DnsxServiceError(Exception):
@@ -110,7 +116,7 @@ class DnsxService:
             status_code=response.status_code,
             cdn=response.cdn,
             cdn_name=response.cdn_name,
-            parsed_data=response.model_dump(mode="json"),
+            parsed_data=scrub(response.model_dump(mode="json")),
             queried_at=now,
             created_at=now,
             updated_at=now,
@@ -118,8 +124,11 @@ class DnsxService:
         session.add(lookup)
         session.flush()
 
-        db_record_dicts = response.to_db_records()
-        for rec_dict in db_record_dicts:
+        dropped = 0
+        for rec_dict in scrub(response.to_db_records()):
+            if len(rec_dict.get("value") or "") > _VALUE_CAP:
+                dropped += 1
+                continue
             dns_record = DnsRecord(
                 dns_lookup_id=lookup.id,
                 target_id=target_id,
@@ -139,6 +148,12 @@ class DnsxService:
                 created_at=now,
             )
             session.add(dns_record)
+        if dropped:
+            logger.warning(
+                "dns records over the value cap dropped",
+                host=response.host,
+                count=dropped,
+            )
 
         session.commit()
         session.refresh(lookup)
