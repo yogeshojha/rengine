@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 from uuid import UUID
 
@@ -81,7 +82,7 @@ async def set_auto_sync(
 @router.post("/sync", response_model=SyncResult)
 async def sync(_current_user: CurrentSuperuser) -> SyncResult:
     """Download the feeds and re-rank every finding."""
-    queued = dispatch_threat_intel_refresh()
+    queued = await asyncio.to_thread(dispatch_threat_intel_refresh)
     return SyncResult(
         queued=queued,
         feeds=[f.kind for f in FEEDS],

@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from typing import Annotated
 
@@ -114,7 +115,7 @@ async def sync(
 ) -> dict:
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
     spec = tracked_platform(platform)
-    if not dispatch_bounty_report_sync(spec.key):
+    if not await asyncio.to_thread(dispatch_bounty_report_sync, spec.key):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Refresh not queued. Check that the worker and Redis are running.",

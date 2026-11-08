@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 from uuid import UUID
 
@@ -75,7 +76,7 @@ async def sync_library(
     _admin: CurrentSuperuser,
     service: Annotated[VulnTemplateService, Depends(get_service)],
 ):
-    return service.sync()
+    return await asyncio.to_thread(service.sync)
 
 
 @router.post(

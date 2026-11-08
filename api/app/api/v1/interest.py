@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 from uuid import UUID
 
@@ -72,7 +73,7 @@ async def create_rule(
         rule = await InterestReadService(session).create(payload, project_id, user.id)
     except InterestError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
-    dispatch_interest_refresh(str(project_id))
+    await asyncio.to_thread(dispatch_interest_refresh, str(project_id))
     return rule
 
 
@@ -90,7 +91,7 @@ async def update_rule(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if rule is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Rule not found")
-    dispatch_interest_refresh(str(project_id))
+    await asyncio.to_thread(dispatch_interest_refresh, str(project_id))
     return rule
 
 
@@ -103,7 +104,7 @@ async def delete_rule(
 ) -> None:
     if not await InterestReadService(session).delete(rule_id, project_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Rule not found or read-only.")
-    dispatch_interest_refresh(str(project_id))
+    await asyncio.to_thread(dispatch_interest_refresh, str(project_id))
 
 
 @router.post("/rules/preview", response_model=RulePreview)
@@ -129,7 +130,9 @@ async def scan_interest(
         QueryScope((scan.id,), project_id=scan.project_id), body, scan
     )
     if page.summary.stale:
-        dispatch_interest_evaluation(str(scan_id), include_ai=False)
+        await asyncio.to_thread(
+            dispatch_interest_evaluation, str(scan_id), include_ai=False
+        )
     return page
 
 
@@ -156,7 +159,7 @@ async def judge_scan(
     scan_id: Annotated[UUID, Path()],
 ) -> dict:
     await _scan(session, scan_id)
-    dispatch_interest_evaluation(str(scan_id), include_ai=True)
+    await asyncio.to_thread(dispatch_interest_evaluation, str(scan_id), include_ai=True)
     return {"status": "queued"}
 
 

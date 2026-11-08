@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
@@ -228,7 +229,11 @@ async def sync(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=_not_connected(platform),
         )
-    return {"queued": dispatch_bounty_sync(scopes=scopes, platform=platform)}
+    return {
+        "queued": await asyncio.to_thread(
+            dispatch_bounty_sync, scopes=scopes, platform=platform
+        )
+    }
 
 
 @router.post("/sync-feed")
@@ -238,7 +243,7 @@ async def sync_feed(
 ) -> dict:
     """Queue a refresh of the public program feed."""
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
-    return {"queued": dispatch_bounty_feed_sync()}
+    return {"queued": await asyncio.to_thread(dispatch_bounty_feed_sync)}
 
 
 @router.get("")
@@ -482,7 +487,11 @@ async def sync_program(
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
     BountyProgramService.require_platform(platform)
     await service.get_program(platform, handle)
-    return {"queued": dispatch_bounty_program_sync(handle, platform)}
+    return {
+        "queued": await asyncio.to_thread(
+            dispatch_bounty_program_sync, handle, platform
+        )
+    }
 
 
 @router.post("/{platform}/{handle}/import")

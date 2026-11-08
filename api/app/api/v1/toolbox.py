@@ -110,7 +110,8 @@ async def _start(
 
     if spec.queued:
         await store.save(current_user.id, run)
-        accepted = dispatch_toolbox_run(
+        accepted = await asyncio.to_thread(
+            dispatch_toolbox_run,
             run_id=run.id,
             user_id=str(current_user.id),
             tool=spec.name,
