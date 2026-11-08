@@ -5,6 +5,7 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import { apiKeysApi } from '$lib/api/api-keys';
+	import { ApiError } from '$lib/api/client';
 	import type { ProviderInfo } from '$lib/types/api-key';
 	import { getProviderIcon } from '$lib/config/icons';
 	import { RECON_GROUPS, accountMeta, type ProviderGroup } from '$lib/config/api-keys';
@@ -57,8 +58,7 @@
 	});
 
 	function isAlreadyExists(e: unknown): boolean {
-		const msg = e instanceof Error ? e.message.toLowerCase() : '';
-		return msg.includes('already') || msg.includes('exists') || msg.includes('409');
+		return e instanceof ApiError && e.status === 409;
 	}
 
 	async function createKey(p: ProviderInfo, keyValue: string): Promise<boolean> {
