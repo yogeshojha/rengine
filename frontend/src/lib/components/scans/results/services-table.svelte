@@ -857,7 +857,7 @@
 	async function run(sel: SeedSelection) {
 		if (rescanBusy) return;
 		rescanBusy = true;
-		const ok = await startRescan(projectId, sel, 'address', 'addresses');
+		const ok = await startRescan(projectId, sel, IP.noun, IP.nounPlural);
 		if (ok) selection.clear();
 		rescanBusy = false;
 	}
