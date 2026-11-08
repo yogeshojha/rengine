@@ -35,13 +35,9 @@ class Investigation(SQLModel, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    project_id: uuid.UUID = Field(
-        foreign_key="projects.id", index=True, ondelete="CASCADE"
-    )
-    target_id: uuid.UUID = Field(
-        foreign_key="targets.id", index=True, ondelete="CASCADE"
-    )
-    scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
+    project_id: uuid.UUID = Field(foreign_key="projects.id", ondelete="CASCADE")
+    target_id: uuid.UUID = Field(foreign_key="targets.id", ondelete="CASCADE")
+    scan_id: uuid.UUID = Field(foreign_key="scans.id", ondelete="CASCADE")
     dimension: str = Field(default=INVESTIGATE_DIMENSION, max_length=32)
     fingerprint: str = Field(max_length=MAX_ASSET_KEY)
 
@@ -78,7 +74,7 @@ class InvestigationPlan(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     investigation_id: uuid.UUID = Field(
-        foreign_key="investigations.id", index=True, ondelete="CASCADE"
+        foreign_key="investigations.id", ondelete="CASCADE"
     )
     kind: str = Field(default=PlanKind.REPLAY.value, max_length=16)
     template_id: str = Field(max_length=MAX_TEMPLATE_ID)
