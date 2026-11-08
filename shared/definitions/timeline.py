@@ -355,7 +355,7 @@ FINDING_STATE_LABELS: dict[str, str] = {
     FindingState.FIXED.value: "Fixed",
     FindingState.NOT_TESTED.value: "Not tested",
     FindingState.UNOBSERVED.value: "No vulnerability scan",
-    FindingState.UNSEEN.value: "Not seen yet",
+    FindingState.UNSEEN.value: "Not yet seen",
 }
 
 FINDING_OBSERVATION_LABELS: dict[str, str] = {

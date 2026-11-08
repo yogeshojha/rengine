@@ -496,7 +496,7 @@ export const FINDING_STATE_LABELS: Record<FindingState, string> = {
 	[FindingState.FIXED]: 'Fixed',
 	[FindingState.NOT_TESTED]: 'Not tested',
 	[FindingState.UNOBSERVED]: 'No vulnerability scan',
-	[FindingState.UNSEEN]: 'Not seen yet'
+	[FindingState.UNSEEN]: 'Not yet seen'
 };
 
 export const FINDING_OBSERVATION_LABELS: Record<Observation, string> = {
