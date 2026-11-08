@@ -25,6 +25,7 @@
 		onShowRootOnly?: () => void;
 		onShowNew?: () => void;
 		onShowGone?: () => void;
+		gone?: number | null;
 	}
 
 	let {
@@ -36,7 +37,8 @@
 		onShowStatic,
 		onShowRootOnly,
 		onShowNew,
-		onShowGone
+		onShowGone,
+		gone = null
 	}: Props = $props();
 
 	const n = (value: number | null | undefined) =>
@@ -127,7 +129,7 @@
 			class="rounded-sm text-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 			onclick={onShowGone}
 		>
-			{n(summary.gone)} gone
+			{gone === null ? 'Gone' : `${n(gone)} gone`}
 		</button>
 	{/if}
 	{#if coverage.length}

@@ -382,7 +382,7 @@
 				key: 'gone',
 				label: 'Gone since the previous scan',
 				on: goneLens,
-				count: gone,
+				count: goneCount,
 				onToggle: () => (goneLens = !goneLens)
 			});
 		return signals;
@@ -1072,6 +1072,10 @@
 		else listColumnsPref = next;
 	}
 	let goneFilter = $derived(compiled(query, sort.key, sort.dir, goneIndex + 1, pageSize));
+	let goneCount = $derived.by(() => {
+		if (goneLens && gonePage && !goneLoading && !gonePage.total_capped) return gonePage.total;
+		return filtered || hideStatic || query.host ? null : (summary?.gone ?? null);
+	});
 	let goneSig = $derived(JSON.stringify(goneFilter));
 	let loadedGoneSig = '';
 
@@ -1473,6 +1477,7 @@
 			onShowStatic={() => setHideStatic(false)}
 			onShowRootOnly={() => (hideRootOnly = false)}
 			onShowNew={() => setQuery({ ...query, newOnly: true })}
+			gone={goneCount}
 			onShowGone={projectWide ? undefined : () => (goneLens = true)}
 		/>
 	{/if}
