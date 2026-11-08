@@ -70,7 +70,6 @@
 			connectorId: string,
 			kind: ActionKind
 		) => Promise<HandoffResult | null> | void;
-		/** where focus goes when the sheet closes; the table hands it to its cursor row */
 		onCloseAutoFocus?: (e: Event) => void;
 	}
 

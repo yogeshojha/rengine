@@ -135,7 +135,6 @@
 		onPivot?: (name: string) => void;
 		onOpenEndpoints?: (host: string) => void;
 		focus?: { tab: string; pane?: string } | null;
-		/** where focus goes when the sheet closes; the table hands it to its cursor row */
 		onCloseAutoFocus?: (e: Event) => void;
 	}
 
@@ -205,7 +204,6 @@
 	let hostAssets = $derived(corr?.services ?? []);
 	let aiAssets = $derived(hostAssets.filter((a) => !!a.ai_service));
 	let ports = $derived(corr?.ports ?? []);
-	// project-wide correlation repeats an address once per scan that saw it
 	let ipMetas = $derived([
 		...new Map((corr?.ip_metas ?? []).map((m) => [m.ip, m] as const)).values()
 	]);

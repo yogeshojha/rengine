@@ -78,7 +78,6 @@
 			: null
 	);
 
-	// the transition the last change made, read off the cells
 	let lastChange = $derived.by(() => {
 		if (!row.last_change_scan_id) return '';
 		const i = scanIndex.get(row.last_change_scan_id);

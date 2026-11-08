@@ -63,7 +63,6 @@
 		result.runs > scans.length ? `Last ${scans.length} of ${result.runs} scans` : ''
 	);
 
-	// the viewed scan, the first scan, then every few columns from the right, each kept clear of the others
 	const LABEL_PX = 40;
 	let labels = $derived.by(() => {
 		const n = scans.length;
