@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import datetime
 
 from sqlalchemy import (
@@ -74,6 +75,7 @@ _BODY_WEIGHT = "B"
 class QueryContext:
     scope: QueryScope
     now: datetime
+    held: dict = dataclass_field(default_factory=dict, compare=False, repr=False)
 
 
 @dataclass(frozen=True)
@@ -182,10 +184,23 @@ def _status(cmp: Compare):
     return matched
 
 
+def _new(ctx: QueryContext):
+    """The scope's new hosts, one materialized set however many terms read it."""
+    held = ctx.held.get("new")
+    if held is None:
+        held = ctx.held["new"] = (
+            select(Subdomain.id)
+            .where(ctx.scope.match(Subdomain.scan_id), preds.is_new(ctx.scope))
+            .cte("new_hosts")
+            .prefix_with("MATERIALIZED")
+        )
+    return Subdomain.id.in_(select(held.c.id))
+
+
 _FLAG_BUILDERS = {
     "live": lambda _ctx: preds.live(),
     "web": lambda _ctx: preds.answered(),
-    "new": lambda ctx: preds.is_new(ctx.scope),
+    "new": _new,
     "resolved": lambda _ctx: preds.resolved(),
     "auth": lambda _ctx: preds.auth(),
     "cdn": lambda _ctx: Subdomain.is_cdn.is_(True),
