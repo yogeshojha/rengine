@@ -9,12 +9,8 @@
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import X from '@lucide/svelte/icons/x';
 	import { MASK } from '$lib/constants';
-	import {
-		AUTH_TYPES,
-		type AuthConfig,
-		type AuthHeader,
-		type AuthType
-	} from '$lib/types/scan-context';
+	import { AUTH_TYPE_LABELS } from '$lib/config/scan-context';
+	import { AUTH_TYPES, type AuthConfig, type AuthHeader } from '$lib/types/scan-context';
 	import type { SecretField } from './context-form';
 
 	interface Props {
@@ -24,15 +20,6 @@
 	}
 
 	let { auth, extraHeaders, onChange }: Props = $props();
-
-	const AUTH_LABELS: Record<AuthType, string> = {
-		none: 'None',
-		bearer: 'Bearer token',
-		basic: 'Basic auth',
-		header: 'Custom header',
-		cookie: 'Cookie',
-		api_key: 'API key'
-	};
 
 	// svelte-ignore state_referenced_locally
 	const wasSet: Record<SecretField, boolean> = {
@@ -197,7 +184,7 @@
 				data-active={local.auth_type === t}
 			>
 				<RadioGroup.Item value={t} />
-				<span>{AUTH_LABELS[t]}</span>
+				<span>{AUTH_TYPE_LABELS[t]}</span>
 			</Label>
 		{/each}
 	</RadioGroup.Root>

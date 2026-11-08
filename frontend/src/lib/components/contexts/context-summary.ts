@@ -1,5 +1,6 @@
 import type { ScanContextRead, ScanContextCreate, HttpProtocol } from '$lib/types/scan-context';
 import { plural } from '$lib/utilities/strings';
+import { AUTH_TYPE_LABELS, NO_AUTH_LABEL } from '$lib/config/scan-context';
 
 type CtxLike = ScanContextRead | ScanContextCreate;
 
@@ -29,44 +30,24 @@ export const HTTP_PROTOCOL_LABELS: Record<HttpProtocol, string> = {
 
 const PASS_THROUGH = 'No overrides';
 
+function namedPart(ctx: CtxLike): string | null {
+	if (ctx.auth_type === 'basic') return ctx.auth?.basic_username || null;
+	if (ctx.auth_type === 'header') return ctx.auth?.header_name || null;
+	if (ctx.auth_type === 'api_key') return ctx.auth?.api_key_name || null;
+	return null;
+}
+
 export function authBadgeLabel(ctx: CtxLike): string {
-	switch (ctx.auth_type) {
-		case 'bearer':
-			return 'Bearer';
-		case 'basic': {
-			const user = ctx.auth?.basic_username;
-			return user ? `Basic · ${user}` : 'Basic';
-		}
-		case 'header':
-			return ctx.auth?.header_name || 'Header';
-		case 'cookie':
-			return 'Cookie';
-		case 'api_key':
-			return ctx.auth?.api_key_name || 'API key';
-		case 'none':
-		default:
-			return 'No auth';
-	}
+	if (!ctx.auth_type || ctx.auth_type === 'none') return NO_AUTH_LABEL;
+	const named = namedPart(ctx);
+	if (named && ctx.auth_type === 'basic') return `${AUTH_TYPE_LABELS.basic} · ${named}`;
+	return named ?? AUTH_TYPE_LABELS[ctx.auth_type];
 }
 
 function authLabel(ctx: CtxLike): string {
-	switch (ctx.auth_type) {
-		case 'bearer':
-			return 'Bearer token';
-		case 'basic': {
-			const user = ctx.auth?.basic_username;
-			return user ? `Basic auth as ${user}` : 'Basic auth';
-		}
-		case 'header':
-			return `${ctx.auth?.header_name || 'Custom'} header`;
-		case 'cookie':
-			return 'Session cookie';
-		case 'api_key':
-			return `${ctx.auth?.api_key_name || 'API'} key`;
-		case 'none':
-		default:
-			return 'None';
-	}
+	const label = AUTH_TYPE_LABELS[ctx.auth_type] ?? AUTH_TYPE_LABELS.none;
+	const named = namedPart(ctx);
+	return named ? `${label} · ${named}` : label;
 }
 
 function listOf(items: string[], max: number): string {
