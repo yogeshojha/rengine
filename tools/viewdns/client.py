@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 import httpx
@@ -8,6 +9,9 @@ from shared.logging import get_logger
 logger = get_logger(__name__)
 
 BASE_URL = "https://api.viewdns.info"
+_INVALID_KEY = re.compile(
+    r"\b(invalid|incorrect|missing|unknown)\s+(api\s+)?key\b", re.I
+)
 
 
 class ViewDNSAPIError(Exception):
@@ -41,7 +45,7 @@ class ViewDNSClient:
         if resp.status_code == 429:  # noqa: PLR2004
             msg = f"Rate limited on {endpoint}"
             raise ViewDNSRateLimitError(msg)
-        if resp.status_code in (401, 403):
+        if resp.status_code == httpx.codes.UNAUTHORIZED:
             msg = f"Authentication failed for {endpoint}"
             raise ViewDNSAuthError(msg)
         if 400 <= resp.status_code < 500:  # noqa: PLR2004
@@ -68,7 +72,7 @@ class ViewDNSClient:
             if "quota" in error_msg.lower() or "limit" in error_msg.lower():
                 msg = f"Rate limit or quota exhausted on {endpoint}: {error_msg}"
                 raise ViewDNSRateLimitError(msg)
-            if "key" in error_msg.lower() or "auth" in error_msg.lower():
+            if _INVALID_KEY.search(error_msg):
                 msg = f"Authentication failed for {endpoint}: {error_msg}"
                 raise ViewDNSAuthError(msg)
             msg = f"API error on {endpoint}: {error_msg}"
