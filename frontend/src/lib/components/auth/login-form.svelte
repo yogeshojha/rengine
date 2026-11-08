@@ -222,7 +222,7 @@
 								oninput={() => (missing.username = false)}
 							/>
 							{#if missing.username}
-								<FieldError id="username-error">Enter your username</FieldError>
+								<FieldError id="username-error">Enter the username</FieldError>
 							{/if}
 						</Field>
 						<Field>
@@ -258,7 +258,7 @@
 								</button>
 							</div>
 							{#if missing.password}
-								<FieldError id="password-error">Enter your password</FieldError>
+								<FieldError id="password-error">Enter the password</FieldError>
 							{/if}
 							{#if capsLock}
 								<p class="text-xs text-warning" role="status">Caps Lock is on</p>
