@@ -25,7 +25,7 @@ async def page_rows(
     offset: int,
     capped: bool = False,
 ) -> tuple[Sequence[Any], int]:
-    """The page's rows and how many rows matched; `capped` counts to the cap alone."""
+    """The page's rows and how many rows matched, counted to the cap when `capped`."""
     total = MATCHED_TOTAL
     if capped:
         total = (
