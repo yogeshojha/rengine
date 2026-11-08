@@ -14,35 +14,34 @@ from stages.subdomain.stage import SubdomainStage, _Resolution, _Wildcard
 
 pytestmark = pytest.mark.pipeline
 
-APEX = "tigo.com.co"
+APEX = "example.com.co"
 SUBFINDER = SubdomainSource.SUBFINDER.value
 
-# shapes read off a tigo.com.co run: 33,651 subfinder names, 0 matches on gov.np, go.id, gov.cy
 GENERATED = [
-    "dinamic-tigo-177-252-37-237.tigo.com.co",
-    "177-252-190-4.tigo.com.co",
-    "10-20-30-40.dynamic.tigo.com.co",
-    "ip-10-0-0-1.tigo.com.co",
-    "static_190_85_12_34.tigo.com.co",
-    "34.12.85.190.static.tigo.com.co",
-    "103.218.51.tigo.com.co",
-    "0.51.178.tigo.com.co",
-    "host-200-010-001-005.tigo.com.co",
+    "dinamic-example-177-252-37-237.example.com.co",
+    "177-252-190-4.example.com.co",
+    "10-20-30-40.dynamic.example.com.co",
+    "ip-10-0-0-1.example.com.co",
+    "static_190_85_12_34.example.com.co",
+    "34.12.85.190.static.example.com.co",
+    "103.218.51.example.com.co",
+    "0.51.178.example.com.co",
+    "host-200-010-001-005.example.com.co",
 ]
 NAMED = [
-    "tigo.com.co",
-    "www1.tigo.com.co",
-    "smtp2.tigo.com.co",
-    "speedtest2bog3.tigo.com.co",
-    "acp-3956640.tigo.com.co",
-    "o1423.abmail.factura.tigo.com.co",
-    "excsibogvm-e1.hcs-uc.tigo.com.co",
-    "10.tigo.com.co",
-    "1-2-3.tigo.com.co",
-    "v1.2.3.tigo.com.co",
-    "2024-01-15-10.tigo.com.co",
-    "300-20-30-40.tigo.com.co",
-    "1-2-3-4-5.tigo.com.co.evil.net",
+    "example.com.co",
+    "www1.example.com.co",
+    "smtp2.example.com.co",
+    "speedtest2dc3.example.com.co",
+    "acp-3956640.example.com.co",
+    "o1423.abmail.billing.example.com.co",
+    "appvm-e1.hcs-uc.example.com.co",
+    "10.example.com.co",
+    "1-2-3.example.com.co",
+    "v1.2.3.example.com.co",
+    "2024-01-15-10.example.com.co",
+    "300-20-30-40.example.com.co",
+    "1-2-3-4-5.example.com.co.evil.net",
 ]
 
 
@@ -58,15 +57,15 @@ def test_a_named_host_is_not_generated(name):
 
 def test_a_certificate_or_resolver_keeps_an_address_shaped_name():
     merged = {
-        "177-252-190-4.tigo.com.co": {SubdomainSource.CRTNAME.value},
-        "177-252-190-5.tigo.com.co": {SUBFINDER, SubdomainSource.TLSX.value},
-        "177-252-190-6.tigo.com.co": {SubdomainSource.BRUTEFORCE.value},
-        "177-252-190-7.tigo.com.co": {SubdomainSource.ZONE_TRANSFER.value},
-        "177-252-190-8.tigo.com.co": {SUBFINDER, SubdomainSource.AMASS.value},
-        "www.tigo.com.co": {SUBFINDER},
+        "177-252-190-4.example.com.co": {SubdomainSource.CRTNAME.value},
+        "177-252-190-5.example.com.co": {SUBFINDER, SubdomainSource.TLSX.value},
+        "177-252-190-6.example.com.co": {SubdomainSource.BRUTEFORCE.value},
+        "177-252-190-7.example.com.co": {SubdomainSource.ZONE_TRANSFER.value},
+        "177-252-190-8.example.com.co": {SUBFINDER, SubdomainSource.AMASS.value},
+        "www.example.com.co": {SUBFINDER},
     }
     kept, dropped = sift(merged, APEX)
-    assert dropped == {"177-252-190-8.tigo.com.co": NameRule.REVERSE_DNS.value}
+    assert dropped == {"177-252-190-8.example.com.co": NameRule.REVERSE_DNS.value}
     assert set(kept) == set(merged) - set(dropped)
 
 
@@ -108,16 +107,19 @@ class _Run:
             ProviderResult(
                 source=SubdomainSource.SUBFINDER,
                 subdomains={
-                    "dinamic-tigo-177-252-37-237.tigo.com.co",
-                    "dinamic-tigo-177-252-191-49.tigo.com.co",
-                    "103.218.51.tigo.com.co",
-                    "177-252-190-4.tigo.com.co",
-                    "mail.tigo.com.co",
+                    "dinamic-example-177-252-37-237.example.com.co",
+                    "dinamic-example-177-252-191-49.example.com.co",
+                    "103.218.51.example.com.co",
+                    "177-252-190-4.example.com.co",
+                    "mail.example.com.co",
                 },
             ),
             ProviderResult(
                 source=SubdomainSource.CRTNAME,
-                subdomains={"177-252-190-4.tigo.com.co", "correo.mail.tigo.com.co"},
+                subdomains={
+                    "177-252-190-4.example.com.co",
+                    "correo.mail.example.com.co",
+                },
             ),
         ]
         for result in results:
@@ -130,10 +132,10 @@ def test_generated_names_are_neither_stored_nor_resolved():
     result = run.stage.run()
 
     kept = {
-        "tigo.com.co",
-        "mail.tigo.com.co",
-        "correo.mail.tigo.com.co",
-        "177-252-190-4.tigo.com.co",
+        "example.com.co",
+        "mail.example.com.co",
+        "correo.mail.example.com.co",
+        "177-252-190-4.example.com.co",
     }
     assert set(run.written) == kept
     assert set(run.resolved) == kept
@@ -146,6 +148,6 @@ def test_the_filter_can_be_switched_off():
     run = _Run(skip_address_names=False)
     result = run.stage.run()
 
-    assert "dinamic-tigo-177-252-37-237.tigo.com.co" in run.resolved
+    assert "dinamic-example-177-252-37-237.example.com.co" in run.resolved
     assert result.counts["subdomains"] == 7
     assert not any(key.startswith("dropped_") for key in result.counts)
