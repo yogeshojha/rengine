@@ -29,6 +29,7 @@ from shared.models.target import Target
 from shared.services.credential_access import launch_refusal, superuser_of
 from shared.services.schedule_timing import compute_next_run_at, describe_schedule
 from shared.utils.datetime import utc_now
+from shared.utils.text import counted
 from shared.utils.uuid import uuid_list
 
 
@@ -117,9 +118,11 @@ class ScanScheduleService:
             .all()
         )
         found = {t.id for t in rows}
-        missing = [str(t) for t in target_ids if t not in found]
+        missing = [t for t in target_ids if t not in found]
         if missing:
-            msg = f"Targets not found: {', '.join(missing)}"
+            msg = (
+                f"{counted(len(missing), 'target')} not found. Reload the target list."
+            )
             raise _bad(msg)
         return list(rows)
 

@@ -118,6 +118,7 @@ from shared.services.scan_resolve import (
 )
 from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.utils.datetime import duration_text, utc_now
+from shared.utils.text import counted
 from shared.utils.validation import unrecognised_target, validate_target
 from stages.http_probe.stage import HttpProbeStage
 from stages.registry import resume_point
@@ -272,7 +273,8 @@ class ScanService:
         if missing:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Target not found: {missing[0]}",
+                detail=f"{counted(len(missing), 'target')} not found. "
+                "Reload the target list.",
             )
         return [found[tid] for tid in target_ids]
 
