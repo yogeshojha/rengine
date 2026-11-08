@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 
 from shared.definitions.report_fonts import clean_family_name
-from shared.definitions.report_theme import ColorTokens, ThemeTokens
+from shared.definitions.report_theme import ColorTokens, CoverInk, ThemeTokens
 from shared.definitions.reports import (
     DARK_CHART_PALETTE,
     DARK_SEVERITY_COLORS,
@@ -229,7 +229,7 @@ def css_variables(
         f"--r-accent-ink:{colour.accent_ink}",
         f"--r-link:{colour.link}",
         f"--r-cover-bg:{tokens.cover.background or colour.accent}",
-        f"--r-cover-ink:{'#ffffff' if tokens.cover.ink == 'light' else colour.ink}",
+        f"--r-cover-ink:{'#ffffff' if tokens.cover.ink == CoverInk.LIGHT.value else colour.ink}",
         f"--r-font-heading:{font_stack(typography.heading, 'sans-serif', families)}",
         f"--r-font-body:{font_stack(typography.body, 'sans-serif', families)}",
         f"--r-font-mono:{font_stack(typography.mono, 'monospace', families)}",
@@ -291,7 +291,9 @@ def theme_summary(tokens: ThemeTokens, origin: str) -> dict:
         "rule": colour.rule,
         "surface": colour.surface,
         "cover_background": tokens.cover.background or colour.accent,
-        "cover_ink": "#ffffff" if tokens.cover.ink == "light" else colour.ink,
+        "cover_ink": "#ffffff"
+        if tokens.cover.ink == CoverInk.LIGHT.value
+        else colour.ink,
         "cover_layout": tokens.cover.layout,
         "cover_art": tokens.cover.art,
         "heading_font": tokens.type.heading,
