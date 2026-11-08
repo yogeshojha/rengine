@@ -1428,7 +1428,11 @@
 		</div>
 	{:else}
 		<EmptyState compact icon={TriangleAlert} title="Correlation not loaded">
-			<Button variant="outline" size="sm" onclick={() => sub && loadCorrelation(sub.name)}>
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={() => sub && loadCorrelation(sub.name, sub.scan_id, sub.id)}
+			>
 				Retry
 			</Button>
 		</EmptyState>

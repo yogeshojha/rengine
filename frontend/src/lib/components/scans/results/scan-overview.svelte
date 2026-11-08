@@ -255,7 +255,11 @@
 		{/if}
 
 		{#if lookalikes && lookalikes.registered > 0}
-			<LookalikeTray summary={lookalikes} {projectId} onChanged={loadLookalikes} />
+			<LookalikeTray
+				summary={lookalikes}
+				{projectId}
+				onChanged={() => loadLookalikes(generation)}
+			/>
 		{/if}
 
 		<AttentionPanel
@@ -270,7 +274,7 @@
 
 		{#if insightsFailed}
 			<EmptyState compact icon={TriangleAlert} title="Scan insights not loaded">
-				<Button variant="outline" size="sm" onclick={loadInsights}>Retry</Button>
+				<Button variant="outline" size="sm" onclick={() => loadInsights(generation)}>Retry</Button>
 			</EmptyState>
 		{:else}
 			<VulnerabilityPanel {vulns} {onTab} />
