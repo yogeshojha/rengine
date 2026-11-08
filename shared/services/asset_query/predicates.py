@@ -22,7 +22,6 @@ from sqlalchemy import (
     union_all,
 )
 from sqlalchemy.dialects.postgresql import BIT, INET, JSONB
-from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import aliased
 
 from shared.definitions import domain_posture as posture_defs
@@ -156,24 +155,32 @@ def cert_state(name: str, now: datetime):
 
 def port_match(condition, scope: ScopeLike):
     scope = scope_of(scope)
-
-    def build(scan_id):
-        addresses = (
-            select(
-                func.coalesce(
-                    func.array_agg(distinct(Port.ip)), pg_array([], type_=Text)
-                )
-            )
-            .where(Port.scan_id == scan_id, condition)
-            .scalar_subquery()
-        )
-        return json_has_any(Subdomain.resolved_ips, addresses)
-
-    if scope.single is not None:
-        return build(scope.single)
     if not scope.ids:
         return false()
-    return or_(*[and_(Subdomain.scan_id == sid, build(sid)) for sid in scope.ids])
+    host = aliased(Subdomain)
+    element = (
+        func.json_array_elements_text(host.resolved_ips)
+        .table_valued("value")
+        .lateral("resolved_ip")
+    )
+    # OFFSET 0 fences the ports set from the host join
+    served = (
+        select(Port.scan_id, Port.ip)
+        .where(scope.match(Port.scan_id), condition)
+        .offset(0)
+        .subquery("served")
+    )
+    hosts = (
+        select(host.id)
+        .join(element, true())
+        .join(
+            served,
+            and_(served.c.scan_id == host.scan_id, served.c.ip == element.c.value),
+        )
+        .where(scope.match(host.scan_id))
+        .subquery("served_hosts")
+    )
+    return exists(select(1).where(hosts.c.id == Subdomain.id))
 
 
 def seen_earlier():
