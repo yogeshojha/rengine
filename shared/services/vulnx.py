@@ -20,7 +20,7 @@ from shared.models.threat_intel import CveIntel
 from shared.services.api_key.sync_api_key import SyncAPIKeyService
 from shared.utils.datetime import utc_now
 from shared.utils.net import redact_url_queries
-from shared.utils.text import strip_control
+from shared.utils.text import REFUSED_ROW, scrub, strip_control
 
 logger = get_logger(__name__)
 
@@ -221,15 +221,20 @@ def enrich(session: Session, cves: list[str], *, limit: int = MAX_PER_RUN) -> di
         if not data.get("cve_id"):
             failed += 1
             continue
-        row = _row(cve, data)
-        session.execute(
-            pg_insert(CveIntel)
-            .values(**row)
-            .on_conflict_do_update(
-                index_elements=[CveIntel.cve],
-                set_={k: v for k, v in row.items() if k != "cve"},
-            )
-        )
+        row = scrub(_row(cve, data))
+        try:
+            with session.begin_nested():
+                session.execute(
+                    pg_insert(CveIntel)
+                    .values(**row)
+                    .on_conflict_do_update(
+                        index_elements=[CveIntel.cve],
+                        set_={k: v for k, v in row.items() if k != "cve"},
+                    )
+                )
+        except REFUSED_ROW:
+            failed += 1
+            continue
         cached += 1
     session.commit()
     return {
