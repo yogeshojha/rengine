@@ -38,11 +38,6 @@ if TYPE_CHECKING:
 _CHUNK = 500
 
 
-def _children_of(parents: set[str]):
-    """Rows directly under one of the folders: their files and child folders."""
-    return func.regexp_replace(Endpoint.path, "[^/]+/?$", "").in_(sorted(parents))
-
-
 @dataclass(frozen=True)
 class NoisePolicy:
     enabled: bool = True
@@ -97,6 +92,7 @@ class Sifter:
         self._families: dict[str, int] = {}
         self._family_lang: dict[str, str | None] = {}
         self._siblings: dict[tuple[str, str, str], int] = {}
+        self._primed_hosts: set[str] = set()
         self._known: set[str] = set()
         self._https_hosts: frozenset[str] | None = None
         self._preferred_lang: dict[str, str] | None = None
@@ -245,25 +241,23 @@ class Sifter:
                 keys[skey] = key
         if not keys:
             return
-        by_host: dict[str, set[str]] = {}
-        for host, parent, _kind in keys:
-            by_host.setdefault(host, set()).add(parent)
-        for host, parents in by_host.items():
-            rows = self.session.execute(
-                select(Endpoint.path, Endpoint.extension).where(
-                    Endpoint.scan_id == self.scan_id,
-                    Endpoint.host == host,
-                    _children_of(parents),
-                )
-            ).all()
+        hosts = sorted({host for host, _parent, _kind in keys} - self._primed_hosts)
+        for start in range(0, len(hosts), _CHUNK):
+            chunk = hosts[start : start + _CHUNK]
             counts: Counter = Counter()
-            for path, extension in rows:
+            for host, path, extension in self.session.execute(
+                select(Endpoint.host, Endpoint.path, Endpoint.extension).where(
+                    Endpoint.scan_id == self.scan_id, Endpoint.host.in_(chunk)
+                )
+            ):
                 key = sibling_key(path, extension)
-                if key is not None and key[0] in parents:
+                if key is not None:
                     counts[(host, key[0], key[1])] += 1
-            for skey in keys:
-                if skey[0] == host:
-                    self._siblings[skey] = counts.get(skey, 0)
+            for skey, count in counts.items():
+                self._siblings.setdefault(skey, count)
+            self._primed_hosts.update(chunk)
+        for skey in keys:
+            self._siblings.setdefault(skey, 0)
 
     def _https_only(self) -> frozenset[str]:
         """Hosts whose http root answers with a redirect to https."""
