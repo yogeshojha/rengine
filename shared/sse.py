@@ -52,7 +52,7 @@ class SSEManager:
                     self._subscriptions[channel] = set()
                 self._subscriptions[channel].add(queue)
 
-        logger.info(
+        logger.debug(
             "SSE client subscribed to %d channel(s): %s | total connections: %d",
             len(channels),
             ", ".join(channels),
@@ -73,7 +73,7 @@ class SSEManager:
             while not queue.empty():
                 queue.get_nowait()
 
-        logger.info(
+        logger.debug(
             "SSE client unsubscribed from %d channel(s) | total connections: %d",
             len(channels),
             len(self._queue_channels),
