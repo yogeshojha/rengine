@@ -105,7 +105,7 @@ function createLiveScansStore() {
 			fetchedAt = requestedAt;
 			void seedRuns(pid, mySeq);
 		} catch (e) {
-			console.error('[liveScans]', e);
+			if (import.meta.env.DEV) console.error('[liveScans]', e);
 		} finally {
 			inflight = false;
 			if (mySeq === seq) schedulePoll();

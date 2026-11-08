@@ -83,7 +83,8 @@ export const notificationStore = {
 		} catch (error) {
 			if (my !== seq) return;
 			state.error = error as Error;
-			console.error('[Notifications] Failed to load notifications:', error);
+			if (import.meta.env.DEV)
+				console.error('[Notifications] Failed to load notifications:', error);
 		} finally {
 			if (my === seq) state.isLoading = false;
 		}
@@ -109,7 +110,8 @@ export const notificationStore = {
 		} catch (error) {
 			if (my !== seq) return;
 			state.error = error as Error;
-			console.error('[Notifications] Failed to load all notifications:', error);
+			if (import.meta.env.DEV)
+				console.error('[Notifications] Failed to load all notifications:', error);
 		} finally {
 			if (my === seq) state.isLoading = false;
 		}
@@ -127,7 +129,7 @@ export const notificationStore = {
 			}
 			return true;
 		} catch (error) {
-			console.error('[Notifications] Failed to mark as read:', error);
+			if (import.meta.env.DEV) console.error('[Notifications] Failed to mark as read:', error);
 			return false;
 		}
 	},

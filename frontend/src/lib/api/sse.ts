@@ -166,7 +166,7 @@ class SSEClient {
 					try {
 						cb();
 					} catch (err) {
-						console.error('[SSE] Resume listener error:', err);
+						if (import.meta.env.DEV) console.error('[SSE] Resume listener error:', err);
 					}
 				}
 			}
@@ -184,7 +184,7 @@ class SSEClient {
 		try {
 			message = JSON.parse(event.data) as SSEMessage;
 		} catch {
-			console.error('[SSE] Failed to parse message:', event.data);
+			if (import.meta.env.DEV) console.error('[SSE] Failed to parse message');
 			return;
 		}
 
@@ -194,7 +194,7 @@ class SSEClient {
 				try {
 					cb(message);
 				} catch (err) {
-					console.error('[SSE] Subscriber error:', err);
+					if (import.meta.env.DEV) console.error('[SSE] Subscriber error:', err);
 				}
 			}
 		}
@@ -206,7 +206,7 @@ class SSEClient {
 					try {
 						cb(message);
 					} catch (err) {
-						console.error('[SSE] Subscriber error:', err);
+						if (import.meta.env.DEV) console.error('[SSE] Subscriber error:', err);
 					}
 				}
 			}
@@ -280,7 +280,7 @@ class SSEClient {
 			try {
 				cb(state);
 			} catch (err) {
-				console.error('[SSE] State listener error:', err);
+				if (import.meta.env.DEV) console.error('[SSE] State listener error:', err);
 			}
 		}
 	}
