@@ -3,9 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.models.scan import Scan
 from shared.models.tag import TargetTag
 from shared.models.target import Target, TargetOrganization
 
@@ -54,3 +56,28 @@ async def resolve_targets(
 
 def keeps(targets: Targets, target_id: UUID | None) -> bool:
     return targets is None or target_id in targets
+
+
+async def require_target(
+    session: AsyncSession,
+    project_id: UUID,
+    target_id: UUID,
+    scan_id: UUID | None = None,
+) -> None:
+    """Refuse a target outside the project, or a scan of another target."""
+    owned = await session.scalar(
+        select(Target.id).where(Target.id == target_id, Target.project_id == project_id)
+    )
+    if owned is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Target not found.")
+    if scan_id is None:
+        return
+    scan = await session.scalar(
+        select(Scan.id).where(
+            Scan.id == scan_id,
+            Scan.target_id == target_id,
+            Scan.project_id == project_id,
+        )
+    )
+    if scan is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Scan not found.")

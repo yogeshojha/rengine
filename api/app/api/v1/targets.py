@@ -26,6 +26,7 @@ from app.services.target_assets import TargetAssetService
 from app.services.target_estate import TargetEstateService
 from app.services.target_filters import SignalName, SortDir, SortKey
 from app.services.target_relations import TargetRelationService
+from app.services.target_scope import require_target
 from app.services.target_summary import TargetSummaryService
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS
 from shared.enums.target import EnrichmentKind
@@ -462,6 +463,7 @@ async def get_target_estate(
     scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
 ):
     """Domains this target points at, providers it runs on, targets it shares with."""
+    await require_target(session, project_id, target_id, scan_id)
     with_programs = await InstanceSettingsService(session).has_capability(
         CAP_BOUNTY_PROGRAMS
     )
