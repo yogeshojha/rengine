@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Tag
@@ -17,13 +18,7 @@ async def get_or_create_tag(
 ) -> Tag:
     normalized_name = clean_name(name, max_len=MAX_TAG_LEN).lower()
 
-    result = await session.execute(
-        select(Tag).where(
-            Tag.name == normalized_name,
-            Tag.project_id == project_id,
-        )
-    )
-    tag = result.scalar_one_or_none()
+    tag = await _by_name(session, normalized_name, project_id)
 
     if not tag:
         tag = Tag(
@@ -31,6 +26,22 @@ async def get_or_create_tag(
             project_id=project_id,
             created_by=user_id,
         )
-        await add_with_unique_slug(session, tag, normalized_name, project_id=project_id)
+        try:
+            await add_with_unique_slug(
+                session, tag, normalized_name, project_id=project_id
+            )
+        except IntegrityError:
+            tag = await _by_name(session, normalized_name, project_id)
+            if tag is None:
+                raise
 
     return tag
+
+
+async def _by_name(
+    session: AsyncSession, name: str, project_id: uuid.UUID
+) -> Tag | None:
+    result = await session.execute(
+        select(Tag).where(Tag.name == name, Tag.project_id == project_id)
+    )
+    return result.scalar_one_or_none()

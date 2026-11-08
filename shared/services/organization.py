@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models import Organization
@@ -18,13 +19,7 @@ async def get_or_create_organization(
 ) -> Organization:
     normalized_name = clean_name(name, max_len=MAX_ORG_LEN).lower()
 
-    result = await session.execute(
-        select(Organization).where(
-            Organization.name == normalized_name,
-            Organization.project_id == project_id,
-        )
-    )
-    organization = result.scalar_one_or_none()
+    organization = await _by_name(session, normalized_name, project_id)
 
     if not organization:
         organization = Organization(
@@ -33,8 +28,24 @@ async def get_or_create_organization(
             project_id=project_id,
             created_by=user_id,
         )
-        await add_with_unique_slug(
-            session, organization, normalized_name, project_id=project_id
-        )
+        try:
+            await add_with_unique_slug(
+                session, organization, normalized_name, project_id=project_id
+            )
+        except IntegrityError:
+            organization = await _by_name(session, normalized_name, project_id)
+            if organization is None:
+                raise
 
     return organization
+
+
+async def _by_name(
+    session: AsyncSession, name: str, project_id: uuid.UUID
+) -> Organization | None:
+    result = await session.execute(
+        select(Organization).where(
+            Organization.name == name, Organization.project_id == project_id
+        )
+    )
+    return result.scalar_one_or_none()
