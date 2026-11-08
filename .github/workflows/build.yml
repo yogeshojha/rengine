@@ -13,9 +13,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    name: 🧪 Tests
+    if: github.repository == 'yogeshojha/rengine' && github.ref_type == 'tag'
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
   build:
     name: 🐳 Build ${{ matrix.image }} (${{ matrix.arch }})
-    if: github.repository == 'yogeshojha/rengine'
+    needs: test
+    if: >-
+      ${{ !cancelled() && github.repository == 'yogeshojha/rengine'
+      && (needs.test.result == 'success' || (needs.test.result == 'skipped' && github.ref_type != 'tag')) }}
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -106,6 +116,7 @@ jobs:
   publish:
     name: 🧩 Publish ${{ matrix.image }}
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -173,7 +184,7 @@ jobs:
 
   release:
     name: 📝 Draft the release
-    if: github.ref_type == 'tag'
+    if: ${{ !cancelled() && github.ref_type == 'tag' && needs.publish.result == 'success' }}
     needs: publish
     runs-on: ubuntu-24.04
     permissions:
