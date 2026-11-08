@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,9 +13,24 @@ from shared.models.vuln_template import VulnTemplate
 from shared.services.celery_dispatch import get_celery_client
 
 REQUIRED_QUEUES = frozenset(spec.name for spec in QUEUES)
+ONLINE_TTL_SECONDS = 30.0
+
+_online: dict[str, tuple[float, int | None]] = {}
 
 
 def _workers() -> tuple[bool, int | None]:
+    seen = _online.get("workers")
+    if seen is not None and time.monotonic() - seen[0] < ONLINE_TTL_SECONDS:
+        return True, seen[1]
+    online, slots = _inspect()
+    if online:
+        _online["workers"] = (time.monotonic(), slots)
+    else:
+        _online.pop("workers", None)
+    return online, slots
+
+
+def _inspect() -> tuple[bool, int | None]:
     inspect = get_celery_client().control.inspect(timeout=INSPECT_TIMEOUT)
     pong = inspect.ping() or {}
     online = [name for name, reply in pong.items() if reply.get("ok") == "pong"]
