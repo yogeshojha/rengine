@@ -34,17 +34,10 @@
 			},
 			{
 				key: 'unseen',
-				label: 'Unseen by scans',
+				label: 'Missed by scans',
 				value: browsing.unseen,
 				sub: null,
 				href: ROUTES.connectors('missed')
-			},
-			{
-				key: 'params',
-				label: 'New parameters',
-				value: browsing.new_params,
-				sub: null,
-				href: ROUTES.connectors('all')
 			},
 			{
 				key: 'flagged',
