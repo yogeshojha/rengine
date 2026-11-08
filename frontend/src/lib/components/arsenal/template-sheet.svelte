@@ -54,6 +54,7 @@ http:
 	let draft = $state('');
 	let original = $state('');
 	let loading = $state(false);
+	let loadSeq = 0;
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 	let confirming = $state(false);
@@ -68,8 +69,10 @@ http:
 		const row = template;
 		const isNew = creating;
 		untrack(() => {
+			const mine = ++loadSeq;
 			error = null;
 			source = null;
+			loading = false;
 			if (isNew) {
 				draft = STARTER;
 				original = STARTER;
@@ -78,21 +81,22 @@ http:
 			if (!row) return;
 			draft = '';
 			original = '';
-			void load(row.id);
+			void load(row.id, mine);
 		});
 	});
 
-	async function load(id: string) {
+	async function load(id: string, mine: number) {
 		loading = true;
 		try {
 			const res = await vulnTemplatesApi.source(id);
+			if (mine !== loadSeq) return;
 			source = res;
 			draft = res.content;
 			original = res.content;
 		} catch {
-			error = 'Check not loaded.';
+			if (mine === loadSeq) error = 'Check not loaded.';
 		} finally {
-			loading = false;
+			if (mine === loadSeq) loading = false;
 		}
 	}
 
