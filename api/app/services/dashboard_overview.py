@@ -163,21 +163,12 @@ def _attend():
     )
 
 
-def _tier_of(row: Vulnerability) -> str:
-    if (
-        row.is_kev
-        or row.kev_ransomware
-        or row.evidence == Evidence.PROVEN.value
-        or (row.epss_score or 0) >= TIER_ACT_EPSS
-        or row.severity == Severity.CRITICAL.value
-    ):
-        return QueueTier.ACT.value
-    if (
-        row.severity in (Severity.HIGH.value, Severity.MEDIUM.value)
-        or (row.epss_score or 0) >= TIER_ATTEND_EPSS
-    ):
-        return QueueTier.ATTEND.value
-    return QueueTier.TRACK.value
+def _tier():
+    return case(
+        (_act(), QueueTier.ACT.value),
+        (_attend(), QueueTier.ATTEND.value),
+        else_=QueueTier.TRACK.value,
+    )
 
 
 class DashboardOverviewService:
@@ -664,7 +655,13 @@ class DashboardOverviewService:
             .subquery()
         )
         rows = await self.session.execute(
-            select(Vulnerability, spread.c.hosts, Target.target_value, spread.c.replays)
+            select(
+                Vulnerability,
+                spread.c.hosts,
+                Target.target_value,
+                spread.c.replays,
+                _tier(),
+            )
             .join(
                 spread, Vulnerability.id == cast(spread.c.sample, Vulnerability.id.type)
             )
@@ -694,7 +691,7 @@ class DashboardOverviewService:
             ).all()
         }
         out = []
-        for row, hosts, target_value, replays in items:
+        for row, hosts, target_value, replays, tier in items:
             out.append(
                 DashboardFinding(
                     id=row.id,
@@ -714,7 +711,7 @@ class DashboardOverviewService:
                     cvss_score=row.cvss_score,
                     discovered_at=row.discovered_at,
                     evidence=row.evidence,
-                    tier=_tier_of(row),
+                    tier=tier,
                     replays=int(replays or 0),
                 )
             )
