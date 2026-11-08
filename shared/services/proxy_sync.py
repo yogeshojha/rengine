@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import cast, func, select, update
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import defer
 
 from shared.definitions.connectors import BROWSING_RUN_LABEL, CandidateState
 from shared.definitions.endpoints import EndpointSource, parse_url
@@ -228,10 +229,12 @@ def replay(session: Session, scan: Scan) -> UpsertResult | None:
         return None
     candidates = (
         session.execute(
-            select(ConnectorCandidate).where(
+            select(ConnectorCandidate)
+            .where(
                 ConnectorCandidate.project_id == scan.project_id,
                 ConnectorCandidate.target_id == scan.target_id,
             )
+            .options(defer(ConnectorCandidate.request_sample))
         )
         .scalars()
         .all()
