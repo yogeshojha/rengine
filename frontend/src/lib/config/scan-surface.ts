@@ -24,7 +24,8 @@ export enum DropReason {
 	CANARY_MATCH = 'canary_match',
 	CDN_EDGE = 'cdn_edge',
 	BUDGET = 'budget',
-	OVER_CAP = 'over_cap'
+	OVER_CAP = 'over_cap',
+	TOO_LONG = 'too_long'
 }
 
 export const DROP_REASON_LABELS: Record<string, string> = {
@@ -35,7 +36,8 @@ export const DROP_REASON_LABELS: Record<string, string> = {
 	[DropReason.CANARY_MATCH]: 'Answers like a missing page',
 	[DropReason.CDN_EDGE]: 'CDN edge address, not the origin',
 	[DropReason.BUDGET]: 'Not reached within the time budget',
-	[DropReason.OVER_CAP]: 'Over the target budget'
+	[DropReason.OVER_CAP]: 'Over the target budget',
+	[DropReason.TOO_LONG]: 'URL over the length limit'
 };
 
 export enum ClusterSignal {

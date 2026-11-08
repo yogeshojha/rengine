@@ -6,6 +6,7 @@ import re
 from enum import StrEnum
 
 from shared.definitions.correlation import MIN_BODY_BYTES
+from shared.definitions.endpoints import MAX_URL_LENGTH
 
 
 class SurfaceClass(StrEnum):
@@ -34,6 +35,7 @@ class DropReason(StrEnum):
     CDN_EDGE = "cdn_edge"
     BUDGET = "budget"
     OVER_CAP = "over_cap"
+    TOO_LONG = "too_long"
 
 
 DROP_REASON_LABELS: dict[str, str] = {
@@ -45,6 +47,7 @@ DROP_REASON_LABELS: dict[str, str] = {
     DropReason.CDN_EDGE.value: "CDN edge address, not the origin",
     DropReason.BUDGET.value: "Not reached within the time budget",
     DropReason.OVER_CAP.value: "Over the target budget",
+    DropReason.TOO_LONG.value: "URL over the length limit",
 }
 
 BUDGET_NOTE = f"{DROP_REASON_LABELS[DropReason.BUDGET.value]}."
@@ -181,6 +184,8 @@ MAX_BASES_PER_ORIGIN = 10
 BASE_MAX_DEPTH = 1
 # replay is bounded by findings times members
 MAX_REPLAY_TARGETS = 2000
+MAX_ITEM_LENGTH = MAX_URL_LENGTH
+MAX_NOTE_LENGTH = 500
 BODY_IDENTITY_BYTES = MIN_BODY_BYTES
 
 # ---------- template tiers ----------

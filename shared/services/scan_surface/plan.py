@@ -12,6 +12,8 @@ from sqlalchemy import cast, delete, func, select, true, update
 from sqlalchemy.dialects.postgresql import JSONB
 
 from shared.definitions.scan_surface import (
+    MAX_ITEM_LENGTH,
+    MAX_NOTE_LENGTH,
     DropReason,
     SurfaceClass,
     SurfaceState,
@@ -501,7 +503,7 @@ def _row(item: SurfaceItem, *, scan_id, target_id, project_id, now) -> dict:
         "target_id": target_id,
         "project_id": project_id,
         "class": item.class_,
-        "value": item.value[:2000],
+        "value": item.value[:MAX_ITEM_LENGTH],
         "host": item.host,
         "port": item.port,
         "scheme": item.scheme,
@@ -614,7 +616,7 @@ def split_members(session: Session, item_ids: Iterable[uuid.UUID], note: str) ->
             cluster_id=None,
             members=1,
             state=SurfaceState.PARTIAL.value,
-            note=note[:500],
+            note=note[:MAX_NOTE_LENGTH],
         )
     ).rowcount
     session.commit()

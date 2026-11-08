@@ -13,6 +13,7 @@ from shared.definitions.endpoints import EndpointClass
 from shared.definitions.scan_surface import (
     BASE_MAX_DEPTH,
     MAX_BASES_PER_ORIGIN,
+    MAX_ITEM_LENGTH,
     MAX_REQUESTS,
     MAX_REQUESTS_PER_ORIGIN,
     DropReason,
@@ -137,7 +138,7 @@ def _request_item(origin: Origin, row: Endpoint) -> SurfaceItem:
     return SurfaceItem(
         id=uuid.uuid4(),
         class_=SurfaceClass.REQUEST.value,
-        value=_rewrite(origin.value, row.url)[:2000],
+        value=_rewrite(origin.value, row.url),
         host=origin.item.host,
         port=origin.item.port,
         scheme=origin.item.scheme,
@@ -230,14 +231,15 @@ def build_requests(
     per_origin: dict[str, int] = {}
     ranked = sorted(chosen.values(), key=lambda pair: (-pair[0].item.rank, pair[1].url))
     for origin, row in ranked:
+        item = _request_item(origin, row)
+        if _too_long(plan, item):
+            continue
         taken = per_origin.get(origin.value, 0)
         if len(plan.requests) >= max_total or taken >= max_per_origin:
-            plan.dropped.append(
-                _dropped(_request_item(origin, row), DropReason.OVER_CAP.value)
-            )
+            plan.dropped.append(_dropped(item, DropReason.OVER_CAP.value))
             continue
         per_origin[origin.value] = taken + 1
-        plan.requests.append(_request_item(origin, row))
+        plan.requests.append(item)
 
     per_origin = {}
     for (origin_value, dir_path), origin in sorted(
@@ -247,7 +249,7 @@ def build_requests(
         item = SurfaceItem(
             id=uuid.uuid4(),
             class_=SurfaceClass.BASE.value,
-            value=f"{origin_value}{path}"[:2000],
+            value=f"{origin_value}{path}",
             host=origin.item.host,
             port=origin.item.port,
             scheme=origin.item.scheme,
@@ -257,6 +259,8 @@ def build_requests(
             guarded=origin.item.guarded,
             tiers_planned=[Tier.BASES.value],
         )
+        if _too_long(plan, item):
+            continue
         taken = per_origin.get(origin_value, 0)
         if taken >= max_bases_per_origin:
             plan.dropped.append(_dropped(item, DropReason.OVER_CAP.value))
@@ -264,6 +268,13 @@ def build_requests(
         per_origin[origin_value] = taken + 1
         plan.bases.append(item)
     return plan
+
+
+def _too_long(plan: SurfacePlan, item: SurfaceItem) -> bool:
+    if len(item.value) <= MAX_ITEM_LENGTH:
+        return False
+    plan.dropped.append(_dropped(item, DropReason.TOO_LONG.value))
+    return True
 
 
 def _dropped(item: SurfaceItem, reason: str) -> SurfaceItem:
