@@ -79,8 +79,10 @@
 		{#each blocks as block, i (i)}
 			{#if block.kind === 'item'}
 				<div class="flex gap-2 text-sm leading-relaxed">
-					<span class="w-4 shrink-0 pt-px font-mono text-xs text-muted-foreground tabular-nums"
-						>{block.n ?? '·'}</span
+					<span class="flex h-lh w-4 shrink-0 items-center"
+						><span class="font-mono text-xs text-muted-foreground tabular-nums"
+							>{block.n ?? '·'}</span
+						></span
 					>
 					<div class="min-w-0 flex-1">{@render spans(block.spans, i)}</div>
 				</div>
@@ -138,7 +140,7 @@
 						<a
 							{...props}
 							{href}
-							class="mx-0.5 inline-flex size-4 items-center justify-center rounded-sm bg-accent align-[1px] font-mono text-2xs font-semibold text-primary"
+							class="mx-0.5 inline-flex size-4 items-center justify-center rounded-sm bg-accent align-middle font-mono text-2xs font-semibold text-primary"
 							>{span.n}</a
 						>
 					{/snippet}
@@ -150,7 +152,7 @@
 							{...props}
 							type="button"
 							onclick={() => toggle(span.n, block)}
-							class="mx-0.5 inline-flex size-4 items-center justify-center rounded-sm bg-accent align-[1px] font-mono text-2xs font-semibold text-primary"
+							class="mx-0.5 inline-flex size-4 items-center justify-center rounded-sm bg-accent align-middle font-mono text-2xs font-semibold text-primary"
 							class:bg-primary={peek?.n === span.n && peek.block === block}
 							class:text-primary-foreground={peek?.n === span.n && peek.block === block}
 							>{span.n}</button

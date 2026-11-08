@@ -161,7 +161,7 @@
 					<span class="absolute rounded-[6px]" style={segmentStyle(seg)}>
 						{#if label(seg)}
 							<span
-								class="absolute -top-[14px] left-1 text-2xs font-medium whitespace-nowrap text-muted-foreground"
+								class="absolute bottom-full left-1 mb-0.5 text-2xs leading-none font-medium whitespace-nowrap text-muted-foreground"
 							>
 								{label(seg)}
 							</span>

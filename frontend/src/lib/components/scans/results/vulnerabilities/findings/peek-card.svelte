@@ -63,11 +63,12 @@
 							class="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-muted/50"
 							onclick={() => onPick(f)}
 						>
-							<span
-								class="mt-1.5 size-2 shrink-0 rounded-full {(
-									SEVERITY_CHIP[f.severity] ?? SEVERITY_CHIP.unknown
-								).edge}"
-							></span>
+							<span class="flex h-5 shrink-0 items-center">
+								<span
+									class="size-2 rounded-full {(SEVERITY_CHIP[f.severity] ?? SEVERITY_CHIP.unknown)
+										.edge}"
+								></span>
+							</span>
 							<span class="min-w-0 flex-1">
 								<span class="block truncate text-sm">{l.main}</span>
 								<span class="block truncate font-mono text-2xs text-muted-foreground">{l.sub}</span>

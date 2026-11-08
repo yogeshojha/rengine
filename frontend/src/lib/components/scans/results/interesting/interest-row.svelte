@@ -115,7 +115,7 @@
 		{#if lead?.reason}
 			<p class="max-w-[80ch] text-xs text-foreground/80">
 				{#if lead.source === INTEREST_SOURCE.AI}
-					<Sparkle class="mr-1 inline size-3 align-[-1px] text-info" />
+					<Sparkle class="mr-1 inline size-3 align-middle text-info" />
 				{/if}{lead.reason}
 			</p>
 		{:else if row.page_title}

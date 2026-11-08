@@ -211,7 +211,9 @@
 
 							{#if row.error}
 								<p class="flex items-start gap-1.5 text-2xs text-destructive">
-									<TriangleAlert class="mt-px size-3 shrink-0" />
+									<span class="flex h-lh shrink-0 items-center"
+										><TriangleAlert class="size-3" /></span
+									>
 									<span>{row.error}</span>
 								</p>
 							{/if}

@@ -190,7 +190,9 @@
 							<ul class="flex flex-col divide-y divide-border/60 rounded-lg border">
 								{#each row.sightings_shown as s (s.id)}
 									<li class="flex items-start gap-2 px-3 py-2">
-										<Globe class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+										<span class="flex h-4 shrink-0 items-center"
+											><Globe class="size-3.5 text-muted-foreground" /></span
+										>
 										<div class="flex min-w-0 flex-col">
 											<span class="font-mono text-xs break-all">{s.url}</span>
 											<span class="text-2xs text-muted-foreground">
@@ -202,7 +204,9 @@
 							</ul>
 						{:else}
 							<div class="flex items-start gap-2 rounded-lg border px-3 py-2">
-								<Globe class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+								<span class="flex h-4 shrink-0 items-center"
+									><Globe class="size-3.5 text-muted-foreground" /></span
+								>
 								<div class="flex min-w-0 flex-col">
 									<span class="font-mono text-xs break-all">{row.url}</span>
 									<span class="text-2xs text-muted-foreground">{row.source_label}</span>
