@@ -321,6 +321,12 @@
 				{#if prefixRows.length === 0}
 					<p class="py-6 text-center text-sm text-muted-foreground">No matching prefixes</p>
 				{:else}
+					<div class="hidden items-center gap-3 py-1 text-2xs text-muted-foreground sm:flex">
+						<span class="min-w-0 flex-1">Prefix</span>
+						<span class="w-24 shrink-0 text-right">First seen</span>
+						<span class="w-24 shrink-0 text-right">Last seen</span>
+						<span class="shrink-0 {onAddAsTarget ? 'w-15' : 'w-7'}"></span>
+					</div>
 					{#each prefixRows.slice(0, prefixShown) as p (p.prefix)}
 						<div class="group flex items-center gap-3 py-1.5 text-sm">
 							<code class="min-w-0 flex-1 font-mono text-xs">{p.prefix}</code>
