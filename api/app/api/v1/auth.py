@@ -41,6 +41,7 @@ from app.core.security import (
     hash_password_async,
     verify_password_async,
 )
+from app.core.validation_errors import validation_detail
 from app.utils.validation import (
     MAX_PASSWORD_LENGTH,
     MAX_USERNAME_LENGTH,
@@ -329,7 +330,8 @@ async def change_password(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(e)
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=validation_detail(["body", "new_password"], str(e)),
         ) from e
 
     current_user.hashed_password = await hash_password_async(password_data.new_password)
