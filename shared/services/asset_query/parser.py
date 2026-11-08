@@ -377,4 +377,8 @@ def parse_query(
     if len(source) > MAX_QUERY_LENGTH:
         msg = "The query is too long."
         raise QuerySyntaxError(msg, 0, len(source))
+    nul = source.find("\x00")
+    if nul >= 0:
+        msg = "The query contains a NUL byte."
+        raise QuerySyntaxError(msg, nul, nul + 1)
     return _Parser(tokenize(source, registry), source).parse()
