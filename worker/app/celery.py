@@ -33,6 +33,7 @@ from shared.definitions.workers import (
 )
 from shared.logging import get_logger
 from shared.logging import setup_logging as setup_rengine_logging
+from shared.services.scan_resolve import scrub_error
 from shared.utils.fork import release_sockets_to
 
 logger = get_logger(__name__)
@@ -492,4 +493,4 @@ def on_task_postrun(task_id: str, task, retval, state, **_) -> None:  # noqa: AR
 @task_failure.connect
 def on_task_failure(task_id: str, exception, **_) -> None:
     """Log task failure."""
-    logger.exception("Task failed: %s - %s", task_id, str(exception))
+    logger.warning("Task failed: %s - %s", task_id, scrub_error(str(exception)))

@@ -15,7 +15,7 @@ from pathlib import Path
 
 from shared.definitions.constants import MAX_COMMAND_OUTPUT
 from shared.logging import get_logger
-from shared.services.scan_resolve import redact_command
+from shared.services.scan_resolve import held_secrets, redact_command, scrub_error
 from tools.runner.abort import StageAbortedError, active_abort
 from tools.runner.models import (
     CommandRecorder,
@@ -393,7 +393,7 @@ class CLIToolRunner:
                     f"{self.binary} exited with code {process_result.returncode}"
                     + (f": {excerpt}" if excerpt else "")
                 )
-                logger.warning(error)
+                logger.warning(scrub_error(error, held_secrets()))
 
             _finish(
                 process_result.returncode,
