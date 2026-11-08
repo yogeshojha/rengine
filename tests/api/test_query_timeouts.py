@@ -34,7 +34,7 @@ class _Session:
 async def test_a_render_query_past_the_timeout_answers_with_an_error():
     session = _Session(_CancelledError())
     found = await SubdomainService(session).renders(
-        uuid.uuid4(), uuid.uuid4(), SubdomainFilter(q='"' * 40)
+        uuid.uuid4(), uuid.uuid4(), SubdomainFilter(q="portal")
     )
     assert found.error is not None
     assert found.error.message == "The search timed out."
