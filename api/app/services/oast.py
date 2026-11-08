@@ -14,6 +14,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.validation_errors import validation_detail
 from app.services.instance_settings import InstanceSettingsService
 from shared.definitions.evidence import Evidence
 from shared.definitions.oast import (
@@ -107,7 +108,10 @@ class OastService:
             if data.server.strip() and server is None:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    detail="That is not a hostname. Use the server's domain.",
+                    detail=validation_detail(
+                        ["body", "server"],
+                        "That is not a hostname. Use the server's domain.",
+                    ),
                 )
             stored = normalize_server(row.oast_server)
             if stored and server != stored:
@@ -125,7 +129,9 @@ class OastService:
         ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Set the server before choosing self-hosted.",
+                detail=validation_detail(
+                    ["body", "mode"], "Set the server before choosing self-hosted."
+                ),
             )
         row.updated_at = utc_now()
         await self.session.commit()
