@@ -141,7 +141,7 @@ WITH sw AS (
            0 AS is_software, 1 AS is_finding
       FROM vulnerabilities v
      WHERE v.scan_id = ANY(:finding_scans)
-       AND jsonb_exists(v.cve_ids::jsonb, :cve)
+       AND v.cve_ids::jsonb ? :cve
        AND NOT EXISTS (
            SELECT 1 FROM vulnerability_triage t
             WHERE t.target_id = v.target_id AND t.fingerprint = v.fingerprint
@@ -443,7 +443,7 @@ class CveExposureService:
                     select(Vulnerability.exploit_score, Vulnerability.intel_kinds)
                     .where(
                         findings.match(Vulnerability.scan_id),
-                        func.jsonb_exists(cast(Vulnerability.cve_ids, JSONB), out.cve),
+                        cast(Vulnerability.cve_ids, JSONB).has_key(out.cve),
                     )
                     .order_by(Vulnerability.exploit_score.desc())
                     .limit(1)
@@ -466,7 +466,7 @@ class CveExposureService:
             by_software = {k: int(n) for k, n in rows.all()}
         by_finding: dict[str, int] = {}
         if findings.ids:
-            named = func.jsonb_exists(cast(Vulnerability.cve_ids, JSONB), cve)
+            named = cast(Vulnerability.cve_ids, JSONB).has_key(cve)
             counts = [
                 func.count().filter(vuln_evidence(findings, step)).label(step)
                 for step in EVIDENCE_ORDER
@@ -535,7 +535,7 @@ class CveExposureService:
     ) -> tuple[list[CveLocation], int]:
         if not scope.ids:
             return [], 0
-        named = func.jsonb_exists(cast(Vulnerability.cve_ids, JSONB), cve)
+        named = cast(Vulnerability.cve_ids, JSONB).has_key(cve)
         suppressed = int(
             await self.session.scalar(
                 select(func.count()).where(
