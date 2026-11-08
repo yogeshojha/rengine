@@ -17,6 +17,7 @@ import type { DomainPostureSummary } from '$lib/types/domain-posture';
 import type { CorrelationGraph } from '$lib/types/correlation';
 import { SvelteSet } from 'svelte/reactivity';
 import { sameTargetScope, type TargetScope } from '$lib/utilities/surface-scope';
+import { requestPool, type RequestPool } from '$lib/utilities/request-pool';
 import {
 	DASHBOARD_SLICES,
 	DEFAULT_DASHBOARD_WINDOW,
@@ -36,9 +37,13 @@ import {
 
 const EXPOSURE_ROWS = 6;
 
-function hostingCounts(projectId: string, scope: TargetScope): Promise<HostingSplit> {
+function hostingCounts(
+	run: RequestPool,
+	projectId: string,
+	scope: TargetScope
+): Promise<HostingSplit> {
 	const queries = Object.values(HOSTING_QUERIES);
-	return subdomainsApi.counts(projectId, '', queries, scope).then((r) => ({
+	return run(() => subdomainsApi.counts(projectId, '', queries, scope)).then((r) => ({
 		resolved: r.counts[HOSTING_QUERIES.resolved] ?? 0,
 		edge: r.counts[HOSTING_QUERIES.edge] ?? 0,
 		cloud: r.counts[HOSTING_QUERIES.cloud] ?? 0,
@@ -86,9 +91,9 @@ function createDashboardStore() {
 		if (!pid) return;
 		const mySeq = ++seq;
 		loading = true;
+		extrasLoading = true;
 		const pending = dashboardApi.overview(pid, win, sc);
 		void loadWindow(pid, win, sc, mySeq);
-		void loadExtras(pid, win, sc, mySeq);
 		void loadDiscovery(pid, mySeq);
 		try {
 			const data = await pending;
@@ -102,6 +107,8 @@ function createDashboardStore() {
 		} finally {
 			if (mySeq === seq) loading = false;
 		}
+		if (mySeq !== seq) return;
+		void loadExtras(pid, win, sc, mySeq);
 		if (overview?.first_run) void loadReadiness(mySeq);
 	}
 
@@ -165,51 +172,86 @@ function createDashboardStore() {
 				failed.add(slice);
 			}
 		};
+		const run = requestPool();
 		const bounty = capabilitiesStore.has(Capability.BOUNTY_PROGRAMS);
 		await Promise.all([
-			settle('surfaceRisk', dashboardApi.surfaceRisk(pid, sc), (v) => (surfaceRisk = v)),
+			settle(
+				'surfaceRisk',
+				run(() => dashboardApi.surfaceRisk(pid, sc)),
+				(v) => (surfaceRisk = v)
+			),
 			bounty
-				? settle('programs', dashboardApi.programs(pid, win), (v) => (programs = v))
+				? settle(
+						'programs',
+						run(() => dashboardApi.programs(pid, win)),
+						(v) => (programs = v)
+					)
 				: Promise.resolve(),
 			settle(
 				'tech',
-				subdomainsApi.facets(pid, '', sc).then((f) => f.tech),
+				run(() => subdomainsApi.facets(pid, '', sc)).then((f) => f.tech),
 				(v) => (tech = v)
 			),
-			settle('ipFacets', ipsApi.facets(pid, '', sc), (v) => (ipFacets = v)),
-			settle('intel', threatIntelApi.status(pid, sc), (v) => (intel = v)),
+			settle(
+				'ipFacets',
+				run(() => ipsApi.facets(pid, '', sc)),
+				(v) => (ipFacets = v)
+			),
+			settle(
+				'intel',
+				run(() => threatIntelApi.status(pid, sc)),
+				(v) => (intel = v)
+			),
 			settle(
 				'changes',
-				threatIntelApi.changes(pid, windowDays(win), INTEL_CHANGE_ROWS, sc),
+				run(() => threatIntelApi.changes(pid, windowDays(win), INTEL_CHANGE_ROWS, sc)),
 				(v) => (changes = v)
 			),
-			settle('hosting', hostingCounts(pid, sc), (v) => (hosting = v)),
+			settle('hosting', hostingCounts(run, pid, sc), (v) => (hosting = v)),
 			settle(
 				'exposures',
-				interestApi.project(pid, { limit: EXPOSURE_ROWS }, sc),
+				run(() => interestApi.project(pid, { limit: EXPOSURE_ROWS }, sc)),
 				(v) => (exposures = v)
 			),
 			settle(
 				'software',
-				Promise.all([softwareApi.facets(pid, '', sc), softwareApi.coverage(pid, '', sc)]).then(
-					([facets, coverage]) => ({ facets, coverage })
-				),
+				Promise.all([
+					run(() => softwareApi.facets(pid, '', sc)),
+					run(() => softwareApi.coverage(pid, '', sc))
+				]).then(([facets, coverage]) => ({ facets, coverage })),
 				(v) => (software = v)
 			),
-			settle('hygiene', subdomainsApi.hygiene(pid, '', sc), (v) => (hygiene = v)),
-			settle('ai', servicesApi.ai(pid, '', sc), (v) => (ai = v)),
+			settle(
+				'hygiene',
+				run(() => subdomainsApi.hygiene(pid, '', sc)),
+				(v) => (hygiene = v)
+			),
+			settle(
+				'ai',
+				run(() => servicesApi.ai(pid, '', sc)),
+				(v) => (ai = v)
+			),
 			settle(
 				'posture',
-				Promise.all([domainPostureApi.project(pid, sc), subdomainsApi.posture(pid, '', sc)]).then(
-					([zones, hosts]) => ({ zones, hosts })
-				),
+				Promise.all([
+					run(() => domainPostureApi.project(pid, sc)),
+					run(() => subdomainsApi.posture(pid, '', sc))
+				]).then(([zones, hosts]) => ({ zones, hosts })),
 				(v) => {
 					posture = v?.zones ?? null;
 					postureHosts = v?.hosts ?? null;
 				}
 			),
-			settle('activity', dashboardApi.activity(pid, win, sc), (v) => (activity = v)),
-			settle('shared', subdomainsApi.correlationGraph(pid, '', sc), (v) => (shared = v))
+			settle(
+				'activity',
+				run(() => dashboardApi.activity(pid, win, sc)),
+				(v) => (activity = v)
+			),
+			settle(
+				'shared',
+				run(() => subdomainsApi.correlationGraph(pid, '', sc)),
+				(v) => (shared = v)
+			)
 		]);
 		if (keep()) extrasLoading = false;
 	}
