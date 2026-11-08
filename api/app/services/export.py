@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from shared.definitions.exports import (
@@ -23,11 +24,23 @@ from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.services.celery_dispatch import dispatch_export
+from shared.services.surface_query import for_dimension
 from shared.utils.datetime import utc_now
 from shared.utils.files import purge_dir
 
 MAX_LIST = 100
 _NOT_QUEUED = "Export not queued. Check that the redis and worker services are running."
+
+
+def _check_filters(dimension: str, filters: dict) -> None:
+    try:
+        for_dimension(dimension).filter_model.model_validate(filters or {})
+    except ValidationError as exc:
+        field = ".".join(str(part) for part in exc.errors()[0]["loc"]) or "filters"
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Export filter {field} is not valid.",
+        ) from None
 
 
 class ExportService:
@@ -47,6 +60,8 @@ class ExportService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"'{data.export_format}' is not an export format.",
             )
+        if data.dimension != BUNDLE:
+            _check_filters(data.dimension, data.filters)
         await self._check_capacity(project_id)
         scope, subject = await self._subject(data, project_id)
 
