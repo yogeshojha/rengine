@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { plural } from '$lib/utilities/strings';
 	import SevCountChip from '$lib/components/sev-count-chip.svelte';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { onDestroy, untrack, tick } from 'svelte';
@@ -584,7 +585,7 @@
 						{@render stat(
 							'Earned',
 							summary.earned.length ? formatMonies(summary.earned) : '0',
-							`${payments} ${payments === 1 ? 'payment' : 'payments'} on ${summary.paid_reports} ${summary.paid_reports === 1 ? 'report' : 'reports'}`,
+							`${plural(payments, 'payment')} on ${plural(summary.paid_reports, 'report')}`,
 							PAID_TAB
 						)}
 						{@render stat(
@@ -655,7 +656,7 @@
 					<PanelHead
 						title="Programs"
 						class="border-b-0 px-3 py-2.5"
-						description={`${programs.length.toLocaleString()} ${programs.length === 1 ? 'program' : 'programs'}`}
+						description={plural(programs.length, 'program')}
 					/>
 				{/if}
 				<ToggleGroup.Root

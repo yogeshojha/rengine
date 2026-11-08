@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { plural } from '$lib/utilities/strings';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -233,9 +234,7 @@
 	);
 
 	let deleteDialogTitle = $derived(
-		deleteMode === 'single'
-			? 'Delete target'
-			: `Delete ${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''}`
+		deleteMode === 'single' ? 'Delete target' : `Delete ${plural(selectedTargetIds.size, 'target')}`
 	);
 
 	let selectedTargetValues = $derived(
@@ -258,7 +257,7 @@
 	let deleteDialogDescription = $derived(
 		deleteMode === 'single'
 			? `Target ${targetToDelete?.target_value ?? ''} and its scans and findings are removed.`
-			: `${selectedTargetIds.size} target${selectedTargetIds.size !== 1 ? 's' : ''} and their scans and findings are removed.${bulkDeletePreview}`
+			: `${plural(selectedTargetIds.size, 'target')} and their scans and findings are removed.${bulkDeletePreview}`
 	);
 
 	let organizationSummaries = $derived(
@@ -497,7 +496,7 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkEnrich(ids, kind);
-			toast.success(`${ENRICHMENT[kind].label} queued for ${n} target${n !== 1 ? 's' : ''}`);
+			toast.success(`${ENRICHMENT[kind].label} queued for ${plural(n, 'target')}`);
 		} catch {
 			toast.error(`${ENRICHMENT[kind].label} not queued`);
 		}
@@ -518,7 +517,7 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkAddTags(ids, [name]);
-			toast.success(`Tag "${name}" added to ${n} target${n !== 1 ? 's' : ''}`);
+			toast.success(`Tag "${name}" added to ${plural(n, 'target')}`);
 		} catch {
 			toast.error('Tag not added');
 		}
@@ -529,7 +528,7 @@
 		if (ids.length === 0) return;
 		try {
 			const n = await targetsStore.bulkAddOrganizations(ids, [name]);
-			toast.success(`${n} target${n !== 1 ? 's' : ''} added to "${name}"`);
+			toast.success(`${plural(n, 'target')} added to "${name}"`);
 		} catch {
 			toast.error('Organization not added');
 		}
@@ -539,7 +538,7 @@
 		try {
 			const ids = await targetsStore.getMatchingIds();
 			setSelection(ids);
-			toast.success(`${ids.length} target${ids.length !== 1 ? 's' : ''} selected`);
+			toast.success(`${plural(ids.length, 'target')} selected`);
 		} catch {
 			toast.error('Targets not selected');
 		}
@@ -627,8 +626,8 @@
 			isDeleting = false;
 
 			const fail = ids.length - ok;
-			if (ok) toast.success(`${ok} target${ok !== 1 ? 's' : ''} deleted`);
-			if (fail) toast.error(`${fail} target${fail !== 1 ? 's' : ''} not deleted`);
+			if (ok) toast.success(`${plural(ok, 'target')} deleted`);
+			if (fail) toast.error(`${plural(fail, 'target')} not deleted`);
 
 			if (ok) {
 				showDeleteDialog = false;
@@ -680,9 +679,7 @@
 			return;
 		}
 		downloadTargets(rows, format);
-		toast.success(
-			`${rows.length} target${rows.length !== 1 ? 's' : ''} exported as ${format.toUpperCase()}`
-		);
+		toast.success(`${plural(rows.length, 'target')} exported as ${format.toUpperCase()}`);
 	}
 
 	async function handlePageChange(page: number) {

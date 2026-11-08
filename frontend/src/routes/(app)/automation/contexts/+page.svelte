@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { plural } from '$lib/utilities/strings';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -284,9 +285,9 @@
 			</Select.Root>
 			<span class="ml-auto text-xs text-muted-foreground tabular-nums">
 				{#if query.trim()}
-					{visibleContexts.length} of {total} context{total === 1 ? '' : 's'}
+					{visibleContexts.length} of {plural(total, 'context')}
 				{:else}
-					{total} context{total === 1 ? '' : 's'}
+					{plural(total, 'context')}
 				{/if}
 			</span>
 		</div>

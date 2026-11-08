@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { plural } from '$lib/utilities/strings';
 	import { TargetType } from '$lib/types/target';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -390,7 +391,7 @@
 			return;
 		}
 		if (errorCount) {
-			saveError = `Fix ${errorCount} error${errorCount === 1 ? '' : 's'} before saving.`;
+			saveError = `Fix ${plural(errorCount, 'error')} before saving.`;
 			toast.error(saveError);
 			return;
 		}

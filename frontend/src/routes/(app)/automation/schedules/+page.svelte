@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { plural } from '$lib/utilities/strings';
 	import { pageTitle } from '$lib/utilities/page-title';
 	import { routeLabels } from '$lib/config/routes';
 	import { untrack } from 'svelte';
@@ -79,7 +80,7 @@
 		if (!project) return;
 		const count = await scanSchedulesStore.runNow(schedule.id, project.id);
 		if (count !== null) {
-			toast.success(`${count} scan${count === 1 ? '' : 's'} started`);
+			toast.success(`${plural(count, 'scan')} started`);
 		} else {
 			toast.error(scanSchedulesStore.error ?? 'Schedule not started');
 		}
@@ -213,9 +214,7 @@
 		</div>
 
 		<p class="pt-2 text-center text-xs text-muted-foreground">
-			{scanSchedulesStore.schedules.length} schedule{scanSchedulesStore.schedules.length !== 1
-				? 's'
-				: ''}
+			{plural(scanSchedulesStore.schedules.length, 'schedule')}
 		</p>
 	{/if}
 </div>
