@@ -63,6 +63,10 @@ services:
       -c effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
       -c work_mem=${POSTGRES_WORK_MEM:-32MB}
       -c maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-512MB}
+      -c autovacuum_work_mem=${POSTGRES_AUTOVACUUM_WORK_MEM:-128MB}
+      -c autovacuum_max_workers=${POSTGRES_AUTOVACUUM_WORKERS:-4}
+      -c autovacuum_vacuum_cost_limit=${POSTGRES_AUTOVACUUM_COST_LIMIT:-2000}
+      -c default_statistics_target=${POSTGRES_STATISTICS_TARGET:-100}
       -c random_page_cost=1.1
       -c effective_io_concurrency=200
       -c max_parallel_workers_per_gather=4
