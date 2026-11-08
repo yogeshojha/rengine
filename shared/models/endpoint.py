@@ -7,9 +7,12 @@ from sqlmodel import Field, Index, SQLModel, UniqueConstraint
 
 from shared.definitions.asset_query import MAX_QUERY_LENGTH
 from shared.definitions.endpoints import (
+    MAX_CONTENT_TYPE_LENGTH,
+    MAX_EXTENSION_LENGTH,
     MAX_FILENAME_LENGTH,
     MAX_HOST_LENGTH,
     MAX_PATH_LENGTH,
+    MAX_TITLE_LENGTH,
     MAX_URL_LENGTH,
     EndpointClass,
     EndpointSource,
@@ -48,7 +51,9 @@ class Endpoint(SQLModel, table=True):
     shape: str = Field(default="", max_length=MAX_PATH_LENGTH)
     dir_path: str = Field(max_length=MAX_PATH_LENGTH, index=True)
     filename: str | None = Field(default=None, max_length=MAX_FILENAME_LENGTH)
-    extension: str | None = Field(default=None, max_length=10, index=True)
+    extension: str | None = Field(
+        default=None, max_length=MAX_EXTENSION_LENGTH, index=True
+    )
     depth: int = Field(default=0)
 
     # what it accepts
@@ -63,18 +68,18 @@ class Endpoint(SQLModel, table=True):
     sources: list = json_list()
     primary_source: str = Field(default=EndpointSource.OTHER.value, max_length=24)
     discovery: dict = json_dict()
-    found_on: str | None = Field(default=None, max_length=2000)
+    found_on: str | None = Field(default=None, max_length=MAX_URL_LENGTH)
 
     # probe result
     is_probed: bool = Field(default=False, index=True)
     status_code: int | None = Field(default=None, index=True)
-    content_type: str | None = Field(default=None, max_length=255)
+    content_type: str | None = Field(default=None, max_length=MAX_CONTENT_TYPE_LENGTH)
     content_length: int | None = Field(default=None)
-    title: str | None = Field(default=None, max_length=1000)
+    title: str | None = Field(default=None, max_length=MAX_TITLE_LENGTH)
     words: int | None = Field(default=None)
     lines: int | None = Field(default=None)
     response_time: float | None = Field(default=None)
-    redirect_location: str | None = Field(default=None, max_length=2000)
+    redirect_location: str | None = Field(default=None, max_length=MAX_URL_LENGTH)
     content_hash: str | None = Field(default=None, max_length=80, index=True)
     tech: list = json_list()
 
@@ -510,8 +515,8 @@ class ScanStructure(BaseModel):
 
 
 class VerifyBranchRequest(BaseModel):
-    host: str = PydanticField(max_length=500)
-    dir_path: str | None = PydanticField(default=None, max_length=1500)
+    host: str = PydanticField(max_length=MAX_HOST_LENGTH)
+    dir_path: str | None = PydanticField(default=None, max_length=MAX_PATH_LENGTH)
     limit: int = PydanticField(default=500, ge=1, le=2000)
 
 
