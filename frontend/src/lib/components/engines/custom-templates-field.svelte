@@ -47,10 +47,10 @@
 </script>
 
 {#if loaded && failed}
-	<p class="w-[280px] max-w-full text-right text-2xs text-destructive">Templates not loaded.</p>
+	<p class="w-[280px] max-w-full text-right text-2xs text-destructive">Checks not loaded.</p>
 {:else if loaded && templates.length === 0}
 	<div class="w-[280px] max-w-full text-right">
-		<p class="text-2xs text-muted-foreground">No uploaded templates.</p>
+		<p class="text-2xs text-muted-foreground">No custom checks.</p>
 		{#if isAdmin}
 			<Button variant="link" size="sm" class="h-auto px-0 text-2xs" href={ROUTES.arsenal('nuclei')}>
 				Upload in Arsenal
@@ -66,8 +66,8 @@
 			onSelect={(item) => onChange(value.includes(item.id) ? value : [...value, item.id])}
 			onRemove={(item) => onChange(value.filter((v) => v !== item.id))}
 			allowCreate={false}
-			placeholder="Search templates…"
-			emptyText="No uploaded templates match."
+			placeholder="Search checks…"
+			emptyText="No custom checks match."
 		/>
 		{#if value.length}
 			<Badge variant="secondary" class="text-2xs font-normal">
