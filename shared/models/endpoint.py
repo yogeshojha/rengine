@@ -418,6 +418,7 @@ class MergedLeafPage(BaseModel):
     items: list[MergedLeaf] = PydanticField(default_factory=list)
     total: int = 0
     truncated: bool = False
+    error: QueryError | None = None
 
 
 class EndpointTree(BaseModel):

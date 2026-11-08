@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable, Coroutine
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi.concurrency import run_in_threadpool
@@ -62,7 +64,7 @@ from shared.definitions.endpoints import (
 from shared.definitions.surface import SurfaceDimension
 from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.logging import get_logger
-from shared.models.asset_query import QueryCounts, QueryGroups, QueryLeads
+from shared.models.asset_query import QueryCounts, QueryError, QueryGroups, QueryLeads
 from shared.models.endpoint import (
     CoverageRead,
     Endpoint,
@@ -629,6 +631,19 @@ class EndpointService:
             logger.info("endpoint groups failed", error=str(exc.orig))
             return None
 
+    async def _guarded[T](
+        self, read: Coroutine[Any, Any, T], failed: Callable[[QueryError], T]
+    ) -> T:
+        try:
+            return await read
+        except DBAPIError as exc:
+            await self.session.rollback()
+            rejected = query_error_for(exc)
+            if rejected is None:
+                raise
+            logger.info("endpoint query rejected", error=str(exc.orig))
+            return failed(rejected)
+
     async def tree(
         self, scope: ScopeLike, f: EndpointFilter, mode: str
     ) -> EndpointTree:
@@ -639,7 +654,10 @@ class EndpointService:
             scans=scope.ids,
             facets=f"{mode}|{f.model_dump_json()}",
             model=EndpointTree,
-            build=lambda: self._tree(scope, f, mode),
+            build=lambda: self._guarded(
+                self._tree(scope, f, mode), lambda e: EndpointTree(mode=mode, error=e)
+            ),
+            keep=lambda found: found.error is None,
             ttl=lead_cache.SEARCH_TTL_SECONDS,
             live_ttl=None,
         )
@@ -754,7 +772,10 @@ class EndpointService:
             scans=scope.ids,
             facets=f.model_dump_json(),
             model=HostPage,
-            build=lambda: self._hosts(scope, f),
+            build=lambda: self._guarded(
+                self._hosts(scope, f), lambda e: HostPage(error=e)
+            ),
+            keep=lambda found: found.error is None,
             ttl=lead_cache.SEARCH_TTL_SECONDS,
             live_ttl=None,
         )
@@ -1272,7 +1293,14 @@ class EndpointService:
         self, scope: ScopeLike, f: EndpointFilter
     ) -> MergedLeafPage:
         """One row per path shape inside a folder, folded across every host that serves it."""
-        scope = QueryScope.of(scope)
+        return await self._guarded(
+            self._merged_leaves(QueryScope.of(scope), f),
+            lambda e: MergedLeafPage(error=e),
+        )
+
+    async def _merged_leaves(
+        self, scope: QueryScope, f: EndpointFilter
+    ) -> MergedLeafPage:
         now = utc_now()
         base = self._scoped(
             scope,
@@ -1355,7 +1383,11 @@ class EndpointService:
 
     async def gone(self, scope: ScopeLike, f: EndpointFilter) -> GonePage:
         """Endpoints the previous scan of this target recorded and this scan never did."""
-        scope = QueryScope.of(scope)
+        return await self._guarded(
+            self._gone(QueryScope.of(scope), f), lambda e: GonePage(error=e)
+        )
+
+    async def _gone(self, scope: QueryScope, f: EndpointFilter) -> GonePage:
         previous, previous_at = await self._previous_scan(scope)
         if previous is None or scope.single is None:
             return GonePage()
