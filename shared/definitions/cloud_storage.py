@@ -113,7 +113,7 @@ SOURCES: tuple[SourceSpec, ...] = (
 SOURCE_LABELS: dict[str, str] = {s.key: s.label for s in SOURCES}
 SOURCE_ORDER: tuple[str, ...] = tuple(s.key for s in SOURCES)
 SOURCE_RANK: dict[str, int] = {key: i for i, key in enumerate(SOURCE_ORDER)}
-# Sources that place a bucket under the target rather than guess at it.
+# sources that tie a bucket to the target
 OWNED_SOURCES: frozenset[str] = frozenset(
     {Source.REFERENCED.value, Source.HOSTNAME.value}
 )
@@ -161,7 +161,7 @@ ACCESS_ORDER: tuple[str, ...] = tuple(a.key for a in ACCESS)
 ACCESS_RANK: dict[str, int] = {key: i for i, key in enumerate(ACCESS_ORDER)}
 # An open bucket: its contents are reachable without credentials.
 OPEN_ACCESS: frozenset[str] = frozenset({Access.LISTABLE.value, Access.READABLE.value})
-# Access values worth a row; a missing name is not stored.
+# access values stored as a row
 STORED_ACCESS: frozenset[str] = frozenset(
     {Access.LISTABLE.value, Access.READABLE.value, Access.PROTECTED.value}
 )
