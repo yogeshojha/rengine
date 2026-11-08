@@ -4,9 +4,11 @@ from datetime import timedelta
 from uuid import UUID
 
 from sqlalchemy import (
+    BigInteger,
     and_,
     case,
     cast,
+    column,
     distinct,
     func,
     not_,
@@ -15,7 +17,8 @@ from sqlalchemy import (
     text,
     tuple_,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import values as values_
+from sqlalchemy.dialects.postgresql import BIT, JSONB
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.util import ClauseAdapter
@@ -40,6 +43,7 @@ from shared.definitions.correlation import (
     CORRELATION_KIND_LABELS,
     CORRELATION_KIND_ORDER,
     CORRELATION_RELATION_PHRASE,
+    SCREENSHOT_DISTANCE,
 )
 from shared.definitions.interest import TONE_INFO, TONE_WARNING
 from shared.definitions.ports import SENSITIVE_PORTS, port_interest
@@ -622,24 +626,39 @@ class SubdomainService:
         """How many rows in scope render like each of the page's own hashes."""
         if not values:
             return {}
-        ordered = sorted(values)
-        columns = []
-        for value in ordered:
-            near = preds.renders_like(Subdomain.screenshot_phash, value)
-            columns.append(func.count().filter(near))
-            columns.append(func.count(distinct(Subdomain.target_id)).filter(near))
-        row = (
-            await self.session.execute(
-                select(*columns).where(
-                    scope.match(Subdomain.scan_id),
-                    Subdomain.screenshot_phash.isnot(None),
-                )
+        held = (
+            select(
+                Subdomain.screenshot_phash.label("phash"),
+                Subdomain.target_id.label("target_id"),
+                func.count().label("n"),
             )
-        ).one()
-        return {
-            value: (int(row[2 * i] or 0), int(row[2 * i + 1] or 0))
-            for i, value in enumerate(ordered)
-        }
+            .where(
+                scope.match(Subdomain.scan_id),
+                Subdomain.screenshot_phash.isnot(None),
+            )
+            .group_by(Subdomain.screenshot_phash, Subdomain.target_id)
+            .subquery("held")
+        )
+        page = (
+            values_(column("phash", BigInteger), name="page")
+            .data([(value,) for value in sorted(values)])
+            .alias("page")
+        )
+        near = (
+            func.bit_count(cast(held.c.phash.op("#")(page.c.phash), BIT(64)))
+            <= SCREENSHOT_DISTANCE
+        )
+        rows = await self.session.execute(
+            select(
+                page.c.phash,
+                func.sum(held.c.n),
+                func.count(distinct(held.c.target_id)),
+            )
+            .select_from(page.join(held, near))
+            .group_by(page.c.phash)
+        )
+        found = {int(value): (int(n or 0), int(t or 0)) for value, n, t in rows.all()}
+        return {value: found.get(value, (0, 0)) for value in values}
 
     async def _endpoint_counts(
         self, scope: QueryScope, hosts: list[str]
