@@ -221,7 +221,7 @@ def referenced_in(
                     )
                 )
                 break
-        if _R2.search(raw):
+        if _R2.fullmatch(host):
             keep(
                 Candidate(
                     name=host,
