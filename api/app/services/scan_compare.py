@@ -26,6 +26,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.validation_errors import validation_detail
 from app.services import scan_deltas as stored_deltas
 from shared.definitions.compare import (
     AUTH_STATUS,
@@ -784,7 +785,9 @@ class ScanCompareService:
         if baseline_id == current_id:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=REFUSAL_REASON[Refusal.SAME_RUN.value],
+                detail=validation_detail(
+                    ["query", "baseline"], REFUSAL_REASON[Refusal.SAME_RUN.value]
+                ),
             )
         baseline = await self._scan(baseline_id, project_id)
         refusal = self._refusal(
@@ -792,7 +795,8 @@ class ScanCompareService:
         )
         if refusal:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=refusal
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=validation_detail(["query", "baseline"], refusal),
             )
         return baseline, current
 

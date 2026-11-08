@@ -315,7 +315,7 @@ async def test_a_focused_run_is_refused_against_a_full_one(estate, now):
         await ScanCompareService(estate.session).comparison(a, b, estate.project_id)
 
     assert raised.value.status_code == 422
-    assert "focused run" in raised.value.detail
+    assert "focused run" in raised.value.detail[0]["msg"]
 
 
 async def test_a_run_cannot_be_compared_with_itself(estate, now):
@@ -336,7 +336,7 @@ async def test_two_targets_cannot_be_compared(estate, now):
         await ScanCompareService(estate.session).comparison(a, b, estate.project_id)
 
     assert raised.value.status_code == 422
-    assert "same target" in raised.value.detail
+    assert "same target" in raised.value.detail[0]["msg"]
 
 
 async def test_the_baseline_defaults_to_the_previous_run(estate, now):
@@ -520,7 +520,9 @@ async def test_the_refusal_wording_comes_from_the_definitions(estate, now):
     with pytest.raises(HTTPException) as raised:
         await ScanCompareService(estate.session).comparison(a, b, estate.project_id)
 
-    assert raised.value.detail == REFUSAL_REASON[Refusal.DIFFERENT_TARGET.value]
+    assert (
+        raised.value.detail[0]["msg"] == REFUSAL_REASON[Refusal.DIFFERENT_TARGET.value]
+    )
 
 
 async def test_empty_text_and_null_are_the_same_value(estate, now):
