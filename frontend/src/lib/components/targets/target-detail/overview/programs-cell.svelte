@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Cell from '$lib/components/cell.svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { ROUTES } from '$lib/config/routes';
+	import { bountyVocabulary } from '$lib/stores/bounty-vocabulary.svelte';
 	import type { ProgramMatch } from '$lib/types/relations';
 
 	interface Props {
@@ -12,6 +14,10 @@
 	let { programs, class: className = '' }: Props = $props();
 
 	let inScope = $derived(programs.filter((p) => p.in_scope).length);
+
+	$effect(() => {
+		untrack(() => void bountyVocabulary.load());
+	});
 </script>
 
 <Cell
@@ -32,7 +38,7 @@
 				>
 					<span class="flex min-w-0 items-center gap-2">
 						<span class="truncate font-medium">{p.name}</span>
-						<span class="text-xs text-muted-foreground">{p.platform}</span>
+						<span class="text-xs text-muted-foreground">{bountyVocabulary.label(p.platform)}</span>
 						<span class="ml-auto flex shrink-0 items-center gap-1">
 							{#if !p.in_scope}
 								<Badge variant="secondary" class="px-1.5 py-0 text-2xs">Out of scope</Badge>
