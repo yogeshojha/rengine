@@ -200,8 +200,7 @@
 
 		{#if neverSynced}
 			<p class="border-b bg-info/5 px-4 py-2.5 text-xs text-muted-foreground">
-				No feed is downloaded yet. Sync the feeds to add exploit, ransomware and EPSS signals to
-				findings.
+				No feeds downloaded.
 			</p>
 		{/if}
 
