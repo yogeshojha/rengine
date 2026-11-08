@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 MAX_IPS = 100_000
 _UPSERT_BATCH = 5_000
+_TABLE = IpAddress.__table__
 
 # every table a scan can park an IP in
 _COLLECT_SQL = """
@@ -82,15 +83,18 @@ def materialize(
         for ip in ips
     ]
     statement = (
-        insert(IpAddress)
-        .values(rows)
+        insert(_TABLE)
         .on_conflict_do_nothing(constraint="uq_ipaddress_scan_ip")
+        .returning(_TABLE.c.id)
     )
-    result = session.execute(statement)
+    written = 0
+    for start in range(0, len(rows), _UPSERT_BATCH):
+        chunk = rows[start : start + _UPSERT_BATCH]
+        written += len(session.execute(statement, chunk).all())
     session.commit()
     enrich_addresses(session, scan_id=scan_id, ips=ips)
     session.commit()
-    return int(result.rowcount or 0)
+    return written
 
 
 def materialize_rows(
@@ -127,17 +131,18 @@ def materialize_rows(
         }
         for ip in ips
     ]
+    statement = insert(_TABLE)
+    statement = statement.on_conflict_do_update(
+        constraint="uq_ipaddress_scan_ip",
+        set_={
+            "prefix": func.coalesce(_TABLE.c.prefix, statement.excluded.prefix),
+            "asn": func.coalesce(_TABLE.c.asn, statement.excluded.asn),
+        },
+    ).returning(_TABLE.c.id)
     written = 0
     for start in range(0, len(values), _UPSERT_BATCH):
-        statement = insert(IpAddress).values(values[start : start + _UPSERT_BATCH])
-        statement = statement.on_conflict_do_update(
-            constraint="uq_ipaddress_scan_ip",
-            set_={
-                "prefix": func.coalesce(IpAddress.prefix, statement.excluded.prefix),
-                "asn": func.coalesce(IpAddress.asn, statement.excluded.asn),
-            },
-        )
-        written += int(session.execute(statement).rowcount or 0)
+        chunk = values[start : start + _UPSERT_BATCH]
+        written += len(session.execute(statement, chunk).all())
     session.commit()
     enrich_addresses(session, scan_id=scan_id, ips=ips)
     session.commit()
