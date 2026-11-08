@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -54,6 +54,17 @@ def _check_range(window: str | None, day: date | None, day_to: date | None) -> N
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="day_to needs a day at or before it.",
         )
+    if date.max in (day, day_to):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Days must be before {date.max.isoformat()}.",
+        )
+
+
+def _utc(since: datetime | None) -> datetime | None:
+    if since is None or since.tzinfo is not None:
+        return since
+    return since.replace(tzinfo=UTC)
 
 
 @router.get("", response_model=NewFeed)
@@ -85,7 +96,7 @@ async def whats_new(
     return await service.feed(
         project_id,
         current_user.id,
-        since=since,
+        since=_utc(since),
         window=window,
         day_from=day,
         day_to=day_to,
@@ -120,7 +131,7 @@ async def whats_new_visual(
     return await service.visual(
         project_id,
         current_user.id,
-        since=since,
+        since=_utc(since),
         window=window,
         day_from=day,
         day_to=day_to,
