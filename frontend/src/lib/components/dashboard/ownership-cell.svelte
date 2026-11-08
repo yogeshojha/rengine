@@ -118,7 +118,7 @@
 				label: 'Takeover candidates',
 				count: takeover.count,
 				detail: 'dangling CNAMEs',
-				tone: 'var(--sev-high)',
+				tone: 'var(--destructive)',
 				open: () =>
 					show({
 						title: 'Takeover candidates',
@@ -139,7 +139,7 @@
 				label: 'Spoofable',
 				count: spoof.count,
 				detail: 'zones failing sender checks',
-				tone: 'var(--sev-medium)',
+				tone: 'var(--warning)',
 				open: () =>
 					show({
 						title: 'Spoofable domains',

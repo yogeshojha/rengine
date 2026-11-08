@@ -47,7 +47,7 @@
 				count: t.count,
 				sub: 'sensitive',
 				href: link(t.query),
-				tone: 'var(--sev-high)'
+				tone: 'var(--warning)'
 			}))
 	);
 </script>
