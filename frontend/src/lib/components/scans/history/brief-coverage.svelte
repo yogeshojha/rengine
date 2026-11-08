@@ -28,13 +28,20 @@
 		void tick;
 		void attempt;
 		const id = scan.id;
+		let live = true;
 		scansApi
 			.activities(id, projectId)
 			.then((a) => {
+				if (!live) return;
 				activities = a;
 				error = null;
 			})
-			.catch((e) => (error = e instanceof Error ? e.message : 'Stages not loaded.'));
+			.catch((e) => {
+				if (live) error = e instanceof Error ? e.message : 'Stages not loaded.';
+			});
+		return () => {
+			live = false;
+		};
 	});
 
 	function retry() {
