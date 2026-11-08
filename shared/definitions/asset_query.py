@@ -1229,7 +1229,7 @@ IP_FIELDS: tuple[QueryField, ...] = (
         name="seen",
         type=FieldType.DATE,
         group="Address",
-        description="When these scans first recorded the address.",
+        description="When the address was recorded.",
         example="seen:<7d",
         aliases=("discovered",),
     ),
