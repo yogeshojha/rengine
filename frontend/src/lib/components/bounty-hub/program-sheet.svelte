@@ -276,7 +276,7 @@
 								class="text-xs text-foreground hover:text-primary"
 							>
 								{plural(program.reports_for_user, 'report')}{program.earnings_for_user
-									? ` · ${formatMoney(program.earnings_for_user, program.currency?.toUpperCase() || 'USD')} earned`
+									? ` · ${formatMoney(program.earnings_for_user, program.currency?.toUpperCase() ?? '')} earned`
 									: ''}
 							</a>
 						{:else}
