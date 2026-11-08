@@ -46,7 +46,7 @@ def validate_channels(requested: list[str]) -> list[str]:
 @router.get("/stream")
 async def event_stream(
     request: Request,
-    _current_user: StreamUser,
+    current_user: StreamUser,
     token: Annotated[str, Depends(get_token_from_request)],
     channels: str = Query(
         ...,
@@ -76,10 +76,17 @@ async def event_stream(
             detail="Too many event streams",
         )
 
+    owner = str(current_user.id)
+    if sse_manager.owner_at_capacity(owner):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many event streams for this user.",
+        )
+
     async def generate():
         loop = asyncio.get_running_loop()
         deadline = loop.time() + HEARTBEAT_SECONDS
-        async with sse_manager.stream(validated) as queue:
+        async with sse_manager.stream(validated, owner) as queue:
             try:
                 while True:
                     if await request.is_disconnected():

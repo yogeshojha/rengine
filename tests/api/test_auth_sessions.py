@@ -29,6 +29,7 @@ from app.core.security import (
     signing_key,
 )
 from app.services.totp import TOTPService
+from shared import sse
 from shared.enums.sse import SSEChannel
 from shared.models.user import User, UserAdminUpdate
 from shared.sse import sse_manager
@@ -237,3 +238,18 @@ async def test_a_busy_event_stream_rechecks_its_token(monkeypatch):
 
     assert checks == ["stream-token"]
     assert frames[-1].startswith("event: unauthorized")
+
+
+async def test_one_user_cannot_hold_every_event_stream(monkeypatch):
+    monkeypatch.setattr(sse, "MAX_STREAMS_PER_OWNER", 2)
+    owner = str(uuid.uuid4())
+    async with (
+        sse_manager.stream([SSEChannel.BROADCAST], owner),
+        sse_manager.stream([SSEChannel.BROADCAST], owner),
+    ):
+        assert sse_manager.owner_at_capacity(owner)
+        assert not sse_manager.owner_at_capacity(str(uuid.uuid4()))
+        with pytest.raises(ConnectionError):
+            async with sse_manager.stream([SSEChannel.BROADCAST], owner):
+                pass
+    assert not sse_manager.owner_at_capacity(owner)

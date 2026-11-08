@@ -11,6 +11,8 @@ logger = get_logger(__name__)
 
 STREAM_CLOSED = None
 
+MAX_STREAMS_PER_OWNER = 20
+
 
 class SSEManager:
     _instance: "SSEManager | None" = None
@@ -29,12 +31,17 @@ class SSEManager:
 
         self._queue_channels: dict[int, set[str]] = {}
 
+        self._owner_streams: dict[str, int] = {}
+
         self._lock = asyncio.Lock()
         self._max_connections = 1000
         self._initialized = True
 
     def at_capacity(self) -> bool:
         return len(self._queue_channels) >= self._max_connections
+
+    def owner_at_capacity(self, owner: str) -> bool:
+        return self._owner_streams.get(owner, 0) >= MAX_STREAMS_PER_OWNER
 
     async def subscribe(self, queue: asyncio.Queue, channels: list[str]) -> None:
         async with self._lock:
@@ -86,17 +93,30 @@ class SSEManager:
         return await self._deliver(message, subscribers)
 
     @asynccontextmanager
-    async def stream(self, channels: list[str]) -> AsyncIterator[asyncio.Queue]:
+    async def stream(
+        self, channels: list[str], owner: str | None = None
+    ) -> AsyncIterator[asyncio.Queue]:
         if self.at_capacity():
             msg = "Maximum SSE connections reached"
             raise ConnectionError(msg)
+        if owner is not None and self.owner_at_capacity(owner):
+            msg = "Maximum SSE connections reached for the owner"
+            raise ConnectionError(msg)
 
+        if owner is not None:
+            self._owner_streams[owner] = self._owner_streams.get(owner, 0) + 1
         queue: asyncio.Queue = asyncio.Queue(maxsize=100)
-        await self.subscribe(queue, channels)
         try:
+            await self.subscribe(queue, channels)
             yield queue
         finally:
             await self.unsubscribe(queue)
+            if owner is not None:
+                left = self._owner_streams.get(owner, 1) - 1
+                if left > 0:
+                    self._owner_streams[owner] = left
+                else:
+                    self._owner_streams.pop(owner, None)
 
     async def _deliver(self, message: str, subscribers: set[asyncio.Queue]) -> int:
         dead: set[asyncio.Queue] = set()
