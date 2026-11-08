@@ -56,7 +56,7 @@ class ServiceFingerprintStage(Stage):
             timeout=float(self.transport.timeout),
             concurrency=self.transport.threads,
             proxy_url=self.net_options().proxy_url,
-            rate=self.ctx.resolved.global_rate_limit_ceiling,
+            rate=self.transport.rate or self.ctx.resolved.global_rate_limit_ceiling,
         )
         if client.proxy_warning:
             self.emit_progress(client.proxy_warning)
