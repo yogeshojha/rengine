@@ -169,6 +169,18 @@ CREATE TEMP TABLE software_components (
 ) ON COMMIT DROP
 """
 
+_FILL_COMPONENTS = """
+INSERT INTO software_components (ref, host, ip, port, url, http_asset_id, port_id,
+       name, version, version_key, version_kind, vendor, product, source, distro, coarse)
+SELECT * FROM unnest(
+       CAST(:ref AS uuid[]), CAST(:host AS text[]), CAST(:ip AS text[]),
+       CAST(:port AS integer[]), CAST(:url AS text[]), CAST(:http_asset_id AS uuid[]),
+       CAST(:port_id AS uuid[]), CAST(:name AS text[]), CAST(:version AS text[]),
+       CAST(:version_key AS text[]), CAST(:version_kind AS text[]),
+       CAST(:vendor AS text[]), CAST(:product AS text[]), CAST(:source AS text[]),
+       CAST(:distro AS text[]), CAST(:coarse AS boolean[]))
+"""
+
 _BUILD = """
 CREATE TEMP TABLE software_new ON COMMIT DROP AS
 SELECT matched.*,
@@ -513,21 +525,21 @@ def _mark_fixed(
     fixed = fixed_releases(components, carried)
     session.execute(text(_FIXED_TEMP))
     if fixed:
+        keys = list(fixed)
         session.execute(
             text(
                 "INSERT INTO software_fixed (product, version, cve, fixed_in, "
-                "fixed_in_assets) VALUES (:product, :version, :cve, :fixed_in, :assets)"
+                "fixed_in_assets) SELECT * FROM unnest(CAST(:product AS text[]), "
+                "CAST(:version AS text[]), CAST(:cve AS text[]), "
+                "CAST(:fixed_in AS text[]), CAST(:assets AS integer[]))"
             ),
-            [
-                {
-                    "product": product,
-                    "version": version,
-                    "cve": cve,
-                    "fixed_in": fixed_in,
-                    "assets": count,
-                }
-                for (product, version, cve), (fixed_in, count) in fixed.items()
-            ],
+            {
+                "product": [k[0] for k in keys],
+                "version": [k[1] for k in keys],
+                "cve": [k[2] for k in keys],
+                "fixed_in": [fixed[k][0] for k in keys],
+                "assets": [fixed[k][1] for k in keys],
+            },
         )
     params = {"scan_id": str(scan_id)}
     session.execute(text(_FIXED_SET), params)
@@ -615,33 +627,27 @@ def match_scan(
 
     session.execute(text(_TEMP))
     session.execute(
-        text(
-            "INSERT INTO software_components (ref, host, ip, port, url, http_asset_id, "
-            "port_id, name, version, version_key, version_kind, vendor, product, source, distro, coarse) "
-            "VALUES (:ref, :host, :ip, :port, :url, :http_asset_id, :port_id, :name, "
-            ":version, :version_key, :version_kind, :vendor, :product, :source, :distro, :coarse)"
-        ),
-        [
-            {
-                "ref": str(c.ref),
-                "host": c.host,
-                "ip": c.ip,
-                "port": c.port,
-                "url": c.url,
-                "http_asset_id": str(c.http_asset_id) if c.http_asset_id else None,
-                "port_id": str(c.port_id) if c.port_id else None,
-                "name": c.name,
-                "version": c.version,
-                "version_key": c.version_key,
-                "version_kind": c.version_kind,
-                "vendor": c.vendor,
-                "product": c.product,
-                "source": c.source,
-                "distro": c.distro,
-                "coarse": c.coarse,
-            }
-            for c in components
-        ],
+        text(_FILL_COMPONENTS),
+        {
+            "ref": [str(c.ref) for c in components],
+            "host": [c.host for c in components],
+            "ip": [c.ip for c in components],
+            "port": [c.port for c in components],
+            "url": [c.url for c in components],
+            "http_asset_id": [
+                str(c.http_asset_id) if c.http_asset_id else None for c in components
+            ],
+            "port_id": [str(c.port_id) if c.port_id else None for c in components],
+            "name": [c.name for c in components],
+            "version": [c.version for c in components],
+            "version_key": [c.version_key for c in components],
+            "version_kind": [c.version_kind for c in components],
+            "vendor": [c.vendor for c in components],
+            "product": [c.product for c in components],
+            "source": [c.source for c in components],
+            "distro": [c.distro for c in components],
+            "coarse": [c.coarse for c in components],
+        },
     )
     session.execute(
         text(_BUILD),
