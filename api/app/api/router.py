@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.api.v1 import (
     about,
@@ -62,8 +62,10 @@ from app.api.v1 import (
     whois,
     wordlists,
 )
+from shared.services.asset_query.errors import query_deadline
 
 router = APIRouter()
+search = [Depends(query_deadline)]
 
 router.include_router(auth.router)
 router.include_router(users.router)
@@ -83,19 +85,19 @@ router.include_router(scan_contexts.router)
 router.include_router(scan_schedules.router)
 router.include_router(scans.router)
 router.include_router(scan_tags.router)
-router.include_router(subdomains.router)
+router.include_router(subdomains.router, dependencies=search)
 router.include_router(domain_posture.router)
 router.include_router(lookalikes.router)
 router.include_router(cloud_storage.router)
-router.include_router(surface.router)
+router.include_router(surface.router, dependencies=search)
 router.include_router(mcp.router)
 router.include_router(remote_control.router)
 router.include_router(connectors.router)
 router.include_router(http_assets.router)
-router.include_router(ports.router)
-router.include_router(ip_addresses.router)
-router.include_router(endpoints.router)
-router.include_router(vulnerabilities.router)
+router.include_router(ports.router, dependencies=search)
+router.include_router(ip_addresses.router, dependencies=search)
+router.include_router(endpoints.router, dependencies=search)
+router.include_router(vulnerabilities.router, dependencies=search)
 router.include_router(oast.router)
 router.include_router(vuln_templates.router)
 router.include_router(threat_intel.router)
@@ -108,8 +110,8 @@ router.include_router(wordlists.router)
 router.include_router(media.router)
 router.include_router(exports.router)
 router.include_router(reports.router)
-router.include_router(software.router)
-router.include_router(secrets.router)
+router.include_router(software.router, dependencies=search)
+router.include_router(secrets.router, dependencies=search)
 router.include_router(cves.router)
 router.include_router(ai.router)
 router.include_router(dashboard.router)

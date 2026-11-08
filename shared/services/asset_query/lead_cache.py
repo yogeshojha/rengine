@@ -18,6 +18,8 @@ from shared.models.asset_query import QueryLeads
 from shared.models.scan import Scan
 from shared.redis import async_client, cache_client, sync_client
 
+from .errors import start_deadline
+
 logger = get_logger(__name__)
 
 # bumped when the shape of a cached entry changes
@@ -176,6 +178,7 @@ async def _refresh[T: BaseModel](
     name: str,
 ) -> None:
     key, stale_key, token = keys
+    start_deadline()
     try:
         async with AsyncSession(bind, expire_on_commit=False) as session:
             computed = await rebuild(session)
