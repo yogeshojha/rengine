@@ -48,6 +48,7 @@
 			? formatSeconds(s.duration_seconds)
 			: null}
 	{@const state = s.status === 'completed' ? null : SCAN_STATUS_LABEL[s.status]}
+	{@const count = (n: number) => (state ? '—' : n.toLocaleString())}
 	<span class="flex min-w-0 flex-col">
 		<span class="flex items-center gap-1.5">
 			<span class="truncate text-sm leading-5 {isCurrent ? 'font-medium' : ''}">
@@ -65,7 +66,7 @@
 		</span>
 	</span>
 	<span class="flex items-center justify-end gap-1.5 text-sm tabular-nums">
-		<span class="font-medium">{s.subdomains_found.toLocaleString()}</span>
+		<span class="font-medium">{count(s.subdomains_found)}</span>
 		{#if added > 0}
 			<span class="inline-flex items-center text-xs text-muted-foreground">
 				<ArrowUpRight class="size-3" />{added.toLocaleString()}
@@ -73,12 +74,11 @@
 		{/if}
 	</span>
 	<span class="hidden text-right text-sm tabular-nums sm:block">
-		{s.http_assets_found.toLocaleString()}
+		{count(s.http_assets_found)}
 	</span>
-	<span class="hidden text-right text-sm tabular-nums sm:block">{s.ips_found.toLocaleString()}</span
-	>
+	<span class="hidden text-right text-sm tabular-nums sm:block">{count(s.ips_found)}</span>
 	<span class="hidden text-right text-sm tabular-nums sm:block">
-		{s.open_ports_found.toLocaleString()}
+		{count(s.open_ports_found)}
 	</span>
 {/snippet}
 

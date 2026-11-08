@@ -17,19 +17,17 @@
 	import { exactToken, filterToken } from '$lib/utilities/scan-insights';
 	import { plural } from '$lib/utilities/strings';
 	import type { IconComponent } from '$lib/config/icons';
-	import type { ScanRead } from '$lib/types/scan';
 	import type { InsightTally, SubdomainInsights } from '$lib/utilities/scan-insights';
 
 	interface Props {
 		insights: SubdomainInsights | null;
 		loading: boolean;
-		scan: ScanRead;
 		scanId: string;
 		projectId: string;
 		onFilter: (search: string) => void;
 	}
 
-	let { insights, loading, scan, scanId, projectId, onFilter }: Props = $props();
+	let { insights, loading, scanId, projectId, onFilter }: Props = $props();
 
 	const TOP = 5;
 	const SEED_SOURCE = 'target';
@@ -71,6 +69,7 @@
 		}));
 
 	let webHosts = $derived(stat('web'));
+	let assetHosts = $derived(stat('subdomains'));
 	const nounPlural = targetAssetNoun();
 
 	let cells = $derived.by<Cell[]>(() => {
@@ -83,7 +82,7 @@
 				key: 'sources',
 				title: 'Discovery sources',
 				total: plural(sources.length, 'source', 'sources'),
-				base: scan.subdomains_found,
+				base: assetHosts,
 				rows: tallies(sources, 'source'),
 				pick: onFilter,
 				note:
@@ -116,7 +115,7 @@
 				key: 'clusters',
 				title: 'Shared infrastructure',
 				total: plural(clusters.length, 'group', 'groups'),
-				base: scan.subdomains_found,
+				base: assetHosts,
 				icon: 'cluster',
 				rows: clusters.slice(0, TOP).map((c) => ({
 					key: `${c.kind}:${c.value}`,

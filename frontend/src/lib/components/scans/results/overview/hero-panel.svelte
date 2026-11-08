@@ -36,6 +36,8 @@
 		history: ScanRead[];
 		historyLoaded: boolean;
 		stats: SurfaceStats;
+		vulnTotal: number | null;
+		endpointTotal: number | null;
 		run: LiveRun | undefined;
 		catalog: StageCatalogEntry[];
 		activities: ScanActivityRead[];
@@ -55,6 +57,8 @@
 		history,
 		historyLoaded,
 		stats,
+		vulnTotal,
+		endpointTotal,
 		run,
 		catalog,
 		activities,
@@ -257,19 +261,19 @@
 				tab: IP.tab,
 				trend: null
 			});
-		if (scan.vulnerabilities_found > 0)
+		if (vulnTotal)
 			list.push({
 				key: 'vulns',
 				label: 'Vulnerabilities',
-				value: scan.vulnerabilities_found,
+				value: vulnTotal,
 				tab: VULN.tab,
 				trend: trendOf('vulnerabilities_found')
 			});
-		if (scan.endpoints_found > 0)
+		if (endpointTotal)
 			list.push({
 				key: 'endpoints',
 				label: 'Endpoints',
-				value: scan.endpoints_found,
+				value: endpointTotal,
 				tab: EP.tab,
 				trend: trendOf('endpoints_found')
 			});

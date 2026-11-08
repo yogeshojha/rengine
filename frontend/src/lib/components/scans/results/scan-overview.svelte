@@ -252,6 +252,8 @@
 		{history}
 		{historyLoaded}
 		{stats}
+		vulnTotal={vulns?.total ?? null}
+		endpointTotal={structure?.endpoints ?? null}
 		{run}
 		{catalog}
 		{activities}
@@ -308,7 +310,7 @@
 			<DomainPosturePanel summary={posture} loading={loading && !posture} {onFilter} />
 			<ExposurePanel {exposure} {loading} {onTab} />
 			<StructurePanel {structure} {loading} {onTab} />
-			<CompositionPanel {insights} {loading} {scan} {scanId} {projectId} {onFilter} />
+			<CompositionPanel {insights} {loading} {scanId} {projectId} {onFilter} />
 		{/if}
 	{/if}
 </div>
