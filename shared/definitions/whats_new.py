@@ -8,6 +8,7 @@ from enum import StrEnum
 from shared.definitions.bounty_programs import SOURCE_LABELS as PROGRAM_SOURCE_LABELS
 from shared.definitions.bounty_programs import BountyEvent
 from shared.definitions.correlation import SCREENSHOT_DISTANCE
+from shared.definitions.dashboard import WINDOW_DELTAS, DashboardWindow
 from shared.definitions.watch import CT_SOURCE
 
 
@@ -52,12 +53,18 @@ class NewTone(StrEnum):
     HOT = "hot"
 
 
+class NewWindow(StrEnum):
+    DAY = "24h"
+    WEEK = DashboardWindow.WEEK.value
+    MONTH = DashboardWindow.MONTH.value
+
+
 NEW_WINDOWS: dict[str, timedelta] = {
-    "24h": timedelta(hours=24),
-    "7d": timedelta(days=7),
-    "30d": timedelta(days=30),
+    NewWindow.DAY.value: timedelta(hours=24),
+    NewWindow.WEEK.value: WINDOW_DELTAS[NewWindow.WEEK.value],
+    NewWindow.MONTH.value: WINDOW_DELTAS[NewWindow.MONTH.value],
 }
-DEFAULT_NEW_WINDOW = "7d"
+DEFAULT_NEW_WINDOW = NewWindow.WEEK.value
 GRID_DAYS = 91
 BOUNTY_ROWS_PER_SECTION = 50
 GROUP_LIMIT = 80
