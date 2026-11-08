@@ -571,10 +571,10 @@ class TargetEstateService:
     @staticmethod
     def _redirect(to: str, root: str) -> tuple | None:
         """Where a redirect lands: a provider, a domain or nothing."""
-        if not to or validate_ip(to):
+        if not to:
             return None
         apex = registrable_domain(to)
-        if not apex or _inside(apex, root) or _private(apex):
+        if not apex or _inside(apex, root) or validate_ip(to) or _private(apex):
             return None
         provider = provider_of(to)
         if provider:
