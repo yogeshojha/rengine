@@ -109,7 +109,7 @@ async def engine(database: str):
 
 @pytest_asyncio.fixture
 async def session(engine) -> AsyncIterator[AsyncSession]:
-    """One transaction per test, rolled back. A commit releases a savepoint inside it."""
+    """One transaction per test, rolled back."""
     async with engine.connect() as conn:
         outer = await conn.begin()
         s = AsyncSession(
