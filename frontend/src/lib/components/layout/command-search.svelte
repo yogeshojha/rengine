@@ -268,7 +268,7 @@
 	const commands = $derived(
 		buildCommands({
 			scope,
-			liveScans: liveScans.scans,
+			liveScans: liveScans.open,
 			projects: projectsStore.projects,
 			activeProjectId: projectId,
 			has: (capability) => capabilitiesStore.has(capability),
