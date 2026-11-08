@@ -18,6 +18,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    true,
     union_all,
 )
 from sqlalchemy.dialects.postgresql import JSONB, array
@@ -1111,7 +1112,31 @@ class EndpointService:
                 or 0
             )
 
-        out = HostBrief(host=host, total=await count())
+        static = surface_endpoints.static_clause()
+        kept = ~static if hide_static else true()
+        measures = {
+            "total": true(),
+            "probed": Endpoint.is_probed.is_(True),
+            "live": endpoint_status_class("2xx"),
+            "with_params": Endpoint.param_count > 0,
+            "api": Endpoint.endpoint_class == EndpointClass.API.value,
+            "walled": Endpoint.status_code.in_(preds.AUTH_STATUS),
+            "interesting": func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0,
+        }
+        counted = (
+            await self.session.execute(
+                select(
+                    func.count().filter(static).label("static_total"),
+                    *(
+                        func.count().filter(and_(kept, test)).label(name)
+                        for name, test in measures.items()
+                    ),
+                ).where(scope.match(Endpoint.scan_id), Endpoint.host == host)
+            )
+        ).one()
+        out = HostBrief(
+            host=host, **{k: int(v or 0) for k, v in counted._mapping.items()}
+        )
         out.identity = (await self._host_identity(scope, [host])).get(host)
         by_class = await self.session.execute(
             select(Endpoint.endpoint_class, func.count())
@@ -1119,26 +1144,8 @@ class EndpointService:
             .group_by(Endpoint.endpoint_class)
         )
         out.by_class = {k: int(v) for k, v in by_class.all()}
-        out.static_total = int(
-            await self.session.scalar(
-                select(func.count()).where(
-                    scope.match(Endpoint.scan_id),
-                    Endpoint.host == host,
-                    surface_endpoints.static_clause(),
-                )
-            )
-            or 0
-        )
         if not out.total:
             return out
-        out.probed = await count(Endpoint.is_probed.is_(True))
-        out.live = await count(endpoint_status_class("2xx"))
-        out.with_params = await count(Endpoint.param_count > 0)
-        out.api = await count(Endpoint.endpoint_class == EndpointClass.API.value)
-        out.walled = await count(Endpoint.status_code.in_(preds.AUTH_STATUS))
-        out.interesting = await count(
-            func.jsonb_array_length(cast(Endpoint.interest, JSONB)) > 0
-        )
         out.new = await count(endpoint_is_new(scope))
         previous, previous_at = await self._previous_scan(scope)
         out.previous_scan_at = previous_at

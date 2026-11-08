@@ -562,39 +562,22 @@ class DashboardOverviewService:
             for s in SEVERITY_ORDER
             if tally.get(s, 0) > 0 or s != Severity.UNKNOWN.value
         ]
-        risk.kev = int(
-            await self.session.scalar(
-                select(func.count())
-                .select_from(Vulnerability)
-                .where(live_rows, Vulnerability.is_kev.is_(True), not_(_suppressed()))
+        kev, ransomware, overdue, affected = (
+            await self.session.execute(
+                select(
+                    func.count().filter(Vulnerability.is_kev.is_(True)),
+                    func.count().filter(Vulnerability.kev_ransomware.is_(True)),
+                    func.count().filter(
+                        Vulnerability.kev_due_date < func.current_date()
+                    ),
+                    func.count(func.distinct(Vulnerability.target_id)),
+                ).where(live_rows, not_(_suppressed()))
             )
-            or 0
-        )
-        risk.ransomware = int(
-            await self.session.scalar(
-                select(func.count())
-                .select_from(Vulnerability)
-                .where(
-                    live_rows,
-                    Vulnerability.kev_ransomware.is_(True),
-                    not_(_suppressed()),
-                )
-            )
-            or 0
-        )
-        risk.overdue = int(
-            await self.session.scalar(
-                select(func.count())
-                .select_from(Vulnerability)
-                .where(
-                    live_rows,
-                    Vulnerability.kev_due_date.isnot(None),
-                    Vulnerability.kev_due_date < func.current_date(),
-                    not_(_suppressed()),
-                )
-            )
-            or 0
-        )
+        ).one()
+        risk.kev = int(kev or 0)
+        risk.ransomware = int(ransomware or 0)
+        risk.overdue = int(overdue or 0)
+        risk.targets_affected = int(affected or 0)
         risk.newly_exploited = int(
             await self.session.scalar(
                 select(func.count(func.distinct(IntelSignal.vulnerability_id)))
@@ -614,14 +597,6 @@ class DashboardOverviewService:
                 select(func.count())
                 .select_from(Vulnerability)
                 .where(live_rows, _suppressed())
-            )
-            or 0
-        )
-        risk.targets_affected = int(
-            await self.session.scalar(
-                select(func.count(func.distinct(Vulnerability.target_id))).where(
-                    live_rows, not_(_suppressed())
-                )
             )
             or 0
         )
