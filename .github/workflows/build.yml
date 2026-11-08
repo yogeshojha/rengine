@@ -211,4 +211,4 @@ jobs:
             flags=(--draft --verify-tag --generate-notes --title "$TAG")
           fi
           case "$TAG" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" "${flags[@]}"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" "${flags[@]}" install.sh

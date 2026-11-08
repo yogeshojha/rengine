@@ -133,7 +133,7 @@ Detailed documentation is available at [rengine.wiki](https://rengine.wiki).
 reNgine installs on a Linux host, local or VPS, with one script. It checks for Docker and Docker Compose v2, sizes the database for the machine, generates the secrets and starts the stack behind a Caddy reverse proxy that terminates HTTPS.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yogeshojha/rengine/master/install.sh -o install.sh
+curl -fsSL https://github.com/yogeshojha/rengine/releases/latest/download/install.sh -o install.sh
 sudo bash install.sh
 ```
 
