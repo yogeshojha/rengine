@@ -5,7 +5,18 @@ from functools import cached_property
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, case, cast, distinct, exists, false, func, select, text
+from sqlalchemy import (
+    and_,
+    case,
+    cast,
+    distinct,
+    exists,
+    false,
+    func,
+    or_,
+    select,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 from sqlalchemy.orm import Session, aliased, defer
@@ -1040,21 +1051,41 @@ class ReportSource:
         columns = _KEY[dimension]
         labels = _LABEL[dimension]
 
-        def read(scan: UUID) -> dict[tuple, str]:
-            rows = self.session.execute(
-                select(*columns, *labels).where(table.scan_id == scan).distinct()
+        def side(present: UUID, absent: UUID) -> tuple[list[str], int]:
+            other = aliased(table)
+            missing = ~exists().where(
+                other.scan_id == absent,
+                *[getattr(other, c.key) == c for c in columns],
             )
-            out: dict[tuple, str] = {}
-            for row in rows:
-                key = tuple(row[: len(columns)])
-                out[key] = _change_label(dimension, key, tuple(row[len(columns) :]))
-            return out
+            keys = (
+                select(*columns)
+                .where(table.scan_id == present, missing)
+                .distinct()
+                .subquery()
+            )
+            total = self.session.execute(
+                select(func.count()).select_from(keys)
+            ).scalar()
+            rows = self.session.execute(
+                select(*columns, *labels)
+                .where(table.scan_id == present, missing)
+                .distinct(*columns)
+                .order_by(*columns)
+                .limit(limit)
+            )
+            sample = [
+                _change_label(
+                    dimension,
+                    tuple(row[: len(columns)]),
+                    tuple(row[len(columns) :]),
+                )
+                for row in rows
+            ]
+            return sorted(sample), int(total or 0)
 
-        current = read(scan_id)
-        before = read(previous.id)
-        added = [v for k, v in current.items() if k not in before]
-        gone = [v for k, v in before.items() if k not in current]
-        return (sorted(added)[:limit], sorted(gone)[:limit], len(added), len(gone))
+        added, added_total = side(scan_id, previous.id)
+        gone, gone_total = side(previous.id, scan_id)
+        return (added, gone, added_total, gone_total)
 
     def excluded(self) -> dict[str, list[str]]:
         config = (self.scan.execution_config or {}) if self.scan else {}
@@ -1070,6 +1101,22 @@ class ReportSource:
         scan_id = self.scan_for(_DIM.WEB_ASSETS.value)
         if scan_id is None:
             return []
+        peer = aliased(HttpAsset)
+        behind = func.coalesce(peer.cdn_type.in_(("cdn", "waf")), False)
+
+        def crossing(column):
+            value = getattr(peer, column.key)
+            return column.in_(
+                select(value)
+                .where(
+                    peer.scan_id == scan_id,
+                    peer.status_code.is_not(None),
+                    value.is_not(None),
+                )
+                .group_by(value)
+                .having(func.bool_or(behind), func.bool_or(~behind))
+            )
+
         rows = self.session.execute(
             select(
                 HttpAsset.host,
@@ -1083,6 +1130,11 @@ class ReportSource:
             ).where(
                 HttpAsset.scan_id == scan_id,
                 HttpAsset.status_code.is_not(None),
+                or_(
+                    crossing(HttpAsset.content_hash),
+                    crossing(HttpAsset.tls_fingerprint),
+                    crossing(HttpAsset.favicon_hash),
+                ),
             )
         ).all()
 
