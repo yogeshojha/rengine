@@ -2300,7 +2300,7 @@ VULN_EXAMPLES: tuple[QueryExample, ...] = (
     ),
     QueryExample(
         query="evidence:proven",
-        description="Findings the asset answered with an out-of-band callback",
+        description="Findings proven by an out-of-band callback",
         group="Priority",
     ),
     QueryExample(
