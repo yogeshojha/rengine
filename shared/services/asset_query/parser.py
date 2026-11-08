@@ -324,10 +324,12 @@ class _Parser:
         return parts[0] if len(parts) == 1 else And(tuple(parts))
 
     def unary(self) -> Node:
-        if self.at("NOT"):
+        negated = False
+        while self.at("NOT"):
             self.i += 1
-            return Not(self.unary())
-        return self.primary()
+            negated = not negated
+        node = self.primary()
+        return Not(node) if negated else node
 
     def primary(self) -> Node:
         self.count()
