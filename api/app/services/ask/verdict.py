@@ -7,7 +7,6 @@ from collections.abc import Iterable
 from shared.definitions.ask import (
     MAX_CITED_LINES,
     MAX_FACT_DETAIL,
-    SECRET_TAGS,
     EvidenceField,
     FactTone,
     Verdict,
@@ -19,6 +18,7 @@ from shared.models.ask import Fact
 from shared.models.software import SoftwareCve
 from shared.models.vulnerability import VulnerabilityRead
 from shared.services.issue_tracking.body import mask_secrets
+from shared.services.tool_output import hides_values
 from shared.utils.text import clip_line, counted
 
 BLOCKED_STATUSES = frozenset({401, 403, 429})
@@ -37,12 +37,6 @@ def lines_with(text: str | None, needles: Iterable[str]) -> list[int]:
             if len(found) >= MAX_CITED_LINES:
                 break
     return found
-
-
-def hides_values(template_id: str, tags: Iterable[str]) -> bool:
-    """Whether a check's extracted values are credentials."""
-    words = {t.lower() for t in tags} | set(template_id.lower().split("-"))
-    return bool(words & SECRET_TAGS)
 
 
 def hides_extracted(v: VulnerabilityRead) -> bool:

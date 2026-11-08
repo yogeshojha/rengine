@@ -21,8 +21,11 @@ from mcp.result import ToolResult, error_content
 from mcp.settings import PROTOCOL_VERSION, SERVER_NAME, SUPPORTED_PROTOCOLS
 from shared.config import APP_VERSION
 from shared.logging import get_logger
+from shared.services.tool_output import guarded, reads_secret_values
 
 logger = get_logger(__name__)
+
+SECRETS_REFUSED = "Secret values are not returned by tools."
 
 INSTRUCTIONS = """\
 This is the MCP server for reNgine, an attack surface management platform. It \
@@ -148,6 +151,19 @@ async def invoke(ctx: ToolContext, name: str, raw: dict) -> ToolResult:
         raise InvalidParamsError(message) from exc
 
     phrased = telemetry.phrase_args(args.model_dump(mode="json", exclude_defaults=True))
+    if reads_secret_values(name, args.model_dump(mode="json")):
+        await _observe(
+            ctx,
+            name,
+            ok=False,
+            started=started,
+            detail=SECRETS_REFUSED,
+            capability=spec.capability,
+            args=phrased,
+            refused=True,
+        )
+        raise ToolError(SECRETS_REFUSED)
+
     try:
         result = await spec.tool_cls().run(ctx, args)
     except McpError as exc:
@@ -179,6 +195,8 @@ async def invoke(ctx: ToolContext, name: str, raw: dict) -> ToolResult:
         await _observe(ctx, name, ok=False, started=started, capability=spec.capability)
         msg = f"{name} returned {type(result).__name__}, expected ToolResult."
         raise ToolError(msg)
+    result.summary = guarded(name, result.summary)
+    result.data = guarded(name, result.data)
     await _observe(
         ctx,
         name,

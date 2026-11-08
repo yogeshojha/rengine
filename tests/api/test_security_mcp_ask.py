@@ -595,3 +595,62 @@ def test_ask_refuses_free_text_in_a_finding_query():
 def test_ask_keeps_free_text_on_other_dimensions():
     args = {"dimension": "hosts", "query": "admin"}
     assert not tools.reads_secrets("query_assets", args)
+
+
+# ---------- MCP output ----------
+
+
+def _reader() -> ToolContext:
+    token = TokenIdentity(
+        id=uuid.uuid4(),
+        name="agent",
+        project_id=None,
+        capabilities=frozenset({Capability.READ.value}),
+    )
+    return ToolContext(
+        session=None, token=token, ui_base_url="", client=Transport.HTTP.value
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "args"),
+    [
+        ("query_assets", {"dimension": "secrets"}),
+        ("group_assets", {"dimension": "secrets", "group_by": "value"}),
+    ],
+)
+async def test_mcp_refuses_secret_values(quiet, name, args):
+    with pytest.raises(ToolError) as raised:
+        await server.invoke(_reader(), name, args)
+    assert raised.value.message == server.SECRETS_REFUSED
+    assert quiet[0].refused is True
+
+
+async def test_mcp_masks_secrets_in_tool_output(quiet, monkeypatch):
+    spec = tool_spec("describe_query_language")
+
+    async def run(_self, _ctx, _args):
+        return ToolResult(summary=f"key {AWS_KEY}", data={"rows": [f"key {AWS_KEY}"]})
+
+    monkeypatch.setattr(spec.tool_cls, "run", run)
+    result = await server.invoke(_reader(), "describe_query_language", {})
+    assert AWS_KEY not in json.dumps(result.payload())
+
+
+async def test_mcp_hides_extracted_values_of_a_credential_check(quiet, monkeypatch):
+    spec = tool_spec("explain_finding")
+
+    async def run(_self, _ctx, _args):
+        return ToolResult(
+            summary="found",
+            data={
+                "check": {"template_id": "github-token-exposure", "tags": []},
+                "evidence": {"extracted": ["opaque-value"]},
+            },
+        )
+
+    monkeypatch.setattr(spec.tool_cls, "run", run)
+    result = await server.invoke(
+        _reader(), "explain_finding", {"target": "example.com", "finding": "x"}
+    )
+    assert result.data["evidence"]["extracted"] == [MASK]

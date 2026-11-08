@@ -7,29 +7,22 @@ import time
 import uuid
 from typing import Any
 
-from app.services.ask.verdict import hides_values
 from mcp import registry, server, telemetry
 from mcp.capabilities import Capability
 from mcp.context import TokenIdentity, ToolContext
 from mcp.errors import McpError
 from shared.definitions.ask import ASK_CLIENT, TOOL_TEXT_CHARS, TraceStatus
 from shared.definitions.asset_query import VULN_QUERY
-from shared.definitions.compare import WATCHED_FIELDS
 from shared.definitions.surface import SurfaceDimension
 from shared.models.ask import TraceStep
 from shared.models.user import User
 from shared.services.ai.agent import AgentTool
 from shared.services.asset_query import QuerySyntaxError
 from shared.services.asset_query.parser import tokenize
-from shared.services.issue_tracking.body import mask_secrets
-from shared.services.scan_resolve import MASK, redact_credentials
+from shared.services.tool_output import hide_extracted as _hide_extracted
+from shared.services.tool_output import reads_secret_values, scrub
 
 EXCLUDED = frozenset({"list_projects"})
-ROW_TOOLS = frozenset({"query_assets", "compare_runs"})
-VALUE_GROUP = ("group_assets", "value")
-EXPLAIN_TOOL = "explain_finding"
-COMPARE_TOOL = "compare_runs"
-EXTRACTED_FIELD = "extracted_results"
 EXTRACTED_QUERY_FIELD = "extracted"
 COUNT_KEYS = ("total", "count", "occurrences", "matched")
 MAX_DETAIL = 200
@@ -112,9 +105,7 @@ def refusal(name: str, args: dict) -> str | None:
         if args.get("group_by") == EXTRACTED_QUERY_FIELD:
             return SECRETS_REFUSED
         return _finding_query_refusal(args.get("query"))
-    if dimension != SurfaceDimension.SECRETS.value:
-        return None
-    if name in ROW_TOOLS or (name, args.get("group_by")) == VALUE_GROUP:
+    if reads_secret_values(name, args):
         return SECRETS_REFUSED
     return None
 
@@ -123,44 +114,10 @@ def reads_secrets(name: str, args: dict) -> bool:
     return refusal(name, args) is not None
 
 
-def scrub(value: Any) -> Any:
-    """Mask every string leaf of a tool payload."""
-    if isinstance(value, str):
-        return mask_secrets(redact_credentials(value))
-    if isinstance(value, list):
-        return [scrub(v) for v in value]
-    if isinstance(value, dict):
-        return {k: scrub(v) for k, v in value.items()}
-    return value
-
-
-def _extracted_label() -> str:
-    fields = WATCHED_FIELDS[SurfaceDimension.VULNERABILITIES.value]
-    return next(f.label for f in fields if f.name == EXTRACTED_FIELD)
-
-
 def hide_extracted(name: str, payload: dict) -> dict:
     """Replace extracted values a credential check found, and every compared one."""
-    data = payload.get("data")
-    if not isinstance(data, dict):
-        return payload
-    if name == EXPLAIN_TOOL:
-        check = data.get("check") or {}
-        evidence = data.get("evidence") or {}
-        shown = evidence.get("extracted")
-        if shown and hides_values(
-            str(check.get("template_id") or ""), check.get("tags") or []
-        ):
-            evidence["extracted"] = [MASK for _ in shown]
-    elif name == COMPARE_TOOL:
-        extracted = _extracted_label()
-        for change in data.get("changes") or []:
-            for field in change.get("fields") or []:
-                if field.get("field") != extracted:
-                    continue
-                for side in ("was", "now"):
-                    if field.get(side):
-                        field[side] = MASK
+    if isinstance(payload.get("data"), dict):
+        payload["data"] = _hide_extracted(name, payload["data"])
     return payload
 
 
