@@ -9,7 +9,7 @@ class HttpProbeConfig(StageConfig):
     enabled: bool = Field(
         default=True,
         title="Probe HTTP services",
-        description="Fingerprint every host and port for live HTTP, technologies and titles.",
+        description="Probe every name and port for HTTP, technologies and titles.",
     )
 
 

@@ -19,7 +19,7 @@ _LIVENESS_PORTS = "80,443,22,21,25,53,110,143,3389,3306,8080,8443,8000,8888"
 class HostDiscoveryStage(Stage):
     name = "host_discovery"
     title = "Host Discovery"
-    description = "Sweep a netblock for responsive hosts before port scanning."
+    description = "Sweep a netblock for addresses that answer before port scanning."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({"seed_resolution"})
     group = StageGroup.ADDRESSES.value

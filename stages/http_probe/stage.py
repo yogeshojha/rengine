@@ -111,9 +111,7 @@ class _Mentions:
 class HttpProbeStage(Stage):
     name = "http_probe"
     title = "HTTP Probe"
-    description = (
-        "Fingerprint every host and port for live HTTP, technologies and titles."
-    )
+    description = "Probe every name and port for HTTP, technologies and titles."
     phase = Phase.EXPANSION.value
     depends_on = frozenset({_PORT_SCAN, "vhost"})
     group = StageGroup.WEB.value
