@@ -1,4 +1,4 @@
-"""Links a result to the target reNgine already tracks for that value."""
+"""The tracked target for a looked-up value."""
 
 from __future__ import annotations
 

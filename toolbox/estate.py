@@ -1,4 +1,4 @@
-"""What reNgine already holds about a looked-up value."""
+"""Project rows for a looked-up value."""
 
 from __future__ import annotations
 
@@ -203,7 +203,7 @@ def known_hosts_sync(
 async def classify_domains(
     session, project_id: uuid.UUID | None, names: list[str]
 ) -> DomainEstate:
-    """For a set of registrable domains, which are already targets or seen as hosts."""
+    """Which registrable domains are targets or seen as hosts."""
     if project_id is None or not names:
         return DomainEstate()
     values = list(dict.fromkeys(names))
