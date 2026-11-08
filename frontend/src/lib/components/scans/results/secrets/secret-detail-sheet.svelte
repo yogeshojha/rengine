@@ -7,6 +7,7 @@
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import FileCode from '@lucide/svelte/icons/file-code';
 	import Info from '@lucide/svelte/icons/info';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
@@ -27,13 +28,23 @@
 	interface Props {
 		scanId: string;
 		row: SecretDetail | null;
+		failed?: boolean;
+		onRetry?: () => void;
 		open: boolean;
 		onOpenChange: (open: boolean) => void;
 		/** where focus goes when the sheet closes; the table hands it to its cursor row */
 		onCloseAutoFocus?: (e: Event) => void;
 	}
 
-	let { scanId, row, open, onOpenChange, onCloseAutoFocus }: Props = $props();
+	let {
+		scanId,
+		row,
+		failed = false,
+		onRetry,
+		open,
+		onOpenChange,
+		onCloseAutoFocus
+	}: Props = $props();
 
 	const DT = 'text-2xs tracking-wide text-muted-foreground uppercase';
 	const WEB = SURFACE[SurfaceDimension.WEB_ASSETS];
@@ -102,6 +113,14 @@
 
 			<ScrollArea class="min-h-0 flex-1">
 				<div class="flex flex-col gap-6 px-5 py-4">
+					{#if failed}
+						<div class="flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5">
+							<span class="flex items-center gap-2 text-sm">
+								<TriangleAlert class="size-4 shrink-0 text-warning" /> Secret not loaded
+							</span>
+							<Button variant="outline" size="sm" onclick={() => onRetry?.()}>Retry</Button>
+						</div>
+					{/if}
 					<section class="flex flex-col gap-2.5">
 						<div class="flex items-center justify-between gap-2">
 							<SectionHead icon={KeyRound} title="Value" />

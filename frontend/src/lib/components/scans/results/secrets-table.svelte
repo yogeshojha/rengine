@@ -130,6 +130,7 @@
 	let groupFailed = $state(false);
 
 	let selected = $state<SecretDetail | null>(null);
+	let detailFailed = $state(false);
 	let drawerOpen = $state(false);
 	let barH = $state(0);
 	const selection = new RowSelection<SecretRead>();
@@ -448,10 +449,14 @@
 
 	async function openRow(row: SecretRead) {
 		drawerOpen = true;
+		detailFailed = false;
 		selected = { ...row, context: null, sightings_shown: [], sightings_truncated: false };
 		try {
-			selected = await secretsApi.detail(projectId, scanId, row.id);
-		} catch {}
+			const detail = await secretsApi.detail(projectId, scanId, row.id);
+			if (selected?.id === row.id) selected = detail;
+		} catch {
+			if (selected?.id === row.id) detailFailed = true;
+		}
 	}
 
 	const rows = new RowCursor('data-secret-row-index');
@@ -667,6 +672,8 @@
 <SecretDetailSheet
 	{scanId}
 	row={selected}
+	failed={detailFailed}
+	onRetry={() => selected && void openRow(selected)}
 	open={drawerOpen}
 	onCloseAutoFocus={rows.restore}
 	onOpenChange={(value) => {
