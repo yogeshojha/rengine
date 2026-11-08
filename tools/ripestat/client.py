@@ -22,6 +22,10 @@ class RIPEStatInvalidResourceError(RIPEStatAPIError):
     """RIPEstat refused the resource."""
 
 
+def _transport_error(endpoint: str, exc: httpx.HTTPError) -> RIPEStatAPIError:
+    return RIPEStatAPIError(f"RIPEstat did not answer {endpoint}: {type(exc).__name__}")
+
+
 class RIPEStatClient:
     """Low-level HTTP client for RIPEstat API."""
 
@@ -53,7 +57,14 @@ class RIPEStatClient:
             msg = f"RIPEstat returned {resp.status_code} for {endpoint}"
             raise RIPEStatAPIError(msg)
 
-        body = resp.json()
+        try:
+            body = resp.json()
+        except ValueError:
+            msg = f"RIPEstat returned an unreadable body for {endpoint}"
+            raise RIPEStatAPIError(msg) from None
+        if not isinstance(body, dict):
+            msg = f"Unexpected response structure from {endpoint}"
+            raise RIPEStatAPIError(msg)
 
         # RIPEstat wraps errors in status/status_code fields
         status_code = body.get("status_code", 200)
@@ -73,67 +84,47 @@ class RIPEStatClient:
     # fastapi async methods
 
     async def searchcomplete(self, query: str) -> dict[str, Any]:
-        async with get_async_client() as client:
-            resp = await client.get(
-                f"{BASE_URL}/searchcomplete/data.json",
-                params=self._build_params(query),
-            )
-        return self._handle_response(resp, "searchcomplete")
+        endpoint = "searchcomplete"
+        try:
+            async with get_async_client() as client:
+                resp = await client.get(
+                    f"{BASE_URL}/{endpoint}/data.json",
+                    params=self._build_params(query),
+                )
+        except httpx.HTTPError as e:
+            raise _transport_error(endpoint, e) from None
+        return self._handle_response(resp, endpoint)
 
     # celery sync methods
 
+    def _get_sync(self, endpoint: str, resource: str) -> dict[str, Any]:
+        try:
+            with self._egress() as client:
+                resp = client.get(
+                    f"{BASE_URL}/{endpoint}/data.json",
+                    params=self._build_params(resource),
+                )
+        except httpx.HTTPError as e:
+            raise _transport_error(endpoint, e) from None
+        return self._handle_response(resp, endpoint)
+
     def announced_prefixes_sync(self, asn: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/announced-prefixes/data.json",
-                params=self._build_params(asn),
-            )
-        return self._handle_response(resp, "announced-prefixes")
+        return self._get_sync("announced-prefixes", asn)
 
     def asn_neighbours_sync(self, asn: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/asn-neighbours/data.json",
-                params=self._build_params(asn),
-            )
-        return self._handle_response(resp, "asn-neighbours")
+        return self._get_sync("asn-neighbours", asn)
 
     def as_overview_sync(self, asn: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/as-overview/data.json",
-                params=self._build_params(asn),
-            )
-        return self._handle_response(resp, "as-overview")
+        return self._get_sync("as-overview", asn)
 
     def network_info_sync(self, ip: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/network-info/data.json",
-                params=self._build_params(ip),
-            )
-        return self._handle_response(resp, "network-info")
+        return self._get_sync("network-info", ip)
 
     def abuse_contact_sync(self, resource: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/abuse-contact-finder/data.json",
-                params=self._build_params(resource),
-            )
-        return self._handle_response(resp, "abuse-contact-finder")
+        return self._get_sync("abuse-contact-finder", resource)
 
     def prefix_overview_sync(self, prefix: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/prefix-overview/data.json",
-                params=self._build_params(prefix),
-            )
-        return self._handle_response(resp, "prefix-overview")
+        return self._get_sync("prefix-overview", prefix)
 
     def related_prefixes_sync(self, prefix: str) -> dict[str, Any]:
-        with self._egress() as client:
-            resp = client.get(
-                f"{BASE_URL}/related-prefixes/data.json",
-                params=self._build_params(prefix),
-            )
-        return self._handle_response(resp, "related-prefixes")
+        return self._get_sync("related-prefixes", prefix)

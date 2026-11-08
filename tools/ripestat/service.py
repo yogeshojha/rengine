@@ -1,8 +1,10 @@
 """RIPEstat service — structured BGP data with caching."""
 
+import uuid
 from datetime import timedelta
 
 from sqlalchemy import delete
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
@@ -113,21 +115,26 @@ class RIPEStatService:
         result_count: int,
     ) -> None:
         now = utc_now()
-        existing = self._get_query_log_sync(session, lookup_type, query_value)
-        if existing:
-            existing.result_count = result_count
-            existing.queried_at = now
-            existing.updated_at = now
-            session.add(existing)
-        else:
-            session.add(
-                RIPEStatQueryLog(
-                    lookup_type=lookup_type.value,
-                    query_value=query_value,
-                    result_count=result_count,
-                    queried_at=now,
-                )
+        session.execute(
+            pg_insert(RIPEStatQueryLog)
+            .values(
+                id=uuid.uuid4(),
+                lookup_type=lookup_type.value,
+                query_value=query_value,
+                result_count=result_count,
+                queried_at=now,
+                created_at=now,
+                updated_at=now,
             )
+            .on_conflict_do_update(
+                constraint="uq_ripestat_query_log_lookup",
+                set_={
+                    "result_count": result_count,
+                    "queried_at": now,
+                    "updated_at": now,
+                },
+            )
+        )
 
     async def search_asns(self, query: str) -> list[SearchASN]:
         """Organization name -> autonomous systems. Not cached; a free-text search."""
