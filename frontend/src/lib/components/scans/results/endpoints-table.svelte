@@ -1017,14 +1017,14 @@
 			catalog
 		});
 	}
-	async function sendBranch(node: TreeNode, connectorId: string, kind: ActionKind) {
+	function sendBranch(node: TreeNode, connectorId: string, kind: ActionKind) {
 		const filter: EndpointFilter = {
 			...treeFilter,
 			host: isMerged ? (treeFilter.host ?? null) : node.host,
 			dir_path: node.kind === 'host' ? null : node.path,
 			subtree: true
 		};
-		await handoff(connectorId, { kind, filter, limit: MAX_HANDOFF });
+		return handoff(connectorId, { kind, filter, limit: MAX_HANDOFF });
 	}
 	function sendEndpoint(e: Endpoint, connectorId: string, kind: ActionKind) {
 		return handoff(connectorId, { kind, endpoint_ids: [e.id] });

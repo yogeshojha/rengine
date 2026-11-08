@@ -22,7 +22,7 @@
 	} from '$lib/config/endpoints';
 	import { bracketed } from '$lib/utilities/net';
 	import type { HostBrief, ParamStat } from '$lib/utilities/endpoints';
-	import type { Connector, ConnectorSpec } from '$lib/types/connector';
+	import type { Connector, ConnectorSpec, HandoffResult } from '$lib/types/connector';
 
 	interface Props {
 		host: string;
@@ -37,7 +37,7 @@
 		onCopy: () => void;
 		onWordlist: () => void;
 		onVerify?: () => void;
-		onSend?: (connectorId: string, kind: ActionKind) => Promise<void> | void;
+		onSend?: (connectorId: string, kind: ActionKind) => Promise<HandoffResult | null>;
 		onAcross: () => void;
 	}
 
