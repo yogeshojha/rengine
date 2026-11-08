@@ -69,6 +69,9 @@ def evaluate_scan(scan_id: str, include_ai: bool = True, digest: bool = False) -
             session.rollback()
             logger.info("interest evaluation yielded to a running scan", scan=scan_id)
             return {"skipped": "busy"}
+        except Exception:
+            session.rollback()
+            raise
         finally:
             if digest:
                 _digest(session, scan, scored=scored)
