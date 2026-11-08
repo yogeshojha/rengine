@@ -43,6 +43,7 @@ from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
 from shared.services.asset_query import (
     NO_JIT,
     QueryScope,
+    lead_cache,
     vuln_corroborated_ids,
     vuln_evidence,
     vuln_suppressed,
@@ -115,6 +116,13 @@ _FILTERS: dict[str, str] = {
     "kev": "is_kev",
     "ransomware": "kev_ransomware",
 }
+
+_FACETS = """(SELECT json_object_agg(coalesce(severity, ''), n)
+   FROM (SELECT severity, count(*) AS n FROM agg WHERE {where} GROUP BY severity) f
+) AS facets"""
+
+_PAST_END = """{agg}
+SELECT (SELECT count(*) FROM agg WHERE {where}) AS matched, {facets}"""
 
 _INDEX_TOTAL = """
 SELECT count(DISTINCT cve) FROM (
@@ -235,6 +243,31 @@ class CveExposureService:
         software, findings = await self._scopes(project_id)
         size = max(1, min(size, MAX_INDEX_ROWS))
         page = max(1, page)
+        args = (q, page, size, sort, direction, severity, kev, ransomware, evidence)
+        return await lead_cache.cached(
+            self.session,
+            name="cves:index",
+            scans=tuple(dict.fromkeys((*software.ids, *findings.ids))),
+            facets=lead_cache.fingerprint(project_id, *args),
+            model=CveIndex,
+            build=lambda: self._index(software, findings, *args),
+            ttl=lead_cache.SEARCH_TTL_SECONDS,
+        )
+
+    async def _index(
+        self,
+        software: QueryScope,
+        findings: QueryScope,
+        q: str,
+        page: int,
+        size: int,
+        sort: str,
+        direction: str,
+        severity: str | None,
+        kev: bool,
+        ransomware: bool,
+        evidence: Sequence[str],
+    ) -> CveIndex:
         params = self._params(software, findings, q)
         rungs = [e for e in evidence if e in EVIDENCE_RANK]
 
@@ -257,41 +290,39 @@ class CveExposureService:
             dir="DESC" if desc else "ASC", adir="ASC" if desc else "DESC"
         )
         rank = _case(SEVERITY_RANK, "severity")
+        facet_sql = _FACETS.format(where=facet_where)
 
         await self.session.execute(text(NO_JIT))
         rows = (
             await self.session.execute(
                 text(
-                    f"{_AGG_SQL}\nSELECT *, {rank} AS severity_rank, count(*) OVER () AS matched"
+                    f"{_AGG_SQL}\nSELECT *, {rank} AS severity_rank,"
+                    f" count(*) OVER () AS matched, {facet_sql}"
                     f"\n  FROM agg WHERE {row_where}"
                     f"\n ORDER BY {order}, cve LIMIT :size OFFSET :offset"
                 ),
                 {**params, "size": size, "offset": (page - 1) * size},
             )
         ).all()
-        total = int(rows[0].matched) if rows else 0
-        if not rows and page > 1:
-            total = int(
-                await self.session.scalar(
-                    text(f"{_AGG_SQL}\nSELECT count(*) FROM agg WHERE {row_where}"),
+        if rows:
+            total, facets = int(rows[0].matched), rows[0].facets
+        else:
+            empty = (
+                await self.session.execute(
+                    text(
+                        _PAST_END.format(
+                            agg=_AGG_SQL, where=row_where, facets=facet_sql
+                        )
+                    ),
                     params,
                 )
-                or 0
-            )
-        facets = (
-            await self.session.execute(
-                text(
-                    f"{_AGG_SQL}\nSELECT severity, count(*) AS n"
-                    f"\n  FROM agg WHERE {facet_where} GROUP BY severity"
-                ),
-                params,
-            )
-        ).all()
+            ).one()
+            total, facets = int(empty.matched or 0), empty.facets
 
         counts = dict.fromkeys(SEVERITY_RANK, 0)
-        for row in facets:
-            if row.severity in counts:
-                counts[row.severity] = int(row.n or 0)
+        for key, n in (facets or {}).items():
+            if key in counts:
+                counts[key] = int(n or 0)
         return CveIndex(
             items=[
                 CveIndexRow(
