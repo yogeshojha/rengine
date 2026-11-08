@@ -8,7 +8,9 @@ from datetime import timedelta
 from sqlalchemy import case, exists, func, literal_column, not_, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.datasets import DatasetService
 from shared.definitions.asset_query import VULN_FLAGS, VULN_QUERY
+from shared.definitions.datasets import DATASETS_BY_KIND
 from shared.definitions.threat_intel import (
     BANDS_BY_KEY,
     EXPLOIT_BANDS,
@@ -144,15 +146,25 @@ class ThreatIntelService:
                 )
             ).all()
         }
-        counted = " UNION ALL ".join(
-            f"SELECT '{spec.kind}' AS k, count(*) AS n FROM {spec.rows_table}"  # noqa: S608
-            for spec in FEEDS
-        )
-        counts = dict((await self.session.execute(text(counted))).all())
+        datasets = DatasetService(self.session)
+        specs = [DATASETS_BY_KIND[spec.kind] for spec in FEEDS]
+        loading = await datasets._loading(specs)
+        counts: dict[str, int] = {}
+        for spec in specs:
+            counted = None if spec.kind in loading else await datasets._rows(spec)
+            if counted is None:
+                loading.add(spec.kind)
+                ledger = rows.get(spec.kind)
+                counted = int(ledger.rows or 0) if ledger else 0
+            counts[spec.kind] = counted
         out: list[ThreatFeedRead] = []
         for spec in FEEDS:
             row = rows.get(spec.kind)
-            status = feed_status(row, int(counts.get(spec.kind, 0)))
+            status = (
+                FeedStatus.SYNCING.value
+                if spec.kind in loading
+                else feed_status(row, int(counts.get(spec.kind, 0)))
+            )
             out.append(
                 ThreatFeedRead(
                     kind=spec.kind,
