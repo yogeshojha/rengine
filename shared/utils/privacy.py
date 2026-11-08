@@ -1,6 +1,6 @@
 import re
 
-from sqlalchemy import case, func, literal
+from sqlalchemy import case, func, literal_column
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
@@ -140,27 +140,34 @@ def registrant_key(value: str | None) -> str:
     return "".join(words)
 
 
+def _text(value: str):
+    return literal_column("'" + value.replace("'", "''") + "'")
+
+
 def redacted_name_sql(column):
     """The SQL half of is_redacted_name."""
-    collapsed = func.btrim(func.regexp_replace(func.lower(column), r"\s+", " ", "g"))
+    collapsed = func.btrim(
+        func.regexp_replace(func.lower(column), _text(r"\s+"), _text(" "), _text("g"))
+    )
     markers = "|".join(sorted(_REDACTED_NAME_MARKERS))
-    return func.coalesce(collapsed, "").in_(
-        sorted(_NON_IDENTIFYING_EXACT)
-    ) | collapsed.op("~")(markers)
+    return func.coalesce(collapsed, _text("")).in_(
+        [_text(v) for v in sorted(_NON_IDENTIFYING_EXACT)]
+    ) | collapsed.op("~")(_text(markers))
 
 
+# rendered byte for byte as ix_whois_records_registrant_key
 def registrant_key_sql(column):
     """The SQL half of registrant_key."""
     suffixes = "|".join(CORPORATE_SUFFIXES)
     key = func.regexp_replace(
         func.regexp_replace(
             func.lower(column),
-            f"((^|[^a-z0-9]+)({suffixes}))+[^a-z0-9]*$",
-            "",
-            "g",
+            _text(f"((^|[^a-z0-9]+)({suffixes}))+[^a-z0-9]*$"),
+            _text(""),
+            _text("g"),
         ),
-        "[^a-z0-9]",
-        "",
-        "g",
+        _text("[^a-z0-9]"),
+        _text(""),
+        _text("g"),
     )
-    return case((redacted_name_sql(column), literal("")), else_=key)
+    return case((redacted_name_sql(column), _text("")), else_=key)
