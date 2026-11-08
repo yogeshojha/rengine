@@ -10,7 +10,12 @@ from uuid import UUID
 from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session
 
-from shared.definitions.domain_posture import MAX_ZONE_LENGTH
+from shared.definitions.domain_posture import (
+    MAX_POLICY_LENGTH,
+    MAX_RECORD_LENGTH,
+    MAX_TXT_LENGTH,
+    MAX_ZONE_LENGTH,
+)
 from shared.models.domain_posture import DomainPosture
 from shared.models.subdomain import Subdomain
 from shared.services.domain_posture.evaluate import Posture
@@ -43,24 +48,26 @@ def row_for(
         zone=rec.zone[:MAX_ZONE_LENGTH],
         parent=rec.parent[:MAX_ZONE_LENGTH] if rec.parent else None,
         hosts=hosts,
-        spf=_short(posture.spf, 4000),
+        spf=_short(posture.spf, MAX_TXT_LENGTH),
         spf_all=posture.spf_all,
         spf_lookups=posture.spf_lookups,
-        dmarc=_short(posture.dmarc, 4000),
-        dmarc_policy=_short(posture.dmarc_policy, 16),
-        dmarc_subdomain_policy=_short(posture.dmarc_subdomain_policy, 16),
+        dmarc=_short(posture.dmarc, MAX_TXT_LENGTH),
+        dmarc_policy=_short(posture.dmarc_policy, MAX_POLICY_LENGTH),
+        dmarc_subdomain_policy=_short(
+            posture.dmarc_subdomain_policy, MAX_POLICY_LENGTH
+        ),
         dmarc_pct=posture.dmarc_pct,
         dmarc_rua=posture.dmarc_rua,
         dmarc_inherited=rec.dmarc_inherited,
         dkim_selectors=list(posture.dkim_selectors),
         dkim_key_bits=posture.dkim_key_bits,
-        mx=[strip_control(v)[:253] for v in rec.mx],
+        mx=[strip_control(v)[:MAX_ZONE_LENGTH] for v in rec.mx],
         null_mx=rec.null_mx,
-        mta_sts=_short(rec.mta_sts[0], 500) if rec.mta_sts else None,
+        mta_sts=_short(rec.mta_sts[0], MAX_RECORD_LENGTH) if rec.mta_sts else None,
         mta_sts_mode=posture.mta_sts_mode,
-        tls_rpt=_short(rec.tls_rpt[0], 500) if rec.tls_rpt else None,
+        tls_rpt=_short(rec.tls_rpt[0], MAX_RECORD_LENGTH) if rec.tls_rpt else None,
         dnssec=rec.dnssec,
-        caa=[strip_control(v)[:500] for v in rec.caa],
+        caa=[strip_control(v)[:MAX_RECORD_LENGTH] for v in rec.caa],
         posture_issues=posture.issues,
         posture_checked=posture.checked,
         evidence={k: strip_control(v) for k, v in posture.evidence.items()},
