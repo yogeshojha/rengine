@@ -418,7 +418,16 @@ def notify_digest(session: Session, scan: Scan, exposures: int = 0) -> None:
 
 
 def _dispatch_intel(scan: Scan) -> None:
-    dispatch_threat_intel(str(scan.id))
+    _dispatch(dispatch_threat_intel, str(scan.id))
+
+
+def _dispatch(send, *args) -> None:
+    try:
+        send(*args)
+    except Exception:
+        logger.warning(
+            "%s failed", getattr(send, "__name__", "dispatch"), exc_info=True
+        )
 
 
 def _match_software(session: Session, scan: Scan) -> None:
@@ -529,17 +538,17 @@ def _settle(session: Session, scan: Scan) -> None:
         logger.warning("scan deltas failed for scan %s", scan.id, exc_info=True)
     bump_sync([scan.target_id])
     if (scan.execution_config or {}).get(WATCH_HOST_KEY):
-        dispatch_watch_settle(str(scan.id))
-    dispatch_tripwire_settle(str(scan.id))
+        _dispatch(dispatch_watch_settle, str(scan.id))
+    _dispatch(dispatch_tripwire_settle, str(scan.id))
     if scan.scope == ScanScope.FOCUSED.value:
-        dispatch_investigate_settle(str(scan.id))
+        _dispatch(dispatch_investigate_settle, str(scan.id))
     elif scan.scope == ScanScope.FULL.value and not new_checks.is_follow_up(scan):
-        dispatch_investigate_rule(str(scan.id))
+        _dispatch(dispatch_investigate_rule, str(scan.id))
 
 
 def _check_source_ip(scan: Scan) -> None:
     if source_ip.wants_check(scan.source_ip, SourceIpPhase.END):
-        dispatch_source_ip_check(str(scan.id), SourceIpPhase.END.value)
+        _dispatch(dispatch_source_ip_check, str(scan.id), SourceIpPhase.END.value)
 
 
 def _admit_next(session: Session) -> None:
@@ -638,7 +647,7 @@ def finalize_scan_run(session: Session, scan: Scan) -> None:
                 new_checks_result(new_checks.result_of(session, scan)),
             )
         if scan.scope != ScanScope.FOCUSED.value:
-            dispatch_issue_observe(str(scan.id))
+            _dispatch(dispatch_issue_observe, str(scan.id))
             _dispatch_interest(session, scan)
         return
 
