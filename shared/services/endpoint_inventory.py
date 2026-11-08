@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select, update
+from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, Uuid, select, text
 from sqlalchemy.dialects.postgresql import insert
 
 from shared.definitions.endpoints import (
@@ -412,6 +413,55 @@ def _insert_rows(session: Session, rows: list[dict]) -> tuple[set[str], int]:
     return created, refused
 
 
+_ARRAY_TYPES = (
+    (Uuid, "uuid[]"),
+    (Boolean, "boolean[]"),
+    (Integer, "integer[]"),
+    (Float, "float8[]"),
+    (DateTime, "timestamptz[]"),
+    (JSON, "json[]"),
+)
+
+
+def _array_type(column) -> str:
+    for kind, name in _ARRAY_TYPES:
+        if isinstance(column.type, kind):
+            return name
+    return "text[]"
+
+
+def _array_value(column, value):
+    if isinstance(column.type, JSON):
+        return json.dumps(value)
+    if isinstance(column.type, Uuid) and value is not None:
+        return str(value)
+    return value
+
+
+def _update_by_id(session: Session, payload: list[dict]) -> None:
+    """One UPDATE for rows that change the same columns."""
+    table = Endpoint.__table__
+    names = ["id", *sorted(k for k in payload[0] if k != "id")]
+    columns = [table.c[name] for name in names]
+    arrays = ", ".join(
+        f"CAST(:{name} AS {_array_type(column)})"
+        for name, column in zip(names, columns, strict=True)
+    )
+    quoted = ", ".join(f'"{name}"' for name in names)
+    sets = ", ".join(f'"{name}" = v."{name}"' for name in names[1:])
+    statement = text(
+        f"UPDATE endpoints e SET {sets} FROM unnest({arrays}) AS v({quoted}) "  # noqa: S608
+        'WHERE e.id = v."id"'
+    )
+    session.execute(
+        statement,
+        {
+            name: [_array_value(column, row[name]) for row in payload]
+            for name, column in zip(names, columns, strict=True)
+        },
+    )
+
+
 def upsert(
     session: Session,
     *,
@@ -494,7 +544,7 @@ def upsert(
             shaped.setdefault(frozenset(changes), []).append({"id": row.id, **changes})
             result.updated += 1
         for payload in shaped.values():
-            session.execute(update(Endpoint), payload)
+            _update_by_id(session, payload)
 
     session.commit()
     return result
@@ -564,7 +614,7 @@ def verify(
                 )
             )
         if payload:
-            session.execute(update(Endpoint), payload)
+            _update_by_id(session, payload)
             result.updated += len(payload)
         result.responses_refused += _store_responses(session, responses)
     session.commit()
