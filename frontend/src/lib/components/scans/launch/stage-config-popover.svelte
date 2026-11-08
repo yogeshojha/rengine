@@ -7,7 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import StageFieldRow from '$lib/components/engines/stage-field.svelte';
-	import VulnPlan from '$lib/components/scans/vuln-plan.svelte';
+	import VulnPlan, { VULN_PLAN_FIELDS } from '$lib/components/scans/vuln-plan.svelte';
 	import { VULN_STAGE } from '$lib/config/vulnerabilities';
 	import { advancedFields, basicFields, type StageCatalogEntry } from '$lib/types/scan-engine';
 	import type { LaunchState } from './launch-state.svelte';
@@ -18,8 +18,6 @@
 	}
 
 	let { stage, launch }: Props = $props();
-
-	const VULN_PLAN_FIELDS = ['severities', 'template_sets'];
 
 	let advancedOpen = $state(false);
 

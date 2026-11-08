@@ -1,3 +1,9 @@
+<script lang="ts" module>
+	export const SEVERITIES_FIELD = 'severities';
+	export const SETS_FIELD = 'template_sets';
+	export const VULN_PLAN_FIELDS: readonly string[] = [SEVERITIES_FIELD, SETS_FIELD];
+</script>
+
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -46,8 +52,8 @@
 	let current = $derived(
 		merged
 			? {
-					severities: [...((merged.severities as string[]) ?? [])],
-					template_sets: [...((merged.template_sets as string[]) ?? [])]
+					severities: [...((merged[SEVERITIES_FIELD] as string[]) ?? [])],
+					template_sets: [...((merged[SETS_FIELD] as string[]) ?? [])]
 				}
 			: null
 	);
@@ -92,7 +98,7 @@
 		const base = current;
 		if (!base) return;
 		onField(
-			'severities',
+			SEVERITIES_FIELD,
 			base.severities.includes(value)
 				? base.severities.filter((s) => s !== value)
 				: [...base.severities, value].sort((a, b) => severityRank(a) - severityRank(b))
@@ -103,7 +109,7 @@
 		const base = current;
 		if (!base) return;
 		onField(
-			'template_sets',
+			SETS_FIELD,
 			base.template_sets.includes(key)
 				? base.template_sets.filter((s) => s !== key)
 				: [...base.template_sets, key]
