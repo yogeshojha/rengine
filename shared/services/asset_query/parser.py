@@ -354,6 +354,10 @@ class _Parser:
                 msg = "Too many free-text words."
                 hint = f"Use at most {MAX_FREE_TERMS}, or narrow with a field."
                 raise QuerySyntaxError(msg, token.start, token.end, hint)
+            if not any(c.isalnum() for c in token.text):
+                msg = "A free-text word needs a letter or digit."
+                hint = "Search punctuation inside a field value."
+                raise QuerySyntaxError(msg, token.start, token.end, hint)
             return Term(token.text, token.quoted, token.start, token.end)
         if token.kind == "CMP":
             return Compare(
