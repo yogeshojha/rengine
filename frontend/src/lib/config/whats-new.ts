@@ -24,7 +24,7 @@ export const KIND_LABELS: Record<NewKindKey, string> = {
 	[NewKind.OUT_OF_SCOPE]: 'Out of scope',
 	[NewKind.BOUNTY_TABLE]: 'Bounty table',
 	[NewKind.RULES]: 'Rules',
-	[NewKind.CERT_HOST]: 'Certificate hosts',
+	[NewKind.CERT_HOST]: 'Certificate names',
 	[NewKind.TARGET]: 'Targets'
 };
 
@@ -35,7 +35,7 @@ export const KIND_SUMMARY: Record<NewKindKey, [string, string]> = {
 	[NewKind.OUT_OF_SCOPE]: ['{n} asset left scope', '{n} assets left scope'],
 	[NewKind.BOUNTY_TABLE]: ['Bounty table changed', '{n} bounty changes'],
 	[NewKind.RULES]: ['Rules changed', '{n} rule changes'],
-	[NewKind.CERT_HOST]: ['{n} new host in certificate logs', '{n} new hosts in certificate logs'],
+	[NewKind.CERT_HOST]: ['{n} new name in certificate logs', '{n} new names in certificate logs'],
 	[NewKind.TARGET]: ['{n} target', '{n} targets']
 };
 
