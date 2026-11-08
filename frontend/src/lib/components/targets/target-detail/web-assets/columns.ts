@@ -3,7 +3,7 @@ import type { TableColumn } from '$lib/components/scans/results/table/columns';
 export const ASSET_LEAD_COLUMNS: TableColumn[] = [
 	{
 		key: 'name',
-		label: 'Host',
+		label: 'Web asset',
 		sort: 'name',
 		width: 'min-w-0 flex-1 contain-inline-size sm:min-w-56'
 	},

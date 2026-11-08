@@ -59,7 +59,7 @@
 	const [HOST_COL, STATUS_COL] = ASSET_LEAD_COLUMNS;
 
 	async function copyHost() {
-		if (await writeClipboard(asset.name)) toast.success('Host copied');
+		if (await writeClipboard(asset.name)) toast.success('Web asset copied');
 	}
 </script>
 
@@ -246,7 +246,7 @@
 						{/snippet}
 					</DropdownMenu.Item>
 					<DropdownMenu.Item onclick={copyHost}>
-						<Copy class="size-4" /> Copy host
+						<Copy class="size-4" /> Copy web asset
 					</DropdownMenu.Item>
 					{#if asset.url}
 						{@const url = asset.url}

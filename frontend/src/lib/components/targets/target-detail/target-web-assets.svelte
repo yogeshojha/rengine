@@ -149,7 +149,7 @@
 			<InputGroup.Addon><Search /></InputGroup.Addon>
 			<InputGroup.Input
 				bind:value={search}
-				placeholder="Search host, title or address"
+				placeholder="Search web asset, title or address"
 				aria-label="Search web assets"
 			/>
 		</InputGroup.Root>
