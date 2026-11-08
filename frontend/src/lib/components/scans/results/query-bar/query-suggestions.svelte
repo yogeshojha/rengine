@@ -7,6 +7,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Kbd } from '$lib/components/ui/kbd';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import Hint from '$lib/components/hint.svelte';
 	import type { QueryStarter } from '$lib/types/asset-query';
 	import type { Suggestion } from './suggest';
@@ -74,7 +75,7 @@
 	</p>
 {/snippet}
 
-<div class="max-h-[min(60vh,24rem)] overflow-y-auto">
+<ScrollArea class="[&_[data-slot=scroll-area-viewport]]:max-h-[min(60vh,24rem)]">
 	{#if showStarters}
 		<div class="grid gap-x-2 p-2 {split ? 'md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]' : ''}">
 			{#if recents.length}
@@ -184,7 +185,7 @@
 			{/each}
 		</div>
 	{/if}
-</div>
+</ScrollArea>
 
 <div
 	class="flex items-center gap-3 border-t bg-muted/30 px-3 py-1.5 text-2xs text-muted-foreground"

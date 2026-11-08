@@ -910,11 +910,11 @@
 			>
 		</EmptyState>
 	{:else if scansStore.isLoading && scans.length === 0}
-		<div class="@container/scans overflow-x-auto">
+		<ScrollArea orientation="horizontal" class="@container/scans">
 			<div class="w-full min-w-[720px]">
 				<TableSkeleton lead={skeletonColumns} actions={false} selectable />
 			</div>
-		</div>
+		</ScrollArea>
 	{:else if scans.length === 0 && filtered}
 		<Empty.Root class="py-16">
 			<Empty.Header><Empty.Title>No runs match</Empty.Title></Empty.Header>
@@ -939,7 +939,7 @@
 			{/if}
 		</Empty.Root>
 	{:else}
-		<div class="@container/scans overflow-x-auto">
+		<ScrollArea orientation="horizontal" class="@container/scans">
 			<div class="w-full min-w-[720px]" role="table" aria-label="Scans" {@attach cursor.track}>
 				<div
 					class="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
@@ -1014,7 +1014,7 @@
 					{/if}
 				{/each}
 			</div>
-		</div>
+		</ScrollArea>
 		<ResultsPagination
 			total={pagination.totalItems}
 			page={pagination.currentPage - 1}

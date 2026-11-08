@@ -5,6 +5,7 @@
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import StageFieldRow from '$lib/components/engines/stage-field.svelte';
 	import VulnPlan from '$lib/components/scans/vuln-plan.svelte';
 	import { VULN_STAGE } from '$lib/config/vulnerabilities';
@@ -56,59 +57,38 @@
 		{/snippet}
 	</Popover.Trigger>
 	<Popover.Content
-		class="max-h-(--bits-popover-content-available-height) w-[28rem] max-w-[calc(100vw-2rem)] overflow-y-auto p-3"
+		class="max-h-(--bits-popover-content-available-height) w-[28rem] max-w-[calc(100vw-2rem)] p-0"
 		align="start"
 	>
-		<div class="mb-2 flex items-start justify-between gap-3">
-			<div class="min-w-0">
-				<p class="text-sm font-medium">{stage.title}</p>
-				<p class="text-2xs text-muted-foreground">Applies to this scan.</p>
-			</div>
-			{#if changedFields.length}
-				<Button
-					variant="ghost"
-					size="sm"
-					class="h-6 shrink-0 gap-1 px-1.5 text-xs text-muted-foreground"
-					onclick={reset}
-				>
-					<RotateCcw class="size-3" /> Reset
-				</Button>
-			{/if}
-		</div>
-		{#if isVuln}
-			<VulnPlan
-				config={launch.effective[stage.name]}
-				onField={(field, value) => launch.setStageField(stage.name, field, value)}
-			/>
-		{/if}
-		{#if basic.length}
-			<div class="divide-y divide-border {isVuln ? 'mt-3 border-t' : ''}">
-				{#each basic as field (field.name)}
-					<StageFieldRow
-						{field}
-						stageName={stage.name}
-						value={launch.effective[stage.name]?.[field.name]}
-						onChange={(value) => launch.setStageField(stage.name, field.name, value)}
+		<ScrollArea
+			class="[&_[data-slot=scroll-area-viewport]]:max-h-(--bits-popover-content-available-height)"
+		>
+			<div class="p-3">
+				<div class="mb-2 flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<p class="text-sm font-medium">{stage.title}</p>
+						<p class="text-2xs text-muted-foreground">Applies to this scan.</p>
+					</div>
+					{#if changedFields.length}
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-6 shrink-0 gap-1 px-1.5 text-xs text-muted-foreground"
+							onclick={reset}
+						>
+							<RotateCcw class="size-3" /> Reset
+						</Button>
+					{/if}
+				</div>
+				{#if isVuln}
+					<VulnPlan
+						config={launch.effective[stage.name]}
+						onField={(field, value) => launch.setStageField(stage.name, field, value)}
 					/>
-				{/each}
-			</div>
-		{/if}
-		{#if advanced.length}
-			<Collapsible.Root bind:open={advancedOpen} class="mt-2 border-t border-border pt-1">
-				<Collapsible.Trigger
-					class="flex w-full items-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-				>
-					<ChevronRight class="size-3 transition-transform {advancedOpen ? 'rotate-90' : ''}" />
-					Advanced
-					<span class="font-normal tabular-nums">
-						{advanced.length} setting{advanced.length === 1 ? '' : 's'}{advancedChanged
-							? ` · ${advancedChanged} changed`
-							: ''}
-					</span>
-				</Collapsible.Trigger>
-				<Collapsible.Content>
-					<div class="divide-y divide-border">
-						{#each advanced as field (field.name)}
+				{/if}
+				{#if basic.length}
+					<div class="divide-y divide-border {isVuln ? 'mt-3 border-t' : ''}">
+						{#each basic as field (field.name)}
 							<StageFieldRow
 								{field}
 								stageName={stage.name}
@@ -117,8 +97,35 @@
 							/>
 						{/each}
 					</div>
-				</Collapsible.Content>
-			</Collapsible.Root>
-		{/if}
+				{/if}
+				{#if advanced.length}
+					<Collapsible.Root bind:open={advancedOpen} class="mt-2 border-t border-border pt-1">
+						<Collapsible.Trigger
+							class="flex w-full items-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+						>
+							<ChevronRight class="size-3 transition-transform {advancedOpen ? 'rotate-90' : ''}" />
+							Advanced
+							<span class="font-normal tabular-nums">
+								{advanced.length} setting{advanced.length === 1 ? '' : 's'}{advancedChanged
+									? ` · ${advancedChanged} changed`
+									: ''}
+							</span>
+						</Collapsible.Trigger>
+						<Collapsible.Content>
+							<div class="divide-y divide-border">
+								{#each advanced as field (field.name)}
+									<StageFieldRow
+										{field}
+										stageName={stage.name}
+										value={launch.effective[stage.name]?.[field.name]}
+										onChange={(value) => launch.setStageField(stage.name, field.name, value)}
+									/>
+								{/each}
+							</div>
+						</Collapsible.Content>
+					</Collapsible.Root>
+				{/if}
+			</div>
+		</ScrollArea>
 	</Popover.Content>
 </Popover.Root>
