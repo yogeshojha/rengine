@@ -1349,7 +1349,7 @@
 					variant="outline"
 					size="sm"
 					class="gap-2 text-xs font-normal"
-					aria-label="Group web assets that render the same page"
+					aria-label="Group web assets that show the same screenshot"
 				>
 					<Layers class="size-3.5" />
 					Group identical

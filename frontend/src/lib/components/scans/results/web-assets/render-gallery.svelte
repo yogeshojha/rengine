@@ -42,7 +42,7 @@
 {:else if failed}
 	<EmptyState
 		icon={TriangleAlert}
-		title="Renders not loaded"
+		title="Screenshots not loaded"
 		class="rounded-none border-0 bg-transparent py-16"
 	>
 		{#if onRetry}
@@ -60,7 +60,7 @@
 		<span class="text-xs text-muted-foreground">
 			<span class="font-medium text-foreground tabular-nums"
 				>{data.total_groups.toLocaleString()}</span
-			> renders
+			> screenshots
 		</span>
 		<span class="text-xs text-muted-foreground">
 			<span class="font-medium text-foreground tabular-nums">{data.grouped.toLocaleString()}</span> shared
@@ -101,13 +101,13 @@
 					<button
 						type="button"
 						onclick={() => onFilter(g.query)}
-						aria-label="Filter to the {g.count} web assets that render this page"
+						aria-label="Filter to the {g.count} web assets that show this screenshot"
 						class="group relative block aspect-video w-full overflow-hidden border-b border-border bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 					>
 						{#if url}
 							<img
 								src={url}
-								alt="Rendered page shared by {g.count} web assets"
+								alt="Screenshot shared by {g.count} web assets"
 								loading="lazy"
 								onerror={() => broken.add(g.hash)}
 								class="h-full w-full object-cover object-top"

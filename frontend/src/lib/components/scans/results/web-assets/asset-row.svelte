@@ -777,7 +777,7 @@
 							{@const hash = s.render_hash}
 							<SamePagePopover
 								count={s.render_count ?? 0}
-								title="{s.render_count} web assets render this page{acrossTargets(
+								title="{s.render_count} web assets show this screenshot{acrossTargets(
 									s.render_targets
 								)}"
 								load={() => hostsWithRender(hash)}
