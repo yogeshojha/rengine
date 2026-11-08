@@ -27,7 +27,7 @@
 
     {% if row.explainer %}
     <h5>Assessment</h5>
-    <p>{{ row.explainer }}</p>
+    <div class="md">{{ row.explainer|md|safe }}</div>
     {% endif %}
 
     {% if cfg.show_description and issue.description %}

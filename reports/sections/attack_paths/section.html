@@ -7,7 +7,7 @@
     <h3 class="finding__title">{{ path.title }}</h3>
   </div>
   <div class="finding__body">
-    <p>{{ item.detail }}</p>
+    <div class="md">{{ item.detail|md|safe }}</div>
     {% if show_evidence and path.evidence %}
     <h5>Observed</h5>
     <ul class="small">{% for line in path.evidence %}<li class="mono-break">{{ line }}</li>{% endfor %}</ul>
