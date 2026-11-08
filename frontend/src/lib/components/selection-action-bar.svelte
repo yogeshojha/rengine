@@ -9,17 +9,20 @@
 		noun: string;
 		nounPlural?: string;
 		onClear: () => void;
+		sticky?: boolean;
 		children: Snippet;
 	}
 
-	let { selectedCount, noun, nounPlural, onClear, children }: Props = $props();
+	let { selectedCount, noun, nounPlural, onClear, sticky = false, children }: Props = $props();
 
 	const label = $derived(selectedCount === 1 ? noun : (nounPlural ?? `${noun}s`));
 </script>
 
 <div
 	data-selection-bar={selectedCount > 0 ? '' : undefined}
-	class="fixed bottom-8 left-1/2 z-50 max-w-[calc(100vw-1rem)] -translate-x-1/2 {selectedCount > 0
+	class="{sticky
+		? 'sticky bottom-2 z-10 flex justify-center pt-1'
+		: 'fixed bottom-8 left-1/2 z-50 max-w-[calc(100vw-1rem)] -translate-x-1/2'} {selectedCount > 0
 		? ''
 		: 'pointer-events-none opacity-0'}"
 	role="region"

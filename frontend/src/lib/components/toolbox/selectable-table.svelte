@@ -6,13 +6,12 @@
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as InputGroup from '$lib/components/ui/input-group';
 	import { Button } from '$lib/components/ui/button';
-	import { Separator } from '$lib/components/ui/separator';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
+	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
 	import ResultCell from './result-cell.svelte';
 	import Search from '@lucide/svelte/icons/search';
 	import Copy from '@lucide/svelte/icons/copy';
-	import X from '@lucide/svelte/icons/x';
 	import Plus from '@lucide/svelte/icons/plus';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import { targetsApi } from '$lib/api/targets';
@@ -255,56 +254,41 @@
 	{/if}
 
 	{#if picked.size > 0}
-		<div class="sticky bottom-2 z-10 flex justify-center pt-1">
-			<div
-				class="flex flex-wrap items-center gap-0.5 gap-y-1 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-md"
-				role="region"
-				aria-label="Selection actions"
-			>
-				<span class="px-2.5 py-1 text-xs font-medium text-muted-foreground tabular-nums">
-					{picked.size} selected
-				</span>
-				<Separator orientation="vertical" class="mx-0.5 h-4 self-center" />
-				<Button variant="ghost" size="sm" onclick={copy}>
-					<Copy class="size-3.5" />
-					Copy
-				</Button>
-				{#if organization}
-					<label class="flex cursor-pointer items-center gap-1.5 px-2 text-xs">
-						<Checkbox bind:checked={group} aria-label="Group under {organization}" />
-						Group under <span class="max-w-40 truncate font-medium">{organization}</span>
-					</label>
-				{/if}
-				{#if project}
-					<LoadingButton size="sm" loading={adding} loadingLabel="Adding" onclick={add}>
-						<Plus class="size-3.5" />
-						Add {picked.size}
-						{noun(picked.size)}
-					</LoadingButton>
-				{:else}
-					<Hint text="No project selected">
-						{#snippet child(props)}
-							<span {...props} class="inline-flex">
-								<Button size="sm" disabled>
-									<Plus class="size-3.5" />
-									Add {picked.size}
-									{noun(picked.size)}
-								</Button>
-							</span>
-						{/snippet}
-					</Hint>
-				{/if}
-				<Separator orientation="vertical" class="mx-0.5 h-4 self-center" />
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					class="text-muted-foreground"
-					aria-label="Clear selection"
-					onclick={() => picked.clear()}
-				>
-					<X class="size-3.5" />
-				</Button>
-			</div>
-		</div>
+		<SelectionActionBar
+			sticky
+			selectedCount={picked.size}
+			noun="row"
+			onClear={() => picked.clear()}
+		>
+			<Button variant="ghost" size="sm" onclick={copy}>
+				<Copy class="size-3.5" />
+				Copy
+			</Button>
+			{#if organization}
+				<label class="flex cursor-pointer items-center gap-1.5 px-2 text-xs">
+					<Checkbox bind:checked={group} aria-label="Group under {organization}" />
+					Group under <span class="max-w-40 truncate font-medium">{organization}</span>
+				</label>
+			{/if}
+			{#if project}
+				<LoadingButton size="sm" loading={adding} loadingLabel="Adding" onclick={add}>
+					<Plus class="size-3.5" />
+					Add {picked.size}
+					{noun(picked.size)}
+				</LoadingButton>
+			{:else}
+				<Hint text="No project selected">
+					{#snippet child(props)}
+						<span {...props} class="inline-flex">
+							<Button size="sm" disabled>
+								<Plus class="size-3.5" />
+								Add {picked.size}
+								{noun(picked.size)}
+							</Button>
+						</span>
+					{/snippet}
+				</Hint>
+			{/if}
+		</SelectionActionBar>
 	{/if}
 </div>
