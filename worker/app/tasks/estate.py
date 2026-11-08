@@ -33,11 +33,11 @@ def _resolve(
     return bool(r.a or r.aaaa), list(r.a), list(r.aaaa), cname
 
 
-def _ports(ips: list[str]) -> list[int]:
+def _ports(ips: list[str], proxy_url: str | None) -> list[int]:
     if not ips:
         return []
     try:
-        records = NaabuClient(options=NaabuOptions()).passive(ips)
+        records = NaabuClient(options=NaabuOptions(proxy_url=proxy_url)).passive(ips)
     except NaabuError:
         return []
     return sorted({r["port"] for r in records})[:MAX_DOSSIER_PORTS]
@@ -55,7 +55,8 @@ def _registration(rdap: RDAPProvider, domain: str):
 @shared_task(name="app.tasks.estate.enrich", max_retries=0)
 def enrich(limit: int = MAX_ENRICH_PER_TICK) -> dict:
     dns = DnsxService(timeout=20, retry=1, query_timeout=3)
-    rdap = RDAPProvider(proxy_url=egress_proxy())
+    proxy_url = egress_proxy()
+    rdap = RDAPProvider(proxy_url=proxy_url)
     done = 0
     projects: set = set()
     with get_sync_session() as session:
@@ -67,7 +68,7 @@ def enrich(limit: int = MAX_ENRICH_PER_TICK) -> dict:
             row.a = a
             row.aaaa = aaaa
             row.cname = cname
-            row.ports = _ports(a + aaaa)
+            row.ports = _ports(a + aaaa, proxy_url)
             row.registered_at = registered_at
             row.registrar = registrar
             row.takeover_provider = (
@@ -76,8 +77,8 @@ def enrich(limit: int = MAX_ENRICH_PER_TICK) -> dict:
             row.checked_at = utc_now()
             row.updated_at = utc_now()
             projects.add(row.project_id)
+            session.commit()
             done += 1
-        session.commit()
         targets = (
             session.execute(
                 select(Target.id).where(Target.project_id.in_(projects))
