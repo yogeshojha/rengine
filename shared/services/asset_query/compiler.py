@@ -184,14 +184,14 @@ def _status(cmp: Compare):
     return matched
 
 
-def _new(ctx: QueryContext):
-    """The scope's new hosts, one materialized set however many terms read it."""
-    held = ctx.held.get("new")
+def _held_hosts(ctx: QueryContext, name: str, build):
+    """The scope's hosts meeting a condition, one materialized set however many terms read it."""
+    held = ctx.held.get(name)
     if held is None:
-        held = ctx.held["new"] = (
+        held = ctx.held[name] = (
             select(Subdomain.id)
-            .where(ctx.scope.match(Subdomain.scan_id), preds.is_new(ctx.scope))
-            .cte("new_hosts")
+            .where(ctx.scope.match(Subdomain.scan_id), build())
+            .cte(name)
             .prefix_with("MATERIALIZED")
         )
     return Subdomain.id.in_(select(held.c.id))
@@ -200,9 +200,9 @@ def _new(ctx: QueryContext):
 _FLAG_BUILDERS = {
     "live": lambda _ctx: preds.live(),
     "web": lambda _ctx: preds.answered(),
-    "new": _new,
+    "new": lambda ctx: _held_hosts(ctx, "new_hosts", lambda: preds.is_new(ctx.scope)),
     "resolved": lambda _ctx: preds.resolved(),
-    "auth": lambda _ctx: preds.auth(),
+    "auth": lambda ctx: _held_hosts(ctx, "auth_hosts", preds.auth),
     "cdn": lambda _ctx: Subdomain.is_cdn.is_(True),
     "cloud": lambda ctx: preds.asset_match(ctx.scope, HttpAsset.cdn_type == "cloud"),
     "waf": lambda _ctx: Subdomain.waf.isnot(None),
