@@ -92,9 +92,9 @@
 	<Sheet.Content side="right" class="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
 		<Sheet.Header class="border-b px-5 py-4">
 			<Sheet.Title>Past exports</Sheet.Title>
-			<Sheet.Description>
+			<Sheet.Description class="sr-only">
 				{scanId
-					? 'Exports from this run.'
+					? 'Exports from this scan.'
 					: targetId
 						? 'Exports from this target.'
 						: 'Exports across this project.'}
