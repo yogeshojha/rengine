@@ -63,6 +63,7 @@ class ContentDiscoveryStage(Stage):
         "max_hosts",
         "max_minutes",
     )
+    _index: endpoint_inventory.AssetIndex | None = None
 
     def run(self) -> StageResult:
         self._check_abort()
@@ -111,6 +112,7 @@ class ContentDiscoveryStage(Stage):
 
         rounds = max(1, -(-len(hosts) // _MAX_WORKERS))
         per_host = max(_MIN_HOST_BUDGET, (cfg.max_minutes * 60) // rounds)
+        self._index = endpoint_inventory.build_index(self.session, self.ctx.scan_id)
         sink = self.results_sink(
             SurfaceDimension.ENDPOINTS.value, self._write, rows=_SINK_ROWS
         )
@@ -169,6 +171,7 @@ class ContentDiscoveryStage(Stage):
             project_id=self.ctx.project_id,
             source=EndpointSource.FUZZ.value,
             observations=batch,
+            index=self._index,
             policy=NoisePolicy.protected(),
         )
         self.session.commit()
