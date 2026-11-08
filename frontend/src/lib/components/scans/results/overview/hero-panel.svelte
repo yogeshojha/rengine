@@ -335,7 +335,7 @@
 								onclick={() => onTab(WEB.tab, NEW_FILTER)}
 								aria-label="View {added.toLocaleString()} new {nounPlural}"
 							>
-								<ArrowUpRight class="size-3.5 text-success" />
+								<ArrowUpRight class="size-3.5 text-series" />
 								<span class="font-medium tabular-nums">{added.toLocaleString()}</span>
 								new
 							</button>
@@ -395,7 +395,7 @@
 									<span class="flex h-4 items-center gap-2 text-xs tabular-nums">
 										{#if (k.added ?? 0) > 0 || (k.gone ?? 0) > 0}
 											{#if (k.added ?? 0) > 0}
-												<span class="inline-flex items-center text-success">
+												<span class="inline-flex items-center text-series">
 													<ArrowUpRight class="size-3" />{k.added}
 												</span>
 											{/if}
