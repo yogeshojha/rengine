@@ -227,14 +227,23 @@ def _url():
     return func.coalesce(Subdomain.final_url, Subdomain.http_url)
 
 
-def _endpoint_count(scope: QueryScope):
-    return (
-        select(func.count())
-        .select_from(Endpoint)
-        .where(scope.match(Endpoint.scan_id), Endpoint.host == Subdomain.name)
-        .correlate(Subdomain)
-        .scalar_subquery()
+def _count_match(key, counted, cmp: Compare):
+    """`number_match` on a count read from one grouped set, zero for a key it lacks."""
+    keys = [c for c in counted.c if c.key != "n"]
+    coerce = int_coerce(cmp)
+    held = key.in_(select(*keys).where(number_match(counted.c.n, cmp, coerce)))
+    absent = and_(number_match(literal(0), cmp, coerce), negate(key.in_(select(*keys))))
+    return or_(held, absent)
+
+
+def _endpoint_count(cmp: Compare, scope: QueryScope):
+    counted = (
+        select(Endpoint.host.label("host"), func.count().label("n"))
+        .where(scope.match(Endpoint.scan_id), Endpoint.host.isnot(None))
+        .group_by(Endpoint.host)
+        .subquery("host_paths")
     )
+    return _count_match(Subdomain.name, counted, cmp)
 
 
 def _interest_kind(cmp: Compare):
@@ -302,16 +311,17 @@ def _infostealer(cmp: Compare):
     return negate(matched) if cmp.op is Op.NE else matched
 
 
-def _stealer_credentials():
-    return (
-        select(func.coalesce(func.sum(InfostealerLogin.credentials), 0))
-        .where(
-            InfostealerLogin.target_id == Subdomain.target_id,
-            InfostealerLogin.host == Subdomain.name,
+def _stealer_credentials(cmp: Compare):
+    counted = (
+        select(
+            InfostealerLogin.target_id.label("target_id"),
+            InfostealerLogin.host.label("host"),
+            func.coalesce(func.sum(InfostealerLogin.credentials), 0).label("n"),
         )
-        .correlate(Subdomain)
-        .scalar_subquery()
+        .group_by(InfostealerLogin.target_id, InfostealerLogin.host)
+        .subquery("host_credentials")
     )
+    return _count_match(tuple_(Subdomain.target_id, Subdomain.name), counted, cmp)
 
 
 def _ai(cmp: Compare, ctx: QueryContext):
@@ -368,7 +378,7 @@ _SUBDOMAIN_BUILDERS = {
     "time": lambda c, _ctx: number_match(
         Subdomain.response_time, c, scaled_coerce(c, FieldType.DURATION)
     ),
-    "paths": lambda c, ctx: number_match(_endpoint_count(ctx.scope), c, int_coerce(c)),
+    "paths": lambda c, ctx: _endpoint_count(c, ctx.scope),
     "favicon": lambda c, _ctx: string_match(Subdomain.favicon_hash, c),
     "screenshot": lambda c, _ctx: preds.renders_like(
         Subdomain.screenshot_phash, render_hash(c.values[0], c.start, c.end)
@@ -400,9 +410,7 @@ _SUBDOMAIN_BUILDERS = {
     "posture": lambda c, _ctx: _posture(c),
     "ai": _ai,
     STEALER_FIELD: lambda c, _ctx: _infostealer(c),
-    STEALER_CREDENTIALS: lambda c, _ctx: number_match(
-        _stealer_credentials(), c, int_coerce(c)
-    ),
+    STEALER_CREDENTIALS: lambda c, _ctx: _stealer_credentials(c),
     "cve": lambda c, ctx: preds.host_vuln(
         ctx.scope, json_array_match(Vulnerability.cve_ids, c)
     ),
