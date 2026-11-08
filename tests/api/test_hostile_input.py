@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import uuid
+
 import pytest
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.main import app as main_app
+from app.services.scan_compare import ScanCompareService
 from shared.definitions.asset_query import MAX_FACET_VALUE_LENGTH
+from shared.definitions.compare import MAX_DIMENSION_LENGTH
 from shared.definitions.surface import MAX_PAGE
 from shared.models.endpoint import EndpointFilter
 from shared.models.scan_correlation import IpGroupFilter, ServiceFilter
@@ -81,6 +86,29 @@ def _query_param(path: str, name: str) -> dict:
 @pytest.mark.parametrize("path", ["/api/v1/cves", "/api/v1/scans/compare/rows"])
 def test_page_is_bounded(path):
     assert _query_param(path, "page")["maximum"] == MAX_PAGE
+
+
+@pytest.mark.parametrize(
+    "path", ["/api/v1/scans/compare/rows", "/api/v1/scans/compare/diff"]
+)
+def test_compare_dimension_is_bounded(path):
+    schema = _query_param(path, "dimension")
+    assert MAX_DIMENSION_LENGTH in (
+        schema.get("maxLength"),
+        *(s.get("maxLength") for s in schema.get("anyOf", ())),
+    )
+
+
+async def test_diff_refuses_an_unknown_dimension_before_comparing():
+    with pytest.raises(HTTPException) as caught:
+        await ScanCompareService(None).diff(
+            baseline_id=None,
+            current_id=uuid.uuid4(),
+            project_id=uuid.uuid4(),
+            dimension="bogus",
+            verbs=[],
+        )
+    assert caught.value.status_code == 404
 
 
 def test_secret_offset_is_bounded():

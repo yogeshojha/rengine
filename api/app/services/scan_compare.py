@@ -477,6 +477,14 @@ def _stage_field_labels() -> dict[str, dict[str, str]]:
     return out
 
 
+def _known(dimension: str) -> None:
+    if dimension not in SPECS:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown dimension '{dimension}'.",
+        )
+
+
 class ScanCompareService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -540,11 +548,7 @@ class ScanCompareService:
         page: int,
         size: int,
     ) -> ChangeRows:
-        if dimension not in SPECS:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Unknown dimension '{dimension}'.",
-            )
+        _known(dimension)
         baseline, current = await self._pair(baseline_id, current_id, project_id)
         activities = await self._activities([baseline.id, current.id])
         confirmed = self._clean(dimension, current, activities)
@@ -629,6 +633,8 @@ class ScanCompareService:
         verbs: list[str],
     ) -> str:
         """The comparison as a unified diff."""
+        if dimension is not None:
+            _known(dimension)
         report = await self.comparison(baseline_id, current_id, project_id)
         wanted = [
             d

@@ -21,6 +21,7 @@ from app.services.scan import (
 from app.services.scan_compare import ScanCompareService
 from shared.definitions.compare import (
     DEFAULT_ROWS_PER_PAGE,
+    MAX_DIMENSION_LENGTH,
     MAX_ROWS_PAGE,
     MAX_ROWS_PER_PAGE,
     VERB_ORDER,
@@ -285,7 +286,9 @@ async def compare_scan_rows(
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
     project_id: Annotated[UUID, Query(description="Project ID")],
     current: Annotated[UUID, Query(description="Later run")],
-    dimension: Annotated[str, Query(description="Result dimension")],
+    dimension: Annotated[
+        str, Query(description="Result dimension", max_length=MAX_DIMENSION_LENGTH)
+    ],
     baseline: Annotated[
         UUID | None, Query(description="Earlier run. Defaults to the previous run.")
     ] = None,
@@ -317,7 +320,11 @@ async def compare_scan_diff(
         UUID | None, Query(description="Earlier run. Defaults to the previous run.")
     ] = None,
     dimension: Annotated[
-        str | None, Query(description="Result dimension. Omit for every dimension.")
+        str | None,
+        Query(
+            description="Result dimension. Omit for every dimension.",
+            max_length=MAX_DIMENSION_LENGTH,
+        ),
     ] = None,
     verb: Annotated[list[ChangeVerb] | None, Query()] = None,
 ):
