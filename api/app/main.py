@@ -81,4 +81,4 @@ app.include_router(api_router, prefix=API_V1_PREFIX)
 
 @app.get("/")
 async def root():
-    return {"message": "reNgine API", "version": APP_VERSION}
+    return {"message": "reNgine API"}
