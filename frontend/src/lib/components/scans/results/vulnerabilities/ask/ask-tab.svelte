@@ -71,6 +71,17 @@
 	let draft = $state<{ text: string; trace: AskTraceStep[] } | null>(null);
 	let error = $state('');
 	let lastQuestion = $state('');
+	let loadFailure = $state<{ title: string; message: string; retry: () => void } | null>(null);
+
+	function failLoad(title: string, e: unknown, retry: () => void) {
+		loadFailure = { title, message: (e as Error).message, retry };
+	}
+
+	function retryLoad() {
+		const retry = loadFailure?.retry;
+		loadFailure = null;
+		retry?.();
+	}
 	let factPeek = $state<AskFact | null>(null);
 	let noteBody = $state<string | null>(null);
 	let confirmDelete = $state(false);
@@ -188,6 +199,7 @@
 		threadsLoading = true;
 		loadingThread = false;
 		error = '';
+		loadFailure = null;
 		threads = [];
 		active = null;
 		messages = [];
@@ -197,7 +209,7 @@
 			threads = found;
 			if (found.length) void pick(found[0]);
 		} catch (e) {
-			if (mine === subjectGeneration) error = (e as Error).message;
+			if (mine === subjectGeneration) failLoad('Threads not loaded', e, () => void load());
 		} finally {
 			if (mine === subjectGeneration) threadsLoading = false;
 		}
@@ -221,7 +233,7 @@
 			const found = await askBriefs.get(subject);
 			if (mine === briefGeneration) brief = found;
 		} catch (e) {
-			if (mine === briefGeneration) error = (e as Error).message;
+			if (mine === briefGeneration) failLoad('Brief not loaded', e, () => void loadBrief());
 		} finally {
 			if (mine === briefGeneration) briefLoading = false;
 		}
@@ -238,7 +250,7 @@
 			messages = detail.messages;
 			active = detail.thread;
 		} catch (e) {
-			if (mine === pickGeneration) error = (e as Error).message;
+			if (mine === pickGeneration) failLoad('Thread not loaded', e, () => void pick(thread));
 		} finally {
 			if (mine === pickGeneration) loadingThread = false;
 		}
@@ -483,6 +495,16 @@
 				</div>
 			{/if}
 		</div>
+	{/if}
+
+	{#if loadFailure}
+		<Alert.Root variant="destructive">
+			<Alert.Title>{loadFailure.title}</Alert.Title>
+			<Alert.Description>
+				<span>{loadFailure.message}</span>
+				<Button variant="outline" size="sm" class="mt-2 w-fit" onclick={retryLoad}>Retry</Button>
+			</Alert.Description>
+		</Alert.Root>
 	{/if}
 
 	{#if error}
