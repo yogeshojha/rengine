@@ -533,7 +533,9 @@
 							<div
 								class="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-xs"
 							>
-								<CornerDownRight class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+								<span class="flex h-4 shrink-0 items-center">
+									<CornerDownRight class="size-3.5 text-muted-foreground" />
+								</span>
 								<div class="min-w-0">
 									<span class="text-muted-foreground">Redirects to</span>
 									<a
@@ -769,7 +771,7 @@
 							<div
 								class="flex items-start gap-3 rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground"
 							>
-								<Globe class="mt-0.5 size-4 shrink-0" />
+								<span class="flex h-4 shrink-0 items-center"><Globe class="size-4" /></span>
 								<div>
 									<p class="font-medium text-foreground">No HTTP service</p>
 									<p class="mt-0.5">
@@ -1291,7 +1293,9 @@
 							{#each related as r (r.kind + r.value)}
 								<section class="flex flex-col gap-2 rounded-md border border-border p-3">
 									<div class="flex items-start gap-2">
-										<Link2 class="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+										<span class="flex h-4 shrink-0 items-center">
+											<Link2 class="size-3.5 text-muted-foreground" />
+										</span>
 										<div class="min-w-0 flex-1">
 											<p class="text-xs font-medium">
 												{(r.total || r.hosts.length).toLocaleString()}
