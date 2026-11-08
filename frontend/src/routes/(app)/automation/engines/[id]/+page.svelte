@@ -870,7 +870,7 @@
 		{#if saveError}
 			<div class="save-error text-xs" role="alert">
 				<AlertTriangle size={13} class="shrink-0" />
-				<span class="flex-1 truncate">{saveError}</span>
+				<span class="min-w-0 flex-1 wrap-anywhere">{saveError}</span>
 				<Button
 					variant="ghost"
 					size="icon"

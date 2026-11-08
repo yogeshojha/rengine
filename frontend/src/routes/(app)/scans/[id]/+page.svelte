@@ -913,7 +913,7 @@
 				</div>
 				<div class="min-w-0">
 					<div class="flex flex-wrap items-center gap-2">
-						<h1 class="truncate font-mono text-2xl font-semibold tracking-tight">
+						<h1 class="font-mono text-2xl wrap-anywhere font-semibold tracking-tight">
 							{scan.execution_config.target_value}
 						</h1>
 						<Badge variant="outline" class="font-normal text-muted-foreground">

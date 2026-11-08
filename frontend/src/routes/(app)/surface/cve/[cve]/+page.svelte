@@ -377,7 +377,9 @@
 										class="flex items-start justify-between gap-3 px-5 py-2.5 text-sm hover:bg-accent/40"
 									>
 										<span class="flex min-w-0 flex-col gap-0.5">
-											<span class="truncate font-mono text-xs leading-5">{row.target_value}</span>
+											<span class="min-w-0 font-mono text-xs leading-5 wrap-anywhere"
+												>{row.target_value}</span
+											>
 											{#if row.first_seen}
 												<span class="text-2xs text-muted-foreground">
 													First seen {formatShortDate(row.first_seen)}
