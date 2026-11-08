@@ -10,7 +10,7 @@ from shared.definitions.cloud_storage import (
 from shared.services.cloud_storage import clean_words
 from stages.config import StageConfig, advanced
 
-# One request per candidate per provider; the clouds throttle well below the target ceiling.
+# cloud provider ceiling
 PROBE_RATE_CAP = 20
 PROBE_THREAD_CAP = 24
 
