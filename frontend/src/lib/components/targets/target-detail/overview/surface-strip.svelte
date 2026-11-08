@@ -4,6 +4,7 @@
 	import Hint from '$lib/components/hint.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE_ORDER, SurfaceDimension, surfaceSpec } from '$lib/config/surface';
+	import { Severity } from '$lib/config/vulnerabilities';
 	import { formatShortDate, relativeTime } from '$lib/utilities/dates';
 	import {
 		isLiveStatus,
@@ -65,7 +66,10 @@
 			if (worst)
 				return {
 					text: `${worst.count.toLocaleString()} ${worst.label.toLowerCase()}`,
-					tone: worst.severity === 'critical' || worst.severity === 'high' ? 'bad' : 'warn'
+					tone:
+						worst.severity === Severity.CRITICAL || worst.severity === Severity.HIGH
+							? 'bad'
+							: 'warn'
 				};
 		}
 		if (m.key === SurfaceDimension.SERVICES && summary?.sensitive_services)
