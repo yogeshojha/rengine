@@ -11,6 +11,7 @@ from app.services.ask import tools as ask_tools
 from app.services.investigate import policy
 from mcp.context import ToolContext
 from shared.definitions.ask import TraceStatus
+from shared.definitions.endpoints import parse_url
 from shared.definitions.investigate import (
     MAX_INVESTIGATION_REQUESTS,
     MAX_PLANS,
@@ -27,7 +28,7 @@ from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import VulnerabilityRead
 from shared.services.ai.agent import AgentTool
 from shared.services.issue_tracking.body import mask_secrets
-from shared.utils.net import host_port, split_host_port
+from shared.utils.net import host_port
 
 PROPOSE_REPLAY = "propose_replay"
 PROPOSE_CHECK = "propose_check"
@@ -245,12 +246,18 @@ class InvestigateTools:
         tags, requests, needs_oast, name = await self._template_facts(
             template_id, frozenset()
         )
-        in_scope = self._under_target(host) and await self._recorded(host)
+        seed = _seed_url(host)
+        parsed = None if "@" in seed.split("://", 1)[-1] else parse_url(seed)
+        in_scope = (
+            parsed is not None
+            and self._under_target(parsed.host)
+            and await self._recorded(parsed.host)
+        )
         return await self._propose(
             kind=PlanKind.CHECK,
             template_id=template_id,
             template_name=name,
-            host=_seed_url(host),
+            host=parsed.url if parsed is not None else seed,
             tags=tags,
             requests=requests,
             needs_callback=needs_oast,
@@ -288,22 +295,20 @@ class InvestigateTools:
     def _under_target(self, host: str) -> bool:
         from shared.definitions.domains import owning_zone, target_zone  # noqa: PLC0415
 
-        apex = split_host_port(host)[0]
         return (
-            target_zone(apex) == self.target_zone
-            or owning_zone(apex, {self.target_zone}) is not None
+            target_zone(host) == self.target_zone
+            or owning_zone(host, {self.target_zone}) is not None
         )
 
     async def _recorded(self, host: str) -> bool:
         from shared.models.subdomain import Subdomain  # noqa: PLC0415
 
-        apex = split_host_port(host)[0]
         found = (
             await self.session.execute(
                 select(Subdomain.id)
                 .where(
                     Subdomain.scan_id == self.investigation.scan_id,
-                    Subdomain.name == apex,
+                    Subdomain.name == host,
                 )
                 .limit(1)
             )
