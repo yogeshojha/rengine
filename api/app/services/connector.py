@@ -1530,17 +1530,36 @@ class ConnectorService:
 
     async def target_options(self, row: Connector) -> list[TargetOption]:
         """The picker the proxy shows while testing."""
+        covering = (
+            select(Scan.target_id, Scan.id)
+            .distinct(Scan.target_id)
+            .where(
+                Scan.project_id == row.project_id,
+                Scan.status.in_(SCAN_TERMINAL_STATUSES),
+                census_only(),
+                covers(Endpoint, _DIMENSION),
+            )
+            .order_by(
+                Scan.target_id, func.coalesce(Scan.started_at, Scan.created_at).desc()
+            )
+            .subquery("covering")
+        )
+        counted = (
+            select(covering.c.target_id, func.count().label("n"))
+            .join(Endpoint, Endpoint.scan_id == covering.c.id)
+            .group_by(covering.c.target_id)
+            .subquery("counted")
+        )
         rows = (
             await self.session.execute(
                 select(
                     Target.id,
                     Target.target_value,
                     Target.target_type,
-                    func.count(func.distinct(Endpoint.signature)),
+                    func.coalesce(counted.c.n, 0),
                 )
-                .outerjoin(Endpoint, Endpoint.target_id == Target.id)
+                .outerjoin(counted, counted.c.target_id == Target.id)
                 .where(Target.project_id == row.project_id)
-                .group_by(Target.id, Target.target_value, Target.target_type)
                 .order_by(Target.target_value)
                 .limit(MAX_PICKER_TARGETS)
             )
