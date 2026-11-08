@@ -11,6 +11,7 @@ from enum import Enum
 import validators
 
 from shared.definitions.tone import Tone
+from shared.definitions.vulnerabilities import Severity
 from shared.enums.api_key import APIProvider
 from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
 from shared.utils.net import split_host_port
@@ -411,7 +412,14 @@ def scope_tier(raw: str | None) -> str | None:
     return value[:MAX_TIER]
 
 
-MAX_SEVERITIES: tuple[str, ...] = ("critical", "high", "medium", "low", "none")
+NO_SEVERITY = "none"
+MAX_SEVERITIES: tuple[str, ...] = (
+    Severity.CRITICAL.value,
+    Severity.HIGH.value,
+    Severity.MEDIUM.value,
+    Severity.LOW.value,
+    NO_SEVERITY,
+)
 
 _SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
 

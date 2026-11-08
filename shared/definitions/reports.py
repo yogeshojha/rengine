@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from shared.config import base_settings
 from shared.definitions.report_theme import FontKey, HexColor, SeverityKey
+from shared.definitions.vulnerabilities import Severity
 
 MAX_SECTIONS = 60
 MAX_TITLE_LENGTH = 200
@@ -298,23 +299,23 @@ def validate_embedded_image(value: str, field: str) -> str:
 
 
 DEFAULT_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#c10007",
-    "high": "#ff6900",
-    "medium": "#ffb900",
-    "low": "#0084d1",
-    "info": "#737373",
-    "unknown": "#737373",
+    Severity.CRITICAL.value: "#c10007",
+    Severity.HIGH.value: "#ff6900",
+    Severity.MEDIUM.value: "#ffb900",
+    Severity.LOW.value: "#0084d1",
+    Severity.INFO.value: "#737373",
+    Severity.UNKNOWN.value: "#737373",
 }
 
 # the same ramp restepped for dark paper: the UI's dark inks, since one value draws both the
 # mark and its label there
 DARK_SEVERITY_COLORS: dict[str, str] = {
-    "critical": "#ff6467",
-    "high": "#ff8904",
-    "medium": "#ffd230",
-    "low": "#00bcff",
-    "info": "#a1a1a1",
-    "unknown": "#a1a1a1",
+    Severity.CRITICAL.value: "#ff6467",
+    Severity.HIGH.value: "#ff8904",
+    Severity.MEDIUM.value: "#ffd230",
+    Severity.LOW.value: "#00bcff",
+    Severity.INFO.value: "#a1a1a1",
+    Severity.UNKNOWN.value: "#a1a1a1",
 }
 
 # the categorical scale the UI draws with, mirrors frontend/src/app.css --chart-1..5
