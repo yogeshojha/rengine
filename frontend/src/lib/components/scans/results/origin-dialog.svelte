@@ -16,6 +16,7 @@
 	import TechIcon from './tech-icon.svelte';
 	import { httpStatusTextClass } from '$lib/utilities/scan-correlation';
 	import { externalHref } from '$lib/utilities/links';
+	import { OriginConfidence } from '$lib/config/origin-exposure';
 	import {
 		FINDING_RELATION,
 		FINDING_SUMMARY,
@@ -59,8 +60,11 @@
 		{#if f}
 			<Dialog.Header class="border-b px-6 py-4 pr-8">
 				<div class="flex items-center gap-2">
-					<Badge variant={f.confidence === 'high' ? 'warning' : 'outline'} class="font-normal">
-						{f.confidence === 'high' ? 'High confidence' : 'Medium confidence'}
+					<Badge
+						variant={f.confidence === OriginConfidence.HIGH ? 'warning' : 'outline'}
+						class="font-normal"
+					>
+						{f.confidence === OriginConfidence.HIGH ? 'High confidence' : 'Medium confidence'}
 					</Badge>
 					<Dialog.Title>
 						{FINDING_TITLE[f.kind] ?? f.kind}
