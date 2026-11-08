@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-import tempfile
 import time
-from pathlib import Path
 
 import pytest
 
@@ -80,12 +78,14 @@ def test_no_bound_check_leaves_the_blocking_path_alone():
     assert _sh("echo alive").stdout.strip() == "alive"
 
 
-def test_a_grandchild_does_not_outlive_the_stop():
-    marker = Path(tempfile.mkdtemp()) / "alive"
+def test_a_grandchild_does_not_outlive_the_stop(tmp_path):
+    marker = tmp_path / "alive"
     script = f"(sleep 3; touch {marker}) & sleep 60"
+    deadline = time.monotonic() + 4
     with pytest.raises(StageAbortedError):
         _run(script, should_stop=lambda: True)
-    time.sleep(5)
+    while time.monotonic() < deadline and not marker.exists():
+        time.sleep(0.1)
     assert not marker.exists()
 
 
