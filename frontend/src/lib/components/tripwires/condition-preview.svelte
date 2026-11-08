@@ -43,7 +43,7 @@
 	$effect(() => {
 		void signature;
 		const on = enabled;
-		untrack(() => {
+		return untrack(() => {
 			if (!on) {
 				preview = null;
 				failure = null;

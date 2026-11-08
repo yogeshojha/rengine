@@ -33,7 +33,7 @@
 	$effect(() => {
 		void signature;
 		const on = enabled;
-		untrack(() => {
+		return untrack(() => {
 			if (!on) {
 				backtest = null;
 				failure = null;
