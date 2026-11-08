@@ -68,6 +68,7 @@
 
 	let revealed = $state<string | null>(null);
 	let revealFailed = $state(false);
+	let revealSeq = 0;
 	let copied = $state(false);
 
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
@@ -217,13 +218,20 @@
 	}
 
 	async function reveal(key: APIKeyRead) {
+		const mine = ++revealSeq;
 		revealed = null;
 		revealFailed = false;
 		try {
-			revealed = (await apiKeysApi.reveal(key.id)).key_value;
+			const value = (await apiKeysApi.reveal(key.id)).key_value;
+			if (mine === revealSeq) revealed = value;
 		} catch {
-			revealFailed = true;
+			if (mine === revealSeq) revealFailed = true;
 		}
+	}
+
+	function hide() {
+		revealSeq++;
+		revealed = null;
 	}
 
 	async function copy() {
@@ -305,7 +313,7 @@
 									<Popover.Root
 										onOpenChange={(open) => {
 											if (open) void reveal(key);
-											else revealed = null;
+											else hide();
 										}}
 									>
 										<Popover.Trigger>
