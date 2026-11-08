@@ -323,7 +323,7 @@
 					/>
 				{/if}
 				{#if block.group_by}
-					<span class="text-2xs text-muted-foreground">grouped</span>
+					<span class="text-2xs text-muted-foreground">Grouped</span>
 				{/if}
 				{#if block.edited}
 					<span class="rounded bg-muted px-1.5 text-2xs text-muted-foreground">Edited</span>

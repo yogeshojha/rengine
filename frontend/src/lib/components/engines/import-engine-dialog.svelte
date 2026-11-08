@@ -92,7 +92,7 @@ stages:
 				{#if !source.trim()}
 					<div class="hint">
 						<Upload size={13} />
-						drop a .yaml file
+						Drop a .yaml file
 					</div>
 				{/if}
 			</div>
