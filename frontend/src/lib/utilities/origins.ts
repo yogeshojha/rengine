@@ -1,3 +1,5 @@
+import { OriginKind } from '$lib/config/origin-exposure';
+
 export interface OriginEvidence {
 	kind: string;
 	label: string;
@@ -33,9 +35,8 @@ export interface OriginExposure {
 	findings: OriginFinding[];
 }
 
-// mirrors shared/services/origin_exposure.py
-export const ORIGIN_EXPOSED = 'origin_exposed';
-export const DEFAULT_VHOST = 'default_vhost';
+export const ORIGIN_EXPOSED = OriginKind.ORIGIN_EXPOSED;
+export const DEFAULT_VHOST = OriginKind.DEFAULT_VHOST;
 
 export const FINDING_TITLE: Record<string, string> = {
 	[ORIGIN_EXPOSED]: 'Origin reachable outside the CDN',

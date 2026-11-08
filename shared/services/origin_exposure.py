@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from shared.definitions.constants import PURE_CACHE
 from shared.definitions.correlation import MIN_BODY_BYTES
+from shared.definitions.origin_exposure import OriginConfidence, OriginKind
 from shared.definitions.ports import SENSITIVE_PORTS
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
@@ -44,8 +45,10 @@ MAX_FINDINGS = 20
 MAX_FRONTED_SHOWN = 6
 HTTPS_PORT = 443
 
-ORIGIN_EXPOSED = "origin_exposed"
-DEFAULT_VHOST = "default_vhost"
+ORIGIN_EXPOSED = OriginKind.ORIGIN_EXPOSED.value
+DEFAULT_VHOST = OriginKind.DEFAULT_VHOST.value
+HIGH = OriginConfidence.HIGH.value
+MEDIUM = OriginConfidence.MEDIUM.value
 
 _COLUMNS = (
     HttpAsset.host,
@@ -132,7 +135,7 @@ class OriginExposureService:
         findings = self._origins(assets, fronted, ports, self._resolved(scan_id))
         findings += self._default_vhosts(assets, ports)
         findings = _merge(findings)
-        findings.sort(key=lambda f: (f.confidence != "high", -len(f.evidence)))
+        findings.sort(key=lambda f: (f.confidence != HIGH, -len(f.evidence)))
         return OriginExposure(findings=findings[:MAX_FINDINGS])
 
     def _assets(self, scan_id: UUID) -> list[_Asset]:
@@ -258,7 +261,7 @@ class OriginExposureService:
             findings.append(
                 self._finding(
                     ORIGIN_EXPOSED,
-                    "high" if score >= HIGH_CONFIDENCE else "medium",
+                    HIGH if score >= HIGH_CONFIDENCE else MEDIUM,
                     asset,
                     _rank_fronted(list(matched.values()), strength),
                     evidence,
@@ -292,7 +295,7 @@ class OriginExposureService:
             findings.append(
                 self._finding(
                     DEFAULT_VHOST,
-                    "medium",
+                    MEDIUM,
                     direct,
                     _rank_fronted(named),
                     [
@@ -388,7 +391,7 @@ def _merge(findings: list[OriginFinding]) -> list[OriginFinding]:
         seen = {e.kind for e in keep.evidence}
         keep.evidence.extend(e for e in drop.evidence if e.kind not in seen)
         keep.fronted_total = max(keep.fronted_total, drop.fronted_total)
-        if keep.confidence != "high" and drop.confidence == "high":
-            keep.confidence = "high"
+        if keep.confidence != HIGH and drop.confidence == HIGH:
+            keep.confidence = HIGH
         best[key] = keep
     return list(best.values())
