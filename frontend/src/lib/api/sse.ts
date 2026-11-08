@@ -34,7 +34,6 @@ class SSEClient {
 	private refreshAttempts = 0;
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-	private readonly maxReconnectAttempts = 10;
 	private readonly baseDelay = 1000; // 1s
 	private readonly maxDelay = 30_000; // 30s
 
@@ -51,8 +50,10 @@ class SSEClient {
 				this.hiddenTimer = setTimeout(() => this.pause(), HIDDEN_PAUSE_MS);
 			} else {
 				this.resume();
+				this.retryNow();
 			}
 		});
+		window.addEventListener('online', () => this.retryNow());
 	}
 
 	connect(channels: string[]): void {
@@ -216,12 +217,6 @@ class SSEClient {
 		this.closeEventSource();
 		this.resyncPending = true;
 
-		if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-			console.error(`[SSE] Giving up after ${this.maxReconnectAttempts} attempts`);
-			this.setState('disconnected');
-			return;
-		}
-
 		if (
 			this.reconnectAttempts === REFRESH_ATTEMPT_AFTER_FAILURES &&
 			this.refreshAttempts < MAX_REFRESHES
@@ -231,6 +226,11 @@ class SSEClient {
 		}
 
 		this.scheduleReconnect();
+	}
+
+	private retryNow(): void {
+		if (this.paused || !this.reconnectTimer) return;
+		this.openConnection();
 	}
 
 	private async refreshAndReconnect(): Promise<void> {
@@ -246,7 +246,7 @@ class SSEClient {
 
 	private scheduleReconnect(): void {
 		if (this.paused) return;
-		const exponential = this.baseDelay * Math.pow(2, this.reconnectAttempts);
+		const exponential = this.baseDelay * Math.pow(2, Math.min(this.reconnectAttempts, 16));
 		const capped = Math.min(exponential, this.maxDelay);
 		const jitter = capped * 0.2 * Math.random();
 		const delay = capped + jitter;
