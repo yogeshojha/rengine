@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
+from datetime import datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy import select, text
@@ -16,12 +18,14 @@ from shared.enums.instance import InstanceMode
 from shared.models.dataset import DatasetRead, DatasetSyncResult
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.threat_intel import ThreatFeed
+from shared.redis import cache_client
 from shared.services import locks
 from shared.services.celery_dispatch import dispatch_dataset_sync
 from shared.services.feed_ledger import dataset_status
 from shared.utils.datetime import utc_now
 
 PROBE_LOCK_TIMEOUT = "300ms"
+ROWS_TTL_SECONDS = 6 * 3600
 
 _HELD_SQL = text("""
 SELECT objid::bigint
@@ -60,7 +64,21 @@ class DatasetService:
         held = await self.session.execute(_HELD_SQL, {"keys": list(keys)})
         return {keys[row[0]] for row in held}
 
-    async def _rows(self, spec: DatasetSpec) -> int | None:
+    async def _rows(
+        self, spec: DatasetSpec, stamp: datetime | None = None
+    ) -> int | None:
+        key = (
+            f"dataset:rows:{spec.kind}:{stamp.isoformat()}"
+            if stamp and not spec.where
+            else None
+        )
+        if key:
+            try:
+                hit = await cache_client().get(key)
+            except Exception:
+                hit = None
+            if hit is not None:
+                return int(hit)
         where = f" WHERE {spec.where}" if spec.where else ""
         try:
             async with self.session.begin_nested():
@@ -72,6 +90,9 @@ class DatasetService:
                 )
         except DBAPIError:
             return None
+        if key:
+            with suppress(Exception):
+                await cache_client().set(key, int(counted or 0), ex=ROWS_TTL_SECONDS)
         return int(counted or 0)
 
     async def list(self) -> list[DatasetRead]:
@@ -85,8 +106,8 @@ class DatasetService:
         out: list[DatasetRead] = []
         for spec in specs:
             busy = spec.kind in loading
-            rows = None if busy else await self._rows(spec)
             row = ledger.get(spec.kind)
+            rows = None if busy else await self._rows(spec, row and row.updated_at)
             state = dataset_status(
                 loading=busy or rows is None,
                 recorded=row.status if row else None,

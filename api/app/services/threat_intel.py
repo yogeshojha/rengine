@@ -141,7 +141,7 @@ class ThreatIntelService:
                 await self.session.execute(
                     text(
                         "SELECT kind, status, rows, version, bytes, duration_ms, error,"
-                        " last_synced_at FROM threat_feeds"
+                        " last_synced_at, updated_at FROM threat_feeds"
                     )
                 )
             ).all()
@@ -151,10 +151,14 @@ class ThreatIntelService:
         loading = await datasets._loading(specs)
         counts: dict[str, int] = {}
         for spec in specs:
-            counted = None if spec.kind in loading else await datasets._rows(spec)
+            ledger = rows.get(spec.kind)
+            counted = (
+                None
+                if spec.kind in loading
+                else await datasets._rows(spec, ledger and ledger.updated_at)
+            )
             if counted is None:
                 loading.add(spec.kind)
-                ledger = rows.get(spec.kind)
                 counted = int(ledger.rows or 0) if ledger else 0
             counts[spec.kind] = counted
         out: list[ThreatFeedRead] = []
