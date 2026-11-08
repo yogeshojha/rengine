@@ -832,9 +832,9 @@
 					{#snippet chip(text: string, onRemove: () => void)}
 						<Badge
 							variant="outline"
-							class="max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal"
+							class="max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal whitespace-normal"
 						>
-							<span class="min-w-0 truncate" title={text}>{text}</span>
+							<span class="min-w-0 wrap-anywhere">{text}</span>
 							<Button
 								variant="ghost"
 								size="icon-xs"
