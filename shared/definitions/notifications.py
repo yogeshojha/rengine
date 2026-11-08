@@ -108,8 +108,8 @@ class _Lead:
 
 _FINDING_LEADS = frozenset({"critical", "kev", "high", "findings"})
 _ADMIN_PORT = (
-    "administrative or datastore port open",
-    "administrative or datastore ports open",
+    "administrative or database port open",
+    "administrative or database ports open",
 )
 _INVENTORY: tuple[str, ...] = (
     "subdomains_found",

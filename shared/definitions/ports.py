@@ -381,7 +381,7 @@ PORT_PROFILES: tuple[PortProfileSpec, ...] = (
     PortProfileSpec(
         PortProfile.EXPOSURE.value,
         "Web and sensitive",
-        "Web ports plus remote-access and datastore ports. The default.",
+        "Web ports plus remote-access and database ports. The default.",
         len(set(WEB_PORTS) | set(SENSITIVE_PORTS)),
     ),
     PortProfileSpec(

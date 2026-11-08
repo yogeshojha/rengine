@@ -399,8 +399,8 @@ BLOCK_FACTS: dict[str, tuple[BlockFact, ...]] = {
             "is:new",
         ),
         BlockFact(
-            "with an admin or database port open",
-            "Which of these have an admin or database port open",
+            "with an administrative or database port open",
+            "Which of these have an administrative or database port open",
             "is:sensitive",
         ),
         BlockFact(
@@ -416,8 +416,8 @@ BLOCK_FACTS: dict[str, tuple[BlockFact, ...]] = {
             "is:kev",
         ),
         BlockFact(
-            "on admin or database ports",
-            "Which of these are admin or database ports",
+            "on administrative or database ports",
+            "Which of these are administrative or database ports",
             "is:sensitive",
         ),
         BlockFact(
@@ -447,8 +447,8 @@ BLOCK_FACTS: dict[str, tuple[BlockFact, ...]] = {
             "is:kev",
         ),
         BlockFact(
-            "with an admin or database port open",
-            "Which of these have an admin or database port open",
+            "with an administrative or database port open",
+            "Which of these have an administrative or database port open",
             "is:sensitive",
         ),
         BlockFact("behind a CDN", "Which of these sit behind a CDN", "is:cdn"),

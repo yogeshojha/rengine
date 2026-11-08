@@ -44,7 +44,7 @@ def test_a_first_scan_leads_with_its_worst_fact_and_ends_with_the_inventory():
     assert payload["type"] is NotificationType.SCAN
     assert payload["message"].split("\n") == [
         "51 findings · 3 high, 20 medium, 28 low",
-        "4 administrative or datastore ports open",
+        "4 administrative or database ports open",
         "16 assets flagged as exposures",
         INVENTORY,
     ]
