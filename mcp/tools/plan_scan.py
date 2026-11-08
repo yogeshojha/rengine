@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from mcp.capabilities import Capability
 from mcp.context import ToolContext
@@ -54,6 +54,8 @@ class PlanScan(Tool):
     )
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
+        from fastapi import HTTPException  # noqa: PLC0415
+
         from app.services.scan import ScanService  # noqa: PLC0415
         from shared.models.scan import ScanCreate  # noqa: PLC0415
 
@@ -62,8 +64,8 @@ class PlanScan(Tool):
 
         try:
             preview = await ScanService(ctx.session).preview(payload, project_id)
-        except Exception as exc:
-            msg = f"Plan not resolved: {exc}"
+        except HTTPException as exc:
+            msg = f"Plan not resolved: {exc.detail}"
             raise ToolError(msg) from exc
 
         phases = [
@@ -117,6 +119,7 @@ def _scan_create(args: Input, model):
         payload["intensity"] = args.intensity
     try:
         return model.model_validate(payload)
-    except Exception as exc:
-        msg = f"Plan not valid: {exc}"
+    except ValidationError as exc:
+        reason = str(exc.errors()[0].get("msg", "invalid input")).rstrip(".")
+        msg = f"Plan not valid: {reason}."
         raise ToolError(msg) from exc

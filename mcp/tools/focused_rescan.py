@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from mcp import links
 from mcp.capabilities import Capability
@@ -53,6 +53,8 @@ class FocusedRescan(Tool):
     )
 
     async def run(self, ctx: ToolContext, args: Input) -> ToolResult:
+        from fastapi import HTTPException  # noqa: PLC0415
+
         from app.services.rescan import RescanService, rescan_schema  # noqa: PLC0415
         from shared.models.scan import RescanCreate  # noqa: PLC0415
 
@@ -90,8 +92,12 @@ class FocusedRescan(Tool):
                 project_id=scope.project_id,
                 created_by=issued_by,
             )
-        except Exception as exc:
-            msg = f"Rescan not started: {exc}"
+        except HTTPException as exc:
+            msg = f"Rescan not started: {exc.detail}"
+            raise ToolError(msg) from exc
+        except ValidationError as exc:
+            reason = str(exc.errors()[0].get("msg", "invalid input")).rstrip(".")
+            msg = f"Rescan not started: {reason}."
             raise ToolError(msg) from exc
         if not run.scans:
             msg = "Rescan not started: no asset matched the parent scan."
