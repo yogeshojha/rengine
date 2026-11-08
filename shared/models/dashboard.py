@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from shared.definitions.dashboard import ActivityTone
+from shared.definitions.dashboard import ActivityTone, QueueTier
 from shared.models.vulnerability import SeverityCount
 
 
@@ -88,7 +88,7 @@ class DashboardFinding(BaseModel):
     cvss_score: float | None = None
     discovered_at: datetime
     evidence: str | None = None
-    tier: str = "track"
+    tier: str = QueueTier.TRACK.value
     replays: int = 0
 
 
