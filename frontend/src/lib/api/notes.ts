@@ -23,7 +23,7 @@ export const notesApi = {
 	},
 
 	async get(projectId: string, id: string): Promise<Note> {
-		return api.get<Note>(`/notes/${id}?project_id=${projectId}`);
+		return api.get<Note>(`/notes/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	async tags(projectId: string, q = ''): Promise<NoteTagCount[]> {
@@ -35,10 +35,10 @@ export const notesApi = {
 	},
 
 	async update(projectId: string, id: string, body: NoteUpdate): Promise<Note> {
-		return api.patch<Note>(`/notes/${id}?project_id=${projectId}`, body);
+		return api.patch<Note>(`/notes/${encodeURIComponent(id)}?project_id=${projectId}`, body);
 	},
 
 	async remove(projectId: string, id: string): Promise<void> {
-		return api.delete(`/notes/${id}?project_id=${projectId}`);
+		return api.delete(`/notes/${encodeURIComponent(id)}?project_id=${projectId}`);
 	}
 };

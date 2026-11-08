@@ -79,7 +79,9 @@ export const scansApi = {
 	},
 
 	async rechecks(projectId: string, scanId: string): Promise<Recheck[]> {
-		return api.get<Recheck[]>(`/scans/${scanId}/rechecks?project_id=${projectId}`);
+		return api.get<Recheck[]>(
+			`/scans/${encodeURIComponent(scanId)}/rechecks?project_id=${projectId}`
+		);
 	},
 
 	async preview(projectId: string, body: ScanCreate): Promise<ScanPreview> {
@@ -130,11 +132,11 @@ export const scansApi = {
 	},
 
 	async get(id: string, projectId: string): Promise<ScanRead> {
-		return api.get<ScanRead>(`/scans/${id}?project_id=${projectId}`);
+		return api.get<ScanRead>(`/scans/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	async cancel(id: string, projectId: string): Promise<ScanRead> {
-		return api.post<ScanRead>(`/scans/${id}/cancel?project_id=${projectId}`);
+		return api.post<ScanRead>(`/scans/${encodeURIComponent(id)}/cancel?project_id=${projectId}`);
 	},
 
 	async cancelAll(projectId: string, targetIds: string[] = []): Promise<ScanCancelAll> {
@@ -144,28 +146,32 @@ export const scansApi = {
 	},
 
 	async pause(id: string, projectId: string): Promise<ScanRead> {
-		return api.post<ScanRead>(`/scans/${id}/pause?project_id=${projectId}`);
+		return api.post<ScanRead>(`/scans/${encodeURIComponent(id)}/pause?project_id=${projectId}`);
 	},
 
 	async resume(id: string, projectId: string): Promise<ScanRead> {
-		return api.post<ScanRead>(`/scans/${id}/resume?project_id=${projectId}`);
+		return api.post<ScanRead>(`/scans/${encodeURIComponent(id)}/resume?project_id=${projectId}`);
 	},
 
 	async remove(id: string, projectId: string): Promise<void> {
-		return api.delete<void>(`/scans/${id}?project_id=${projectId}`);
+		return api.delete<void>(`/scans/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	async activities(id: string, projectId: string): Promise<ScanActivityRead[]> {
-		return api.get<ScanActivityRead[]>(`/scans/${id}/activities?project_id=${projectId}`);
+		return api.get<ScanActivityRead[]>(
+			`/scans/${encodeURIComponent(id)}/activities?project_id=${projectId}`
+		);
 	},
 
 	async commands(id: string, projectId: string, activityId?: string): Promise<ScanCommandRead[]> {
 		const sp = new URLSearchParams({ project_id: projectId });
 		if (activityId) sp.append('activity_id', activityId);
-		return api.get<ScanCommandRead[]>(`/scans/${id}/commands?${sp.toString()}`);
+		return api.get<ScanCommandRead[]>(`/scans/${encodeURIComponent(id)}/commands?${sp.toString()}`);
 	},
 
 	async command(id: string, commandId: string, projectId: string): Promise<ScanCommandDetail> {
-		return api.get<ScanCommandDetail>(`/scans/${id}/commands/${commandId}?project_id=${projectId}`);
+		return api.get<ScanCommandDetail>(
+			`/scans/${encodeURIComponent(id)}/commands/${encodeURIComponent(commandId)}?project_id=${projectId}`
+		);
 	}
 };

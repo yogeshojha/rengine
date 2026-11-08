@@ -11,18 +11,18 @@ export const proxiesApi = {
 	},
 
 	update: (id: string, data: ProxyUpdate): Promise<ProxyRead> => {
-		return api.patch<ProxyRead>(`/proxies/${id}`, data);
+		return api.patch<ProxyRead>(`/proxies/${encodeURIComponent(id)}`, data);
 	},
 
 	remove: (id: string): Promise<void> => {
-		return api.delete(`/proxies/${id}`);
+		return api.delete(`/proxies/${encodeURIComponent(id)}`);
 	},
 
 	test: (id: string): Promise<ProxyTestResult> => {
-		return api.post<ProxyTestResult>(`/proxies/${id}/test`);
+		return api.post<ProxyTestResult>(`/proxies/${encodeURIComponent(id)}/test`);
 	},
 
 	setDefault: (id: string): Promise<ProxyRead> => {
-		return api.post<ProxyRead>(`/proxies/${id}/set-default`);
+		return api.post<ProxyRead>(`/proxies/${encodeURIComponent(id)}/set-default`);
 	}
 };

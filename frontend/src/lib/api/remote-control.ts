@@ -11,7 +11,7 @@ import type {
 	PairingRequest
 } from '$lib/types/remote-control';
 
-const base = (channel: ChannelKind) => `/remote-control/channels/${channel}`;
+const base = (channel: ChannelKind) => `/remote-control/channels/${encodeURIComponent(channel)}`;
 
 export const remoteControlApi = {
 	status(channel: ChannelKind): Promise<ChannelStatus> {
@@ -50,15 +50,15 @@ export const remoteControlApi = {
 	},
 
 	updateChat(channel: ChannelKind, id: string, body: ChannelChatUpdate): Promise<ChannelChat> {
-		return api.patch<ChannelChat>(`${base(channel)}/chats/${id}`, body);
+		return api.patch<ChannelChat>(`${base(channel)}/chats/${encodeURIComponent(id)}`, body);
 	},
 
 	revokeChat(channel: ChannelKind, id: string): Promise<ChannelChat> {
-		return api.post<ChannelChat>(`${base(channel)}/chats/${id}/revoke`);
+		return api.post<ChannelChat>(`${base(channel)}/chats/${encodeURIComponent(id)}/revoke`);
 	},
 
 	deleteChat(channel: ChannelKind, id: string): Promise<void> {
-		return api.delete<void>(`${base(channel)}/chats/${id}`);
+		return api.delete<void>(`${base(channel)}/chats/${encodeURIComponent(id)}`);
 	},
 
 	commands(channel: ChannelKind): Promise<ChannelCommand[]> {

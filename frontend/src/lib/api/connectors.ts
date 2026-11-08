@@ -30,15 +30,20 @@ export const connectorsApi = {
 	},
 
 	update(id: string, projectId: string, body: ConnectorUpdate): Promise<Connector> {
-		return api.patch<Connector>(`/connectors/${id}?project_id=${projectId}`, body);
+		return api.patch<Connector>(
+			`/connectors/${encodeURIComponent(id)}?project_id=${projectId}`,
+			body
+		);
 	},
 
 	rotate(id: string, projectId: string): Promise<ConnectorCreated> {
-		return api.post<ConnectorCreated>(`/connectors/${id}/rotate?project_id=${projectId}`);
+		return api.post<ConnectorCreated>(
+			`/connectors/${encodeURIComponent(id)}/rotate?project_id=${projectId}`
+		);
 	},
 
 	remove(id: string, projectId: string): Promise<void> {
-		return api.delete<void>(`/connectors/${id}?project_id=${projectId}`);
+		return api.delete<void>(`/connectors/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	candidates(id: string, projectId: string, params: CandidateQuery = {}): Promise<CandidatePage> {
@@ -46,7 +51,9 @@ export const connectorsApi = {
 		for (const [key, value] of Object.entries(params)) {
 			if (value !== undefined && value !== null && value !== '') query.set(key, String(value));
 		}
-		return api.get<CandidatePage>(`/connectors/${id}/candidates?${query.toString()}`);
+		return api.get<CandidatePage>(
+			`/connectors/${encodeURIComponent(id)}/candidates?${query.toString()}`
+		);
 	},
 
 	setState(
@@ -56,7 +63,7 @@ export const connectorsApi = {
 		state: Candidate['state']
 	): Promise<{ changed: number }> {
 		return api.post<{ changed: number }>(
-			`/connectors/${id}/candidates/state?project_id=${projectId}`,
+			`/connectors/${encodeURIComponent(id)}/candidates/state?project_id=${projectId}`,
 			{ ids, state }
 		);
 	},
@@ -68,28 +75,36 @@ export const connectorsApi = {
 		scanId?: string | null
 	): Promise<HandoffResult> {
 		return api.post<HandoffResult>(
-			`/connectors/${id}/handoff?${scopeQuery({ projectId, scanId: scanId ?? undefined })}`,
+			`/connectors/${encodeURIComponent(id)}/handoff?${scopeQuery({ projectId, scanId: scanId ?? undefined })}`,
 			body
 		);
 	},
 
 	scan(id: string, projectId: string, ids: string[] = []): Promise<ScanRead[]> {
-		return api.post<ScanRead[]>(`/connectors/${id}/scan?project_id=${projectId}`, { ids });
+		return api.post<ScanRead[]>(
+			`/connectors/${encodeURIComponent(id)}/scan?project_id=${projectId}`,
+			{ ids }
+		);
 	},
 
 	discovered(id: string, projectId: string): Promise<DiscoveredDomain[]> {
-		return api.get<DiscoveredDomain[]>(`/connectors/${id}/discovered?project_id=${projectId}`);
+		return api.get<DiscoveredDomain[]>(
+			`/connectors/${encodeURIComponent(id)}/discovered?project_id=${projectId}`
+		);
 	},
 
 	addTarget(id: string, projectId: string, domain: string): Promise<TargetAdded> {
-		return api.post<TargetAdded>(`/connectors/${id}/discovered/add?project_id=${projectId}`, {
-			domain
-		});
+		return api.post<TargetAdded>(
+			`/connectors/${encodeURIComponent(id)}/discovered/add?project_id=${projectId}`,
+			{
+				domain
+			}
+		);
 	},
 
 	dismissDomain(id: string, projectId: string, domain: string): Promise<{ dismissed: number }> {
 		return api.post<{ dismissed: number }>(
-			`/connectors/${id}/discovered/dismiss?project_id=${projectId}`,
+			`/connectors/${encodeURIComponent(id)}/discovered/dismiss?project_id=${projectId}`,
 			{ domain }
 		);
 	}

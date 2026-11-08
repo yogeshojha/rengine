@@ -43,6 +43,8 @@ export const compareApi = {
 	},
 
 	async comparable(projectId: string, scanId: string): Promise<ComparableRun[]> {
-		return api.get<ComparableRun[]>(`/scans/${scanId}/comparable?project_id=${projectId}`);
+		return api.get<ComparableRun[]>(
+			`/scans/${encodeURIComponent(scanId)}/comparable?project_id=${projectId}`
+		);
 	}
 };

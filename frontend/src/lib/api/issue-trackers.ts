@@ -26,11 +26,11 @@ export const issueTrackersApi = {
 	},
 
 	update(id: string, body: IssueTrackerWrite): Promise<IssueTracker> {
-		return api.patch<IssueTracker>(`${BASE}/${id}`, body);
+		return api.patch<IssueTracker>(`${BASE}/${encodeURIComponent(id)}`, body);
 	},
 
 	remove(id: string): Promise<void> {
-		return api.delete<void>(`${BASE}/${id}`);
+		return api.delete<void>(`${BASE}/${encodeURIComponent(id)}`);
 	},
 
 	testConfig(body: IssueTrackerTest): Promise<TestResult> {
@@ -38,16 +38,18 @@ export const issueTrackersApi = {
 	},
 
 	test(id: string): Promise<TestResult> {
-		return api.post<TestResult>(`${BASE}/${id}/test`);
+		return api.post<TestResult>(`${BASE}/${encodeURIComponent(id)}/test`);
 	},
 
 	destinations(id: string, q = ''): Promise<TrackerOption[]> {
-		return api.get<TrackerOption[]>(`${BASE}/${id}/destinations?q=${encodeURIComponent(q)}`);
+		return api.get<TrackerOption[]>(
+			`${BASE}/${encodeURIComponent(id)}/destinations?q=${encodeURIComponent(q)}`
+		);
 	},
 
 	issueTypes(id: string, destination: string): Promise<TrackerOption[]> {
 		return api.get<TrackerOption[]>(
-			`${BASE}/${id}/issue-types?destination=${encodeURIComponent(destination)}`
+			`${BASE}/${encodeURIComponent(id)}/issue-types?destination=${encodeURIComponent(destination)}`
 		);
 	},
 
@@ -60,7 +62,7 @@ export const issueTrackersApi = {
 	},
 
 	removeRoute(id: string): Promise<void> {
-		return api.delete<void>(`${BASE}/routes/${id}`);
+		return api.delete<void>(`${BASE}/routes/${encodeURIComponent(id)}`);
 	},
 
 	issues(projectId: string): Promise<TrackedIssue[]> {
@@ -77,14 +79,14 @@ export const issueTrackersApi = {
 	},
 
 	retry(id: string): Promise<TrackedIssue> {
-		return api.post<TrackedIssue>(`${BASE}/issues/${id}/retry`);
+		return api.post<TrackedIssue>(`${BASE}/issues/${encodeURIComponent(id)}/retry`);
 	},
 
 	refresh(id: string): Promise<TrackedIssue> {
-		return api.post<TrackedIssue>(`${BASE}/issues/${id}/refresh`);
+		return api.post<TrackedIssue>(`${BASE}/issues/${encodeURIComponent(id)}/refresh`);
 	},
 
 	unlink(id: string): Promise<void> {
-		return api.delete<void>(`${BASE}/issues/${id}`);
+		return api.delete<void>(`${BASE}/issues/${encodeURIComponent(id)}`);
 	}
 };

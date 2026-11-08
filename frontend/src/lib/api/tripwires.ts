@@ -24,11 +24,16 @@ export const tripwiresApi = {
 	},
 
 	update(id: string, projectId: string, body: TripwireUpdate): Promise<Tripwire> {
-		return api.patch<Tripwire>(`${BASE}/${id}${toQuery({ project_id: projectId })}`, body);
+		return api.patch<Tripwire>(
+			`${BASE}/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`,
+			body
+		);
 	},
 
 	remove(id: string, projectId: string): Promise<void> {
-		return api.delete<void>(`${BASE}/${id}${toQuery({ project_id: projectId })}`);
+		return api.delete<void>(
+			`${BASE}/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	catalog(): Promise<TripwireCatalog> {
@@ -47,7 +52,9 @@ export const tripwiresApi = {
 	},
 
 	run(runId: string, projectId: string): Promise<TripwireRun> {
-		return api.get<TripwireRun>(`${BASE}/runs/${runId}${toQuery({ project_id: projectId })}`);
+		return api.get<TripwireRun>(
+			`${BASE}/runs/${encodeURIComponent(runId)}${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	runs(
@@ -56,13 +63,13 @@ export const tripwiresApi = {
 		params: { status?: string | null; page?: number; size?: number } = {}
 	): Promise<PaginatedResponse<TripwireRun>> {
 		return api.get<PaginatedResponse<TripwireRun>>(
-			`${BASE}/${id}/runs${toQuery({ project_id: projectId, ...params })}`
+			`${BASE}/${encodeURIComponent(id)}/runs${toQuery({ project_id: projectId, ...params })}`
 		);
 	},
 
 	runCounts(id: string, projectId: string): Promise<TripwireRunCounts> {
 		return api.get<TripwireRunCounts>(
-			`${BASE}/${id}/runs/counts${toQuery({ project_id: projectId })}`
+			`${BASE}/${encodeURIComponent(id)}/runs/counts${toQuery({ project_id: projectId })}`
 		);
 	}
 };

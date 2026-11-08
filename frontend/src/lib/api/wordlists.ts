@@ -11,10 +11,10 @@ export const wordlistsApi = {
 	},
 
 	preview(id: string, limit = 100): Promise<string[]> {
-		return api.get<string[]>(`/wordlists/${id}/preview?limit=${limit}`);
+		return api.get<string[]>(`/wordlists/${encodeURIComponent(id)}/preview?limit=${limit}`);
 	},
 
 	remove(id: string): Promise<void> {
-		return api.delete<void>(`/wordlists/${id}`);
+		return api.delete<void>(`/wordlists/${encodeURIComponent(id)}`);
 	}
 };

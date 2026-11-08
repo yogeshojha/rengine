@@ -22,7 +22,7 @@ export const scanEnginesApi = {
 	},
 
 	async get(id: string, projectId: string): Promise<ScanEngine> {
-		return api.get<ScanEngine>(`/engines/${id}?project_id=${projectId}`);
+		return api.get<ScanEngine>(`/engines/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	async create(projectId: string, data: ScanEngineCreate): Promise<ScanEngine> {
@@ -30,19 +30,28 @@ export const scanEnginesApi = {
 	},
 
 	async update(id: string, projectId: string, data: ScanEngineUpdate): Promise<ScanEngine> {
-		return api.patch<ScanEngine>(`/engines/${id}?project_id=${projectId}`, data);
+		return api.patch<ScanEngine>(
+			`/engines/${encodeURIComponent(id)}?project_id=${projectId}`,
+			data
+		);
 	},
 
 	async delete(id: string, projectId: string): Promise<{ deleted: true }> {
-		return api.delete<{ deleted: true }>(`/engines/${id}?project_id=${projectId}`);
+		return api.delete<{ deleted: true }>(
+			`/engines/${encodeURIComponent(id)}?project_id=${projectId}`
+		);
 	},
 
 	async duplicate(id: string, projectId: string): Promise<ScanEngine> {
-		return api.post<ScanEngine>(`/engines/${id}/duplicate?project_id=${projectId}`);
+		return api.post<ScanEngine>(
+			`/engines/${encodeURIComponent(id)}/duplicate?project_id=${projectId}`
+		);
 	},
 
 	async exportYaml(id: string, projectId: string): Promise<{ yaml: string }> {
-		return api.get<{ yaml: string }>(`/engines/${id}/export?project_id=${projectId}`);
+		return api.get<{ yaml: string }>(
+			`/engines/${encodeURIComponent(id)}/export?project_id=${projectId}`
+		);
 	},
 
 	async importYaml(projectId: string, yaml: string): Promise<ScanEngine> {

@@ -20,18 +20,21 @@ export const exportsApi = {
 	},
 
 	async get(projectId: string, id: string): Promise<ExportRead> {
-		return api.get<ExportRead>(`/exports/${id}?${scopeQuery({ projectId })}`);
+		return api.get<ExportRead>(`/exports/${encodeURIComponent(id)}?${scopeQuery({ projectId })}`);
 	},
 
 	async rerun(projectId: string, id: string): Promise<ExportRead> {
-		return api.post<ExportRead>(`/exports/${id}/rerun?${scopeQuery({ projectId })}`, {});
+		return api.post<ExportRead>(
+			`/exports/${encodeURIComponent(id)}/rerun?${scopeQuery({ projectId })}`,
+			{}
+		);
 	},
 
 	async remove(projectId: string, id: string): Promise<void> {
-		return api.delete<void>(`/exports/${id}?${scopeQuery({ projectId })}`);
+		return api.delete<void>(`/exports/${encodeURIComponent(id)}?${scopeQuery({ projectId })}`);
 	},
 
 	downloadUrl(projectId: string, id: string): string {
-		return `${API_PREFIX}/exports/${id}/download?${scopeQuery({ projectId })}`;
+		return `${API_PREFIX}/exports/${encodeURIComponent(id)}/download?${scopeQuery({ projectId })}`;
 	}
 };

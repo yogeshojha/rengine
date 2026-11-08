@@ -117,7 +117,7 @@ export const vulnerabilitiesApi = {
 
 	async detail(projectId: string, scanId: string, id: string): Promise<VulnerabilityRead> {
 		return api.get<VulnerabilityRead>(
-			`/vulnerabilities/${id}?${scopeQuery({ projectId, scanId })}`
+			`/vulnerabilities/${encodeURIComponent(id)}?${scopeQuery({ projectId, scanId })}`
 		);
 	},
 
@@ -128,7 +128,7 @@ export const vulnerabilitiesApi = {
 		state: string
 	): Promise<TriageResult> {
 		return api.patch<TriageResult>(
-			`/vulnerabilities/triage/${fingerprint}?${scopeQuery({ projectId, scanId })}`,
+			`/vulnerabilities/triage/${encodeURIComponent(fingerprint)}?${scopeQuery({ projectId, scanId })}`,
 			{ state }
 		);
 	}
@@ -163,18 +163,20 @@ export const vulnTemplatesApi = {
 	},
 
 	async update(id: string, enabled: boolean): Promise<VulnTemplateRead> {
-		return api.patch<VulnTemplateRead>(`/vuln-templates/${id}`, { enabled });
+		return api.patch<VulnTemplateRead>(`/vuln-templates/${encodeURIComponent(id)}`, { enabled });
 	},
 
 	async source(id: string): Promise<TemplateSource> {
-		return api.get<TemplateSource>(`/vuln-templates/${id}/source`);
+		return api.get<TemplateSource>(`/vuln-templates/${encodeURIComponent(id)}/source`);
 	},
 
 	async saveSource(id: string, content: string): Promise<VulnTemplateRead> {
-		return api.put<VulnTemplateRead>(`/vuln-templates/${id}/source`, { content });
+		return api.put<VulnTemplateRead>(`/vuln-templates/${encodeURIComponent(id)}/source`, {
+			content
+		});
 	},
 
 	async remove(id: string): Promise<void> {
-		return api.delete<void>(`/vuln-templates/${id}`);
+		return api.delete<void>(`/vuln-templates/${encodeURIComponent(id)}`);
 	}
 };

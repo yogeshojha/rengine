@@ -45,10 +45,10 @@ export const tagsApi = {
 	},
 
 	async update(id: string, data: TagUpdate): Promise<Tag> {
-		return api.patch<Tag>(`/tags/${id}`, data);
+		return api.patch<Tag>(`/tags/${encodeURIComponent(id)}`, data);
 	},
 
 	async remove(id: string): Promise<void> {
-		await api.delete(`/tags/${id}`);
+		await api.delete(`/tags/${encodeURIComponent(id)}`);
 	}
 };

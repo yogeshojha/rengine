@@ -23,15 +23,17 @@ function filterParams(f: BountyReportFilters): URLSearchParams {
 
 export const bountyReportsApi = {
 	async summary(platform: string): Promise<BountyAccountSummary> {
-		return api.get<BountyAccountSummary>(`/bounty-reports/${platform}/summary`);
+		return api.get<BountyAccountSummary>(`/bounty-reports/${encodeURIComponent(platform)}/summary`);
 	},
 
 	async programs(platform: string): Promise<ProgramReports[]> {
-		return api.get<ProgramReports[]>(`/bounty-reports/${platform}/programs`);
+		return api.get<ProgramReports[]>(`/bounty-reports/${encodeURIComponent(platform)}/programs`);
 	},
 
 	async counts(platform: string, f: BountyReportFilters): Promise<ReportCounts> {
-		return api.get<ReportCounts>(`/bounty-reports/${platform}/counts?${filterParams(f)}`);
+		return api.get<ReportCounts>(
+			`/bounty-reports/${encodeURIComponent(platform)}/counts?${filterParams(f)}`
+		);
 	},
 
 	async list(
@@ -47,10 +49,12 @@ export const bountyReportsApi = {
 		search.set('order', f.order);
 		search.set('page', String(page));
 		search.set('size', String(size));
-		return api.get<PaginatedResponse<BountyReport>>(`/bounty-reports/${platform}?${search}`);
+		return api.get<PaginatedResponse<BountyReport>>(
+			`/bounty-reports/${encodeURIComponent(platform)}?${search}`
+		);
 	},
 
 	async sync(platform: string): Promise<void> {
-		await api.post(`/bounty-reports/${platform}/sync`);
+		await api.post(`/bounty-reports/${encodeURIComponent(platform)}/sync`);
 	}
 };

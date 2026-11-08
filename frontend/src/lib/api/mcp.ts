@@ -36,14 +36,14 @@ export const mcpApi = {
 	},
 
 	updateToken(id: string, body: McpTokenUpdate): Promise<McpToken> {
-		return api.patch<McpToken>(`/mcp/tokens/${id}`, body);
+		return api.patch<McpToken>(`/mcp/tokens/${encodeURIComponent(id)}`, body);
 	},
 
 	revokeToken(id: string): Promise<void> {
-		return api.post<void>(`/mcp/tokens/${id}/revoke`);
+		return api.post<void>(`/mcp/tokens/${encodeURIComponent(id)}/revoke`);
 	},
 
 	deleteToken(id: string): Promise<void> {
-		return api.delete<void>(`/mcp/tokens/${id}`);
+		return api.delete<void>(`/mcp/tokens/${encodeURIComponent(id)}`);
 	}
 };

@@ -9,7 +9,9 @@ export const cloudStorageApi = {
 
 	async target(projectId: string, targetId: string): Promise<CloudBucketSummary> {
 		const sp = new URLSearchParams({ project_id: projectId });
-		return api.get<CloudBucketSummary>(`/cloud-storage/target/${targetId}?${sp.toString()}`);
+		return api.get<CloudBucketSummary>(
+			`/cloud-storage/target/${encodeURIComponent(targetId)}?${sp.toString()}`
+		);
 	},
 
 	async triage(

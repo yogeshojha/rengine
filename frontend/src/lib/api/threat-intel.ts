@@ -45,10 +45,10 @@ export const threatIntelApi = {
 	): Promise<SignalFinding[]> {
 		const params = appendTargetScope(new URLSearchParams({ limit: String(limit) }), scope);
 		if (projectId) params.set('project_id', projectId);
-		return api.get<SignalFinding[]>(`/threat-intel/signal/${kind}?${params}`);
+		return api.get<SignalFinding[]>(`/threat-intel/signal/${encodeURIComponent(kind)}?${params}`);
 	},
 
 	async finding(vulnerabilityId: string): Promise<FindingIntel> {
-		return api.get<FindingIntel>(`/threat-intel/finding/${vulnerabilityId}`);
+		return api.get<FindingIntel>(`/threat-intel/finding/${encodeURIComponent(vulnerabilityId)}`);
 	}
 };

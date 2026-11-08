@@ -42,7 +42,9 @@ import type {
 
 export const httpAssetsApi = {
 	async detail(projectId: string, assetId: string): Promise<HttpAssetDetail> {
-		return api.get<HttpAssetDetail>(`/http-assets/${assetId}?project_id=${projectId}`);
+		return api.get<HttpAssetDetail>(
+			`/http-assets/${encodeURIComponent(assetId)}?project_id=${projectId}`
+		);
 	}
 };
 
@@ -278,7 +280,9 @@ export const endpointsApi = {
 	},
 
 	async detail(projectId: string, scanId: string, id: string): Promise<EndpointDetail> {
-		return api.get<EndpointDetail>(`/endpoints/${id}?${scopeQuery({ projectId, scanId })}`);
+		return api.get<EndpointDetail>(
+			`/endpoints/${encodeURIComponent(id)}?${scopeQuery({ projectId, scanId })}`
+		);
 	}
 };
 
@@ -334,7 +338,9 @@ export const secretsApi = {
 	},
 
 	async detail(projectId: string, scanId: string, id: string): Promise<SecretDetail> {
-		return api.get<SecretDetail>(`/secrets/${id}?${scopeQuery({ projectId, scanId })}`);
+		return api.get<SecretDetail>(
+			`/secrets/${encodeURIComponent(id)}?${scopeQuery({ projectId, scanId })}`
+		);
 	},
 
 	async groups(

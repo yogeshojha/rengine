@@ -39,7 +39,7 @@ export const bountyProgramsApi = {
 		platform: string = BountyPlatform.HackerOne
 	): Promise<BountyProgramDetail> {
 		return api.get<BountyProgramDetail>(
-			`/bounty-programs/${platform}/${encodeURIComponent(handle)}${toQuery({
+			`/bounty-programs/${encodeURIComponent(platform)}/${encodeURIComponent(handle)}${toQuery({
 				project_id: projectId
 			})}`
 		);
@@ -76,7 +76,10 @@ export const bountyProgramsApi = {
 	},
 
 	async syncProgram(handle: string, platform: string = BountyPlatform.HackerOne): Promise<unknown> {
-		return api.post(`/bounty-programs/${platform}/${encodeURIComponent(handle)}/sync`, {});
+		return api.post(
+			`/bounty-programs/${encodeURIComponent(platform)}/${encodeURIComponent(handle)}/sync`,
+			{}
+		);
 	},
 
 	async importScopes(
@@ -90,7 +93,7 @@ export const bountyProgramsApi = {
 		platform: string = BountyPlatform.HackerOne
 	): Promise<BountyImportResult> {
 		return api.post<BountyImportResult>(
-			`/bounty-programs/${platform}/${encodeURIComponent(handle)}/import`,
+			`/bounty-programs/${encodeURIComponent(platform)}/${encodeURIComponent(handle)}/import`,
 			{
 				project_id: projectId,
 				scope_ids: scopeIds ?? null,

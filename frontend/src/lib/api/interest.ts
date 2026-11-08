@@ -26,11 +26,14 @@ export const interestApi = {
 	},
 
 	updateRule(projectId: string, id: string, body: InterestRuleUpdate): Promise<InterestRule> {
-		return api.patch<InterestRule>(`/interest/rules/${id}?project_id=${projectId}`, body);
+		return api.patch<InterestRule>(
+			`/interest/rules/${encodeURIComponent(id)}?project_id=${projectId}`,
+			body
+		);
 	},
 
 	deleteRule(projectId: string, id: string): Promise<void> {
-		return api.delete<void>(`/interest/rules/${id}?project_id=${projectId}`);
+		return api.delete<void>(`/interest/rules/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	preview(query: string, scanId?: string): Promise<RulePreview> {
@@ -50,15 +53,18 @@ export const interestApi = {
 	},
 
 	scan(scanId: string, filter: InterestFilter): Promise<InterestPage> {
-		return api.post<InterestPage>(`/interest/scan/${scanId}`, filter);
+		return api.post<InterestPage>(`/interest/scan/${encodeURIComponent(scanId)}`, filter);
 	},
 
 	suggestions(scanId: string): Promise<RuleSuggestion[]> {
-		return api.post<RuleSuggestion[]>(`/interest/scan/${scanId}/suggestions`, {});
+		return api.post<RuleSuggestion[]>(
+			`/interest/scan/${encodeURIComponent(scanId)}/suggestions`,
+			{}
+		);
 	},
 
 	judge(scanId: string): Promise<{ status: string }> {
-		return api.post<{ status: string }>(`/interest/scan/${scanId}/judge`, {});
+		return api.post<{ status: string }>(`/interest/scan/${encodeURIComponent(scanId)}/judge`, {});
 	},
 
 	dismiss(body: {
@@ -81,6 +87,6 @@ export const interestApi = {
 	},
 
 	restore(id: string): Promise<void> {
-		return api.delete<void>(`/interest/dismissals/${id}`);
+		return api.delete<void>(`/interest/dismissals/${encodeURIComponent(id)}`);
 	}
 };

@@ -11,7 +11,7 @@ export const scanContextsApi = {
 	},
 
 	async get(id: string, projectId: string): Promise<ScanContextRead> {
-		return api.get<ScanContextRead>(`/contexts/${id}?project_id=${projectId}`);
+		return api.get<ScanContextRead>(`/contexts/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	async create(projectId: string, data: ScanContextCreate): Promise<ScanContextRead> {
@@ -19,14 +19,21 @@ export const scanContextsApi = {
 	},
 
 	async update(id: string, projectId: string, data: ScanContextUpdate): Promise<ScanContextRead> {
-		return api.patch<ScanContextRead>(`/contexts/${id}?project_id=${projectId}`, data);
+		return api.patch<ScanContextRead>(
+			`/contexts/${encodeURIComponent(id)}?project_id=${projectId}`,
+			data
+		);
 	},
 
 	async remove(id: string, projectId: string): Promise<{ deleted: true }> {
-		return api.delete<{ deleted: true }>(`/contexts/${id}?project_id=${projectId}`);
+		return api.delete<{ deleted: true }>(
+			`/contexts/${encodeURIComponent(id)}?project_id=${projectId}`
+		);
 	},
 
 	async duplicate(id: string, projectId: string): Promise<ScanContextRead> {
-		return api.post<ScanContextRead>(`/contexts/${id}/duplicate?project_id=${projectId}`);
+		return api.post<ScanContextRead>(
+			`/contexts/${encodeURIComponent(id)}/duplicate?project_id=${projectId}`
+		);
 	}
 };

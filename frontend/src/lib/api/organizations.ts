@@ -35,10 +35,10 @@ export const organizationsApi = {
 	},
 
 	async update(id: string, data: OrganizationUpdate): Promise<Organization> {
-		return api.patch<Organization>(`/organizations/${id}`, data);
+		return api.patch<Organization>(`/organizations/${encodeURIComponent(id)}`, data);
 	},
 
 	async remove(id: string): Promise<void> {
-		await api.delete(`/organizations/${id}`);
+		await api.delete(`/organizations/${encodeURIComponent(id)}`);
 	}
 };

@@ -9,7 +9,9 @@ export const lookalikesApi = {
 
 	async target(projectId: string, targetId: string): Promise<LookalikeSummary> {
 		const sp = new URLSearchParams({ project_id: projectId });
-		return api.get<LookalikeSummary>(`/lookalikes/target/${targetId}?${sp.toString()}`);
+		return api.get<LookalikeSummary>(
+			`/lookalikes/target/${encodeURIComponent(targetId)}?${sp.toString()}`
+		);
 	},
 
 	async triage(

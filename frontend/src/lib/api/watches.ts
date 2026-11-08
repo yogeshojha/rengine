@@ -20,35 +20,40 @@ export const watchesApi = {
 	},
 
 	get(id: string, projectId: string): Promise<Watch> {
-		return api.get<Watch>(`${BASE}/${id}${toQuery({ project_id: projectId })}`);
+		return api.get<Watch>(`${BASE}/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`);
 	},
 
 	preview(platform: string, handle: string, projectId: string): Promise<WatchPreview> {
 		return api.get<WatchPreview>(
-			`/bounty-programs/${platform}/${encodeURIComponent(handle)}/watch/preview${toQuery({
-				project_id: projectId
-			})}`
+			`/bounty-programs/${encodeURIComponent(platform)}/${encodeURIComponent(handle)}/watch/preview${toQuery(
+				{
+					project_id: projectId
+				}
+			)}`
 		);
 	},
 
 	create(platform: string, handle: string, body: WatchCreate): Promise<Watch> {
 		return api.post<Watch>(
-			`/bounty-programs/${platform}/${encodeURIComponent(handle)}/watch`,
+			`/bounty-programs/${encodeURIComponent(platform)}/${encodeURIComponent(handle)}/watch`,
 			body
 		);
 	},
 
 	update(id: string, projectId: string, patch: WatchUpdate): Promise<Watch> {
-		return api.patch<Watch>(`${BASE}/${id}${toQuery({ project_id: projectId })}`, patch);
+		return api.patch<Watch>(
+			`${BASE}/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`,
+			patch
+		);
 	},
 
 	remove(id: string, projectId: string): Promise<unknown> {
-		return api.delete(`${BASE}/${id}${toQuery({ project_id: projectId })}`);
+		return api.delete(`${BASE}/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`);
 	},
 
 	markSeen(id: string, projectId: string): Promise<{ seen_at: string }> {
 		return api.post<{ seen_at: string }>(
-			`${BASE}/${id}/seen${toQuery({ project_id: projectId })}`,
+			`${BASE}/${encodeURIComponent(id)}/seen${toQuery({ project_id: projectId })}`,
 			{}
 		);
 	},
@@ -65,7 +70,7 @@ export const watchesApi = {
 		}
 	): Promise<PaginatedResponse<WatchHost>> {
 		return api.get<PaginatedResponse<WatchHost>>(
-			`${BASE}/${id}/hosts${toQuery({
+			`${BASE}/${encodeURIComponent(id)}/hosts${toQuery({
 				project_id: projectId,
 				state: options.state === WatchHostFilter.All ? null : options.state,
 				since: options.since,
@@ -78,13 +83,13 @@ export const watchesApi = {
 
 	hostCounts(id: string, projectId: string, since?: string | null): Promise<WatchHostCounts> {
 		return api.get<WatchHostCounts>(
-			`${BASE}/${id}/hosts/counts${toQuery({ project_id: projectId, since })}`
+			`${BASE}/${encodeURIComponent(id)}/hosts/counts${toQuery({ project_id: projectId, since })}`
 		);
 	},
 
 	muteHost(id: string, hostId: string, projectId: string): Promise<WatchHost> {
 		return api.post<WatchHost>(
-			`${BASE}/${id}/hosts/${hostId}/mute${toQuery({ project_id: projectId })}`,
+			`${BASE}/${encodeURIComponent(id)}/hosts/${encodeURIComponent(hostId)}/mute${toQuery({ project_id: projectId })}`,
 			{}
 		);
 	},
@@ -95,7 +100,7 @@ export const watchesApi = {
 		options: { page: number; size: number; kind?: string | null; since?: string | null }
 	): Promise<PaginatedResponse<WatchEvent>> {
 		return api.get<PaginatedResponse<WatchEvent>>(
-			`${BASE}/${id}/events${toQuery({
+			`${BASE}/${encodeURIComponent(id)}/events${toQuery({
 				project_id: projectId,
 				page: options.page,
 				size: options.size,

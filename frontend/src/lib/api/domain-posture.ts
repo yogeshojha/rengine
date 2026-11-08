@@ -15,6 +15,8 @@ export const domainPostureApi = {
 
 	async target(projectId: string, targetId: string): Promise<DomainPostureSummary> {
 		const sp = new URLSearchParams({ project_id: projectId });
-		return api.get<DomainPostureSummary>(`/domain-posture/target/${targetId}?${sp.toString()}`);
+		return api.get<DomainPostureSummary>(
+			`/domain-posture/target/${encodeURIComponent(targetId)}?${sp.toString()}`
+		);
 	}
 };

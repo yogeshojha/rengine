@@ -7,15 +7,19 @@ import type {
 
 export const whoisApi = {
 	async getRecord(recordId: string): Promise<WhoisRecordRead> {
-		return api.get<WhoisRecordRead>(`/tools/whois/records/${recordId}`);
+		return api.get<WhoisRecordRead>(`/tools/whois/records/${encodeURIComponent(recordId)}`);
 	},
 
 	async refreshRecord(recordId: string): Promise<WhoisRefreshResponse> {
-		return api.post<WhoisRefreshResponse>(`/tools/whois/records/${recordId}/refresh`);
+		return api.post<WhoisRefreshResponse>(
+			`/tools/whois/records/${encodeURIComponent(recordId)}/refresh`
+		);
 	},
 
 	async getTargetCorrelations(targetId: string): Promise<WhoisCorrelationResult[]> {
-		return api.get<WhoisCorrelationResult[]>(`/tools/whois/correlations/target/${targetId}`);
+		return api.get<WhoisCorrelationResult[]>(
+			`/tools/whois/correlations/target/${encodeURIComponent(targetId)}`
+		);
 	},
 
 	async getTargetsCorrelations(

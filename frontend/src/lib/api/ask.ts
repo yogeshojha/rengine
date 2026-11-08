@@ -95,7 +95,7 @@ function fetchBrief(subject: AskSubject): Promise<AskBrief> {
 		return api.get<AskBrief>(`/ask/brief/web-asset?${query}`);
 	}
 	const scope = scopeQuery({ projectId: subject.projectId, scanId: subject.scanId });
-	return api.get<AskBrief>(`/ask/brief/${subject.briefId ?? ''}?${scope}`);
+	return api.get<AskBrief>(`/ask/brief/${encodeURIComponent(subject.briefId ?? '')}?${scope}`);
 }
 
 export const askBriefs = createBriefCache(fetchBrief);
@@ -123,11 +123,11 @@ export const askApi = {
 	},
 
 	thread(threadId: string): Promise<AskThreadDetail> {
-		return api.get<AskThreadDetail>(`/ask/threads/${threadId}`);
+		return api.get<AskThreadDetail>(`/ask/threads/${encodeURIComponent(threadId)}`);
 	},
 
 	deleteThread(threadId: string): Promise<void> {
-		return api.delete<void>(`/ask/threads/${threadId}`);
+		return api.delete<void>(`/ask/threads/${encodeURIComponent(threadId)}`);
 	},
 
 	deleteThreads(subject: AskSubject): Promise<{ deleted: number }> {
@@ -146,7 +146,7 @@ export const askApi = {
 		signal?: AbortSignal
 	): Promise<void> {
 		return api.stream(
-			`/ask/threads/${threadId}/messages`,
+			`/ask/threads/${encodeURIComponent(threadId)}/messages`,
 			body,
 			(event, data) => onFrame({ event, data } as AskStreamFrame),
 			signal
@@ -184,25 +184,30 @@ export const estateApi = {
 	},
 
 	thread(threadId: string): Promise<EstateThreadDetail> {
-		return api.get<EstateThreadDetail>(`/ask/estate/threads/${threadId}`);
+		return api.get<EstateThreadDetail>(`/ask/estate/threads/${encodeURIComponent(threadId)}`);
 	},
 
 	blocks(threadId: string): Promise<BlockData[]> {
-		return api.get<BlockData[]>(`/ask/estate/threads/${threadId}/blocks`);
+		return api.get<BlockData[]>(`/ask/estate/threads/${encodeURIComponent(threadId)}/blocks`);
 	},
 
 	page(threadId: string, blockId: string, offset: number): Promise<BlockData> {
-		return api.get<BlockData>(`/ask/estate/threads/${threadId}/blocks/${blockId}?offset=${offset}`);
+		return api.get<BlockData>(
+			`/ask/estate/threads/${encodeURIComponent(threadId)}/blocks/${encodeURIComponent(blockId)}?offset=${offset}`
+		);
 	},
 
 	editQuery(threadId: string, blockId: string, query: string): Promise<BlockData> {
-		return api.put<BlockData>(`/ask/estate/threads/${threadId}/blocks/${blockId}/query`, {
-			query
-		});
+		return api.put<BlockData>(
+			`/ask/estate/threads/${encodeURIComponent(threadId)}/blocks/${encodeURIComponent(blockId)}/query`,
+			{
+				query
+			}
+		);
 	},
 
 	remove(threadId: string): Promise<void> {
-		return api.delete<void>(`/ask/estate/threads/${threadId}`);
+		return api.delete<void>(`/ask/estate/threads/${encodeURIComponent(threadId)}`);
 	},
 
 	ask(
@@ -212,7 +217,7 @@ export const estateApi = {
 		signal?: AbortSignal
 	): Promise<void> {
 		return api.stream(
-			`/ask/estate/threads/${threadId}/messages`,
+			`/ask/estate/threads/${encodeURIComponent(threadId)}/messages`,
 			body,
 			(event, data) => onFrame({ event, data } as EstateStreamFrame),
 			signal

@@ -29,13 +29,15 @@ export const reportsApi = {
 
 	updateTemplate(projectId: string, id: string, body: unknown): Promise<ReportTemplate> {
 		return api.patch<ReportTemplate>(
-			`/reports/templates/${id}${toQuery({ project_id: projectId })}`,
+			`/reports/templates/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`,
 			body
 		);
 	},
 
 	deleteTemplate(projectId: string, id: string): Promise<void> {
-		return api.delete<void>(`/reports/templates/${id}${toQuery({ project_id: projectId })}`);
+		return api.delete<void>(
+			`/reports/templates/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	list(projectId: string): Promise<Report[]> {
@@ -43,7 +45,9 @@ export const reportsApi = {
 	},
 
 	get(projectId: string, id: string): Promise<Report> {
-		return api.get<Report>(`/reports/${id}${toQuery({ project_id: projectId })}`);
+		return api.get<Report>(
+			`/reports/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	create(projectId: string, body: ReportCreate): Promise<Report> {
@@ -55,23 +59,29 @@ export const reportsApi = {
 	},
 
 	retry(projectId: string, id: string): Promise<Report> {
-		return api.post<Report>(`/reports/${id}/retry${toQuery({ project_id: projectId })}`);
+		return api.post<Report>(
+			`/reports/${encodeURIComponent(id)}/retry${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	remove(projectId: string, id: string): Promise<void> {
-		return api.delete<void>(`/reports/${id}${toQuery({ project_id: projectId })}`);
+		return api.delete<void>(
+			`/reports/${encodeURIComponent(id)}${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	downloadUrl(projectId: string, id: string, format: string): string {
-		return `${API_PREFIX}/reports/${id}/download${toQuery({ project_id: projectId, format })}`;
+		return `${API_PREFIX}/reports/${encodeURIComponent(id)}/download${toQuery({ project_id: projectId, format })}`;
 	},
 
 	previewUrl(projectId: string, id: string): string {
-		return `${API_PREFIX}/reports/${id}/preview${toQuery({ project_id: projectId })}`;
+		return `${API_PREFIX}/reports/${encodeURIComponent(id)}/preview${toQuery({ project_id: projectId })}`;
 	},
 
 	pdf(projectId: string, id: string): Promise<ArrayBuffer> {
-		return api.bytes(`/reports/${id}/preview${toQuery({ project_id: projectId })}`);
+		return api.bytes(
+			`/reports/${encodeURIComponent(id)}/preview${toQuery({ project_id: projectId })}`
+		);
 	},
 
 	uploadFont(body: ReportFontUpload): Promise<ReportFont> {
@@ -79,7 +89,7 @@ export const reportsApi = {
 	},
 
 	deleteFont(slug: string): Promise<void> {
-		return api.delete<void>(`/reports/fonts/${slug}`);
+		return api.delete<void>(`/reports/fonts/${encodeURIComponent(slug)}`);
 	},
 
 	defaults(): Promise<ReportDefaults> {
@@ -91,7 +101,7 @@ export const reportsApi = {
 	},
 
 	themeSource(slug: string): Promise<string> {
-		return api.get<string>(`/reports/themes/${slug}/source`);
+		return api.get<string>(`/reports/themes/${encodeURIComponent(slug)}/source`);
 	},
 
 	uploadTheme(content: string): Promise<ReportTheme> {
@@ -99,6 +109,6 @@ export const reportsApi = {
 	},
 
 	deleteTheme(slug: string): Promise<void> {
-		return api.delete<void>(`/reports/themes/${slug}`);
+		return api.delete<void>(`/reports/themes/${encodeURIComponent(slug)}`);
 	}
 };

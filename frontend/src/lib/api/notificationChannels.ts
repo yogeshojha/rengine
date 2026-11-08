@@ -15,15 +15,20 @@ export const notificationChannelsApi = {
 	},
 
 	update: (id: string, data: NotificationChannelUpdate): Promise<NotificationChannelRead> => {
-		return api.patch<NotificationChannelRead>(`/notification-channels/${id}`, data);
+		return api.patch<NotificationChannelRead>(
+			`/notification-channels/${encodeURIComponent(id)}`,
+			data
+		);
 	},
 
 	remove: (id: string): Promise<void> => {
-		return api.delete(`/notification-channels/${id}`);
+		return api.delete(`/notification-channels/${encodeURIComponent(id)}`);
 	},
 
 	test: (id: string): Promise<{ success: boolean; message: string }> => {
-		return api.post<{ success: boolean; message: string }>(`/notification-channels/${id}/test`);
+		return api.post<{ success: boolean; message: string }>(
+			`/notification-channels/${encodeURIComponent(id)}/test`
+		);
 	},
 
 	testConfig: (data: {

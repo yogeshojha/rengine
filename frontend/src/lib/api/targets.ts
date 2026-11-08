@@ -76,19 +76,26 @@ export const targetsApi = {
 	},
 
 	async listSeeds(targetId: string): Promise<TargetSeed[]> {
-		return api.get<TargetSeed[]>(`/targets/${targetId}/seeds`);
+		return api.get<TargetSeed[]>(`/targets/${encodeURIComponent(targetId)}/seeds`);
 	},
 
 	async writeSeeds(targetId: string, values: string[], replace = false): Promise<TargetSeedResult> {
-		return api.put<TargetSeedResult>(`/targets/${targetId}/seeds`, { values, replace });
+		return api.put<TargetSeedResult>(`/targets/${encodeURIComponent(targetId)}/seeds`, {
+			values,
+			replace
+		});
 	},
 
 	async deleteSeed(targetId: string, seedId: string): Promise<void> {
-		return api.delete<void>(`/targets/${targetId}/seeds/${seedId}`);
+		return api.delete<void>(
+			`/targets/${encodeURIComponent(targetId)}/seeds/${encodeURIComponent(seedId)}`
+		);
 	},
 
 	async getRelations(targetId: string, projectId: string): Promise<TargetRelations> {
-		return api.get<TargetRelations>(`/targets/${targetId}/relations?project_id=${projectId}`);
+		return api.get<TargetRelations>(
+			`/targets/${encodeURIComponent(targetId)}/relations?project_id=${projectId}`
+		);
 	},
 
 	async getEstate(
@@ -98,7 +105,9 @@ export const targetsApi = {
 	): Promise<TargetEstate> {
 		const params = new URLSearchParams({ project_id: projectId });
 		if (scanId) params.set('scan_id', scanId);
-		return api.get<TargetEstate>(`/targets/${targetId}/estate?${params.toString()}`);
+		return api.get<TargetEstate>(
+			`/targets/${encodeURIComponent(targetId)}/estate?${params.toString()}`
+		);
 	},
 
 	async projectEstate(projectId: string): Promise<ProjectEstate> {
@@ -117,7 +126,9 @@ export const targetsApi = {
 	},
 
 	async getPrograms(targetId: string, projectId: string): Promise<TargetPrograms> {
-		return api.get<TargetPrograms>(`/targets/${targetId}/programs?project_id=${projectId}`);
+		return api.get<TargetPrograms>(
+			`/targets/${encodeURIComponent(targetId)}/programs?project_id=${projectId}`
+		);
 	},
 
 	async getStats(params: TargetStatsParams): Promise<TargetSummary> {
@@ -162,7 +173,7 @@ export const targetsApi = {
 	},
 
 	async get(targetId: string): Promise<Target> {
-		return api.get<Target>(`/targets/${targetId}`);
+		return api.get<Target>(`/targets/${encodeURIComponent(targetId)}`);
 	},
 
 	async searchByValue(targetValue: string, projectSlug?: string): Promise<Target[]> {
@@ -177,11 +188,11 @@ export const targetsApi = {
 	},
 
 	async update(targetId: string, data: TargetUpdate): Promise<Target> {
-		return api.patch<Target>(`/targets/${targetId}`, data);
+		return api.patch<Target>(`/targets/${encodeURIComponent(targetId)}`, data);
 	},
 
 	async delete(targetId: string): Promise<void> {
-		return api.delete(`/targets/${targetId}`);
+		return api.delete(`/targets/${encodeURIComponent(targetId)}`);
 	},
 
 	async validate(data: TargetValidationRequest): Promise<TargetValidationResponse> {
@@ -220,40 +231,52 @@ export const targetsApi = {
 	},
 
 	async getDns(targetId: string): Promise<TargetDnsDetailResponse> {
-		return api.get<TargetDnsDetailResponse>(`/targets/${targetId}/dns`);
+		return api.get<TargetDnsDetailResponse>(`/targets/${encodeURIComponent(targetId)}/dns`);
 	},
 
 	async refreshDns(targetId: string): Promise<EnrichmentRefreshResponse> {
-		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/dns/refresh`);
+		return api.post<EnrichmentRefreshResponse>(
+			`/targets/${encodeURIComponent(targetId)}/dns/refresh`
+		);
 	},
 
 	async refreshWhois(targetId: string): Promise<EnrichmentRefreshResponse> {
-		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/whois/refresh`);
+		return api.post<EnrichmentRefreshResponse>(
+			`/targets/${encodeURIComponent(targetId)}/whois/refresh`
+		);
 	},
 
 	async refreshBgp(targetId: string): Promise<EnrichmentRefreshResponse> {
-		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/bgp/refresh`);
+		return api.post<EnrichmentRefreshResponse>(
+			`/targets/${encodeURIComponent(targetId)}/bgp/refresh`
+		);
 	},
 
 	async refreshInfostealer(targetId: string): Promise<EnrichmentRefreshResponse> {
-		return api.post<EnrichmentRefreshResponse>(`/targets/${targetId}/infostealer/refresh`);
+		return api.post<EnrichmentRefreshResponse>(
+			`/targets/${encodeURIComponent(targetId)}/infostealer/refresh`
+		);
 	},
 
 	async getInfostealer(targetId: string, scanId: string | null): Promise<InfostealerReport> {
 		const query = scanId ? `?scan_id=${encodeURIComponent(scanId)}` : '';
-		return api.get<InfostealerReport>(`/targets/${targetId}/infostealer${query}`);
+		return api.get<InfostealerReport>(
+			`/targets/${encodeURIComponent(targetId)}/infostealer${query}`
+		);
 	},
 
 	async getDetail(targetId: string): Promise<TargetDetailRead> {
-		return api.get<TargetDetailRead>(`/targets/${targetId}/detail`);
+		return api.get<TargetDetailRead>(`/targets/${encodeURIComponent(targetId)}/detail`);
 	},
 
 	async getBgp(targetId: string): Promise<TargetBgpDetailResponse> {
-		return api.get<TargetBgpDetailResponse>(`/targets/${targetId}/bgp`);
+		return api.get<TargetBgpDetailResponse>(`/targets/${encodeURIComponent(targetId)}/bgp`);
 	},
 
 	async getSummary(targetId: string, projectId: string): Promise<TargetSummaryRead> {
-		return api.get<TargetSummaryRead>(`/targets/${targetId}/summary?project_id=${projectId}`);
+		return api.get<TargetSummaryRead>(
+			`/targets/${encodeURIComponent(targetId)}/summary?project_id=${projectId}`
+		);
 	},
 
 	async searchAssets(
@@ -261,6 +284,9 @@ export const targetsApi = {
 		projectId: string,
 		filter: TargetAssetFilter
 	): Promise<TargetAssetPage> {
-		return api.post<TargetAssetPage>(`/targets/${targetId}/assets?project_id=${projectId}`, filter);
+		return api.post<TargetAssetPage>(
+			`/targets/${encodeURIComponent(targetId)}/assets?project_id=${projectId}`,
+			filter
+		);
 	}
 };

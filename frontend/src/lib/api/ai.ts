@@ -43,19 +43,19 @@ export const aiApi = {
 	},
 
 	updateConnection(id: string, body: AiConnectionUpdate): Promise<AiConnection> {
-		return api.patch<AiConnection>(`/ai/connections/${id}`, body);
+		return api.patch<AiConnection>(`/ai/connections/${encodeURIComponent(id)}`, body);
 	},
 
 	deleteConnection(id: string): Promise<void> {
-		return api.delete<void>(`/ai/connections/${id}`);
+		return api.delete<void>(`/ai/connections/${encodeURIComponent(id)}`);
 	},
 
 	useConnection(id: string): Promise<AiConnection> {
-		return api.post<AiConnection>(`/ai/connections/${id}/use`);
+		return api.post<AiConnection>(`/ai/connections/${encodeURIComponent(id)}/use`);
 	},
 
 	testConnection(id: string): Promise<AiTestResult> {
-		return api.post<AiTestResult>(`/ai/connections/${id}/test`);
+		return api.post<AiTestResult>(`/ai/connections/${encodeURIComponent(id)}/test`);
 	},
 
 	models(body: AiModelsRequest): Promise<AiModelList> {

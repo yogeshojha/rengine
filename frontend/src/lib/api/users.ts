@@ -39,20 +39,22 @@ export const usersApi = {
 	},
 
 	update(userId: string, data: UserAccountUpdate): Promise<UserAccount> {
-		return api.patch<UserAccount>(`/users/${userId}`, data);
+		return api.patch<UserAccount>(`/users/${encodeURIComponent(userId)}`, data);
 	},
 
 	remove(userId: string): Promise<void> {
-		return api.delete(`/users/${userId}`);
+		return api.delete(`/users/${encodeURIComponent(userId)}`);
 	},
 
 	getSummary(userId: string): Promise<UserSummary> {
 		const cached = cache.get(userId);
 		if (cached) return cached;
-		const request = api.get<UserSummary>(`/users/${userId}/summary`).catch((err) => {
-			cache.delete(userId);
-			throw err;
-		});
+		const request = api
+			.get<UserSummary>(`/users/${encodeURIComponent(userId)}/summary`)
+			.catch((err) => {
+				cache.delete(userId);
+				throw err;
+			});
 		cache.set(userId, request);
 		return request;
 	}

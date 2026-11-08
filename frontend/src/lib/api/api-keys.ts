@@ -21,7 +21,7 @@ export const apiKeysApi = {
 	},
 
 	async update(keyId: string, data: APIKeyUpdate): Promise<APIKeyRead> {
-		return api.patch<APIKeyRead>(`/api-keys/${keyId}`, data);
+		return api.patch<APIKeyRead>(`/api-keys/${encodeURIComponent(keyId)}`, data);
 	},
 
 	async upsert(provider: APIProvider, key_value: string): Promise<APIKeyRead> {
@@ -32,14 +32,14 @@ export const apiKeysApi = {
 	},
 
 	async delete(keyId: string): Promise<void> {
-		return api.delete(`/api-keys/${keyId}`);
+		return api.delete(`/api-keys/${encodeURIComponent(keyId)}`);
 	},
 
 	async reveal(keyId: string): Promise<{ key_value: string }> {
-		return api.get(`/api-keys/${keyId}/reveal`);
+		return api.get(`/api-keys/${encodeURIComponent(keyId)}/reveal`);
 	},
 
 	async test(keyId: string): Promise<{ provider: string; success: boolean; message: string }> {
-		return api.post(`/api-keys/${keyId}/test`);
+		return api.post(`/api-keys/${encodeURIComponent(keyId)}/test`);
 	}
 };

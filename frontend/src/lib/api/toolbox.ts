@@ -5,6 +5,6 @@ export const toolboxApi = {
 	catalog: () => api.get<ToolboxCatalog>('/toolbox/catalog'),
 	run: (body: ToolRunRequest) => api.post<ToolRun>('/toolbox/run', body, LONG_REQUEST_TIMEOUT_MS),
 	runs: () => api.get<ToolRun[]>('/toolbox/runs'),
-	get: (id: string) => api.get<ToolRun>(`/toolbox/runs/${id}`),
+	get: (id: string) => api.get<ToolRun>(`/toolbox/runs/${encodeURIComponent(id)}`),
 	clear: () => api.delete<void>('/toolbox/runs')
 };

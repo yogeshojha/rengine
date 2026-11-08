@@ -16,22 +16,31 @@ export const scanSchedulesApi = {
 	},
 
 	async update(id: string, projectId: string, data: ScanScheduleUpdate): Promise<ScanScheduleRead> {
-		return api.patch<ScanScheduleRead>(`/schedules/${id}?project_id=${projectId}`, data);
+		return api.patch<ScanScheduleRead>(
+			`/schedules/${encodeURIComponent(id)}?project_id=${projectId}`,
+			data
+		);
 	},
 
 	async remove(id: string, projectId: string): Promise<void> {
-		return api.delete<void>(`/schedules/${id}?project_id=${projectId}`);
+		return api.delete<void>(`/schedules/${encodeURIComponent(id)}?project_id=${projectId}`);
 	},
 
 	async pause(id: string, projectId: string): Promise<ScanScheduleRead> {
-		return api.post<ScanScheduleRead>(`/schedules/${id}/pause?project_id=${projectId}`);
+		return api.post<ScanScheduleRead>(
+			`/schedules/${encodeURIComponent(id)}/pause?project_id=${projectId}`
+		);
 	},
 
 	async resume(id: string, projectId: string): Promise<ScanScheduleRead> {
-		return api.post<ScanScheduleRead>(`/schedules/${id}/resume?project_id=${projectId}`);
+		return api.post<ScanScheduleRead>(
+			`/schedules/${encodeURIComponent(id)}/resume?project_id=${projectId}`
+		);
 	},
 
 	async runNow(id: string, projectId: string): Promise<ScanRead[]> {
-		return api.post<ScanRead[]>(`/schedules/${id}/run-now?project_id=${projectId}`);
+		return api.post<ScanRead[]>(
+			`/schedules/${encodeURIComponent(id)}/run-now?project_id=${projectId}`
+		);
 	}
 };
