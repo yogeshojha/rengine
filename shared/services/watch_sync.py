@@ -419,7 +419,7 @@ def dispatch_probe(
         scan = build_probe_scan(session, watch=watch, target=target, host=host)
     except Exception as exc:
         logger.warning("watch probe not built", host=host.name, error=str(exc))
-        watch.last_error = f"Probe not built for {host.name}: {exc}"[:500]
+        watch.last_error = f"Probe not built for {host.name}."[:500]
         return None
     claimed = session.execute(
         update(WatchHost)

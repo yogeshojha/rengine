@@ -70,9 +70,21 @@ _UNSAFE_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _CTRL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 
 
-def _bad(detail: str) -> HTTPException:
-    from fastapi import HTTPException, status  # noqa: PLC0415
+class ConfigRejectedError(ValueError):
+    """A scan configuration the resolver refuses, raised where fastapi is absent."""
 
+    status_code = 400
+
+    def __init__(self, detail: str) -> None:
+        super().__init__(detail)
+        self.detail = detail
+
+
+def _bad(detail: str) -> HTTPException | ConfigRejectedError:
+    try:
+        from fastapi import HTTPException, status  # noqa: PLC0415
+    except ModuleNotFoundError:
+        return ConfigRejectedError(detail)
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
 
