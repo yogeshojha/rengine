@@ -110,7 +110,7 @@ export const REFUSAL = {
 	UNFINISHED: 'This run has not finished.',
 	FOCUSED_AGAINST_FULL: 'A focused run is compared with its parent run only. Open the focused run.',
 	FULL_AGAINST_FOCUSED: 'A full run cannot be compared with a focused run. Select two full runs.',
-	SAME_RUN: 'Pick two different runs.',
+	SAME_RUN: 'Select two different runs.',
 	NO_EARLIER_RUN: 'No earlier run of this target to compare with.',
 	NEED_ONE_MORE: 'Select one more run of the same target.',
 	TOO_MANY: 'Select exactly two runs.'

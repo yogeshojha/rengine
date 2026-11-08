@@ -313,7 +313,7 @@ REFUSAL_REASON: dict[str, str] = {
     Refusal.FULL_AGAINST_FOCUSED.value: (
         "A full run cannot be compared with a focused run. Select two full runs."
     ),
-    Refusal.SAME_RUN.value: "Pick two different runs.",
+    Refusal.SAME_RUN.value: "Select two different runs.",
     Refusal.NO_EARLIER_RUN.value: "No earlier run of this target to compare with.",
     Refusal.NEED_ONE_MORE.value: "Select one more run of the same target.",
     Refusal.TOO_MANY.value: "Select exactly two runs.",
