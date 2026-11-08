@@ -78,8 +78,8 @@ class QueryFlagSpec(BaseModel):
 
 class QuerySchema(BaseModel):
     max_length: int = 0
-    noun: str = "host"
-    noun_plural: str = "hosts"
+    noun: str
+    noun_plural: str
     groups: list[str] = Field(default_factory=list)
     example_groups: list[str] = Field(default_factory=list)
     group_dimensions: list[QueryGroupSpec] = Field(default_factory=list)
