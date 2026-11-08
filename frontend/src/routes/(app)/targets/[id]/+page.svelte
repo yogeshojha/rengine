@@ -495,7 +495,7 @@
 		}
 	}
 
-	const run = requestPool();
+	const queued = requestPool();
 
 	async function settle<T>(section: string, work: Promise<T>, apply: (value: T) => void) {
 		const id = targetId;
@@ -527,7 +527,7 @@
 		await Promise.all([
 			settle(
 				'Estate',
-				run(() => targetsApi.getEstate(targetId, project.id, scanId)),
+				queued(() => targetsApi.getEstate(targetId, project.id, scanId)),
 				(e) => {
 					estate = e;
 				}
@@ -542,7 +542,7 @@
 		if (!project || !showDns) return;
 		await settle(
 			'Lookalike domains',
-			run(() => lookalikesApi.target(project.id, targetId)),
+			queued(() => lookalikesApi.target(project.id, targetId)),
 			(l) => {
 				lookalikes = l;
 			}
@@ -554,7 +554,7 @@
 		if (!project || !showDns) return;
 		await settle(
 			'Cloud storage',
-			run(() => cloudStorageApi.target(project.id, targetId)),
+			queued(() => cloudStorageApi.target(project.id, targetId)),
 			(c) => {
 				cloud = c;
 			}
@@ -571,39 +571,39 @@
 		await Promise.all([
 			settle(
 				'Hosting',
-				run(() => subdomainsApi.hosting(project.id, scanId)),
+				queued(() => subdomainsApi.hosting(project.id, scanId)),
 				(h) => (hosting = h)
 			),
 			settle(
 				'Technology',
-				run(() => subdomainsApi.facets(project.id, scanId)).then((f) => f.tech),
+				queued(() => subdomainsApi.facets(project.id, scanId)).then((f) => f.tech),
 				(t) => (tech = t)
 			),
 			settle(
 				'Web hygiene',
-				run(() => subdomainsApi.hygiene(project.id, scanId)),
+				queued(() => subdomainsApi.hygiene(project.id, scanId)),
 				(h) => (hygiene = h)
 			),
 			settle(
 				'Domain posture',
-				run(() => domainPostureApi.target(project.id, targetId)),
+				queued(() => domainPostureApi.target(project.id, targetId)),
 				(p) => (posture = p)
 			),
 			settle(
 				'Domain posture',
-				run(() => subdomainsApi.posture(project.id, scanId)),
+				queued(() => subdomainsApi.posture(project.id, scanId)),
 				(p) => (postureHosts = p)
 			),
 			settle(
 				'Certificates',
-				run(() => subdomainsApi.insights(project.id, scanId)).then((i) =>
+				queued(() => subdomainsApi.insights(project.id, scanId)).then((i) =>
 					certBucketsOf(i.cert_buckets)
 				),
 				(b) => (certBuckets = b)
 			),
 			settle(
 				'Reachability',
-				run(() => subdomainsApi.counts(project.id, scanId, reachQueries)),
+				queued(() => subdomainsApi.counts(project.id, scanId, reachQueries)),
 				(r) => {
 					reach = r.counts;
 					reachCapped = r.capped;
@@ -611,7 +611,7 @@
 			),
 			settle(
 				'Exposures',
-				run(() => interestApi.scan(scanId, { limit: EXPOSURE_ROWS })),
+				queued(() => interestApi.scan(scanId, { limit: EXPOSURE_ROWS })),
 				(p) => (exposures = p)
 			)
 		]);
@@ -625,7 +625,7 @@
 		geoFor = scanId;
 		await settle(
 			'Geography',
-			run(() => ipsApi.facets(project.id, scanId)),
+			queued(() => ipsApi.facets(project.id, scanId)),
 			(f) => (ipFacets = f)
 		);
 	}
@@ -638,12 +638,12 @@
 		await Promise.all([
 			settle(
 				'Services',
-				run(() => servicesApi.exposure(project.id, scanId)),
+				queued(() => servicesApi.exposure(project.id, scanId)),
 				(e) => (exposure = e)
 			),
 			settle(
 				'AI services',
-				run(() => servicesApi.ai(project.id, scanId)),
+				queued(() => servicesApi.ai(project.id, scanId)),
 				(a) => (ai = a)
 			)
 		]);
@@ -656,7 +656,7 @@
 		vulnsFor = scanId;
 		await settle(
 			'Findings',
-			run(() => vulnerabilitiesApi.overview(project.id, scanId)),
+			queued(() => vulnerabilitiesApi.overview(project.id, scanId)),
 			(v) => (vulns = v)
 		);
 	}
@@ -669,8 +669,8 @@
 		await settle(
 			'Software CVEs',
 			Promise.all([
-				run(() => softwareApi.facets(project.id, scanId)),
-				run(() => softwareApi.coverage(project.id, scanId))
+				queued(() => softwareApi.facets(project.id, scanId)),
+				queued(() => softwareApi.coverage(project.id, scanId))
 			]).then(([facets, coverage]) => ({ facets, coverage })),
 			(s) => (software = s)
 		);
@@ -689,7 +689,7 @@
 		stealerLoading = true;
 		await settle(
 			'Infostealer infections',
-			run(() => targetsApi.getInfostealer(targetId, webScanId)),
+			queued(() => targetsApi.getInfostealer(targetId, webScanId)),
 			(r) => (stealer = r)
 		);
 		if (stealerFor === key) stealerLoading = false;
