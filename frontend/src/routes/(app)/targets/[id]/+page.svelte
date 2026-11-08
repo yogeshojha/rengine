@@ -35,7 +35,7 @@
 	import { scansStore } from '$lib/stores/scans.svelte';
 	import { liveScans } from '$lib/stores/live-scans.svelte';
 	import { bgpApplies, dnsApplies, infostealerApplies } from '$lib/types/target';
-	import type { EnrichmentKind, Target } from '$lib/types/target';
+	import { ENRICHMENT_LABELS, type EnrichmentKind, type Target } from '$lib/types/target';
 	import { DnsRecordType } from '$lib/types/dns';
 	import { TaskStatus } from '$lib/types/task-status';
 	import type { TargetDetailRead } from '$lib/types/target-detail';
@@ -145,12 +145,6 @@
 		infostealer: { label: 'Infostealers', icon: KeyRound },
 		[CLOUD_STORAGE_TAB]: { label: CLOUD_STORAGE_TAB_LABEL, icon: CLOUD_STORAGE_TAB_ICON },
 		notes: { label: 'Notes', icon: StickyNote }
-	};
-	const ENRICHMENT_LABELS: Record<EnrichmentKind, string> = {
-		dns: 'DNS',
-		whois: 'WHOIS',
-		bgp: 'BGP',
-		infostealer: 'Infostealer'
 	};
 	const ENRICHMENT_POLL_MS = 2500;
 	const MAX_ENRICHMENT_POLLS = 30;

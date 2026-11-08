@@ -116,6 +116,21 @@ export const dnsApplies = (t: TargetType) => HOSTNAME_TARGET_TYPES.includes(t);
 export const bgpApplies = (t: TargetType) => NETWORK_TARGET_TYPES.includes(t);
 export const infostealerApplies = dnsApplies;
 
+export const ENRICHMENT_KINDS: readonly {
+	kind: EnrichmentKind;
+	label: string;
+	applies: (t: TargetType) => boolean;
+}[] = [
+	{ kind: 'whois', label: 'WHOIS', applies: () => true },
+	{ kind: 'dns', label: 'DNS', applies: dnsApplies },
+	{ kind: 'bgp', label: 'BGP', applies: bgpApplies },
+	{ kind: 'infostealer', label: 'Infostealer', applies: infostealerApplies }
+];
+
+export const ENRICHMENT_LABELS = Object.fromEntries(
+	ENRICHMENT_KINDS.map((e) => [e.kind, e.label])
+) as Record<EnrichmentKind, string>;
+
 export interface TargetSeed {
 	id: string;
 	kind: SeedKind;

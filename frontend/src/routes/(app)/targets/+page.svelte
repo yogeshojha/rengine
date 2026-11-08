@@ -41,7 +41,12 @@
 		targetPrefs
 	} from '$lib/components/targets/list/prefs.svelte';
 	import { TARGET_TYPE_ICONS_COMPACT } from '$lib/config/icons';
-	import { TargetType, formatTargetTypePlural, type EnrichmentKind } from '$lib/types/target';
+	import {
+		ENRICHMENT_LABELS,
+		TargetType,
+		formatTargetTypePlural,
+		type EnrichmentKind
+	} from '$lib/types/target';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import ArrowDown from '@lucide/svelte/icons/arrow-down';
@@ -152,11 +157,15 @@
 			status: 'whois_status' | 'dns_status' | 'bgp_status' | 'infostealer_status';
 		}
 	> = {
-		whois: { label: 'WHOIS', refresh: targetsApi.refreshWhois, status: 'whois_status' },
-		dns: { label: 'DNS', refresh: targetsApi.refreshDns, status: 'dns_status' },
-		bgp: { label: 'BGP', refresh: targetsApi.refreshBgp, status: 'bgp_status' },
+		whois: {
+			label: ENRICHMENT_LABELS.whois,
+			refresh: targetsApi.refreshWhois,
+			status: 'whois_status'
+		},
+		dns: { label: ENRICHMENT_LABELS.dns, refresh: targetsApi.refreshDns, status: 'dns_status' },
+		bgp: { label: ENRICHMENT_LABELS.bgp, refresh: targetsApi.refreshBgp, status: 'bgp_status' },
 		infostealer: {
-			label: 'Infostealer',
+			label: ENRICHMENT_LABELS.infostealer,
 			refresh: targetsApi.refreshInfostealer,
 			status: 'infostealer_status'
 		}
