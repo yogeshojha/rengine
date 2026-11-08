@@ -53,11 +53,9 @@ def apply_filter(query, f: EndpointFilter, scope: QueryScope):
     if f.endpoint_class:
         query = query.where(Endpoint.endpoint_class == f.endpoint_class)
     if f.source:
-        query = query.where(func.jsonb_exists(cast(Endpoint.sources, JSONB), f.source))
+        query = query.where(cast(Endpoint.sources, JSONB).has_key(f.source))
     if f.interest:
-        query = query.where(
-            func.jsonb_exists(cast(Endpoint.interest, JSONB), f.interest)
-        )
+        query = query.where(cast(Endpoint.interest, JSONB).has_key(f.interest))
     if f.status_class:
         query = query.where(endpoint_status_class(f.status_class))
     if f.probed is not None:

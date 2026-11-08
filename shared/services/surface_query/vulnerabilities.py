@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import case, cast, func, not_, or_, select
+from sqlalchemy import case, cast, func, not_, select
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import array as pg_array
 
 from shared.definitions.asset_query import VULN_QUERY
 from shared.definitions.evidence import Evidence
@@ -59,12 +60,7 @@ def apply_filter(query, f: VulnerabilityFilter, scope: QueryScope):
         query = query.where(Vulnerability.scanner.in_(f.scanners))
     if f.tags:
         query = query.where(
-            or_(
-                *[
-                    func.jsonb_exists(cast(Vulnerability.tags, JSONB), tag)
-                    for tag in f.tags
-                ]
-            )
+            cast(Vulnerability.tags, JSONB).has_any(pg_array(list(f.tags)))
         )
     if f.kev:
         query = query.where(Vulnerability.is_kev.is_(True))

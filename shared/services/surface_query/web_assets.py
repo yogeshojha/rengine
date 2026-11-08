@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import cast, func, or_, select
+from sqlalchemy import cast, or_, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
 
@@ -49,13 +49,9 @@ def apply_filter(query, f: SubdomainFilter, now: datetime, scope: ScopeLike):
     if f.statuses:
         query = query.where(or_(*[preds.status_class(s) for s in f.statuses]))
     if f.tech:
-        query = query.where(
-            func.jsonb_exists_any(cast(Subdomain.tech, JSONB), pg_array(f.tech))
-        )
+        query = query.where(cast(Subdomain.tech, JSONB).has_any(pg_array(f.tech)))
     if f.sources:
-        query = query.where(
-            func.jsonb_exists_any(cast(Subdomain.sources, JSONB), pg_array(f.sources))
-        )
+        query = query.where(cast(Subdomain.sources, JSONB).has_any(pg_array(f.sources)))
     if f.cert:
         query = query.where(or_(*[preds.cert_state(c, now) for c in f.cert]))
     for values, checks in ((f.hygiene, preds.hygiene), (f.posture, preds.posture)):
