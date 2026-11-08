@@ -113,30 +113,68 @@ async def refresh_whois_record(
 async def _target_correlations(
     session: AsyncSession, service: WhoisService, target: Target
 ) -> list[WhoisCorrelationResult]:
-    if not target.whois_record_id:
-        return []
+    return (await _correlations_by_target(session, service, [target]))[str(target.id)]
 
-    correlations = await service.get_correlations_for_target(
-        session, target.whois_record_id
-    )
 
-    if not correlations:
-        return []
+async def _correlations_by_target(
+    session: AsyncSession, service: WhoisService, targets: list[Target]
+) -> dict[str, list[WhoisCorrelationResult]]:
+    out: dict[str, list[WhoisCorrelationResult]] = {str(t.id): [] for t in targets}
+    record_ids = {t.whois_record_id for t in targets if t.whois_record_id}
+    if not record_ids:
+        return out
 
-    target_record_result = await session.execute(
-        select(WhoisRecord).where(WhoisRecord.id == target.whois_record_id)
-    )
-    target_record = target_record_result.scalar_one_or_none()
-
-    record_ids = {r.id for records in correlations.values() for r in records}
-    linked = await session.execute(
-        select(Target.whois_record_id, Target.id).where(
-            Target.project_id == target.project_id,
-            Target.whois_record_id.in_(record_ids),
+    records = {
+        r.id: r
+        for r in (
+            await session.execute(
+                select(WhoisRecord).where(WhoisRecord.id.in_(record_ids))
+            )
+        ).scalars()
+    }
+    correlations = {
+        record_id: await service.get_correlations_for_target(session, record_id)
+        for record_id in records
+    }
+    linked_ids = {
+        r.id
+        for groups in correlations.values()
+        for group in groups.values()
+        for r in group
+    }
+    target_by_record: dict[tuple[_uuid.UUID, _uuid.UUID], _uuid.UUID] = {}
+    if linked_ids:
+        linked = await session.execute(
+            select(Target.project_id, Target.whois_record_id, Target.id).where(
+                Target.project_id.in_({t.project_id for t in targets}),
+                Target.whois_record_id.in_(linked_ids),
+            )
         )
-    )
-    target_by_record = dict(linked.all())
+        target_by_record = {
+            (project_id, record_id): target_id
+            for project_id, record_id, target_id in linked.all()
+        }
 
+    for target in targets:
+        if target.whois_record_id not in records:
+            continue
+        out[str(target.id)] = _grouped(
+            records[target.whois_record_id],
+            correlations[target.whois_record_id],
+            {
+                record_id: target_id
+                for (project_id, record_id), target_id in target_by_record.items()
+                if project_id == target.project_id
+            },
+        )
+    return out
+
+
+def _grouped(
+    target_record: WhoisRecord,
+    correlations: dict[str, list[WhoisRecord]],
+    target_by_record: dict[_uuid.UUID, _uuid.UUID],
+) -> list[WhoisCorrelationResult]:
     results = []
     value_field_map = {
         "registrant_name": "registrant_name",
@@ -153,13 +191,13 @@ async def _target_correlations(
         if not summaries:
             continue
 
-        if corr_type == "nameserver" and target_record and target_record.nameservers:
+        if corr_type == "nameserver" and target_record.nameservers:
             corr_value = ", ".join(
                 ns
                 for ns in target_record.nameservers
                 if ns and not is_shared_nameserver(ns)
             )
-        elif target_record and corr_type in value_field_map:
+        elif corr_type in value_field_map:
             field = value_field_map.get(corr_type, corr_type)
             corr_value = getattr(target_record, field, "") if field else ""
         else:
@@ -197,10 +235,7 @@ async def get_targets_correlations(
     if not wanted:
         return {}
     rows = await session.execute(select(Target).where(Target.id.in_(wanted[:100])))
-    out: dict[str, list[WhoisCorrelationResult]] = {}
-    for target in rows.scalars().all():
-        out[str(target.id)] = await _target_correlations(session, service, target)
-    return out
+    return await _correlations_by_target(session, service, list(rows.scalars().all()))
 
 
 @router.get(
