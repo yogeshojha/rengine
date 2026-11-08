@@ -74,7 +74,9 @@
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const replacing = $derived(editing ? keys.has(editing.provider) : false);
 	const canSave = $derived(
-		!saving && !!keyValue.trim() && (!editing?.account?.required || !!account.trim() || replacing)
+		!saving &&
+			(!!keyValue.trim() || (replacing && account.trim() !== initialAccount)) &&
+			(!editing?.account?.required || !!account.trim() || replacing)
 	);
 	const groups = $derived.by(() => {
 		const out: { group: string; label: string; items: ProviderInfo[] }[] = [];
@@ -152,14 +154,18 @@
 		try {
 			const existing = keys.get(provider.provider);
 			const stored = existing
-				? await apiKeysApi.update(existing.id, { key_value: keyValue.trim(), ...meta })
+				? await apiKeysApi.update(existing.id, {
+						...(keyValue.trim() ? { key_value: keyValue.trim() } : {}),
+						...meta
+					})
 				: await apiKeysApi.create({
 						provider: provider.provider,
 						key_value: keyValue.trim(),
 						...meta
 					});
 			keys.set(stored.provider, stored);
-			toast.success(`${provider.name} key ${existing ? 'replaced' : 'added'}`);
+			const verb = !existing ? 'added' : keyValue.trim() ? 'replaced' : 'updated';
+			toast.success(`${provider.name} key ${verb}`);
 			dialogOpen = false;
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : `${provider.name} key not saved`);
@@ -479,7 +485,7 @@
 						{/snippet}
 					</FormField>
 				{/if}
-				<FormField label="API key" required>
+				<FormField label="API key" required={!replacing}>
 					{#snippet children({ id })}
 						<div class="relative">
 							<Input
