@@ -537,30 +537,32 @@ def verify(
             klass = classify(merged.path, merged.extension, merged.content_type)
             response = _response_row(row.id, scan_id, merged)
             if response is not None:
-                responses.append(response)
+                responses.append(scrub(response))
             payload.append(
-                {
-                    "id": row.id,
-                    "is_probed": True,
-                    "status_code": merged.status_code,
-                    "content_type": merged.content_type,
-                    "content_length": merged.content_length,
-                    "title": merged.title,
-                    "words": merged.words,
-                    "lines": merged.lines,
-                    "response_time": merged.response_time,
-                    "redirect_location": merged.redirect_location,
-                    "content_hash": merged.content_hash,
-                    "tech": merged.tech or list(row.tech or []),
-                    "endpoint_class": klass,
-                    "interest": interests_for(
-                        merged.path,
-                        list(row.params or []),
-                        endpoint_class=klass,
-                        extension=merged.extension,
-                    ),
-                    "methods": sorted(set(row.methods or []) | merged.methods),
-                }
+                scrub(
+                    {
+                        "id": row.id,
+                        "is_probed": True,
+                        "status_code": merged.status_code,
+                        "content_type": merged.content_type,
+                        "content_length": merged.content_length,
+                        "title": merged.title,
+                        "words": merged.words,
+                        "lines": merged.lines,
+                        "response_time": merged.response_time,
+                        "redirect_location": merged.redirect_location,
+                        "content_hash": merged.content_hash,
+                        "tech": merged.tech or list(row.tech or []),
+                        "endpoint_class": klass,
+                        "interest": interests_for(
+                            merged.path,
+                            list(row.params or []),
+                            endpoint_class=klass,
+                            extension=merged.extension,
+                        ),
+                        "methods": sorted(set(row.methods or []) | merged.methods),
+                    }
+                )
             )
         if payload:
             session.execute(update(Endpoint), payload)
