@@ -117,7 +117,7 @@ def _supersede_orphan_activities(session: Session, scan: Scan, name: str) -> Non
         )
         .values(
             status=ScanActivityStatus.SKIPPED.value,
-            error="superseded by stage retry",
+            error="Superseded by a stage retry.",
             completed_at=utc_now(),
         )
     )
@@ -215,7 +215,7 @@ def run_stage(
             activity_svc.finish(
                 activity,
                 status=ScanActivityStatus.SKIPPED,
-                result={"reason": "not applicable to this target type"},
+                result={"reason": "Not applicable to this target type."},
             )
             _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
             return
@@ -239,7 +239,7 @@ def run_stage(
             activity_svc.finish(
                 activity,
                 status=ScanActivityStatus.SKIPPED,
-                result={"reason": "not applicable to this target or configuration"},
+                result={"reason": "Not applicable to this target or configuration."},
             )
             _emit_stage_done(events, spec, activity, ScanActivityStatus.SKIPPED.value)
             return

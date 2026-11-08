@@ -572,7 +572,7 @@ def _failure(activities, truncated: str | None) -> tuple[str, str | None]:
         None,
     )
     if failed is None:
-        return "One or more stages failed", None
+        return "One or more stages failed.", None
     return failed.error[:2000], failed.title
 
 
@@ -667,7 +667,7 @@ def finalize_scan_run(session: Session, scan: Scan) -> None:
             str(scan.id),
             target_value,
             scan.engine_name,
-            scan.error or "unknown error",
+            scan.error or "Stage failed.",
             ntype=NotificationType.NEW_CHECKS
             if new_checks.is_follow_up(scan)
             else NotificationType.SCAN,
