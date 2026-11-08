@@ -14,7 +14,6 @@
 	import CircleDot from '@lucide/svelte/icons/circle-dot';
 	import CircleCheck from '@lucide/svelte/icons/circle-check';
 	import CircleX from '@lucide/svelte/icons/circle-x';
-	import ExternalLink from '@lucide/svelte/icons/external-link';
 
 	interface Props {
 		status: string;
@@ -47,7 +46,7 @@
 			case TargetType.IP_RANGE: {
 				const parts: string[] = [];
 				if (bgp.asn != null) parts.push(`AS${bgp.asn}`);
-				if (bgp.holder) parts.push(truncate(bgp.holder, 20));
+				if (bgp.holder) parts.push(bgp.holder);
 				return parts.join('  ·  ');
 			}
 			default:
@@ -60,11 +59,6 @@
 	function formatNumber(n: number | null | undefined): string {
 		if (n == null) return '—';
 		return n.toLocaleString();
-	}
-
-	function truncate(str: string, max: number): string {
-		if (str.length <= max) return str;
-		return str.slice(0, max - 1) + '…';
 	}
 
 	function handleClick(e: MouseEvent) {
@@ -123,12 +117,16 @@
 				<div class="px-4 py-3 space-y-3">
 					<div class="flex items-start gap-2.5">
 						{#if bgp.announced === false}
-							<CircleX class="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<CircleX class="h-3.5 w-3.5 text-warning" />
+							</span>
 						{:else}
-							<CircleCheck class="h-3.5 w-3.5 text-foreground mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<CircleCheck class="h-3.5 w-3.5 text-foreground" />
+							</span>
 						{/if}
 						<div>
-							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 								Status
 							</p>
 							<p
@@ -143,9 +141,11 @@
 
 					{#if bgp.announced !== false}
 						<div class="flex items-start gap-2.5">
-							<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<Network class="h-3.5 w-3.5 text-muted-foreground" />
+							</span>
 							<div>
-								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 									Announced prefixes
 								</p>
 								<p class="text-sm font-medium tabular-nums">{formatNumber(bgp.prefix_count)}</p>
@@ -153,9 +153,11 @@
 						</div>
 
 						<div class="flex items-start gap-2.5">
-							<Users class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<Users class="h-3.5 w-3.5 text-muted-foreground" />
+							</span>
 							<div>
-								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 									Peers
 								</p>
 								<p class="text-sm font-medium tabular-nums">{formatNumber(bgp.peer_count)}</p>
@@ -179,9 +181,11 @@
 				<div class="px-4 py-3 space-y-3">
 					{#if bgp.asn != null}
 						<div class="flex items-start gap-2.5">
-							<Server class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<Server class="h-3.5 w-3.5 text-muted-foreground" />
+							</span>
 							<div>
-								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 									Announcing ASN
 								</p>
 								<p class="text-sm font-medium font-mono">AS{bgp.asn}</p>
@@ -191,9 +195,11 @@
 
 					{#if bgp.holder}
 						<div class="flex items-start gap-2.5">
-							<CircleDot class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<CircleDot class="h-3.5 w-3.5 text-muted-foreground" />
+							</span>
 							<div>
-								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 									Holder
 								</p>
 								<p class="text-sm">{bgp.holder}</p>
@@ -203,9 +209,11 @@
 
 					{#if bgp.prefix}
 						<div class="flex items-start gap-2.5">
-							<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+							<span class="flex h-4 shrink-0 items-center">
+								<Network class="h-3.5 w-3.5 text-muted-foreground" />
+							</span>
 							<div>
-								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+								<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 									Containing prefix
 								</p>
 								<p class="text-sm font-mono">{bgp.prefix}</p>
@@ -228,8 +236,7 @@
 						class="ml-auto flex items-center gap-1 text-2xs text-primary/70 transition-colors hover:text-primary"
 						onclick={handleClick}
 					>
-						See details
-						<ExternalLink class="h-2.5 w-2.5" />
+						Details
 					</button>
 				</div>
 			</div>

@@ -2,7 +2,6 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import type { WhoisSummaryData } from '$lib/types/target';
 	import { TaskStatus } from '$lib/types/task-status';
-	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 	import {
 		formatShortDate,
@@ -21,7 +20,6 @@
 	import UserRound from '@lucide/svelte/icons/user-round';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Flag from '@lucide/svelte/icons/flag';
-	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import Hint from '$lib/components/hint.svelte';
 	import { getLookupTypeIcon } from '$lib/config/icons';
 	import { whoisLookupLabel } from '$lib/types/whois';
@@ -51,19 +49,19 @@
 
 		switch (whois.lookup_type) {
 			case 'DOMAIN': {
-				const registrar = whois.registrar_name ? truncate(whois.registrar_name, 24) : '';
+				const registrar = whois.registrar_name || '';
 				const expiry = whois.expiration_date ? formatMonthYear(whois.expiration_date) : '';
 				return [registrar, expiry ? `Exp ${expiry}` : ''].filter(Boolean).join(' · ');
 			}
 			case 'IP': {
-				const name = whois.name ? truncate(whois.name, 20) : '';
+				const name = whois.name || '';
 				const cidr = whois.network_cidr || '';
 				const country = whois.country || '';
 				return [name, cidr, country].filter(Boolean).join(' · ');
 			}
 			case 'ASN': {
-				const name = whois.name ? truncate(whois.name, 20) : '';
-				const registrant = whois.registrant_name ? truncate(whois.registrant_name, 24) : '';
+				const name = whois.name || '';
+				const registrant = whois.registrant_name || '';
 				return [name, registrant].filter(Boolean).join(' · ');
 			}
 			default:
@@ -94,11 +92,6 @@
 	});
 
 	let LookupIcon = $derived(getLookupTypeIcon(whois?.lookup_type ?? 'DOMAIN'));
-
-	function truncate(str: string, max: number): string {
-		if (str.length <= max) return str;
-		return str.slice(0, max - 1) + '…';
-	}
 
 	function handleClick(e: MouseEvent) {
 		e.stopPropagation();
@@ -155,9 +148,11 @@
 			<div class="px-4 py-3 space-y-3">
 				{#if whois.registrant_name}
 					<div class="flex items-start gap-2.5">
-						<UserRound class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+						<span class="flex h-4 shrink-0 items-center">
+							<UserRound class="h-3.5 w-3.5 text-muted-foreground" />
+						</span>
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 								Registrant
 							</p>
 							<p class="text-sm truncate">{whois.registrant_name}</p>
@@ -167,9 +162,11 @@
 
 				{#if whois.registrar_name}
 					<div class="flex items-start gap-2.5">
-						<Building class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+						<span class="flex h-4 shrink-0 items-center">
+							<Building class="h-3.5 w-3.5 text-muted-foreground" />
+						</span>
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 								Registrar
 							</p>
 							<p class="text-sm truncate">{whois.registrar_name}</p>
@@ -179,9 +176,11 @@
 
 				{#if whois.network_cidr}
 					<div class="flex items-start gap-2.5">
-						<Network class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+						<span class="flex h-4 shrink-0 items-center">
+							<Network class="h-3.5 w-3.5 text-muted-foreground" />
+						</span>
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 								Network
 							</p>
 							<p class="text-sm font-mono">{whois.network_cidr}</p>
@@ -191,9 +190,11 @@
 
 				{#if whois.country}
 					<div class="flex items-start gap-2.5">
-						<Flag class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+						<span class="flex h-4 shrink-0 items-center">
+							<Flag class="h-3.5 w-3.5 text-muted-foreground" />
+						</span>
 						<div class="min-w-0">
-							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1">
+							<p class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5">
 								Country
 							</p>
 							<p class="text-sm">{whois.country}</p>
@@ -206,10 +207,12 @@
 						<div class="grid grid-cols-2 gap-3 pt-2">
 							{#if whois.registration_date}
 								<div class="flex items-start gap-2">
-									<CalendarDays class="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+									<span class="flex h-4 shrink-0 items-center">
+										<CalendarDays class="h-3.5 w-3.5 text-muted-foreground" />
+									</span>
 									<div>
 										<p
-											class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1"
+											class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5"
 										>
 											Registered
 										</p>
@@ -223,10 +226,12 @@
 
 							{#if whois.expiration_date}
 								<div class="flex items-start gap-2">
-									<CalendarClock class="h-3.5 w-3.5 mt-0.5 shrink-0 {urgencyClasses}" />
+									<span class="flex h-4 shrink-0 items-center">
+										<CalendarClock class="h-3.5 w-3.5 {urgencyClasses}" />
+									</span>
 									<div>
 										<p
-											class="text-2xs text-muted-foreground uppercase tracking-wide leading-none mb-1"
+											class="text-2xs text-muted-foreground uppercase tracking-wide leading-4 mb-0.5"
 										>
 											Expires
 										</p>
@@ -250,14 +255,12 @@
 						<Clock class="h-3 w-3" />
 						<span>Queried {formatShortDate(whois.queried_at)}</span>
 					</div>
-					<button
-						type="button"
-						class="flex items-center gap-1 text-2xs text-primary/70 hover:text-primary transition-colors"
-						onclick={() => goto(ROUTES.target(targetId))}
+					<a
+						href={ROUTES.target(targetId)}
+						class="text-2xs text-primary/70 hover:text-primary transition-colors"
 					>
-						See details
-						<ExternalLink class="h-2.5 w-2.5" />
-					</button>
+						Details
+					</a>
 				</div>
 			</div>
 		</HoverCard.Content>

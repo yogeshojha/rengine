@@ -5,7 +5,6 @@
 	import { DnsRecordType, DNS_RECORD_DISPLAY_ORDER } from '$lib/types/dns';
 	import { TaskStatus } from '$lib/types/task-status';
 	import * as HoverCard from '$lib/components/ui/hover-card';
-	import { goto } from '$app/navigation';
 	import { ROUTES } from '$lib/config/routes';
 	import type { IconComponent } from '$lib/config/icons';
 	import { formatShortDate } from '$lib/utilities/dates';
@@ -17,7 +16,6 @@
 	import Server from '@lucide/svelte/icons/server';
 	import Shield from '@lucide/svelte/icons/shield';
 	import Network from '@lucide/svelte/icons/network';
-	import ExternalLink from '@lucide/svelte/icons/external-link';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import Waypoints from '@lucide/svelte/icons/waypoints';
 
@@ -143,7 +141,7 @@
 								<span class="text-xs font-medium text-foreground/80">
 									Behind {cdnName}
 								</span>
-								<span class="text-2xs text-muted-foreground">WAF or proxy detected</span>
+								<span class="text-2xs text-muted-foreground">CDN edge</span>
 							</div>
 						</div>
 					{/if}
@@ -169,14 +167,12 @@
 									<span>Queried {formatShortDate(dns.queried_at)}</span>
 								</div>
 							{/if}
-							<button
-								type="button"
-								class="ml-auto flex items-center gap-1 text-2xs text-primary/70 hover:text-primary transition-colors"
-								onclick={() => goto(ROUTES.target(targetId))}
+							<a
+								href={ROUTES.target(targetId)}
+								class="ml-auto text-2xs text-primary/70 hover:text-primary transition-colors"
 							>
-								See details
-								<ExternalLink class="h-2.5 w-2.5" />
-							</button>
+								Details
+							</a>
 						</div>
 					</div>
 				</HoverCard.Content>
