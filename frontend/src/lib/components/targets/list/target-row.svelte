@@ -34,8 +34,7 @@
 	import RunBrief from '$lib/components/scans/history/run-brief.svelte';
 	import { ROUTES } from '$lib/config/routes';
 	import {
-		bgpApplies,
-		dnsApplies,
+		ENRICHMENT_KINDS,
 		formatTargetType,
 		type EnrichmentKind,
 		type Target
@@ -113,8 +112,6 @@
 	let findingsScan = $derived(run?.findings?.scan_id ?? run?.id ?? '');
 	let findingsLive = $derived(open && findingsScan === run?.id);
 	let started = $derived(run ? (run.started_at ?? run.created_at) : null);
-	let canDns = $derived(dnsApplies(target.target_type));
-	let canBgp = $derived(bgpApplies(target.target_type));
 	let highlight = $state<string | null>(null);
 
 	let editing = $state(false);
@@ -420,19 +417,11 @@
 					<DropdownMenu.Item onSelect={onHistory}><History /> Scan history</DropdownMenu.Item>
 					<DropdownMenu.Item onSelect={startRename}><Pencil /> Rename</DropdownMenu.Item>
 					<DropdownMenu.Separator />
-					<DropdownMenu.Item onSelect={() => onReEnrich('whois')}>
-						<RefreshCw /> Re-run WHOIS
-					</DropdownMenu.Item>
-					{#if canDns}
-						<DropdownMenu.Item onSelect={() => onReEnrich('dns')}>
-							<RefreshCw /> Re-run DNS
+					{#each ENRICHMENT_KINDS.filter((e) => e.applies(target.target_type)) as e (e.kind)}
+						<DropdownMenu.Item onSelect={() => onReEnrich(e.kind)}>
+							<RefreshCw /> Re-run {e.label}
 						</DropdownMenu.Item>
-					{/if}
-					{#if canBgp}
-						<DropdownMenu.Item onSelect={() => onReEnrich('bgp')}>
-							<RefreshCw /> Re-run BGP
-						</DropdownMenu.Item>
-					{/if}
+					{/each}
 					<DropdownMenu.Separator />
 					<DropdownMenu.Item variant="destructive" onSelect={onDelete}>
 						<Trash2 /> Delete target

@@ -7,7 +7,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import SelectionActionBar from '$lib/components/selection-action-bar.svelte';
-	import type { EnrichmentKind } from '$lib/types/target';
+	import { ENRICHMENT_KINDS, type EnrichmentKind } from '$lib/types/target';
 
 	interface Props {
 		selectedCount: number;
@@ -50,12 +50,9 @@
 			{/snippet}
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="center" class="w-52">
-			<DropdownMenu.Item onclick={() => onEnrich('whois')}>Re-run WHOIS</DropdownMenu.Item>
-			<DropdownMenu.Item onclick={() => onEnrich('dns')}>Re-run DNS</DropdownMenu.Item>
-			<DropdownMenu.Item onclick={() => onEnrich('bgp')}>Re-run BGP</DropdownMenu.Item>
-			<DropdownMenu.Item onclick={() => onEnrich('infostealer')}
-				>Re-run infostealer lookup</DropdownMenu.Item
-			>
+			{#each ENRICHMENT_KINDS as e (e.kind)}
+				<DropdownMenu.Item onclick={() => onEnrich(e.kind)}>Re-run {e.label}</DropdownMenu.Item>
+			{/each}
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 
