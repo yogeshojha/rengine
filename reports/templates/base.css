@@ -629,7 +629,7 @@ hr { border: 0; border-top: var(--r-rule-w) solid var(--r-rule); margin: var(--r
   margin: 0 0 1.8mm;
   break-inside: avoid;
 }
-.evidence--tall { max-height: 70mm; overflow: hidden; }
+.evidence--tall { break-inside: auto; }
 
 .shot {
   border: var(--r-rule-w) solid var(--r-rule);
