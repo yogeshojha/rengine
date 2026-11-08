@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from uuid import UUID
 
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +29,7 @@ from shared.models.relations import RelatedTarget, RelationEvidence, TargetRelat
 from shared.models.subdomain import Subdomain
 from shared.models.target import Target
 from shared.models.whois import WhoisNameserver, WhoisRecord
+from shared.services.asset_query import lead_cache
 from shared.services.asset_query.scope import QueryScope
 from shared.services.domain_posture import spf
 from shared.utils.infra import is_shared_host, is_shared_nameserver, owns_network
@@ -93,12 +95,38 @@ def _identity(target_value: str, registrant: str) -> set[str]:
     return {key for key in (registrant_key(registrant), label.lower()) if key}
 
 
+class _FactMap(BaseModel):
+    facts: _Facts = {}
+
+
+async def project_targets(
+    session: AsyncSession, project_id: UUID
+) -> dict[UUID, Target]:
+    """The project's targets, the columns the estate and relations read."""
+    rows = await session.execute(
+        select(
+            Target.id,
+            Target.target_value,
+            Target.target_type,
+            Target.whois_record_id,
+            Target.updated_at,
+        ).where(Target.project_id == project_id)
+    )
+    return {row.id: row for row in rows.all()}
+
+
 class TargetRelationService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def for_target(self, project_id: UUID, target_id: UUID) -> TargetRelations:
-        targets = await self._targets(project_id)
+    async def for_target(
+        self,
+        project_id: UUID,
+        target_id: UUID,
+        targets: dict[UUID, Target] | None = None,
+    ) -> TargetRelations:
+        if targets is None:
+            targets = await project_targets(self.session, project_id)
         if target_id not in targets or len(targets) < 2:  # noqa: PLR2004
             return TargetRelations(considered=len(targets))
 
@@ -141,17 +169,40 @@ class TargetRelationService:
             considered=len(targets),
         )
 
-    async def _targets(self, project_id: UUID) -> dict[UUID, Target]:
-        rows = await self.session.execute(
-            select(Target).where(Target.project_id == project_id)
-        )
-        return {row.id: row for row in rows.scalars().all()}
-
     async def _facts(self, project_id: UUID, targets: dict[UUID, Target]) -> _Facts:
         """Each dimension is read from the scans that covered it."""
         scopes = SurfaceScopeService(self.session)
         assets = await scopes.scope(project_id, SurfaceDimension.WEB_ASSETS.value)
         addresses = await scopes.scope(project_id, SurfaceDimension.IPS.value)
+        stamp = sorted(
+            (
+                str(t.id),
+                t.target_value,
+                str(t.whois_record_id),
+                t.updated_at.isoformat(),
+            )
+            for t in targets.values()
+        )
+
+        async def build() -> _FactMap:
+            return _FactMap(facts=await self._read_facts(targets, assets, addresses))
+
+        cached = await lead_cache.cached(
+            self.session,
+            name="target_relations",
+            scans=tuple(dict.fromkeys(assets.ids + addresses.ids)),
+            facets=lead_cache.fingerprint(project_id, stamp),
+            model=_FactMap,
+            build=build,
+        )
+        return cached.facts
+
+    async def _read_facts(
+        self,
+        targets: dict[UUID, Target],
+        assets: QueryScope,
+        addresses: QueryScope,
+    ) -> _Facts:
         facts: _Facts = defaultdict(lambda: defaultdict(dict))
         registrants = await self._registrants(targets)
         await self._registration(targets, registrants, facts)
@@ -161,7 +212,7 @@ class TargetRelationService:
             await self._favicons(assets, facts)
         if addresses:
             await self._networks(addresses, targets, registrants, facts)
-        return facts
+        return {kind: dict(values) for kind, values in facts.items()}
 
     async def _registration(
         self, targets: dict[UUID, Target], registrants: dict[UUID, str], facts: _Facts
