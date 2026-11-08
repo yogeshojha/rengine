@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from app.main import app as main_app
 from app.services.scan_compare import ScanCompareService
 from shared.definitions.asset_query import MAX_FACET_VALUE_LENGTH
-from shared.definitions.compare import MAX_DIMENSION_LENGTH
+from shared.definitions.compare import MAX_DIMENSION_LENGTH, MAX_ROWS_PAGE
 from shared.definitions.surface import MAX_PAGE
 from shared.models.endpoint import EndpointFilter
 from shared.models.scan_correlation import IpGroupFilter, ServiceFilter
@@ -83,9 +83,12 @@ def _query_param(path: str, name: str) -> dict:
     return next(p for p in operation["parameters"] if p["name"] == name)["schema"]
 
 
-@pytest.mark.parametrize("path", ["/api/v1/cves", "/api/v1/scans/compare/rows"])
-def test_page_is_bounded(path):
-    assert _query_param(path, "page")["maximum"] == MAX_PAGE
+@pytest.mark.parametrize(
+    ("path", "maximum"),
+    [("/api/v1/cves", MAX_PAGE), ("/api/v1/scans/compare/rows", MAX_ROWS_PAGE)],
+)
+def test_page_is_bounded(path, maximum):
+    assert _query_param(path, "page")["maximum"] == maximum
 
 
 @pytest.mark.parametrize(
