@@ -187,8 +187,7 @@
 					<div class="flex max-w-[50%] min-w-0 flex-wrap justify-end gap-1">
 						{#each shownTags as tag (tag)}
 							<span
-								class="max-w-32 truncate rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 text-muted-foreground"
-								title="#{tag}"
+								class="max-w-32 rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 text-muted-foreground wrap-anywhere"
 							>
 								#{tag}
 							</span>

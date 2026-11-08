@@ -84,7 +84,7 @@
 					variant="secondary"
 					class="max-w-full min-w-0 gap-1 overflow-visible pr-0.5 font-normal"
 				>
-					<span class="min-w-0 truncate" title={item.label}>{item.label}</span>
+					<span class="min-w-0 wrap-anywhere">{item.label}</span>
 					<Button
 						variant="ghost"
 						size="icon-xs"

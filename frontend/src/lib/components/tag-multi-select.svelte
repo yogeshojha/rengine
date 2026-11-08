@@ -103,7 +103,7 @@
 					style="background-color: {item.color}15; color: color-mix(in oklch, {item.color} 55%, var(--foreground)); border-color: {item.color}30;"
 				>
 					<span class="h-2 w-2 rounded-full shrink-0" style="background-color: {item.color}"></span>
-					<span class="min-w-0 truncate" title={item.label}>{item.label}</span>
+					<span class="min-w-0 wrap-anywhere">{item.label}</span>
 					<Button
 						variant="ghost"
 						size="icon-xs"

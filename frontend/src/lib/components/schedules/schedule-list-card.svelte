@@ -121,7 +121,11 @@
 
 	<div class="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
 		<CalendarClock class="h-3.5 w-3.5 shrink-0" />
-		<span class="truncate" title={schedule.cadence}>{cadence}</span>
+		<Hint text={schedule.cadence}>
+			{#snippet child(props)}
+				<span {...props} class="truncate">{cadence}</span>
+			{/snippet}
+		</Hint>
 		<span class="text-muted-foreground/40">·</span>
 		<span class="shrink-0">{schedule.timezone}</span>
 		{#if schedule.timezone_stale}

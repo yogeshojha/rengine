@@ -72,8 +72,8 @@
 					<span class="hidden min-w-0 items-center gap-1 sm:flex">
 						{#each shownTags as tag (tag)}
 							<span
-								class="max-w-32 truncate rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5"
-								title="#{tag}">#{tag}</span
+								class="max-w-32 rounded-sm bg-muted px-1.5 font-mono text-2xs leading-5 wrap-anywhere"
+								>#{tag}</span
 							>
 						{/each}
 						{#if moreTags.length}

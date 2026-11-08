@@ -105,7 +105,7 @@
 							<div class="flex flex-col gap-2">
 								<div class="flex items-center gap-2">
 									<span class="w-16 shrink-0 text-xs text-muted-foreground">Endpoint</span>
-									<code class="{CODE} truncate" title={endpoint}>{endpoint}</code>
+									<code class="{CODE} wrap-anywhere">{endpoint}</code>
 									<CopyButton value={endpoint} />
 								</div>
 								<div class="flex items-center gap-2">
