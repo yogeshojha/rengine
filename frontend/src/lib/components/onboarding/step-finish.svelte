@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { projectsApi } from '$lib/api/projects';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
+	import FormField from '$lib/components/form-field.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { StepProps } from '$lib/types/onboarding';
 
@@ -41,18 +41,17 @@
 
 <div class="space-y-6">
 	<section class="space-y-5">
-		<div class="flex flex-col gap-3">
-			<Label for="project-name">
-				Name <span class="text-destructive">*</span>
-			</Label>
-			<Input
-				id="project-name"
-				bind:value={projectName}
-				placeholder="Acme Bug Bounty"
-				disabled={busy}
-				aria-invalid={nameInvalid && projectName.length > 0}
-				class="h-9 text-sm"
-			/>
-		</div>
+		<FormField label="Name" required>
+			{#snippet children({ id })}
+				<Input
+					{id}
+					bind:value={projectName}
+					placeholder="Acme Bug Bounty"
+					disabled={busy}
+					aria-invalid={nameInvalid && projectName.length > 0}
+					class="h-9 text-sm"
+				/>
+			{/snippet}
+		</FormField>
 	</section>
 </div>
