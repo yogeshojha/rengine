@@ -250,11 +250,7 @@
 		</Button>
 	</EmptyState>
 {:else if proxies.length === 0}
-	<EmptyState
-		icon={RouteIcon}
-		title="No proxies"
-		description="Route scan traffic through an HTTP or SOCKS proxy. A scan context picks the proxy it uses."
-	>
+	<EmptyState icon={RouteIcon} title="No proxies">
 		<Button size="sm" onclick={() => openDialog(null)}>
 			<PlusIcon class="size-4" />
 			Add proxy
