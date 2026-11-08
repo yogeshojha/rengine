@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from shared.definitions.compliance import DEFAULT_FRAMEWORKS, Framework
 from shared.definitions.reports import (
+    DEFAULT_THEME,
     Audience,
     Density,
     Depth,
@@ -92,7 +93,7 @@ PRESETS: tuple[Preset, ...] = (
         name="Attack surface report",
         description="Discovered assets and hosting. Excludes findings.",
         scope=ReportScope.SCAN.value,
-        theme="midnight",
+        theme=DEFAULT_THEME,
         title="External Attack Surface Report",
         tags=("recon", "asm"),
         sections=(
