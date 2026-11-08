@@ -7,7 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
-	import { COVERAGE_STATUS_LABELS } from '$lib/config/vulnerabilities';
+	import { COVERAGE_STATUS_LABELS, CoverageStatus } from '$lib/config/vulnerabilities';
 	import { TIER_HELP, TIER_LABELS, TIER_ORDER } from '$lib/config/scan-surface';
 	import type { CoverageRead, ScanVulnerabilities } from '$lib/utilities/vulns';
 
@@ -48,13 +48,14 @@
 	};
 
 	const worst = (statuses: string[]): string => {
-		if (statuses.every((s) => s === 'skipped')) return 'skipped';
-		if (statuses.some((s) => s === 'failed')) return 'failed';
-		if (statuses.some((s) => s === 'partial' || s === 'skipped')) return 'partial';
-		return 'completed';
+		if (statuses.every((s) => s === CoverageStatus.SKIPPED)) return CoverageStatus.SKIPPED;
+		if (statuses.some((s) => s === CoverageStatus.FAILED)) return CoverageStatus.FAILED;
+		if (statuses.some((s) => s === CoverageStatus.PARTIAL || s === CoverageStatus.SKIPPED))
+			return CoverageStatus.PARTIAL;
+		return CoverageStatus.COMPLETED;
 	};
 
-	let ran = $derived(coverage.some((c) => c.status !== 'skipped'));
+	let ran = $derived(coverage.some((c) => c.status !== CoverageStatus.SKIPPED));
 	let tiers = $derived.by((): TierRow[] => {
 		const groups = new SvelteMap<string, CoverageRead[]>();
 		for (const row of coverage) {
@@ -106,7 +107,7 @@
 	let errors = $derived(sum(coverage.map((c) => c.errors)));
 	let dropped = $derived(vulns.targets_dropped);
 	let filtered = $derived(coverage.reduce((a, c) => a + (c.echo_filtered ?? 0), 0));
-	let partial = $derived(ran && coverage.some((c) => c.status !== 'completed'));
+	let partial = $derived(ran && coverage.some((c) => c.status !== CoverageStatus.COMPLETED));
 	let Icon = $derived(!ran ? CircleSlash : partial ? TriangleAlert : CircleCheck);
 	let tone = $derived(
 		!ran ? 'text-muted-foreground' : partial ? 'text-warning' : 'text-muted-foreground'
@@ -163,9 +164,10 @@
 									<div class="flex items-baseline justify-between gap-2">
 										<span class="text-xs font-medium">{row.label}</span>
 										<span
-											class="text-2xs tracking-wide uppercase {row.status === 'completed'
+											class="text-2xs tracking-wide uppercase {row.status ===
+											CoverageStatus.COMPLETED
 												? 'text-success'
-												: row.status === 'skipped'
+												: row.status === CoverageStatus.SKIPPED
 													? 'text-muted-foreground'
 													: 'text-warning'}"
 										>

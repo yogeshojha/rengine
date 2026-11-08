@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { severityLabel } from '$lib/config/vulnerabilities';
+	import { Observation } from '$lib/config/timeline';
 	import type { FindingStats, TimelineScan } from '$lib/types/timeline';
 	import { formatMonthDay } from '$lib/utilities/dates';
 	import { plural } from '$lib/utilities/strings';
@@ -20,7 +21,7 @@
 		const before = scans
 			.slice(0, -1)
 			.reverse()
-			.find((s) => s.observation !== 'unobserved');
+			.find((s) => s.observation !== Observation.UNOBSERVED);
 		return before?.started_at ? formatMonthDay(before.started_at) : '';
 	});
 	let delta = $derived(

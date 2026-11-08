@@ -234,11 +234,18 @@ export const TEMPLATE_ORIGIN_LABELS: Record<string, string> = {
 	[TemplateOrigin.CUSTOM]: 'Custom checks'
 };
 
+export enum CoverageStatus {
+	COMPLETED = 'completed',
+	PARTIAL = 'partial',
+	FAILED = 'failed',
+	SKIPPED = 'skipped'
+}
+
 export const COVERAGE_STATUS_LABELS: Record<string, string> = {
-	completed: 'Completed',
-	partial: 'Partial',
-	failed: 'Failed',
-	skipped: 'Not run'
+	[CoverageStatus.COMPLETED]: 'Completed',
+	[CoverageStatus.PARTIAL]: 'Partial',
+	[CoverageStatus.FAILED]: 'Failed',
+	[CoverageStatus.SKIPPED]: 'Not run'
 };
 
 export const MAX_TEMPLATE_UPLOAD = 50;
