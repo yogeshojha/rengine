@@ -519,16 +519,23 @@ class ReportSource:
         if scan_id is None:
             return []
         newest = (
-            select(HttpAsset)
+            select(
+                HttpAsset.host,
+                HttpAsset.tech,
+                HttpAsset.is_cdn,
+                HttpAsset.cdn_name,
+                HttpAsset.waf,
+                HttpAsset.asn_org,
+                HttpAsset.tls_not_after,
+            )
             .where(HttpAsset.scan_id == scan_id)
             .distinct(HttpAsset.host)
             .order_by(HttpAsset.host, HttpAsset.discovered_at.desc())
             .subquery()
         )
-        asset = aliased(HttpAsset, newest)
         rows = self.session.execute(
-            select(Subdomain, asset, self._is_new(_DIM.WEB_ASSETS.value))
-            .outerjoin(asset, newest.c.host == Subdomain.name)
+            select(Subdomain, newest, self._is_new(_DIM.WEB_ASSETS.value))
+            .outerjoin(newest, newest.c.host == Subdomain.name)
             .where(Subdomain.scan_id == scan_id)
             .order_by(Subdomain.http_status.is_(None), Subdomain.name)
             .limit(MAX_REPORT_ROWS)
@@ -536,7 +543,9 @@ class ReportSource:
 
         by_host = self.findings_by_host
         out: list[Host] = []
-        for sub, asset, new in rows:
+        for row in rows:
+            sub, new = row[0], row[-1]
+            asset = row if row.host is not None else None
             found = by_host.get(sub.name)
             out.append(
                 Host(
