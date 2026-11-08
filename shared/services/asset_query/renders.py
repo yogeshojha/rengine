@@ -8,7 +8,7 @@ from shared.definitions.correlation import (
     SCREENSHOT_DISTANCE,
     SCREENSHOT_MIN_POPCOUNT,
 )
-from shared.utils.imagehash import distance, hex_digest, popcount
+from shared.utils.imagehash import NearIndex, hex_digest, popcount
 
 
 @dataclass(frozen=True)
@@ -37,12 +37,14 @@ def cluster(histogram: dict[int, int]) -> list[RenderCluster]:
     if not histogram:
         return []
     ranked = sorted(histogram, key=lambda h: (-histogram[h], h))
+    position = {h: i for i, h in enumerate(ranked)}
+    index = NearIndex(ranked, SCREENSHOT_DISTANCE)
     claimed: set[int] = set()
     clusters: list[RenderCluster] = []
     for rep in ranked:
         if rep in claimed or not is_identity(rep):
             continue
-        near = tuple(h for h in ranked if distance(rep, h) <= SCREENSHOT_DISTANCE)
+        near = tuple(sorted(index.near(rep), key=position.__getitem__))
         claimed.update(near)
         clusters.append(
             RenderCluster(
