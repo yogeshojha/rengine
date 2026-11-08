@@ -3,6 +3,7 @@ from __future__ import annotations
 import fnmatch
 import ipaddress
 import re
+import time
 from functools import lru_cache
 from re import _parser
 
@@ -17,6 +18,7 @@ _GROUP_DIGITS = frozenset("123456789")
 
 MATCH_SECONDS = 0.1
 MAX_TIMEOUTS = 5
+TRIPPED_SECONDS = 600
 MAX_EXPANSION = 10_000
 
 NESTED_REPEAT = "nests a repeated group"
@@ -147,21 +149,28 @@ def pattern_hazard(pattern: str) -> str | None:
 class Exclusion:
     """A compiled exclusion entry whose match is bounded in time."""
 
-    __slots__ = ("compiled", "pattern", "timeouts")
+    __slots__ = ("compiled", "pattern", "timeouts", "tripped_at")
 
     def __init__(self, pattern: str, compiled: regex.Pattern | None):
         self.pattern = pattern
         self.compiled = compiled
         self.timeouts = 0
+        self.tripped_at = 0.0
 
     def hits(self, value: str) -> bool:
         """True when value matches, or when the entry cannot be evaluated."""
-        if self.compiled is None or self.timeouts >= MAX_TIMEOUTS:
+        if self.compiled is None:
             return True
+        if self.timeouts >= MAX_TIMEOUTS:
+            if time.monotonic() - self.tripped_at < TRIPPED_SECONDS:
+                return True
+            self.timeouts = 0
         try:
             found = self.compiled.search(value, timeout=MATCH_SECONDS, concurrent=True)
         except TimeoutError:
             self.timeouts += 1
+            if self.timeouts >= MAX_TIMEOUTS:
+                self.tripped_at = time.monotonic()
             logger.warning(
                 "scope pattern timed out", pattern=self.pattern, timeouts=self.timeouts
             )
