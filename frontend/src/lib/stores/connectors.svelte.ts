@@ -21,6 +21,8 @@ function createConnectorsStore() {
 	let fetchedProjectId = $state<string | null>(null);
 	let loadedAt = 0;
 	let queueSeq = 0;
+	let loadSeq = 0;
+	let loadingFor: string | null = null;
 
 	function message(e: unknown, fallback: string) {
 		return e instanceof Error ? e.message : fallback;
@@ -78,18 +80,25 @@ function createConnectorsStore() {
 		},
 
 		async load(projectId: string, force = false) {
-			if (isLoading) return;
+			if (isLoading && loadingFor === projectId) return;
 			if (!force && fetchedProjectId === projectId) return;
+			const my = ++loadSeq;
+			loadingFor = projectId;
 			isLoading = true;
 			error = null;
 			try {
-				items = await connectorsApi.list(projectId);
+				const rows = await connectorsApi.list(projectId);
+				if (my !== loadSeq) return;
+				items = rows;
 				fetchedProjectId = projectId;
 				loadedAt = Date.now();
 			} catch (e) {
-				error = message(e, 'Connectors not loaded');
+				if (my === loadSeq) error = message(e, 'Connectors not loaded');
 			} finally {
-				isLoading = false;
+				if (my === loadSeq) {
+					isLoading = false;
+					loadingFor = null;
+				}
 			}
 		},
 
@@ -137,6 +146,8 @@ function createConnectorsStore() {
 		},
 
 		reset() {
+			loadSeq++;
+			loadingFor = null;
 			catalog = [];
 			items = [];
 			queueSeq++;
