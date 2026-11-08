@@ -10,6 +10,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { SHEET_HEAD } from '../sheet';
 	import SheetTop from '../sheet-top.svelte';
@@ -107,9 +108,13 @@
 					<TechIcon name={row.name} class="size-3.5 shrink-0" />
 					<span class="truncate">{row.name} {row.version}</span>
 					{#if location}
-						<span class="min-w-0 truncate font-mono text-xs" title={location}>
-							· {bracketed(location)}
-						</span>
+						<Hint text={location}>
+							{#snippet child(props)}
+								<span {...props} class="min-w-0 truncate font-mono text-xs">
+									· {bracketed(location)}
+								</span>
+							{/snippet}
+						</Hint>
 					{/if}
 				</Sheet.Description>
 			</Sheet.Header>

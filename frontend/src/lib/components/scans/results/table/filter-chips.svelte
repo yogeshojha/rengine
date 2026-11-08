@@ -27,7 +27,11 @@
 						aria-hidden="true"
 					></span>
 				{/if}
-				<span class="min-w-0 truncate" title={chip.label}>{chip.label}</span>
+				<Hint text={chip.label}>
+					{#snippet child(props)}
+						<span {...props} class="min-w-0 truncate">{chip.label}</span>
+					{/snippet}
+				</Hint>
 				<Hint text="Remove filter {chip.label}">
 					{#snippet child(props)}
 						<Button

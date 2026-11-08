@@ -546,7 +546,11 @@
 		variant="outline"
 		class="ml-1 max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal"
 	>
-		<span class="min-w-0 truncate {labelClass}" title={label}>{label}</span>
+		<Hint text={label}>
+			{#snippet child(props)}
+				<span {...props} class="min-w-0 truncate {labelClass}">{label}</span>
+			{/snippet}
+		</Hint>
 		<Button
 			variant="ghost"
 			size="icon-xs"
@@ -561,7 +565,11 @@
 
 {#snippet unknown(failed: boolean, width: string)}
 	{#if failed}
-		<span class="text-muted-foreground" title="Not loaded">—</span>
+		<Hint text="Not loaded">
+			{#snippet child(props)}
+				<span {...props} class="text-muted-foreground">—</span>
+			{/snippet}
+		</Hint>
 	{:else}
 		<Skeleton class="h-6 {width}" />
 	{/if}
@@ -620,10 +628,13 @@
 								/>
 							{/each}
 						{:else if scansStore.dailyFailed}
-							<span
-								class="font-mono text-2xl font-semibold text-muted-foreground"
-								title="Not loaded">—</span
-							>
+							<Hint text="Not loaded">
+								{#snippet child(props)}
+									<span {...props} class="font-mono text-2xl font-semibold text-muted-foreground"
+										>—</span
+									>
+								{/snippet}
+							</Hint>
 						{:else}
 							{#each sevRuns as s (s.sev)}
 								<Skeleton class="h-8 w-20 rounded-md" />

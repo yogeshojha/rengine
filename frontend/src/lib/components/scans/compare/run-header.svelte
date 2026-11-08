@@ -55,7 +55,11 @@
 		</RunPicker>
 
 		<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-			<span class="min-w-0 truncate" title={run.engine_name}>{run.engine_name}</span>
+			<Hint text={run.engine_name}>
+				{#snippet child(props)}
+					<span {...props} class="min-w-0 truncate">{run.engine_name}</span>
+				{/snippet}
+			</Hint>
 			{#if run.duration_seconds != null}
 				<span class="opacity-40">·</span>
 				<span class="tabular-nums">{formatSeconds(run.duration_seconds)}</span>

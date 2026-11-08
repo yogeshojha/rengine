@@ -149,7 +149,11 @@
 		{/if}
 		{#if showTarget && historyPrefs.shows('engine')}
 			<div class={COL.engine} role="cell">
-				<div class="truncate text-sm" title={scan.engine_name}>{scan.engine_name}</div>
+				<Hint text={scan.engine_name}>
+					{#snippet child(props)}
+						<div {...props} class="truncate text-sm">{scan.engine_name}</div>
+					{/snippet}
+				</Hint>
 				<div class="text-2xs text-muted-foreground">
 					{INTENSITY_LABELS[scan.execution_config.intensity as Intensity] ??
 						scan.execution_config.intensity}

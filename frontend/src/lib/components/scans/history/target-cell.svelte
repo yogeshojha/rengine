@@ -3,6 +3,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import TagIcon from '@lucide/svelte/icons/tag';
 	import CopyButton from '$lib/components/copy-button.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import { STALE_DAYS } from '$lib/config/dashboard';
 	import { SCHEDULE_TYPE_BADGE, type ScheduleType } from '$lib/types/scan-schedule';
 	import { formatTargetType, type TargetType } from '$lib/types/target';
@@ -49,12 +50,13 @@
 <div class="flex min-w-0 items-center gap-3">
 	<div class="min-w-0 flex-1">
 		<div class="flex min-w-0 items-center gap-1.5">
-			<span
-				class="truncate font-mono text-sm font-medium"
-				title={showTarget ? scan.execution_config.target_value : scan.engine_name}
-			>
-				{showTarget ? scan.execution_config.target_value : scan.engine_name}
-			</span>
+			<Hint text={showTarget ? scan.execution_config.target_value : scan.engine_name}>
+				{#snippet child(props)}
+					<span {...props} class="truncate font-mono text-sm font-medium">
+						{showTarget ? scan.execution_config.target_value : scan.engine_name}
+					</span>
+				{/snippet}
+			</Hint>
 			{#if showTarget}
 				<CopyButton
 					value={scan.execution_config.target_value}
@@ -74,7 +76,11 @@
 				<span>Focused · {plural(scan.seed_count, 'asset')}</span>
 			{/if}
 			{#if scan.context_name}
-				<span class="truncate" title={scan.context_name}>{scan.context_name}</span>
+				<Hint text={scan.context_name}>
+					{#snippet child(props)}
+						<span {...props} class="truncate">{scan.context_name}</span>
+					{/snippet}
+				</Hint>
 			{/if}
 			{#if schedule}
 				<span>{schedule}</span>
