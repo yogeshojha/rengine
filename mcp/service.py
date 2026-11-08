@@ -195,7 +195,7 @@ class McpService:
     ) -> McpTokenCreated:
         existing = (await self.session.execute(select(McpToken))).scalars().all()
         if len([t for t in existing if t.revoked_at is None]) >= MAX_TOKENS:
-            msg = f"The instance has {MAX_TOKENS} tokens. Revoke one first."
+            msg = f"The instance has {MAX_TOKENS} agents. Revoke one first."
             raise McpConfigError(msg)
         name = _name(data.name)
 
@@ -246,10 +246,10 @@ class McpService:
     ) -> McpTokenRead:
         row = await self.session.get(McpToken, token_id)
         if row is None:
-            msg = "The token does not exist."
+            msg = "Agent not found."
             raise McpConfigError(msg)
         if row.revoked_at is not None:
-            msg = "The token was revoked."
+            msg = "Agent key revoked."
             raise McpConfigError(msg)
 
         given = data.model_fields_set
@@ -285,7 +285,7 @@ class McpService:
     async def revoke_token(self, token_id: uuid.UUID) -> None:
         row = await self.session.get(McpToken, token_id)
         if row is None:
-            msg = "The token does not exist."
+            msg = "Agent not found."
             raise McpConfigError(msg)
         row.revoked_at = utc_now()
         self.session.add(row)
@@ -295,7 +295,7 @@ class McpService:
     async def delete_token(self, token_id: uuid.UUID) -> None:
         row = await self.session.get(McpToken, token_id)
         if row is None:
-            msg = "The token does not exist."
+            msg = "Agent not found."
             raise McpConfigError(msg)
         await self.session.delete(row)
         await self.session.commit()
