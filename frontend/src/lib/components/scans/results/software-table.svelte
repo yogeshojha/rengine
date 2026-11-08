@@ -544,7 +544,7 @@
 		<div class="flex items-start gap-2 border-b bg-muted/10 px-4 py-2 text-xs">
 			<TriangleAlert class="mt-0.5 size-3.5 shrink-0 text-warning" />
 			<span class="text-muted-foreground">
-				Matching stopped at {coverage.capped_at.toLocaleString()} software CVEs per scan. Known-exploited
+				Matching stopped at {coverage.capped_at.toLocaleString()} software CVEs per scan. Known exploited
 				and higher-severity matches are stored first.
 			</span>
 		</div>

@@ -342,7 +342,7 @@
 					<dt class="text-muted-foreground">KEV</dt>
 					<dd class="flex flex-wrap items-center gap-x-2 text-destructive">
 						<span class="inline-flex items-center gap-1"
-							><Flame class="size-3" /> Exploited in the wild</span
+							><Flame class="size-3" /> Known exploited</span
 						>
 						{#if v.kev_due_date}<span class="text-muted-foreground"
 								>Due {formatShortDate(v.kev_due_date)}</span

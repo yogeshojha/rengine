@@ -221,15 +221,15 @@
 			/>
 		</SettingRow>
 		<SettingRow
-			label="Replay known-exploited findings"
-			help="Re-runs a known-exploited finding's own check at the end of a scan, with no approval"
+			label="Replay known exploited findings"
+			help="Re-runs a known exploited finding's own check at the end of a scan, with no approval"
 			for="instance-replay-kev"
 		>
 			<Switch
 				id="instance-replay-kev"
 				checked={settings.investigate_replay_kev}
 				disabled={locked}
-				onCheckedChange={(v) => save({ investigate_replay_kev: v }, 'Known-exploited replay')}
+				onCheckedChange={(v) => save({ investigate_replay_kev: v }, 'Known exploited replay')}
 			/>
 		</SettingRow>
 
