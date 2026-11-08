@@ -18,7 +18,7 @@
 		{#each chips as chip (chip.id)}
 			<Badge
 				variant="outline"
-				class="max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal"
+				class="max-w-full min-w-0 gap-1 overflow-visible bg-background pr-0.5 font-normal whitespace-normal"
 			>
 				{#if chip.color}
 					<span
@@ -27,11 +27,7 @@
 						aria-hidden="true"
 					></span>
 				{/if}
-				<Hint text={chip.label}>
-					{#snippet child(props)}
-						<span {...props} class="min-w-0 truncate">{chip.label}</span>
-					{/snippet}
-				</Hint>
+				<span class="min-w-0 wrap-anywhere">{chip.label}</span>
 				<Hint text="Remove filter {chip.label}">
 					{#snippet child(props)}
 						<Button
