@@ -18,6 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import array as pg_array
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, aliased, defer
 
 from reports.data.models import (
@@ -47,7 +48,12 @@ from shared.definitions.vulnerabilities import (
     Severity,
     severity_rank,
 )
-from shared.enums.scan import ACTIVITY_STARTED_STATUSES, ScanStatus
+from shared.enums.scan import (
+    ACTIVITY_STARTED_STATUSES,
+    SCAN_LIVE_STATUSES,
+    ScanStatus,
+)
+from shared.logging import get_logger
 from shared.models.domain_posture import DomainPosture
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
@@ -63,12 +69,15 @@ from shared.models.vulnerability import (
     VulnerabilityCoverage,
     VulnerabilityTriage,
 )
+from shared.services import scan_deltas
 from shared.services.asset_query import element_counts
 from shared.services.asset_query import predicates as preds
 from shared.services.scan_scope import census_only, covers
 from shared.services.surface_query import vulnerabilities as surface_vulns
 from shared.utils.datetime import utc_now
 from shared.utils.net import host_port, is_registry_routable
+
+logger = get_logger(__name__)
 
 _DIM = SurfaceDimension
 _MAX_HOSTS_PER_IP = 6
@@ -249,11 +258,40 @@ class ReportSource:
     def _count(self, dimension: str, scan_id: UUID | None) -> int:
         if scan_id is None:
             return 0
-        table = _TABLE[dimension]
-        query = select(func.count()).select_from(table).where(table.scan_id == scan_id)
+        return self._counts(dimension, [scan_id]).get(scan_id, 0)
+
+    def _counts(self, dimension: str, scan_ids: list[UUID]) -> dict[UUID, int]:
+        """Rows per run; findings set aside are not counted."""
+        if not scan_ids:
+            return {}
         if dimension == _DIM.VULNERABILITIES.value:
-            query = query.where(self._not_suppressed())
-        return int(self.session.execute(query).scalar() or 0)
+            rows = self.session.execute(
+                select(Vulnerability.scan_id, func.count())
+                .where(Vulnerability.scan_id.in_(scan_ids), self._not_suppressed())
+                .group_by(Vulnerability.scan_id)
+            ).all()
+            return {scan_id: int(n) for scan_id, n in rows}
+        live = frozenset(
+            self.session.execute(
+                select(Scan.id).where(
+                    Scan.id.in_(scan_ids), Scan.status.in_(SCAN_LIVE_STATUSES)
+                )
+            ).scalars()
+        )
+        counts, fill = scan_deltas.row_counts(
+            self.session, dimension, scan_ids, live=live
+        )
+        self._store(fill)
+        return {scan_id: rows for scan_id, (rows, _) in counts.items()}
+
+    def _store(self, fill: scan_deltas.Fill) -> None:
+        if not fill:
+            return
+        try:
+            with self.session.begin_nested():
+                scan_deltas.store(self.session, fill)
+        except SQLAlchemyError:
+            logger.warning("scan deltas not stored", exc_info=True)
 
     def _covers(self, dimension: str, scan_id: UUID | None) -> bool:
         if scan_id is None:
@@ -1063,17 +1101,13 @@ class ReportSource:
             .limit(limit)
             .subquery()
         )
-        count = (
-            select(func.count()).select_from(table).where(table.scan_id == runs.c.id)
+        ids = list(
+            self.session.execute(
+                select(runs.c.id).order_by(runs.c.created_at)
+            ).scalars()
         )
-        if dimension == _DIM.VULNERABILITIES.value:
-            count = count.where(self._not_suppressed())
-        rows = self.session.execute(
-            select(count.scalar_subquery())
-            .select_from(runs)
-            .order_by(runs.c.created_at)
-        ).all()
-        return [int(row[0] or 0) for row in rows]
+        counts = self._counts(dimension, ids)
+        return [counts.get(scan_id, 0) for scan_id in ids]
 
     def added_and_gone(
         self, dimension: str, limit: int = 40
