@@ -20,6 +20,7 @@
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
+	import Hint from '$lib/components/hint.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import { proxiesStore } from '$lib/stores/proxies.svelte';
@@ -286,12 +287,13 @@
 						</span>
 					</div>
 					<div class="{PROXY_COL.endpoint} flex min-w-0 flex-col" role="cell">
-						<code
-							class="truncate font-mono text-xs text-muted-foreground"
-							title={proxy.endpoints[0]?.url_masked}
-						>
-							{proxy.endpoints[0]?.url_masked ?? ''}
-						</code>
+						<Hint text={proxy.endpoints[0]?.url_masked}>
+							{#snippet child(props)}
+								<code {...props} class="truncate font-mono text-xs text-muted-foreground">
+									{proxy.endpoints[0]?.url_masked ?? ''}
+								</code>
+							{/snippet}
+						</Hint>
 						{#if proxy.endpoint_count > 1}
 							<span class="text-2xs text-muted-foreground">
 								+{proxy.endpoint_count - 1} more

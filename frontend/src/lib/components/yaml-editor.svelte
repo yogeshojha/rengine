@@ -120,7 +120,8 @@
 		toDOM() {
 			const el = document.createElement('span');
 			el.className = `cm-stage-dot${this.enabled ? ' on' : ''}`;
-			el.title = `${this.name}: ${this.enabled ? 'on' : 'off'}`;
+			el.setAttribute('role', 'img');
+			el.setAttribute('aria-label', `${this.name}: ${this.enabled ? 'on' : 'off'}`);
 			return el;
 		}
 	}

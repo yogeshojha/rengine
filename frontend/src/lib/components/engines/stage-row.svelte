@@ -141,7 +141,11 @@
 					{/each}
 				</span>
 			{:else if enabled && summary}
-				<span class="summary" title={summary}>{summary}</span>
+				<Hint text={summary}>
+					{#snippet child(props)}
+						<span {...props} class="summary">{summary}</span>
+					{/snippet}
+				</Hint>
 			{/if}
 		</div>
 

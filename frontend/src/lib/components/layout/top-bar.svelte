@@ -60,19 +60,27 @@
 							<Skeleton class="h-4 w-20" aria-hidden="true" />
 							<span class="sr-only">{crumb.label}</span>
 						{:else if last}
-							<Breadcrumb.Page class="truncate font-medium" title={crumb.label}>
-								{crumb.label}
-							</Breadcrumb.Page>
+							<Hint text={crumb.label} side="bottom">
+								{#snippet child(props)}
+									<Breadcrumb.Page {...props} class="truncate font-medium">
+										{crumb.label}
+									</Breadcrumb.Page>
+								{/snippet}
+							</Hint>
 						{:else if crumb.href}
-							<Breadcrumb.Link
-								href={safeHref(crumb.href)}
-								class="max-w-48 truncate"
-								title={crumb.label}
-							>
-								{crumb.label}
-							</Breadcrumb.Link>
+							<Hint text={crumb.label} side="bottom">
+								{#snippet child(props)}
+									<Breadcrumb.Link {...props} href={safeHref(crumb.href)} class="max-w-48 truncate">
+										{crumb.label}
+									</Breadcrumb.Link>
+								{/snippet}
+							</Hint>
 						{:else}
-							<span class="max-w-48 truncate" title={crumb.label}>{crumb.label}</span>
+							<Hint text={crumb.label} side="bottom">
+								{#snippet child(props)}
+									<span {...props} class="max-w-48 truncate">{crumb.label}</span>
+								{/snippet}
+							</Hint>
 						{/if}
 					</Breadcrumb.Item>
 				{/each}
