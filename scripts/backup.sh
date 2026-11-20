@@ -252,6 +252,8 @@ restore() {
   DROPPED=0
   say "restored"
   say "previous data: $SNAPSHOT"
+  [ "$(grep -E '^TLS_MODE=' .env | cut -d= -f2- || true)" != cert ] \
+    || say "The certificate is not in the archive. It stays in $HERE/tls."
   [ "$archived" = "$current" ] || say "$differs"
 }
 

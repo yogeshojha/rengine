@@ -368,6 +368,7 @@ services:
     image: caddy:2.11-alpine@sha256:78bd35025c7ba85961dd149ae670315129954e77abe2383ac47c89106b35ade9
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./tls:/etc/caddy/tls:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

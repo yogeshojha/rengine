@@ -19,7 +19,10 @@ WORK=""
 cleanup() { [ -n "$WORK" ] && rm -rf "$WORK"; return 0; }
 trap cleanup EXIT
 
-[ -f .env ] || die "no .env in $RENGINE_HOME"
+case "${1:-} ${2:-}" in
+  "tls check" | "tls install") ;;
+  *) [ -f .env ] || die "no .env in $RENGINE_HOME" ;;
+esac
 
 usage() {
   cat <<'EOF'
@@ -38,6 +41,11 @@ Usage: rengine <command>
   reset-password <user>
                  set a new password and sign the user out everywhere
                  --remove-2fa removes two-factor authentication
+  tls show       certificate mode, subject, names and days left
+  tls set <cert> <key>
+                 replace the own certificate and restart caddy alone
+  tls check <cert> <key> [host]
+                 check a certificate and key without installing them
   uninstall      remove containers and data volumes
   version        installed release
 EOF
@@ -53,6 +61,13 @@ cmd_status() {
   else
     printf 'The API did not respond. Check that the api service is running.\n'
   fi
+  [ "$(tls_mode)" = cert ] || return 0
+  if ! tls_installed; then
+    printf 'The certificate in %s/tls was not read.\n' "$RENGINE_HOME"
+  elif ! cert_expiry "$WORK/cert.pem"; then
+    printf 'Replace it with: rengine tls set <cert> <key>\n'
+  fi
+  return 0
 }
 
 running_scans() {
@@ -114,6 +129,7 @@ cmd_update() {
 
   mv docker-compose.prod.yml.new docker-compose.prod.yml
   mkdir -p scripts bin deploy
+  [ -d tls ] || install -d -m 700 tls
   [ ! -f "$src/deploy/seccomp-chromium.json" ] || install -m 644 "$src/deploy/seccomp-chromium.json" deploy/seccomp-chromium.json
   install -m 755 "$src/scripts/backup.sh" scripts/backup.sh
   install -m 755 "$src/deploy/rengine" bin/rengine
@@ -155,8 +171,264 @@ cmd_reset_password() {
     ${args[@]+"${args[@]}"} -- "$user"
 }
 
+# ---------- certificate ----------
+
+TLS_CERT_FILE=/etc/caddy/tls/cert.pem
+TLS_KEY_FILE=/etc/caddy/tls/key.pem
+
+tls_mode() { env_get TLS_MODE || true; }
+
+origin_host() {
+  local origin
+  origin="$(env_get PUBLIC_ORIGIN || true)"
+  origin="${origin#*://}"
+  printf '%s' "${origin%%[:/]*}"
+}
+
+caddy_image() { sed -n 's/^ *image: *\(caddy:[^ ]*\) *$/\1/p' docker-compose.prod.yml 2>/dev/null | head -1; }
+
+cert_names() {
+  openssl x509 -in "$1" -noout -ext subjectAltName 2>/dev/null \
+    | sed '1d' | LC_ALL=C tr -d '\000-\011\013-\037\177' \
+    | tr ',' '\n' | sed 's/^ *//; s/^IP Address:/IP:/' | grep -v '^$' || true
+}
+
+cert_covers() {
+  local host="${2,,}" name
+  while IFS= read -r name; do
+    name="${name,,}"
+    case "$name" in
+      "dns:$host" | "ip:$host") return 0 ;;
+      dns:\*.?*) [ "$host" != "${host#*.}" ] && [ "${host#*.}" = "${name#dns:\*.}" ] && return 0 ;;
+    esac
+  done < <(cert_names "$1")
+  return 1
+}
+
+cert_end() { openssl x509 -in "$1" -noout -enddate 2>/dev/null | cut -d= -f2-; }
+
+cert_days() {
+  local end diff
+  end="$(cert_end "$1")"
+  [ -n "$end" ] || return 1
+  diff=$(($(date -d "$end" +%s) - $(date +%s)))
+  printf '%s\n' $((diff / 86400))
+}
+
+cert_expiry() {
+  if openssl x509 -in "$1" -noout -checkend 0 >/dev/null 2>&1; then
+    printf 'Certificate expires in %s days.\n' "$(cert_days "$1")"
+  else
+    printf 'Certificate expired on %s.\n' "$(cert_end "$1")"
+    return 1
+  fi
+}
+
+# the key types Go loads
+cert_key_supported() {
+  local text
+  text="$(openssl x509 -in "$1" -noout -text 2>/dev/null)"
+  case "$(sed -n 's/^ *Public Key Algorithm: *//p' <<<"$text" | head -1)" in
+    rsaEncryption | ED25519) return 0 ;;
+    id-ecPublicKey) grep -Eq 'NIST CURVE: P-(256|384|521) *$' <<<"$text" ;;
+    *) return 1 ;;
+  esac
+}
+
+# the reason a certificate and key cannot be served, empty when they can
+cert_problem() {
+  local cert="$1" key="$2" pub
+  if ! command -v openssl >/dev/null 2>&1; then
+    echo "openssl is required to check the certificate. Install openssl, then run the command again."
+  elif ! [ -f "$cert" ] || ! [ -r "$cert" ]; then
+    echo "$cert is not a readable file"
+  elif ! [ -f "$key" ] || ! [ -r "$key" ]; then
+    echo "$key is not a readable file"
+  elif ! grep -q -- '-----BEGIN CERTIFICATE-----' "$cert" || ! openssl x509 -in "$cert" -noout >/dev/null 2>&1; then
+    echo "$cert is not a PEM certificate"
+  elif grep -q -- 'PRIVATE KEY-----' "$cert"; then
+    echo "$cert holds a private key. Pass the certificate and the key as two files."
+  elif grep -q 'ENCRYPTED' "$key"; then
+    echo "$key is encrypted. Pass the key without a passphrase."
+  elif ! grep -Eq -- '-----BEGIN ([A-Z]+ )?PRIVATE KEY-----' "$key" \
+    || ! pub="$(openssl pkey -in "$key" -passin pass: -pubout 2>/dev/null)"; then
+    echo "$key is not a PEM private key without a passphrase"
+  elif [ "$pub" != "$(openssl x509 -in "$cert" -noout -pubkey 2>/dev/null)" ]; then
+    echo "the key does not match the certificate"
+  elif ! cert_key_supported "$cert"; then
+    echo "the certificate key type is not supported. Pass an RSA, Ed25519 or ECDSA P-256, P-384 or P-521 certificate."
+  elif ! openssl x509 -in "$cert" -noout -checkend 0 >/dev/null 2>&1; then
+    echo "the certificate expired on $(cert_end "$cert")"
+  fi
+}
+
+tls_validate() {
+  local cert="$1" key="$2" host="$3" quiet="${4:-0}" problem
+  problem="$(cert_problem "$cert" "$key")"
+  [ -z "$problem" ] || die "$problem"
+  [ "$quiet" -eq 1 ] && return 0
+  if [ -n "$host" ] && ! cert_covers "$cert" "$host"; then
+    printf 'warning: the certificate does not name %s in its subject alternative names.\n' "$host" >&2
+  fi
+  printf 'Certificate valid for %s days.\n' "$(cert_days "$cert")"
+}
+
+# shellcheck disable=SC2016
+TLS_COPY='
+set -e
+umask 077
+mkdir /tmp/v
+dd of=/tmp/v/cert.pem bs=1 count="$1" 2>/dev/null
+cat >/tmp/v/key.pem
+printf "{\n\tadmin off\n\tauto_https off\n\tstorage file_system /tmp/v/data\n}\nhttps://localhost {\n\ttls /tmp/v/cert.pem /tmp/v/key.pem\n}\n" >/tmp/v/Caddyfile
+caddy validate --config /tmp/v/Caddyfile --adapter caddyfile >/tmp/v/out 2>&1 || { tail -1 /tmp/v/out >&2; exit 3; }
+if [ "$2" = 1 ] && [ -f /tls/cert.pem ] && [ -f /tls/key.pem ]; then
+  cp -p /tls/cert.pem /tls/.cert.pem.prev
+  cp -p /tls/key.pem /tls/.key.pem.prev
+fi
+cp /tmp/v/cert.pem /tls/.cert.pem.new
+cp /tmp/v/key.pem /tls/.key.pem.new
+chmod 644 /tls/.cert.pem.new
+chmod 600 /tls/.key.pem.new
+chown 0:0 /tls/.cert.pem.new /tls/.key.pem.new
+if [ "$(stat -c %u /tls)" = 0 ]; then chmod 700 /tls; else chmod 711 /tls; fi
+mv -f /tls/.cert.pem.new /tls/cert.pem
+mv -f /tls/.key.pem.new /tls/key.pem'
+
+# loaded by caddy validate, then written as the container's root
+tls_copy() {
+  local cert="$1" key="$2" dir="$3" keep="$4" image rc=0 refusal
+  image="$(caddy_image)"
+  [ -n "$image" ] || die "docker-compose.prod.yml names no caddy image"
+  docker image inspect "$image" >/dev/null 2>&1 || docker pull -q "$image" >/dev/null \
+    || die "the caddy image $image was not pulled. Check the network, then run the command again."
+  [ -d "$dir" ] || install -d -m 700 "$dir"
+  [ -n "$WORK" ] || WORK="$(mktemp -d)"
+  cat "$cert" "$key" | docker run --rm -i --network none -v "$dir:/tls" --entrypoint sh "$image" \
+    -c "$TLS_COPY" sh "$(wc -c <"$cert")" "$keep" 2>"$WORK/copy.err" || rc=$?
+  if [ "$rc" -eq 3 ]; then
+    refusal="$(sed -n 's/.*"msg":"\([^"]*\)".*/\1/p' "$WORK/copy.err" | sed 's/.*loading certificates: //')"
+    die "caddy does not load the certificate: ${refusal:-$(tail -1 "$WORK/copy.err")}"
+  fi
+  [ "$rc" -eq 0 ] || die "the certificate was not copied to $dir. $(tail -1 "$WORK/copy.err")"
+}
+
+tls_in_container() {
+  docker run --rm --network none -v "$RENGINE_HOME/tls:/tls" --entrypoint sh "$(caddy_image)" -c "$1" >/dev/null 2>&1
+}
+
+tls_restore() { tls_in_container 'mv -f /tls/.cert.pem.prev /tls/cert.pem && mv -f /tls/.key.pem.prev /tls/key.pem'; }
+
+tls_forget() { tls_in_container 'rm -f /tls/.cert.pem.prev /tls/.key.pem.prev' || true; }
+
+# read with the capabilities the caddy service keeps
+tls_readable() {
+  docker run --rm --network none --cap-drop ALL --cap-add NET_BIND_SERVICE \
+    --security-opt no-new-privileges:true -v "$1:/etc/caddy/tls:ro" \
+    --entrypoint sh "$(caddy_image)" -c "cat $TLS_CERT_FILE $TLS_KEY_FILE >/dev/null" >/dev/null 2>&1
+}
+
+tls_pem() {
+  if [ -r tls/cert.pem ]; then
+    cat tls/cert.pem
+  else
+    docker run --rm --network none -v "$RENGINE_HOME/tls:/tls:ro" --entrypoint cat "$(caddy_image)" /tls/cert.pem 2>/dev/null
+  fi
+}
+
+# the served certificate, read into $WORK/cert.pem
+tls_installed() {
+  [ -n "$WORK" ] || WORK="$(mktemp -d)"
+  tls_pem >"$WORK/cert.pem" 2>/dev/null && [ -s "$WORK/cert.pem" ]
+}
+
+caddy_running() { [ -n "$(docker compose ps --status running -q caddy 2>/dev/null)" ]; }
+
+caddy_settled() {
+  local id
+  id="$(docker compose ps -q caddy 2>/dev/null)"
+  [ -n "$id" ] || return 1
+  for _ in 1 2 3 4 5; do
+    sleep 1
+    [ "$(docker inspect -f '{{.State.Running}} {{.State.Restarting}} {{.RestartCount}}' "$id" 2>/dev/null)" = "true false 0" ] || return 1
+  done
+}
+
+tls_install() {
+  [ $# -eq 3 ] || die "usage: rengine tls install <cert> <key> <install dir>"
+  local cert key dir
+  cert="$(abs "$1")"
+  key="$(abs "$2")"
+  dir="$(abs "$3")"
+  tls_validate "$cert" "$key" "" 1
+  mkdir -p "$dir"
+  tls_copy "$cert" "$key" "$dir/tls" 0
+  tls_readable "$dir/tls" || die "the caddy container cannot read $dir/tls/key.pem. The key must belong to root inside the container."
+}
+
+tls_set() {
+  [ $# -eq 2 ] || die "usage: rengine tls set <cert> <key>"
+  [ "$(tls_mode)" = cert ] \
+    || die "this install does not serve its own certificate. Run install.sh and choose Reconfigure to change the mode."
+  local cert key running=0
+  cert="$(abs "$1")"
+  key="$(abs "$2")"
+  tls_validate "$cert" "$key" "$(origin_host)"
+  caddy_running && running=1
+  tls_copy "$cert" "$key" "$RENGINE_HOME/tls" "$running"
+  if ! tls_readable "$RENGINE_HOME/tls"; then
+    [ "$running" -eq 1 ] && tls_restore
+    die "the caddy container cannot read $RENGINE_HOME/tls/key.pem. The key must belong to root inside the container."
+  fi
+  if [ "$running" -eq 0 ]; then
+    printf 'Certificate replaced. It is served from the next start.\n'
+    return 0
+  fi
+  if docker compose up -d --force-recreate --no-deps caddy && caddy_settled; then
+    tls_forget
+    printf 'Certificate replaced. Caddy restarted.\n'
+    return 0
+  fi
+  tls_restore || die "caddy did not load the certificate, and the previous certificate was not restored. Check the logs: rengine logs caddy"
+  docker compose up -d --force-recreate --no-deps caddy >/dev/null 2>&1 || true
+  die "caddy did not load the certificate. The previous certificate is restored. Check the logs: rengine logs caddy"
+}
+
+tls_show() {
+  local mode pem host
+  mode="$(tls_mode)"
+  printf 'Mode      %s\n' "${mode:-not recorded}"
+  [ "$mode" = cert ] || return 0
+  tls_installed || die "the certificate in $RENGINE_HOME/tls was not read"
+  pem="$WORK/cert.pem"
+  host="$(origin_host)"
+  printf 'Subject   %s\n' "$(openssl x509 -in "$pem" -noout -subject -nameopt RFC2253 | sed 's/^subject= *//')"
+  printf 'Issuer    %s\n' "$(openssl x509 -in "$pem" -noout -issuer -nameopt RFC2253 | sed 's/^issuer= *//')"
+  printf 'Names     %s\n' "$(cert_names "$pem" | paste -sd ' ')"
+  printf 'Expires   %s\n' "$(cert_end "$pem")"
+  cert_expiry "$pem" || printf 'Replace it with: rengine tls set <cert> <key>\n'
+  cert_covers "$pem" "$host" || printf 'warning: the certificate does not name %s.\n' "$host" >&2
+  tls_readable "$RENGINE_HOME/tls" || printf 'warning: the caddy container cannot read %s/tls/key.pem. Run rengine tls set again.\n' "$RENGINE_HOME" >&2
+  return 0
+}
+
+cmd_tls() {
+  local sub="${1:-}"
+  shift || true
+  case "$sub" in
+    show) tls_show ;;
+    set) tls_set "$@" ;;
+    check)
+      [ $# -ge 2 ] || die "usage: rengine tls check <cert> <key> [host]"
+      tls_validate "$(abs "$1")" "$(abs "$2")" "${3:-$(origin_host)}" ;;
+    install) tls_install "$@" ;;
+    expiry) tls_installed && cert_expiry "$WORK/cert.pem" ;;
+    *) die "usage: rengine tls show | set <cert> <key> | check <cert> <key> [host]" ;;
+  esac
+}
+
 cmd_uninstall() {
-  printf 'Containers and data volumes are removed. Backups and .env stay in %s.\n' "$RENGINE_HOME"
+  printf 'Containers and data volumes are removed. Backups, .env and tls/ stay in %s.\n' "$RENGINE_HOME"
   local ans
   read -rp 'Continue? [y/N] ' ans
   case "$ans" in y|Y|yes) ;; *) printf 'Uninstall not run.\n'; return 0 ;; esac
@@ -183,6 +455,7 @@ case "$cmd" in
   restore)   [ -n "${1:-}" ] || die "usage: rengine restore <archive>"
              exec scripts/backup.sh restore "$(abs "$1")" ;;
   reset-password) cmd_reset_password "$@" ;;
+  tls)       cmd_tls "$@" ;;
   uninstall) cmd_uninstall ;;
   version)   env_get RENGINE_TAG ;;
   ''|help|-h|--help) usage ;;

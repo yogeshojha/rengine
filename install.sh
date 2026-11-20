@@ -136,6 +136,13 @@ published_port() {
 
 write_private() { (umask 077 && rm -f "$1" && cat >"$1"); }
 
+abs_file() {
+  local path="${1/#\~/$HOME}"
+  case "$path" in /*) printf '%s' "$path" ;; *) printf '%s/%s' "$PWD" "$path" ;; esac
+}
+
+valid_hostname() { [[ "$1" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]]; }
+
 # ---------- flags ----------
 
 MODE=""
@@ -149,6 +156,9 @@ ADMIN_EMAIL=""
 ADMIN_PASSWORD=""
 PASSWORD_STDIN=0
 ACME_EMAIL=""
+TLS_CERT=""
+TLS_KEY=""
+TLS_CLI=""
 RENGINE_HOME=""
 GIT_TAG=""
 BUILD=0
@@ -171,8 +181,12 @@ Reachability, one of
   --ip [address]        server address, self-signed certificate
   --local               this machine only, no TLS
 
+Own certificate, with --domain or --ip naming the host
+  --tls-cert <file>     PEM certificate followed by its chain
+  --tls-key <file>      PEM private key without a passphrase
+
 Options
-  --ui-port <port>      published UI port, fixed at 443 with --domain
+  --ui-port <port>      published UI port, fixed at 443 for Let's Encrypt
   --api-port <port>     publish the API over plain HTTP on 127.0.0.1
   --no-api-port         stop publishing the API port
   --admin-user <name>   first administrator, default rengine
@@ -208,6 +222,8 @@ while [ $# -gt 0 ]; do
     --admin-email) ADMIN_EMAIL="${2:?}"; shift ;;
     --admin-password-stdin) PASSWORD_STDIN=1 ;;
     --acme-email) ACME_EMAIL="${2:?}"; shift ;;
+    --tls-cert) TLS_CERT="${2:?--tls-cert needs a file}"; shift ;;
+    --tls-key) TLS_KEY="${2:?--tls-key needs a file}"; shift ;;
     --dir) RENGINE_HOME="${2:?}"; shift ;;
     --tag) GIT_TAG="${2:?}"; shift ;;
     --image) IMAGE_PREFIX="${2:?--image needs a repository prefix}"; IMAGE_FLAGGED=1; shift ;;
@@ -234,6 +250,20 @@ if [ "$PASSWORD_STDIN" -eq 1 ]; then
   [ -n "$ADMIN_PASSWORD" ] || die "no password on stdin"
 fi
 attach_terminal
+
+if [ -n "$TLS_CERT$TLS_KEY" ]; then
+  [ -n "$TLS_CERT" ] || die "--tls-key needs --tls-cert"
+  [ -n "$TLS_KEY" ] || die "--tls-cert needs --tls-key"
+  case "$MODE" in
+    domain) SERVER_HOST="$RENGINE_HOST"; RENGINE_HOST="" ;;
+    ip) SERVER_HOST="$SERVER_IP"; SERVER_IP="" ;;
+    "") [ "$INTERACTIVE" -eq 1 ] || die "--tls-cert needs --domain <name> or --ip [address] to name the host" ;;
+    *) die "--tls-cert needs --domain <name> or --ip [address] to name the host" ;;
+  esac
+  MODE=cert
+  TLS_CERT="$(abs_file "$TLS_CERT")"
+  TLS_KEY="$(abs_file "$TLS_KEY")"
+fi
 
 # ---------- environment ----------
 
@@ -370,7 +400,10 @@ load_existing() {
     || die "admin credentials of an existing install are changed in Settings"
   say ""
   say "An install exists in $RENGINE_HOME."
-  if [ "$INTERACTIVE" -eq 1 ]; then
+  if [ -n "$TLS_CERT" ]; then
+    # a certificate on an existing install is a reconfigure
+    RECONFIGURE=1
+  elif [ "$INTERACTIVE" -eq 1 ]; then
     choose "How to continue" "Keep the settings and redeploy" "Reconfigure"
     [ "$CHOICE" -eq 0 ] && KEEP_SETTINGS=1 || RECONFIGURE=1
   elif [ -n "$MODE" ]; then
@@ -395,6 +428,38 @@ update_env() {
     -e "s|^ACME_EMAIL=.*|ACME_EMAIL=$ACME_EMAIL|" \
     -e "s|^CORS_ORIGINS=.*|CORS_ORIGINS=[\"$PUBLIC_ORIGIN\"]|" \
     "$RENGINE_HOME/.env"
+  env_set TLS_MODE "$MODE"
+}
+
+# a key an older .env lacks is appended
+env_set() {
+  if grep -q "^$1=" "$RENGINE_HOME/.env"; then
+    sed -i "s|^$1=.*|$1=$2|" "$RENGINE_HOME/.env"
+  else
+    printf '%s=%s\n' "$1" "$2" >>"$RENGINE_HOME/.env"
+  fi
+}
+
+# a stored TLS_MODE wins over the guess from the origin
+kept_reachability() {
+  local env_file="$RENGINE_HOME/.env"
+  PUBLIC_ORIGIN="$(env_get PUBLIC_ORIGIN "$env_file" || true)"
+  RENGINE_HOST="$(env_get RENGINE_HOST "$env_file" || true)"
+  API_PORT="$(published_port 8000)"
+  UI_PORT="$(published_port 443)"
+  UI_PORT="${UI_PORT:-$(published_port 80)}"
+  MODE="$(env_get TLS_MODE "$env_file" || true)"
+  if [ -z "$MODE" ]; then
+    MODE=local
+    [ -n "$RENGINE_HOST" ] && MODE=domain
+    case "$PUBLIC_ORIGIN" in https://*) [ "$MODE" = "domain" ] || MODE=ip ;; esac
+    env_set TLS_MODE "$MODE"
+  fi
+  if [ "$MODE" = "ip" ] || [ "$MODE" = "cert" ]; then
+    SERVER_HOST="${PUBLIC_ORIGIN#https://}"
+    SERVER_HOST="${SERVER_HOST%:*}"
+    SERVER_IP="$SERVER_HOST"
+  fi
 }
 
 # an install written before api.env kept the administrator in .env
@@ -421,11 +486,13 @@ ask_mode() {
   choose "Reachability" \
     "Public domain, HTTPS certificate from Let's Encrypt" \
     "Server address, self-signed certificate" \
-    "This machine only, no TLS"
+    "This machine only, no TLS" \
+    "Domain or server address, own certificate"
   case "$CHOICE" in
     0) MODE=domain ;;
     1) MODE=ip ;;
     2) MODE=local ;;
+    3) MODE=cert ;;
   esac
 }
 
@@ -437,7 +504,7 @@ ask_reachability() {
   case "$MODE" in
     domain)
       RENGINE_HOST="$(printf '%s' "$RENGINE_HOST" | tr '[:upper:]' '[:lower:]')"
-      while ! [[ "$RENGINE_HOST" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]]; do
+      while ! valid_hostname "$RENGINE_HOST"; do
         [ -n "$RENGINE_HOST" ] && say "Not a domain name: $RENGINE_HOST"
         [ "$INTERACTIVE" -eq 1 ] || die "not a domain name: $RENGINE_HOST"
         ask "Domain"
@@ -463,6 +530,35 @@ ask_reachability() {
       valid_port "$UI_PORT" || die "not a port: $UI_PORT"
       if [ "$UI_PORT" = "443" ]; then PUBLIC_ORIGIN="https://$SERVER_HOST"; else PUBLIC_ORIGIN="https://$SERVER_HOST:$UI_PORT"; fi
       ;;
+    cert)
+      if [ -z "$SERVER_HOST" ]; then
+        ask "Domain or server address" "$(detect_ip)"
+        SERVER_HOST="$ANSWER"
+      fi
+      SERVER_HOST="$(printf '%s' "$SERVER_HOST" | tr '[:upper:]' '[:lower:]')"
+      [ -n "$SERVER_HOST" ] || die "no domain or server address"
+      case "$SERVER_HOST" in *:* | *\[*) die "ports are published on IPv4 only. Pass a domain or the server's IPv4 address." ;; esac
+      valid_ipv4 "$SERVER_HOST" || valid_hostname "$SERVER_HOST" \
+        || die "not a domain name or an IPv4 address: $SERVER_HOST"
+      if [ -z "$UI_PORT" ]; then
+        ask "UI port" "443"
+        UI_PORT="$ANSWER"
+      fi
+      valid_port "$UI_PORT" || die "not a port: $UI_PORT"
+      if [ "$UI_PORT" = "443" ]; then PUBLIC_ORIGIN="https://$SERVER_HOST"; else PUBLIC_ORIGIN="https://$SERVER_HOST:$UI_PORT"; fi
+      if [ -z "$TLS_CERT" ]; then
+        ask "Certificate file, PEM, chain included"
+        TLS_CERT="$ANSWER"
+        [ -n "$TLS_CERT" ] || die "no certificate file"
+        TLS_CERT="$(abs_file "$TLS_CERT")"
+      fi
+      if [ -z "$TLS_KEY" ]; then
+        ask "Private key file, PEM"
+        TLS_KEY="$ANSWER"
+        [ -n "$TLS_KEY" ] || die "no private key file"
+        TLS_KEY="$(abs_file "$TLS_KEY")"
+      fi
+      ;;
     local)
       if [ -z "$UI_PORT" ]; then
         ask "UI port" "8080"
@@ -482,10 +578,40 @@ ask_reachability() {
   if [ "$MODE" = "domain" ]; then
     port_free 80 || die "port 80 is in use and Let's Encrypt needs it"
   fi
-  if [ "$MODE" = "ip" ] && [ "$UI_PORT" = "443" ]; then
+  if { [ "$MODE" = "ip" ] || [ "$MODE" = "cert" ]; } && [ "$UI_PORT" = "443" ]; then
     port_free 80 || die "port 80 is in use. Pass a UI port other than 443 to skip the redirect listener."
   fi
 }
+
+# the rengine CLI that carries the certificate check, from the release being installed
+tls_cli() {
+  local cli
+  for cli in "${SRC_DIR:+$SRC_DIR/deploy/rengine}" "$RENGINE_HOME/bin/rengine"; do
+    [ -n "$cli" ] && grep -q '^tls_install()' "$cli" 2>/dev/null && { printf '%s' "$cli"; return 0; }
+  done
+  return 1
+}
+
+check_certificate() {
+  [ "$MODE" = "cert" ] || return 0
+  if [ -z "$SRC_DIR" ] && [ "$RECONFIGURE" -eq 1 ]; then
+    if [ "$CHECKOUT" -eq 1 ]; then SRC_DIR="$SCRIPT_DIR"; elif [ -n "$GIT_TAG" ]; then fetch_source; fi
+  fi
+  if ! TLS_CLI="$(tls_cli)"; then
+    [ "$RECONFIGURE" -eq 1 ] \
+      && die "the installed release has no own certificate mode. Run $CLI update, or pass --tag with a later release."
+    die "$GIT_TAG has no own certificate mode. Pass --tag with a later release."
+  fi
+  step "Checking the certificate"
+  bash "$TLS_CLI" tls check "$TLS_CERT" "$TLS_KEY" "$SERVER_HOST"
+}
+
+install_certificate() {
+  [ "$MODE" = "cert" ] || return 0
+  bash "$TLS_CLI" tls install "$TLS_CERT" "$TLS_KEY" "$RENGINE_HOME"
+}
+
+tls_dir() { [ -d "$RENGINE_HOME/tls" ] || install -d -m 700 "$RENGINE_HOME/tls"; }
 
 ask_api() {
   if [ "$NO_API" -eq 1 ]; then
@@ -640,6 +766,51 @@ http://:80 {
 }
 EOF
       ;;
+    cert)
+      local hsts="" redirect=""
+      valid_ipv4 "$SERVER_HOST" || hsts='	header Strict-Transport-Security "max-age=31536000"'
+      if [ "$UI_PORT" = "443" ]; then
+        redirect="$(
+          cat <<'EOF'
+http://:80 {
+	import headers
+	redir https://{host}{uri}
+}
+EOF
+        )"
+      fi
+      cat >"$RENGINE_HOME/Caddyfile" <<EOF
+{
+	admin off
+	auto_https off
+	default_sni $SERVER_HOST
+}
+
+$headers
+
+https://$SERVER_HOST {
+	import headers
+$hsts
+	tls /etc/caddy/tls/cert.pem /etc/caddy/tls/key.pem
+	encode zstd gzip
+
+	handle /api/* {
+		request_body {
+			max_size 128MB
+		}
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
+
+$redirect
+EOF
+      ;;
     local)
       cat >"$RENGINE_HOME/Caddyfile" <<EOF
 {
@@ -682,7 +853,7 @@ write_ports() {
         echo "      - \"0.0.0.0:443:443\""
         echo "      - \"0.0.0.0:80:80\""
         ;;
-      ip)
+      ip | cert)
         echo "      - \"0.0.0.0:$UI_PORT:443\""
         [ "$UI_PORT" = "443" ] && echo "      - \"0.0.0.0:80:80\""
         ;;
@@ -713,6 +884,7 @@ RENGINE_SRC=$src
 PUBLIC_ORIGIN=$PUBLIC_ORIGIN
 RENGINE_HOST=$RENGINE_HOST
 ACME_EMAIL=$ACME_EMAIL
+TLS_MODE=$MODE
 DOCKER_SUBNET=$DOCKER_SUBNET
 CADDY_ADDR=$CADDY_ADDR
 
@@ -811,6 +983,7 @@ write_files() {
   [ -z "$REDIS_PASSWORD" ] && REDIS_PASSWORD="$(rand_hex 16)"
   [ -z "$FLOWER_PASSWORD" ] && FLOWER_PASSWORD="$(rand_hex 12)"
   write_env
+  tls_dir
   write_caddyfile
   write_ports
   link_cli
@@ -846,7 +1019,7 @@ refresh_keep() {
     SRC_DIR="$SCRIPT_DIR"
   elif [ -n "$GIT_TAG" ]; then
     IMAGE_TAG="${GIT_TAG#v}"
-    fetch_source
+    [ -n "$SRC_DIR" ] || fetch_source
   else
     return 0
   fi
@@ -903,6 +1076,13 @@ deploy() {
   [ "$UPGRADE" -eq 1 ] && quiesce
   step "Starting"
   docker compose up -d --remove-orphans || die "the stack did not start. Check the output above and the logs: $CLI logs"
+  if [ "$KEEP_SETTINGS" -eq 1 ] || [ "$RECONFIGURE" -eq 1 ]; then recreate_caddy; fi
+}
+
+recreate_caddy() {
+  cd "$RENGINE_HOME"
+  [ -n "$(docker compose ps --status running -q caddy 2>/dev/null)" ] || return 0
+  docker compose up -d --force-recreate --no-deps caddy || die "caddy did not start. Check the logs: $CLI logs caddy"
 }
 
 wait_healthy() {
@@ -944,6 +1124,11 @@ summary() {
     fi
   fi
   [ "$MODE" = "ip" ] && say "  The certificate is self-signed. The browser shows a warning for it."
+  if [ "$MODE" = "cert" ]; then
+    local expiry
+    expiry="$("$RENGINE_HOME/bin/rengine" tls expiry 2>/dev/null)" || true
+    [ -n "$expiry" ] && say "  TLS       $expiry Replace it with $CLI tls set <cert> <key>"
+  fi
   [ -n "$API_PORT" ] && say "  API       http://127.0.0.1:$API_PORT"
   say ""
   say "  Manage    $CLI status, $CLI logs, $CLI update, $CLI backup"
@@ -971,23 +1156,16 @@ main() {
   fi
 
   if [ "$KEEP_SETTINGS" -eq 1 ]; then
-    PUBLIC_ORIGIN="$(env_get PUBLIC_ORIGIN "$RENGINE_HOME/.env")"
-    RENGINE_HOST="$(env_get RENGINE_HOST "$RENGINE_HOME/.env")"
-    API_PORT="$(published_port 8000)"
-    UI_PORT="$(published_port 443)"
-    UI_PORT="${UI_PORT:-$(published_port 80)}"
-    MODE=local
-    [ -n "$RENGINE_HOST" ] && MODE=domain
-    case "$PUBLIC_ORIGIN" in https://*) [ "$MODE" = "domain" ] || MODE=ip ;; esac
-    if [ "$MODE" = "ip" ]; then
-      SERVER_IP="${PUBLIC_ORIGIN#https://}"
-      SERVER_IP="${SERVER_IP%:*}"
-      SERVER_HOST="$SERVER_IP"
-    fi
+    kept_reachability
     write_caddyfile
     [ -n "$UI_PORT" ] && write_ports
     refresh_keep
-    [ "$NO_START" -eq 1 ] && { say "Configuration kept."; return 0; }
+    tls_dir
+    if [ "$NO_START" -eq 1 ]; then
+      recreate_caddy
+      say "Configuration kept."
+      return 0
+    fi
     deploy
     wait_healthy
     summary
@@ -1004,7 +1182,10 @@ main() {
   [ "$RECONFIGURE" -eq 1 ] || ask_admin
 
   if [ "$RECONFIGURE" -eq 1 ]; then
+    check_certificate
+    install_certificate
     update_env
+    tls_dir
     write_caddyfile
     write_ports
     refresh_keep
@@ -1013,10 +1194,13 @@ main() {
     say "Sized for $MEM_GB GB memory and $CPUS CPUs: $SCAN_SLOTS scan slots, $PG_SHARED_BUFFERS Postgres buffers."
     resolve_tag
     fetch_source
+    check_certificate
+    install_certificate
     write_files
   fi
 
   if [ "$NO_START" -eq 1 ]; then
+    [ "$RECONFIGURE" -eq 0 ] || recreate_caddy
     say ""
     say "Configuration written. Start with: $CLI start"
     return 0

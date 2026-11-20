@@ -137,14 +137,17 @@ curl -fsSL https://github.com/yogeshojha/rengine/releases/latest/download/instal
 sudo bash install.sh
 ```
 
-The guided setup asks where the instance is reached: a public domain with a Let's Encrypt certificate, a server address with a self-signed certificate, or this machine only. It then asks for the UI port, whether the API is also published over plain HTTP on 127.0.0.1, and the administrator credentials. Everything else is generated. The UI, agents and connectors all reach the API at `/api` on the same origin, so no other port needs to be open.
+The guided setup asks where the instance is reached: a public domain with a Let's Encrypt certificate, a server address with a self-signed certificate, this machine only, or a domain or server address with its own certificate. It then asks for the UI port, whether the API is also published over plain HTTP on 127.0.0.1, and the administrator credentials. Everything else is generated. The UI, agents and connectors all reach the API at `/api` on the same origin, so no other port needs to be open.
 
 For an unattended install, pass the answers as flags:
 
 ```bash
 sudo bash install.sh --domain asm.example.com
 sudo bash install.sh --local --ui-port 8080
+sudo bash install.sh --domain rengine.corp.example --tls-cert fullchain.pem --tls-key key.pem
 ```
+
+With `--tls-cert` and `--tls-key`, `--domain` or `--ip` names the host and Let's Encrypt is not used. The certificate file holds the certificate followed by its chain, and the key is RSA, Ed25519 or ECDSA P-256, P-384 or P-521 with no passphrase. The installer refuses a key that does not match or a certificate that has expired, and copies both into `tls/` in the install directory. `sudo rengine tls set <cert> <key>` replaces them later and restarts Caddy alone, and `rengine tls show` prints the names and the days left. When the certificate is issued by a private CA, a client that verifies certificates, such as the Burp extension or an MCP client, needs that CA in its trust store. Backups do not hold the certificate or its key.
 
 The administrator password comes from the prompt, from stdin with `--admin-password-stdin` or from `RENGINE_ADMIN_PASSWORD`, and is generated when none is given. `install.sh --help` lists every option. 4 GB of memory and 10 GB of disk are the minimum. 8 GB of memory and 25 GB of disk are recommended for regular scanning.
 
@@ -182,7 +185,7 @@ sudo rengine update
 
 The update pulls the new images, saves a database snapshot to `backups/`, stops the services, applies the migrations and starts the new release. Running scans resume afterwards and repeat the stages that were in flight. `rengine update --no-backup` skips the snapshot.
 
-`rengine update` leaves the Caddyfile as written. To pick up a release's proxy settings, run that release's `install.sh` and choose Keep the settings and redeploy.
+`rengine update` leaves the Caddyfile as written. To pick up a release's proxy settings, run that release's `install.sh` and choose Keep the settings and redeploy. The Caddyfile is written again from the stored mode, own certificate included, and Caddy is restarted alone.
 
 To return to the earlier release, run `rengine update v<earlier> --no-backup`. If the database was already migrated, follow it with `rengine restore backups/<snapshot>`.
 
