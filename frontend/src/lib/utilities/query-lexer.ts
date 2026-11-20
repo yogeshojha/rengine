@@ -278,18 +278,27 @@ function spacedOperator(
 	};
 }
 
-const unescape = (value: string) => value.replace(/\\(.)/g, '$1');
+const unescape = (value: string) => value.replace(/\\([\s\S])/g, '$1');
 
 export function unquote(value: string): string {
-	const closed = /^"((?:[^"\\]|\\.)*)"$/.exec(value);
+	const closed = /^"((?:[^"\\]|\\[\s\S])*)"$/.exec(value);
 	if (closed) return unescape(closed[1]);
 	return value.startsWith('"') ? unescape(value.slice(1)) : value;
 }
 
+// mirrors shared/services/asset_query/tokens.py
+const NEEDS_QUOTE = /[\s()"[\]:=><~]/;
+
+export function quoted(value: string): string {
+	return `"${value.replace(/[\\"]/g, '\\$&')}"`;
+}
+
 export function quoteValue(value: string): string {
-	return /[\s()"[\]:=><~]/.test(value)
-		? `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-		: value;
+	return !value || NEEDS_QUOTE.test(value) ? quoted(value) : value;
+}
+
+export function quoteListItem(value: string): string {
+	return !value || NEEDS_QUOTE.test(value) || value.includes(',') ? quoted(value) : value;
 }
 
 export function replaceRange(source: string, start: number, end: number, insert: string): string {

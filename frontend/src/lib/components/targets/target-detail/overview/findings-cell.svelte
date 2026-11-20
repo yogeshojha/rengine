@@ -9,6 +9,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import { ACTIONABLE_SEVERITIES, SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { quoted } from '$lib/utilities/query-lexer';
 	import { plural } from '$lib/utilities/strings';
 	import type { RankedFinding, ScanVulnerabilities } from '$lib/utilities/vulns';
 	import type { TargetRisk } from '$lib/types/target-summary';
@@ -40,7 +41,7 @@
 	const id = (f: RankedFinding) => f.cve_ids[0] ?? f.template_id;
 	const epss = (f: RankedFinding) =>
 		f.epss_score === null ? null : Math.round(f.epss_score * 100);
-	const findingHref = (f: RankedFinding) => link(`template="${f.template_id}"`);
+	const findingHref = (f: RankedFinding) => link(`template=${quoted(f.template_id)}`);
 
 	interface Stat {
 		key: string;

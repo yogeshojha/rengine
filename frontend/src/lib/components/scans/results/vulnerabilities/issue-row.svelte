@@ -33,6 +33,7 @@
 	import { writeClipboard } from '$lib/utilities/clipboard';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import { excludeToken, exactToken } from '$lib/utilities/scan-insights';
+	import { quoteListItem } from '$lib/utilities/query-lexer';
 	import { epssPercent, type IssueRead } from '$lib/utilities/vulns';
 	import { externalHref } from '$lib/utilities/links';
 	import {
@@ -120,7 +121,7 @@
 	let hostFilter = $derived(
 		it.sample_hosts.length === 1
 			? exactToken('host', it.sample_hosts[0])
-			: `host=[${it.sample_hosts.map((h) => JSON.stringify(h)).join(',')}]`
+			: `host=[${it.sample_hosts.map(quoteListItem).join(',')}]`
 	);
 
 	function pivot(e: Event, token: string) {

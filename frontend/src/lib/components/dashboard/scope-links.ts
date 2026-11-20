@@ -1,6 +1,7 @@
 import { getContext, setContext } from 'svelte';
 import { ROUTES } from '$lib/config/routes';
 import { SURFACE, SURFACE_ORDER, type SurfaceDimension } from '$lib/config/surface';
+import { quoteListItem, quoteValue } from '$lib/utilities/query-lexer';
 import type { TargetScope } from '$lib/utilities/surface-scope';
 
 const KEY = Symbol('dashboard-scope-links');
@@ -20,17 +21,13 @@ export function onDashboard(): boolean {
 
 export function scopeClause(values: string[]): string {
 	if (!values.length) return '';
-	const list = values.map(quoteValue);
-	return list.length === 1 ? `target=${list[0]}` : `target=[${list.join(',')}]`;
+	if (values.length === 1) return `target=${quoteValue(values[0])}`;
+	return `target=[${values.map(quoteListItem).join(',')}]`;
 }
 
 export function withClause(clause: string, q: string): string {
 	if (!clause) return q;
 	return q.trim() ? `${clause} and (${q})` : clause;
-}
-
-function quoteValue(v: string): string {
-	return /[\s,()"]/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
 }
 
 const PARAM_BY_TAB = new Map<string, string>(SURFACE_ORDER.map((s) => [s.tab, s.queryParam]));

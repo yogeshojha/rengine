@@ -5,6 +5,7 @@
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { SoftwareCoverage, SoftwareFacets } from '$lib/types/software';
 	import { cappedCount, percentLabel } from '$lib/utilities/strings';
+	import { quoted } from '$lib/utilities/query-lexer';
 
 	const routes = useScopedRoutes();
 
@@ -24,7 +25,7 @@
 			key: f.key,
 			label: f.label,
 			count: f.count,
-			href: routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: `software="${f.key}"` })
+			href: routes.results(SPEC.tab, scanId, { [SPEC.queryParam]: `software=${quoted(f.key)}` })
 		}))
 	);
 	let coverage = $derived(software?.coverage ?? null);

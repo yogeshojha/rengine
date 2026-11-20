@@ -1,5 +1,6 @@
 import BrainCircuit from '@lucide/svelte/icons/brain-circuit';
 import type { IconComponent } from './icons';
+import { quoteValue } from '$lib/utilities/query-lexer';
 
 // mirrors shared/definitions/ai_services.py
 export const AI_FIELD = 'ai';
@@ -111,6 +112,5 @@ export function aiQuery(value: string): string {
 }
 
 export function aiModelQuery(model: string): string {
-	const value = /[\s:,"\\[\]()]/.test(model) ? `"${model.replace(/["\\]/g, '\\$&')}"` : model;
-	return `${AI_MODEL_FIELD}:${value}`;
+	return `${AI_MODEL_FIELD}:${quoteValue(model)}`;
 }

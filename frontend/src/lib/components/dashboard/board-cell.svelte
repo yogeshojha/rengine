@@ -11,6 +11,7 @@
 	import { SEVERITY_FILL, severityLabel } from '$lib/config/vulnerabilities';
 	import { EVIDENCE_LABELS, Evidence, evidenceLabel } from '$lib/config/evidence';
 	import { relativeTime } from '$lib/utilities/dates';
+	import { quoted } from '$lib/utilities/query-lexer';
 	import type { DashboardFinding, DashboardRisk } from '$lib/types/dashboard';
 
 	const routes = useScopedRoutes();
@@ -37,7 +38,7 @@
 	);
 
 	const cardHref = (f: DashboardFinding) =>
-		ROUTES.scanTab(f.scan_id, VULN.tab, { [VULN.queryParam]: `template="${f.template_id}"` });
+		ROUTES.scanTab(f.scan_id, VULN.tab, { [VULN.queryParam]: `template=${quoted(f.template_id)}` });
 	const epss = (f: DashboardFinding) =>
 		f.epss_score === null ? null : Math.round(f.epss_score * 100);
 	const id = (f: DashboardFinding) => f.cve_ids[0] ?? f.template_id;

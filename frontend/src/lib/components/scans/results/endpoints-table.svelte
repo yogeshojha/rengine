@@ -128,6 +128,7 @@
 	import { LiveRefresh, Throttled } from '$lib/utilities/live-results';
 	import { TabCounts } from '$lib/utilities/tab-counts.svelte';
 	import { formatShortDate } from '$lib/utilities/dates';
+	import { quoted } from '$lib/utilities/query-lexer';
 
 	interface Props {
 		scanId: string;
@@ -1207,7 +1208,7 @@
 	async function searchHosts(term: string): Promise<TreeNode[]> {
 		const res = await endpointsApi.treeHosts(projectId, scanId, {
 			...hostsFilter,
-			q: [hostsFilter.q, `host:${JSON.stringify(term)}`].filter(Boolean).join(' and '),
+			q: [hostsFilter.q, `host:${quoted(term)}`].filter(Boolean).join(' and '),
 			page: 1
 		});
 		return res.items;

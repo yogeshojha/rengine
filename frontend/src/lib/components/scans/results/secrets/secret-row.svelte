@@ -2,6 +2,7 @@
 	import { REVEAL, rowTone } from '$lib/components/scans/results/table/columns';
 	import NewBadge from '$lib/components/new-badge.svelte';
 	import { excludeToken } from '$lib/utilities/scan-insights';
+	import { quoted } from '$lib/utilities/query-lexer';
 	import Ellipsis from '@lucide/svelte/icons/ellipsis';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import ExternalLink from '@lucide/svelte/icons/external-link';
@@ -52,7 +53,7 @@
 	let firstLine = $derived(row.value.split('\n')[0]);
 	let assetHref = $derived(
 		ROUTES.results(WEB.tab, projectWide ? null : row.scan_id, {
-			[WEB.queryParam]: `name="${row.host}"`
+			[WEB.queryParam]: `name=${quoted(row.host)}`
 		})
 	);
 </script>

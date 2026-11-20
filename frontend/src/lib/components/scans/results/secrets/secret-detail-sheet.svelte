@@ -18,6 +18,7 @@
 	import SheetTop from '../sheet-top.svelte';
 	import SheetBar from '../sheet-bar.svelte';
 	import { relativeTimeLong } from '$lib/utilities/dates';
+	import { quoted } from '$lib/utilities/query-lexer';
 	import { MASK } from '$lib/constants';
 	import { contextLang, metaLabel } from '$lib/utilities/secrets';
 	import { ROUTES } from '$lib/config/routes';
@@ -66,7 +67,9 @@
 
 	let lang = $derived(contextLang(row?.context));
 	let assetHref = $derived(
-		row ? ROUTES.results(WEB.tab, scanId || null, { [WEB.queryParam]: `name="${row.host}"` }) : ''
+		row
+			? ROUTES.results(WEB.tab, scanId || null, { [WEB.queryParam]: `name=${quoted(row.host)}` })
+			: ''
 	);
 	let claims = $derived.by(() => {
 		const meta = row?.meta ?? {};
