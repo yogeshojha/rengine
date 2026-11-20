@@ -25,9 +25,12 @@
 		dimensionSpec,
 		FireOn,
 		fireOnLabel,
+		isDaily,
 		OutcomeStatus,
+		sourcePage,
 		triggerLabel
 	} from '$lib/config/tripwires';
+	import { tripwiresStore } from '$lib/stores/tripwires.svelte';
 	import type { Outcome, Tripwire, TripwireRun, TripwireRunCounts } from '$lib/types/tripwire';
 	import { formatDateTime, relativeTime } from '$lib/utilities/dates';
 	import { scopeText } from './format';
@@ -64,6 +67,16 @@
 	let seq = 0;
 
 	let spec = $derived(tripwire ? dimensionSpec(tripwire.dimension) : null);
+	let daily = $derived(tripwire ? isDaily(tripwire.trigger) : false);
+	let source = $derived(tripwire ? tripwiresStore.source(tripwire.source) : null);
+	let sourceLine = $derived(
+		tripwire && daily
+			? [
+					source?.label ?? tripwire.source ?? '',
+					...tripwiresStore.paramLabels(tripwire.source, tripwire.params)
+				].join(' · ')
+			: ''
+	);
 	let verb = $derived(tripwire ? (FIRE_ON_VERB[tripwire.fire_on as FireOn] ?? 'fired') : 'fired');
 	let tabCounts = $derived(
 		counts
@@ -162,6 +175,7 @@
 			tripwire.fire_on === FireOn.Appears
 				? `${tripwire.query.trim() ? `(${tripwire.query.trim()}) ` : ''}is:new`
 				: tripwire.query;
+		if (!run.scan_id) return '';
 		return ROUTES.results(spec.tab, run.scan_id, query ? { [spec.queryParam]: query } : undefined);
 	}
 
@@ -190,12 +204,22 @@
 					<Button variant="outline" size="sm" onclick={() => onEdit(tripwire)}>Edit</Button>
 				</div>
 				<Sheet.Description class="flex flex-wrap items-center gap-x-2 gap-y-1">
-					<span>{spec.label}</span>
-					<QueryChip dimension={tripwire.dimension} query={tripwire.query} wrap />
-					<span
-						>· {fireOnLabel(tripwire.fire_on)} · {scopeText(tripwire.scope, tripwire.scope.labels)} ·
-						{triggerLabel(tripwire.trigger)}</span
-					>
+					{#if daily}
+						<span
+							>{sourceLine} · {scopeText(tripwire.scope, tripwire.scope.labels)} ·
+							{triggerLabel(tripwire.trigger)}</span
+						>
+					{:else}
+						<span>{spec.label}</span>
+						<QueryChip dimension={tripwire.dimension} query={tripwire.query} wrap />
+						<span
+							>· {fireOnLabel(tripwire.fire_on)} · {scopeText(
+								tripwire.scope,
+								tripwire.scope.labels
+							)} ·
+							{triggerLabel(tripwire.trigger)}</span
+						>
+					{/if}
 				</Sheet.Description>
 			</Sheet.Header>
 
@@ -216,7 +240,9 @@
 					<span class="text-xl font-semibold tabular-nums"
 						>{(counts?.total ?? 0).toLocaleString()}</span
 					>
-					<span class="text-xs text-muted-foreground">Runs checked</span>
+					<span class="text-xs text-muted-foreground"
+						>{daily ? 'Changes checked' : 'Runs checked'}</span
+					>
 				</div>
 			</div>
 
@@ -264,7 +290,12 @@
 									<span class="flex min-w-0 flex-col gap-0.5">
 										<span class="truncate font-mono text-sm">{run.target_value}</span>
 										<span class="text-xs text-muted-foreground">
-											{#if fired}
+											{#if fired && daily}
+												{run.fired.toLocaleString()}
+												{run.fired === 1
+													? (source?.noun ?? 'change')
+													: (source?.noun_plural ?? 'changes')}
+											{:else if fired}
 												{run.fired.toLocaleString()}
 												{run.fired === 1 ? spec.noun : spec.nounPlural}
 												{verb} · {run.matched.toLocaleString()} matching
@@ -298,6 +329,8 @@
 														<span class="truncate font-mono">{row.label}</span>
 														{#if row.severity}
 															<SeverityMark severity={row.severity} />
+														{:else if daily}
+															<span class="text-muted-foreground">{row.detail}</span>
 														{:else}
 															<span class="truncate text-muted-foreground">{row.detail}</span>
 														{/if}
@@ -333,12 +366,22 @@
 											</div>
 										{/if}
 										<div class="flex items-center gap-2">
-											<Button variant="outline" size="sm" href={resultsHref(run)}
-												>{resultsLabel(run)}</Button
-											>
-											<Button variant="ghost" size="sm" href={ROUTES.scan(run.scan_id)}
-												>Open scan</Button
-											>
+											{#if run.scan_id}
+												<Button variant="outline" size="sm" href={resultsHref(run)}
+													>{resultsLabel(run)}</Button
+												>
+												<Button variant="ghost" size="sm" href={ROUTES.scan(run.scan_id)}
+													>Open scan</Button
+												>
+											{:else}
+												{@const page = sourcePage(tripwire.source)}
+												<Button
+													variant="outline"
+													size="sm"
+													href={ROUTES.target(run.target_id, page?.tab)}
+													>{page?.label ?? 'Open target'}</Button
+												>
+											{/if}
 										</div>
 									</div>
 								{/if}

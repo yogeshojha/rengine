@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ChoiceSpec, TripwireTemplate } from '$lib/types/tripwire';
-	import { dimensionSpec } from '$lib/config/tripwires';
+	import { dimensionSpec, isDaily } from '$lib/config/tripwires';
+	import { tripwiresStore } from '$lib/stores/tripwires.svelte';
 	import Hint from '$lib/components/hint.svelte';
 	import SectionHead from '$lib/components/section-head.svelte';
 	import QueryChip from './query-chip.svelte';
@@ -24,7 +25,7 @@
 				<div class="grid gap-2 {columns}">
 					{#each rows as template (template.key)}
 						{@const spec = dimensionSpec(template.dimension)}
-						<Hint text={template.query}>
+						<Hint text={template.query || null}>
 							{#snippet child(props)}
 								<button
 									{...props}
@@ -33,13 +34,22 @@
 									onclick={() => onPick(template)}
 								>
 									<span class="text-sm font-medium">{template.name}</span>
-									<span class="text-2xs text-muted-foreground">{spec.label}</span>
-									<QueryChip
-										dimension={template.dimension}
-										query={template.query}
-										hint={false}
-										class="max-w-full"
-									/>
+									{#if isDaily(template.trigger)}
+										<span class="text-2xs text-muted-foreground">
+											{tripwiresStore.source(template.source)?.label ?? template.source}
+										</span>
+										<span class="text-2xs leading-5 text-muted-foreground">
+											{tripwiresStore.source(template.source)?.help ?? ''}
+										</span>
+									{:else}
+										<span class="text-2xs text-muted-foreground">{spec.label}</span>
+										<QueryChip
+											dimension={template.dimension}
+											query={template.query}
+											hint={false}
+											class="max-w-full"
+										/>
+									{/if}
 								</button>
 							{/snippet}
 						</Hint>

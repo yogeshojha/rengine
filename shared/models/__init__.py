@@ -16,7 +16,12 @@ from shared.models.endpoint import Endpoint, EndpointCoverage
 from shared.models.estate import EstateCandidate, EstateTriage
 from shared.models.export import Export
 from shared.models.http_asset import HttpAsset
-from shared.models.infostealer import InfostealerLogin, TargetInfostealer
+from shared.models.infostealer import (
+    InfostealerChange,
+    InfostealerLogin,
+    InfostealerSighting,
+    TargetInfostealer,
+)
 from shared.models.instance_settings import InstanceSettings
 from shared.models.interest import InterestDismissal, InterestRule, InterestSignal
 from shared.models.ip_address import IpAddress
@@ -116,7 +121,9 @@ __all__ = [
     "EstateTriage",
     "Export",
     "HttpAsset",
+    "InfostealerChange",
     "InfostealerLogin",
+    "InfostealerSighting",
     "InstanceSettings",
     "InterestDismissal",
     "InterestRule",

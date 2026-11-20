@@ -16,6 +16,7 @@ from shared.definitions.tripwires import (
     MAX_DIFF_ROWS,
     MAX_STORED_ROWS,
     NOT_COVERED_DETAIL,
+    SCAN_TRIGGERS,
     CheckStatus,
     FireOn,
     ScopeKind,
@@ -266,7 +267,9 @@ def applicable(
 ) -> list[Tripwire]:
     """The enabled tripwires whose scope holds the scan's target."""
     stmt = select(Tripwire).where(
-        Tripwire.project_id == scan.project_id, Tripwire.enabled.is_(True)
+        Tripwire.project_id == scan.project_id,
+        Tripwire.enabled.is_(True),
+        Tripwire.trigger.in_(SCAN_TRIGGERS),
     )
     if live_dimension is not None:
         stmt = stmt.where(

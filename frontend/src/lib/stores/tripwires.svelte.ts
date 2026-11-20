@@ -79,6 +79,20 @@ function createTripwiresStore() {
 			return catalog?.dimensions.find((d) => d.key === key) ?? null;
 		},
 
+		source(key: string | null | undefined) {
+			return catalog?.sources.find((s) => s.key === key) ?? null;
+		},
+
+		/** The chosen option of each field of a daily source, in field order. */
+		paramLabels(key: string | null | undefined, params: Record<string, string>): string[] {
+			const spec = catalog?.sources.find((s) => s.key === key);
+			if (!spec) return [];
+			return spec.fields.map((field) => {
+				const value = params[field.key] ?? field.default;
+				return field.options.find((o) => o.key === value)?.label ?? value;
+			});
+		},
+
 		channelName(id: string): string | null {
 			return catalog?.channels.find((c) => c.id === id)?.name ?? null;
 		},

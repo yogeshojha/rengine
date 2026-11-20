@@ -30,7 +30,8 @@
 		ScopeKind,
 		TripwireTrigger,
 		actionLabel,
-		dimensionSpec
+		dimensionSpec,
+		isDaily
 	} from '$lib/config/tripwires';
 	import { SurfaceDimension, type SurfaceDimension as Dimension } from '$lib/config/surface';
 	import type {
@@ -44,6 +45,8 @@
 	import BacktestPanel from './backtest-panel.svelte';
 	import ChannelPicker from './channel-picker.svelte';
 	import ConditionPreview from './condition-preview.svelte';
+	import DailyCondition from './daily-condition.svelte';
+	import DailyPreview from './daily-preview.svelte';
 	import FireOnField from './fire-on-field.svelte';
 	import FlowStrip, { type FlowAction, type FlowNode } from './flow-strip.svelte';
 	import { withArticle } from '$lib/utilities/strings';
@@ -57,6 +60,8 @@
 		query?: string;
 		trigger?: string;
 		fire_on?: string;
+		source?: string | null;
+		params?: Record<string, string>;
 		scope?: TripwireScope;
 		scopeLabels?: string[];
 	}
@@ -106,6 +111,8 @@
 	let query = $state('');
 	let trigger = $state<string>(TripwireTrigger.ScanSettled);
 	let fireOn = $state<string>(FireOn.Appears);
+	let source = $state('');
+	let params = $state<Record<string, string>>({});
 	let scope = $state<TripwireScope>({ kind: ScopeKind.All, ids: [] });
 	let scopeLabels = $state<string[]>([]);
 	let notifyOn = $state(true);
@@ -125,7 +132,12 @@
 
 	let catalog = $derived(tripwiresStore.catalog);
 	let isEdit = $derived(tripwire !== null);
-	let spec = $derived(dimensionSpec(dimension));
+	let daily = $derived(isDaily(trigger));
+	let sourceSpec = $derived(tripwiresStore.source(source));
+	let ruleDimension = $derived(daily ? (sourceSpec?.dimension ?? dimension) : dimension);
+	let spec = $derived(dimensionSpec(ruleDimension));
+	let dailyRequest = $derived({ source, params, scope });
+	let paramLabels = $derived(tripwiresStore.paramLabels(source, params));
 	let dimensionLabel = $derived(
 		catalog?.dimensions.find((d) => d.key === dimension)?.label ?? spec.label
 	);
@@ -133,9 +145,11 @@
 	let scopeReady = $derived(scope.kind === ScopeKind.All || scope.ids.length > 0);
 	let actionsReady = $derived(!scanOn || stages.length > 0);
 	let queryOk = $derived(query.trim().length > 0 && queryReady && !queryError && !previewBusy);
-	let stepReady = $derived([scopeReady, queryOk, actionsReady, name.trim().length > 0]);
+	let conditionOk = $derived(daily ? sourceSpec !== null : queryOk);
+	let stepReady = $derived([scopeReady, conditionOk, actionsReady, name.trim().length > 0]);
 	let blocker = $derived.by((): string | null => {
 		if (step === 0 && !scopeReady) return 'Choose at least one target, organization or tag.';
+		if (step === 1 && daily) return sourceSpec ? null : 'Choose what the daily check reads.';
 		if (step === 1) {
 			if (!query.trim()) return 'A query is required.';
 			if (queryError) return 'The query has an error.';
@@ -166,6 +180,8 @@
 			query.trim(),
 			trigger,
 			fireOn,
+			source,
+			params,
 			scope,
 			notifyOn,
 			channelIds,
@@ -205,6 +221,8 @@
 			query = row?.query ?? seed?.query ?? '';
 			trigger = row?.trigger ?? seed?.trigger ?? TripwireTrigger.ScanSettled;
 			fireOn = row?.fire_on ?? seed?.fire_on ?? FireOn.Appears;
+			source = row?.source ?? seed?.source ?? '';
+			params = { ...(row?.params ?? seed?.params ?? {}) };
 			scope = row
 				? { kind: row.scope.kind, ids: [...row.scope.ids] }
 				: (seed?.scope ?? { kind: ScopeKind.All, ids: [] });
@@ -229,7 +247,19 @@
 	});
 
 	$effect(() => {
-		if (!open || step !== 1) return;
+		if (!open || !daily || sourceSpec) return;
+		const first = catalog?.sources[0];
+		if (!first) return;
+		untrack(() => {
+			const pristine = snapshot() === initial;
+			source = first.key;
+			params = {};
+			if (pristine) initial = snapshot();
+		});
+	});
+
+	$effect(() => {
+		if (!open || step !== 1 || daily) return;
 		const key = `${dimension}|${JSON.stringify(scope)}`;
 		const project = projectId;
 		if (facetsFor === key || !project) return;
@@ -256,7 +286,7 @@
 
 	function setScanOn(on: boolean) {
 		scanOn = on;
-		if (on && stages.length === 0) stages = defaultStages(dimension);
+		if (on && stages.length === 0) stages = defaultStages(ruleDimension);
 	}
 
 	/** Focus the step's first field: the query on If, the checked choice on When. */
@@ -265,8 +295,9 @@
 		if (!root) return;
 		const field =
 			root.querySelector<HTMLElement>('[data-step-focus] input') ??
+			root.querySelector<HTMLElement>('[role="radio"][data-state="checked"]') ??
 			root.querySelector<HTMLElement>(
-				'[role="radio"][data-state="checked"], input:not([type="hidden"]):not(:disabled), button:not(:disabled)'
+				'input:not([type="hidden"]):not(:disabled), button:not(:disabled)'
 			);
 		field?.focus({ preventScroll: true });
 	}
@@ -283,7 +314,12 @@
 
 	function next() {
 		if (!stepReady[step]) return;
-		if (step === STEPS.length - 2 && !name.trim()) name = defaultTripwireName(spec, query);
+		if (step === STEPS.length - 2 && !name.trim()) {
+			name =
+				daily && sourceSpec
+					? `New ${sourceSpec.label.toLowerCase()}`
+					: defaultTripwireName(spec, query);
+		}
 		show(Math.min(step + 1, STEPS.length - 1));
 		reached = Math.max(reached, step);
 	}
@@ -304,10 +340,12 @@
 		if (nameError || !canSave) return;
 		const body: TripwireCreate = {
 			name: name.trim(),
-			dimension,
-			query: query.trim(),
+			dimension: ruleDimension,
+			...(daily ? {} : { query: query.trim() }),
 			trigger,
-			fire_on: fireOn,
+			fire_on: daily ? FireOn.Appears : fireOn,
+			source: daily ? source : null,
+			params: daily ? params : {},
 			scope,
 			actions: actions(),
 			enabled
@@ -404,6 +442,9 @@
 				{dimension}
 				{query}
 				{fireOn}
+				daily={daily && sourceSpec
+					? { label: sourceSpec.label, detail: paramLabels.join(' · ') }
+					: null}
 				actions={actionLines}
 			/>
 		</Dialog.Header>
@@ -417,7 +458,7 @@
 								{id}
 								value={trigger}
 								onValueChange={(v) => v && (trigger = v)}
-								class="grid gap-2 sm:grid-cols-2"
+								class="grid gap-2 sm:grid-cols-3"
 							>
 								{#each catalog?.triggers ?? [] as choice (choice.key)}
 									<Label for="trigger-{choice.key}" class={CARD}>
@@ -445,6 +486,24 @@
 							/>
 						{/snippet}
 					</FormField>
+				{:else if step === 1 && daily}
+					<DailyCondition
+						sources={catalog?.sources ?? []}
+						{source}
+						{params}
+						onSource={(key) => {
+							source = key;
+							params = {};
+						}}
+						onParams={(next) => (params = next)}
+					/>
+					<p class="text-xs text-muted-foreground">A target's first lookup does not fire.</p>
+					<DailyPreview
+						{projectId}
+						request={dailyRequest}
+						part="read"
+						enabled={scopeReady && !!sourceSpec}
+					/>
 				{:else if step === 1}
 					<div class="grid gap-4 sm:grid-cols-[200px_minmax(0,1fr)]">
 						<FormField label="Dimension">
@@ -505,7 +564,9 @@
 						<label class="flex items-center justify-between gap-4 text-sm">
 							<span class="flex flex-col gap-0.5">
 								<span class="font-medium">Notify</span>
-								<span class="text-xs text-muted-foreground">One message per run.</span>
+								<span class="text-xs text-muted-foreground">
+									{daily ? 'One message per change.' : 'One message per run.'}
+								</span>
 							</span>
 							<Switch checked={notifyOn} onCheckedChange={(v) => (notifyOn = v)} />
 						</label>
@@ -522,8 +583,8 @@
 							<span class="flex flex-col gap-0.5">
 								<span class="font-medium">Focused scan</span>
 								<span class="text-xs text-muted-foreground">
-									Runs the chosen stages against the {spec.nounPlural} that fired. At most {catalog?.max_runs_per_day ??
-										MAX_RUNS_PER_DAY} runs a day.
+									Runs the chosen stages against the {daily ? 'hostnames' : spec.nounPlural} that fired.
+									At most {catalog?.max_runs_per_day ?? MAX_RUNS_PER_DAY} runs a day.
 								</span>
 							</span>
 							<Switch checked={scanOn} onCheckedChange={setScanOn} />
@@ -548,7 +609,20 @@
 							/>
 						{/snippet}
 					</FormField>
-					<BacktestPanel {projectId} request={previewRequest} enabled={scopeReady && !queryError} />
+					{#if daily}
+						<DailyPreview
+							{projectId}
+							request={dailyRequest}
+							part="history"
+							enabled={scopeReady && !!sourceSpec}
+						/>
+					{:else}
+						<BacktestPanel
+							{projectId}
+							request={previewRequest}
+							enabled={scopeReady && !queryError}
+						/>
+					{/if}
 					<label class="flex items-center justify-between gap-4 rounded-lg border p-4 text-sm">
 						<span class="font-medium">Enabled</span>
 						<Switch checked={enabled} onCheckedChange={(v) => (enabled = v)} />

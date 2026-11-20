@@ -1316,6 +1316,7 @@
 			{#if showStealer}
 				<Tabs.Content value="infostealer" class="mt-4">
 					<InfostealerTab
+						targetId={target.id}
 						domain={detail?.infostealer?.domain ?? target.target_value}
 						report={stealer}
 						status={stealerStatus}

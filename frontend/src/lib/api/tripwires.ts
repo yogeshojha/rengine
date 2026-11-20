@@ -1,5 +1,7 @@
 import type { PaginatedResponse } from '$lib/types/pagination';
 import type {
+	DailyPreview,
+	DailyPreviewRequest,
 	Tripwire,
 	TripwireBacktest,
 	TripwireCatalog,
@@ -42,6 +44,13 @@ export const tripwiresApi = {
 
 	preview(projectId: string, body: TripwirePreviewRequest): Promise<TripwirePreview> {
 		return api.post<TripwirePreview>(`${BASE}/preview${toQuery({ project_id: projectId })}`, body);
+	},
+
+	dailyPreview(projectId: string, body: DailyPreviewRequest): Promise<DailyPreview> {
+		return api.post<DailyPreview>(
+			`${BASE}/daily/preview${toQuery({ project_id: projectId })}`,
+			body
+		);
 	},
 
 	backtest(projectId: string, body: TripwirePreviewRequest): Promise<TripwireBacktest> {

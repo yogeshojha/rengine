@@ -28,7 +28,32 @@ export interface InfostealerHost {
 	employee_credentials: number;
 	user_credentials: number;
 	standing: HostStanding;
+	first_seen: string | null;
 	paths: InfostealerPath[];
+}
+
+export interface InfostealerChangeHost {
+	audience: Audience;
+	host: string;
+	credentials_from: number;
+	credentials_to: number;
+	new: boolean;
+}
+
+export interface InfostealerChange {
+	id: string;
+	checked_at: string;
+	previous_checked_at: string | null;
+	employees_from: number;
+	employees_to: number;
+	users_from: number;
+	users_to: number;
+	hosts: InfostealerChangeHost[];
+}
+
+export interface InfostealerWatcher {
+	id: string;
+	name: string;
 }
 
 export interface InfostealerReport extends InfostealerSummary {
@@ -43,4 +68,6 @@ export interface InfostealerReport extends InfostealerSummary {
 	passwords: Partial<Record<Audience, Partial<Record<PasswordStrength, number>>>>;
 	applications: NamedCount[];
 	services: NamedCount[];
+	changes: InfostealerChange[];
+	watchers: InfostealerWatcher[];
 }

@@ -13,6 +13,8 @@
 		actionLabel,
 		dimensionSpec,
 		fireOnLabel,
+		isDaily,
+		sourceIcon,
 		triggerLabel,
 		TripwireTrigger
 	} from '$lib/config/tripwires';
@@ -70,18 +72,37 @@
 				>
 					{tripwire.name}
 				</button>
-				<div class="flex min-w-0 items-center gap-1.5">
-					<span class="shrink-0 text-2xs text-muted-foreground">{spec.label}</span>
-					<QueryChip
-						dimension={tripwire.dimension}
-						query={tripwire.query}
-						class="min-w-0 truncate"
-					/>
-				</div>
+				{#if isDaily(tripwire.trigger)}
+					{@const SourceIcon = sourceIcon(tripwire.source)}
+					<div class="flex min-w-0 items-center gap-1.5 text-2xs text-muted-foreground">
+						<span class="flex h-4 shrink-0 items-center">
+							<SourceIcon class="size-3.5" strokeWidth={1.75} aria-hidden="true" />
+						</span>
+						<span class="truncate">
+							{[
+								tripwiresStore.source(tripwire.source)?.label ?? tripwire.source,
+								...tripwiresStore.paramLabels(tripwire.source, tripwire.params)
+							].join(' · ')}
+						</span>
+					</div>
+				{:else}
+					<div class="flex min-w-0 items-center gap-1.5">
+						<span class="shrink-0 text-2xs text-muted-foreground">{spec.label}</span>
+						<QueryChip
+							dimension={tripwire.dimension}
+							query={tripwire.query}
+							class="min-w-0 truncate"
+						/>
+					</div>
+				{/if}
 			</div>
 			<div class={TRIPWIRE_COL.fires} role="cell">
 				<div class="flex flex-col items-start gap-1">
-					<Badge variant="outline" class="font-normal">{fireOnLabel(tripwire.fire_on)}</Badge>
+					{#if isDaily(tripwire.trigger)}
+						<Badge variant="outline" class="font-normal">{triggerLabel(tripwire.trigger)}</Badge>
+					{:else}
+						<Badge variant="outline" class="font-normal">{fireOnLabel(tripwire.fire_on)}</Badge>
+					{/if}
 					{#if tripwire.trigger === TripwireTrigger.ScanLive}
 						<span class="text-2xs text-muted-foreground">{triggerLabel(tripwire.trigger)}</span>
 					{/if}

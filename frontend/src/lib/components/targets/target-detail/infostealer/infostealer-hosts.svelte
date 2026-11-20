@@ -2,6 +2,7 @@
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import KeyRound from '@lucide/svelte/icons/key-round';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import CopyButton from '$lib/components/copy-button.svelte';
 	import Hint from '$lib/components/hint.svelte';
@@ -10,6 +11,7 @@
 	import { ROUTES } from '$lib/config/routes';
 	import { SURFACE, SurfaceDimension } from '$lib/config/surface';
 	import type { InfostealerHost, InfostealerReport } from '$lib/types/infostealer';
+	import { formatDateTime } from '$lib/utilities/dates';
 	import { safeHref } from '$lib/utilities/links';
 
 	interface Props {
@@ -34,6 +36,9 @@
 	}
 
 	let inScanHref = $derived(webAssets(report.query));
+	let latest = $derived(report.changes[0] ? Date.parse(report.changes[0].checked_at) : null);
+	const isNew = (h: InfostealerHost) =>
+		latest !== null && h.first_seen !== null && Date.parse(h.first_seen) >= latest;
 </script>
 
 <section class="overflow-hidden rounded-xl border bg-card">
@@ -89,6 +94,13 @@
 							</a>
 						{:else}
 							<span class="min-w-0 font-mono text-xs wrap-anywhere">{h.host}</span>
+						{/if}
+						{#if isNew(h) && h.first_seen}
+							<Hint text="First listed {formatDateTime(h.first_seen)}">
+								{#snippet child(props)}
+									<Badge {...props} variant="outline" class="text-2xs font-normal">New</Badge>
+								{/snippet}
+							</Hint>
 						{/if}
 						<span
 							class="flex h-5 shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100"

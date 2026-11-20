@@ -39,11 +39,18 @@ def _ai_prices() -> dict:
         return refresh_all(session)
 
 
+def _leaked_logins() -> dict:
+    from app.tasks.infostealer import sweep  # noqa: PLC0415
+
+    return sweep()
+
+
 # library first
 DAILY_JOBS: tuple[DailyJob, ...] = (
     DailyJob("library", _library),
     DailyJob("new_checks", _new_checks),
     DailyJob(DatasetKind.AI_PRICES.value, _ai_prices),
+    DailyJob("leaked_logins", _leaked_logins),
 )
 
 DAILY_JOB_NAMES: tuple[str, ...] = tuple(job.name for job in DAILY_JOBS)

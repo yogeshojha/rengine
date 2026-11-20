@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from shared.definitions.infostealer import ANY as ANY_AUDIENCE
+from shared.definitions.infostealer import Audience
 from shared.definitions.surface import SurfaceDimension
 
 MAX_TRIPWIRES = 200
@@ -35,6 +37,11 @@ RUN_LABEL = "Tripwire"
 class Trigger(StrEnum):
     SCAN_SETTLED = "scan_settled"
     SCAN_LIVE = "scan_live"
+    DAILY = "daily"
+
+
+class Source(StrEnum):
+    LEAKED_LOGINS = "leaked_logins"
 
 
 class FireOn(StrEnum):
@@ -69,14 +76,20 @@ class OutcomeStatus(StrEnum):
     FAILED = "failed"
 
 
-TRIGGER_ORDER: tuple[str, ...] = (Trigger.SCAN_SETTLED.value, Trigger.SCAN_LIVE.value)
+TRIGGER_ORDER: tuple[str, ...] = (
+    Trigger.SCAN_SETTLED.value,
+    Trigger.SCAN_LIVE.value,
+    Trigger.DAILY.value,
+)
 TRIGGER_LABELS: dict[str, str] = {
     Trigger.SCAN_SETTLED.value: "After a scan",
     Trigger.SCAN_LIVE.value: "During a scan",
+    Trigger.DAILY.value: "Daily",
 }
 TRIGGER_HELP: dict[str, str] = {
     Trigger.SCAN_SETTLED.value: "Checked when a run settles.",
     Trigger.SCAN_LIVE.value: "Checked as results land, and again when the run settles.",
+    Trigger.DAILY.value: "Checked once a day, with no scan.",
 }
 
 FIRE_ON_ORDER: tuple[str, ...] = (
@@ -129,6 +142,90 @@ FIRST_SCAN_DETAIL = "First scan of the target."
 NOT_COVERED_DETAIL = "The run did not scan this dimension."
 
 
+# ---------- daily sources ----------
+
+
+@dataclass(frozen=True)
+class SourceOption:
+    key: str
+    label: str
+    help: str = ""
+
+
+@dataclass(frozen=True)
+class SourceField:
+    key: str
+    label: str
+    options: tuple[SourceOption, ...]
+    default: str
+
+
+@dataclass(frozen=True)
+class SourceSpec:
+    key: str
+    label: str
+    help: str
+    dimension: str
+    noun: str
+    noun_plural: str
+    fields: tuple[SourceField, ...] = ()
+
+
+AUDIENCE_PARAM = "audience"
+
+SOURCES: dict[str, SourceSpec] = {
+    Source.LEAKED_LOGINS.value: SourceSpec(
+        key=Source.LEAKED_LOGINS.value,
+        label="Leaked logins",
+        help="Logins for the target's domain found in infostealer logs.",
+        dimension=SurfaceDimension.WEB_ASSETS.value,
+        noun="change",
+        noun_plural="changes",
+        fields=(
+            SourceField(
+                key=AUDIENCE_PARAM,
+                label="Audience",
+                options=(
+                    SourceOption(ANY_AUDIENCE, "Employees and users"),
+                    SourceOption(
+                        Audience.EMPLOYEE.value,
+                        "Employees",
+                        "Machines of the organization's staff.",
+                    ),
+                    SourceOption(
+                        Audience.USER.value,
+                        "Users",
+                        "Machines of people with an account on the domain.",
+                    ),
+                ),
+                default=ANY_AUDIENCE,
+            ),
+        ),
+    ),
+}
+SOURCE_ORDER: tuple[str, ...] = tuple(SOURCES)
+SOURCE_REQUIRED = "Choose what the daily check reads."
+DAILY_QUIET_DETAIL = "The change is outside the chosen audience."
+DAILY_NOT_SCANNED = "No completed scan of the target."
+
+
+def clean_params(source: str, params: dict | None) -> dict[str, str]:
+    """The source's fields with defaults filled. Raises ValueError on an unknown key or value."""
+    spec = SOURCES[source]
+    given = dict(params or {})
+    out: dict[str, str] = {}
+    for field in spec.fields:
+        value = given.pop(field.key, field.default)
+        if value not in {option.key for option in field.options}:
+            msg = f"Unknown {field.label.lower()} '{value}'."
+            raise ValueError(msg)
+        out[field.key] = value
+    if given:
+        msg = f"Unknown setting '{next(iter(given))}'."
+        raise ValueError(msg)
+    return out
+
+
 @dataclass(frozen=True)
 class Template:
     key: str
@@ -137,12 +234,14 @@ class Template:
     query: str
     fire_on: str
     trigger: str = Trigger.SCAN_SETTLED.value
+    source: str | None = None
 
 
 TEMPLATE_GROUPS: tuple[tuple[str, str], ...] = (
     (FireOn.APPEARS.value, FIRE_ON_LABELS[FireOn.APPEARS.value]),
     (FireOn.BECOMES_TRUE.value, FIRE_ON_LABELS[FireOn.BECOMES_TRUE.value]),
     (Trigger.SCAN_LIVE.value, TRIGGER_LABELS[Trigger.SCAN_LIVE.value]),
+    (Trigger.DAILY.value, TRIGGER_LABELS[Trigger.DAILY.value]),
 )
 
 TEMPLATES: tuple[Template, ...] = (
@@ -254,12 +353,25 @@ TEMPLATES: tuple[Template, ...] = (
         FireOn.APPEARS.value,
         Trigger.SCAN_LIVE.value,
     ),
+    Template(
+        "leaked_logins",
+        "New leaked logins",
+        SurfaceDimension.WEB_ASSETS.value,
+        "",
+        FireOn.APPEARS.value,
+        Trigger.DAILY.value,
+        Source.LEAKED_LOGINS.value,
+    ),
+)
+
+SCAN_TRIGGERS: frozenset[str] = frozenset(
+    {Trigger.SCAN_SETTLED.value, Trigger.SCAN_LIVE.value}
 )
 
 
 def template_group(template: Template) -> str:
-    if template.trigger == Trigger.SCAN_LIVE.value:
-        return Trigger.SCAN_LIVE.value
+    if template.trigger != Trigger.SCAN_SETTLED.value:
+        return template.trigger
     return template.fire_on
 
 
@@ -277,7 +389,10 @@ __all__ = [
     "ACTION_HELP",
     "ACTION_LABELS",
     "ACTION_ORDER",
+    "AUDIENCE_PARAM",
     "CHECK_STATUS_LABELS",
+    "DAILY_NOT_SCANNED",
+    "DAILY_QUIET_DETAIL",
     "FIRE_ON_HELP",
     "FIRE_ON_LABELS",
     "FIRE_ON_ORDER",
@@ -301,7 +416,11 @@ __all__ = [
     "RECENT_DAYS",
     "RUN_LABEL",
     "SAMPLE_ROWS",
+    "SCAN_TRIGGERS",
     "SCOPE_LABELS",
+    "SOURCES",
+    "SOURCE_ORDER",
+    "SOURCE_REQUIRED",
     "TEMPLATES",
     "TEMPLATE_GROUPS",
     "TRIGGER_HELP",
@@ -313,9 +432,14 @@ __all__ = [
     "FireOn",
     "OutcomeStatus",
     "ScopeKind",
+    "Source",
+    "SourceField",
+    "SourceOption",
+    "SourceSpec",
     "Template",
     "Trigger",
     "appears_query",
+    "clean_params",
     "run_label",
     "template_group",
 ]

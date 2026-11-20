@@ -16,7 +16,12 @@ from shared.logging import get_logger
 from shared.models.scan import Scan
 from shared.models.tripwire import TripwireRun
 from shared.services.tripwires import check_scan
-from shared.services.tripwires.actions import run_actions, settle_run
+from shared.services.tripwires.actions import (
+    run_actions,
+    run_leak_actions,
+    settle_run,
+)
+from shared.services.tripwires.daily import check_changes
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -61,6 +66,16 @@ def live(scan_id: str, dimension: str) -> dict:
         )
     fired = sum(1 for r in runs if r.status == CheckStatus.FIRED.value)
     return {"checked": len(runs), "fired": fired, "live": True}
+
+
+@shared_task(name="app.tasks.tripwires.daily")
+def daily() -> dict:
+    """The daily tripwires, against every change no tripwire has read."""
+    with get_sync_session() as session:
+        runs = check_changes(session, act=run_leak_actions)
+    fired = sum(1 for r in runs if r.status == CheckStatus.FIRED.value)
+    logger.info("daily tripwires checked", checked=len(runs), fired=fired)
+    return {"checked": len(runs), "fired": fired}
 
 
 @shared_task(name="app.tasks.tripwires.prune")

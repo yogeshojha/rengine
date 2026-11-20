@@ -3,12 +3,15 @@
 	import InfostealerStats from './infostealer-stats.svelte';
 	import InfostealerHosts from './infostealer-hosts.svelte';
 	import InfostealerBreakdown from './infostealer-breakdown.svelte';
+	import InfostealerChanges from './infostealer-changes.svelte';
+	import InfostealerWatch from './infostealer-watch.svelte';
 	import { SOURCE_NAME, SOURCE_URL } from '$lib/config/infostealer';
 	import type { InfostealerReport } from '$lib/types/infostealer';
 	import { TaskStatus } from '$lib/types/task-status';
 	import { externalHref } from '$lib/utilities/links';
 
 	interface Props {
+		targetId: string;
 		domain: string;
 		report: InfostealerReport | null;
 		status: TaskStatus;
@@ -20,6 +23,7 @@
 	}
 
 	let {
+		targetId,
 		domain,
 		report,
 		status,
@@ -59,11 +63,17 @@
 				</a>
 			</span>
 		</span>
+		{#if report}
+			<InfostealerWatch {targetId} targetLabel={domain} watchers={report.watchers} />
+		{/if}
 	{/snippet}
 
 	{#if report}
 		<div class="flex flex-col gap-4">
 			<InfostealerStats {report} />
+			{#if report.changes.length}
+				<InfostealerChanges {report} />
+			{/if}
 			{#if report.hosts.length}
 				<InfostealerHosts {report} />
 			{/if}

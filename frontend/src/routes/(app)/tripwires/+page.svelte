@@ -174,7 +174,8 @@
 			dimension: template.dimension,
 			query: template.query,
 			fire_on: template.fire_on,
-			trigger: template.trigger
+			trigger: template.trigger,
+			source: template.source
 		});
 	}
 
@@ -223,7 +224,7 @@
 <div class="flex flex-col gap-6">
 	<PageHeader
 		title={routeLabels.tripwires}
-		description="A saved query that notifies or starts a scan when a result matches it"
+		description="A saved condition that notifies or starts a scan when a result or a daily check matches it"
 	>
 		{#snippet actions()}
 			<Button variant="outline" size="sm" onclick={() => (templatesOpen = true)}>

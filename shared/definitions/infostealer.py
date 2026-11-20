@@ -9,6 +9,11 @@ SOURCE_NAME = "Hudson Rock"
 SOURCE_URL = "https://www.hudsonrock.com/free-tools"
 
 STALE_AFTER = timedelta(days=7)
+# a daily check reads a report older than this
+DAILY_AFTER = timedelta(hours=20)
+RATE_LIMIT_PAUSE = 60.0
+MAX_CHANGE_HOSTS = 200
+MAX_CHANGES_SHOWN = 10
 REQUEST_TIMEOUT = 30.0
 REQUEST_SPACING = 0.25
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024

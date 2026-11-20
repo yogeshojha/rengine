@@ -12,9 +12,11 @@ from sqlalchemy.dialects.postgresql import JSONB
 from shared.definitions.notifications import (
     FiredRowLike,
     TripwireFired,
+    TripwireLeak,
     TripwireRescan,
     TripwireRunResult,
     tripwire_fired,
+    tripwire_leak,
     tripwire_run_result,
 )
 from shared.definitions.rescan import (
@@ -25,6 +27,7 @@ from shared.definitions.rescan import (
 )
 from shared.definitions.surface import SURFACE_NOUN
 from shared.definitions.tripwires import (
+    DAILY_NOT_SCANNED,
     MAX_RUNS_PER_DAY,
     TRIPWIRE_KEY,
     ActionKind,
@@ -34,6 +37,7 @@ from shared.definitions.tripwires import (
 from shared.definitions.vulnerabilities import ACTIONABLE_SEVERITIES
 from shared.enums.scan import ScanStatus
 from shared.logging import get_logger
+from shared.models.infostealer import InfostealerChange
 from shared.models.notification_channel import NotificationChannel
 from shared.models.scan import Scan
 from shared.models.scan_context import ScanContext
@@ -55,6 +59,7 @@ from shared.services.notification_sync import SyncNotificationPublisher
 from shared.services.proxy_resolve import scan_proxy_url
 from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import merge_engine_context
+from shared.services.scan_scope import census_only
 from shared.services.tripwires.identity import identity, seed_kind_of
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
@@ -112,8 +117,6 @@ def notify(
     fired: int | None = None,
     rescan: TripwireRescan | None = None,
 ) -> Outcome:
-    from shared.services import notifier  # noqa: PLC0415
-
     payload = tripwire_fired(
         TripwireFired(
             name=tripwire.name,
@@ -128,6 +131,15 @@ def notify(
             rescan=rescan,
         )
     )
+    return _deliver(session, payload, scan.project_id, channel_ids)
+
+
+def _deliver(
+    session: Session, payload: dict, project_id: uuid.UUID, channel_ids: list
+) -> Outcome:
+    """Record the message in the app, then send it to the channels."""
+    from shared.services import notifier  # noqa: PLC0415
+
     channels = live_channels(session, channel_ids)
     try:
         SyncNotificationPublisher().publish(
@@ -137,7 +149,7 @@ def notify(
             title=payload["title"],
             message=payload["message"],
             metadata=payload.get("metadata"),
-            project_id=scan.project_id,
+            project_id=project_id,
             dispatch=False,
             commit=False,
         )
@@ -162,6 +174,35 @@ def notify(
         logger.warning("tripwire channel dispatch failed", exc_info=True)
         sent = [(cid, False, "The message was not sent.") for cid in channels]
     return delivery_outcome(session, sent, chosen=bool(channels))
+
+
+def notify_leak(
+    session: Session,
+    tripwire: Tripwire,
+    run: TripwireRun,
+    target: Target,
+    change: InfostealerChange,
+    rows: list[FiredRow],
+    channel_ids: list,
+    *,
+    rescan: TripwireRescan | None = None,
+) -> Outcome:
+    from shared.services.tripwires.daily import rise  # noqa: PLC0415
+
+    employees, users = rise(change, tripwire.params)
+    payload = tripwire_leak(
+        TripwireLeak(
+            name=tripwire.name,
+            target=target.target_value,
+            employees=employees,
+            users=users,
+            hosts=[FiredRowLike(r.label, r.detail) for r in rows if r.seed],
+            run_id=str(run.id),
+            target_id=str(target.id),
+            rescan=rescan,
+        )
+    )
+    return _deliver(session, payload, tripwire.project_id, channel_ids)
 
 
 def delivery_outcome(session: Session, sent: list[tuple], *, chosen: bool) -> Outcome:
@@ -378,17 +419,35 @@ def settle_run(session: Session, scan: Scan) -> Outcome | None:
         ),
         None,
     )
-    fired_on = session.get(Scan, run.scan_id)
+    rescan = TripwireRescan(completed=not failed, by_severity=counts)
+    fired_rows = [FiredRow.model_validate(r) for r in run.rows or []]
+    change = session.get(InfostealerChange, run.event_id) if run.event_id else None
+    target = session.get(Target, run.target_id)
+    if notify_action is not None and change is not None and target is not None:
+        sent = notify_leak(
+            session,
+            tripwire,
+            run,
+            target,
+            change,
+            fired_rows,
+            notify_action.channel_ids,
+            rescan=rescan,
+        )
+        run.outcomes = [*list(run.outcomes or []), sent.model_dump(mode="json")]
+        session.commit()
+        return outcome
+    fired_on = session.get(Scan, run.scan_id) if run.scan_id else None
     if notify_action is not None and fired_on is not None:
         sent = notify(
             session,
             tripwire,
             run,
             fired_on,
-            [FiredRow.model_validate(r) for r in run.rows or []],
+            fired_rows,
             notify_action.channel_ids,
             fired=run.fired,
-            rescan=TripwireRescan(completed=not failed, by_severity=counts),
+            rescan=rescan,
         )
         run.outcomes = [*list(run.outcomes or []), sent.model_dump(mode="json")]
         session.commit()
@@ -478,12 +537,98 @@ def run_actions(
     return outcomes
 
 
+def basis_scan(session: Session, target_id: uuid.UUID) -> Scan | None:
+    """The target's newest completed census run, whose engine and context a rescan takes."""
+    return (
+        session.execute(
+            select(Scan)
+            .where(
+                Scan.target_id == target_id,
+                census_only(),
+                Scan.status == ScanStatus.COMPLETED.value,
+            )
+            .order_by(func.coalesce(Scan.started_at, Scan.created_at).desc())
+            .limit(1)
+        )
+        .scalars()
+        .first()
+    )
+
+
+def run_leak_actions(
+    session: Session,
+    tripwire: Tripwire,
+    run: TripwireRun,
+    target: Target,
+    change: InfostealerChange,
+    rows: list[FiredRow],
+) -> list[Outcome]:
+    """Every action of a daily check. A started rescan carries the notification."""
+    outcomes: list[Outcome] = []
+    try:
+        actions = parse_actions(tripwire.actions)
+    except Exception:
+        logger.warning("tripwire actions did not parse", tripwire=str(tripwire.id))
+        return outcomes
+    rescanning = False
+    for action in sorted(actions, key=lambda a: a.kind == ActionKind.NOTIFY.value):
+        savepoint = session.begin_nested()
+        try:
+            if action.kind == ActionKind.SCAN.value:
+                scan = basis_scan(session, target.id)
+                started = (
+                    _skip(DAILY_NOT_SCANNED)
+                    if scan is None
+                    else start_run(
+                        session,
+                        tripwire,
+                        run,
+                        scan,
+                        seeds_of(tripwire.dimension, rows),
+                        action,
+                    )
+                )
+                outcomes.append(started)
+                rescanning = rescanning or started.status == OutcomeStatus.DONE.value
+            elif action.kind == ActionKind.NOTIFY.value and not rescanning:
+                outcomes.append(
+                    notify_leak(
+                        session,
+                        tripwire,
+                        run,
+                        target,
+                        change,
+                        rows,
+                        action.channel_ids,
+                    )
+                )
+            if savepoint.is_active:
+                savepoint.commit()
+        except Exception:
+            if savepoint.is_active:
+                savepoint.rollback()
+            else:
+                session.rollback()
+            logger.warning("tripwire action failed", action=action.kind, exc_info=True)
+            outcomes.append(
+                Outcome(
+                    kind=action.kind,
+                    status=OutcomeStatus.FAILED.value,
+                    detail="The action did not complete.",
+                )
+            )
+    return outcomes
+
+
 __all__ = [
+    "basis_scan",
     "delivery_outcome",
     "live_channels",
     "notify",
+    "notify_leak",
     "parse_actions",
     "run_actions",
+    "run_leak_actions",
     "runs_today",
     "seeds_of",
     "settle_run",

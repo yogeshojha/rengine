@@ -37,6 +37,8 @@ export interface Tripwire {
 	query: string;
 	trigger: TripwireTrigger | string;
 	fire_on: FireOn | string;
+	source: string | null;
+	params: Record<string, string>;
 	scope: TripwireScopeRead;
 	actions: TripwireAction[];
 	enabled: boolean;
@@ -51,9 +53,11 @@ export interface Tripwire {
 export interface TripwireCreate {
 	name: string;
 	dimension: string;
-	query: string;
+	query?: string;
 	trigger: string;
 	fire_on: string;
+	source?: string | null;
+	params?: Record<string, string>;
 	scope: TripwireScope;
 	actions: TripwireAction[];
 	enabled?: boolean;
@@ -81,7 +85,8 @@ export interface TripwireRun {
 	tripwire_id: string;
 	target_id: string;
 	target_value: string;
-	scan_id: string;
+	scan_id: string | null;
+	event_id: string | null;
 	status: CheckStatus | string;
 	matched: number;
 	fired: number;
@@ -134,6 +139,47 @@ export interface TripwireBacktest {
 	error: QueryError | null;
 }
 
+export interface DailyPreviewRequest {
+	source: string;
+	params: Record<string, string>;
+	scope: TripwireScope;
+}
+
+export interface DailyChange {
+	target_id: string;
+	target_value: string;
+	checked_at: string;
+	fired: number;
+	rows: FiredRow[];
+}
+
+export interface DailyPreview {
+	targets: number;
+	read: number;
+	reported: number;
+	off_reason: string | null;
+	days: number;
+	changes: DailyChange[];
+	capped: boolean;
+}
+
+export interface SourceField {
+	key: string;
+	label: string;
+	options: ChoiceSpec[];
+	default: string;
+}
+
+export interface TripwireSourceSpec {
+	key: string;
+	label: string;
+	help: string;
+	dimension: string;
+	noun: string;
+	noun_plural: string;
+	fields: SourceField[];
+}
+
 export interface ChoiceSpec {
 	key: string;
 	label: string;
@@ -148,6 +194,7 @@ export interface TripwireTemplate {
 	fire_on: string;
 	trigger: string;
 	group: string;
+	source: string | null;
 }
 
 export interface TripwireDimension {
@@ -174,6 +221,7 @@ export interface TripwireCatalog {
 	dimensions: TripwireDimension[];
 	triggers: ChoiceSpec[];
 	fire_modes: ChoiceSpec[];
+	sources: TripwireSourceSpec[];
 	actions: ChoiceSpec[];
 	stages: StageChoice[];
 	templates: TripwireTemplate[];

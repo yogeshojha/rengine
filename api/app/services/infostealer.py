@@ -10,22 +10,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.definitions.infostealer import (
     AUDIENCE_ORDER,
+    MAX_CHANGES_SHOWN,
     MAX_PATHS_PER_HOST,
     Audience,
     HostStanding,
     any_query,
 )
 from shared.models.infostealer import (
+    ChangeHost,
+    InfostealerChange,
+    InfostealerChangeRead,
     InfostealerHost,
     InfostealerLogin,
     InfostealerPath,
+    InfostealerSighting,
     InfostealerSummary,
+    InfostealerWatcher,
     NamedCountRead,
     TargetInfostealer,
     TargetInfostealerRead,
 )
 from shared.models.scan import Scan
 from shared.models.subdomain import Subdomain
+from shared.models.target import Target
+from shared.services.tripwires.daily import watching
 
 
 def _named(rows: list) -> list[NamedCountRead]:
@@ -93,6 +101,46 @@ class InfostealerService:
         )
         return {name: _standing(status, addresses) for name, status, addresses in rows}
 
+    async def _first_seen(self, target_id: UUID) -> dict[str, object]:
+        rows = await self.session.execute(
+            select(InfostealerSighting.host, func.min(InfostealerSighting.first_seen))
+            .where(InfostealerSighting.target_id == target_id)
+            .group_by(InfostealerSighting.host)
+        )
+        return dict(rows.all())
+
+    async def _changes(self, target_id: UUID) -> list[InfostealerChangeRead]:
+        rows = await self.session.scalars(
+            select(InfostealerChange)
+            .where(InfostealerChange.target_id == target_id)
+            .order_by(InfostealerChange.checked_at.desc())
+            .limit(MAX_CHANGES_SHOWN)
+        )
+        return [
+            InfostealerChangeRead(
+                id=row.id,
+                checked_at=row.checked_at,
+                previous_checked_at=row.previous_checked_at,
+                employees_from=row.employees_from,
+                employees_to=row.employees_to,
+                users_from=row.users_from,
+                users_to=row.users_to,
+                hosts=[ChangeHost.model_validate(h) for h in row.hosts or []],
+            )
+            for row in rows
+        ]
+
+    async def _watchers(self, target_id: UUID) -> list[InfostealerWatcher]:
+        def read(sync) -> list[InfostealerWatcher]:
+            target = sync.get(Target, target_id)
+            if target is None:
+                return []
+            return [
+                InfostealerWatcher(id=t.id, name=t.name) for t in watching(sync, target)
+            ]
+
+        return await self.session.run_sync(read)
+
     async def report(
         self, target_id: UUID, scan_id: UUID | None = None
     ) -> TargetInfostealerRead | None:
@@ -110,6 +158,7 @@ class InfostealerService:
         covering = await self._covering(target_id, scan_id)
         standings = await self._standings(covering, sorted(by_host))
         rank = {audience: i for i, audience in enumerate(AUDIENCE_ORDER)}
+        first_seen = await self._first_seen(target_id)
 
         hosts: list[InfostealerHost] = []
         for host, rows in by_host.items():
@@ -132,6 +181,7 @@ class InfostealerService:
                         r.credentials for r in rows if r.audience == Audience.USER.value
                     ),
                     standing=standings.get(host, HostStanding.ABSENT.value),
+                    first_seen=first_seen.get(host),
                     paths=[
                         InfostealerPath(
                             audience=r.audience,
@@ -165,4 +215,6 @@ class InfostealerService:
             passwords=record.passwords or {},
             applications=_named(record.applications),
             services=_named(record.services),
+            changes=await self._changes(target_id),
+            watchers=await self._watchers(target_id),
         )

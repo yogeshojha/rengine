@@ -56,6 +56,10 @@ def dispatch_infostealer_lookups(target_ids: list[str]) -> None:
         )
 
 
+def dispatch_daily_tripwires() -> None:
+    get_celery_client().send_task("app.tasks.tripwires.daily", queue=DEFAULT_QUEUE)
+
+
 def dispatch_ripestat_enrichment(target_ids: list[str]) -> None:
     if not target_ids:
         return

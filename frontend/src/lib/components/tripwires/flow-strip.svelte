@@ -28,10 +28,21 @@
 		dimension: string;
 		query: string;
 		fireOn: string;
+		/** A daily tripwire's source and its chosen settings. */
+		daily?: { label: string; detail: string } | null;
 		actions: FlowAction[];
 	}
 
-	let { current, trigger, scopeText, dimension, query, fireOn, actions }: Props = $props();
+	let {
+		current,
+		trigger,
+		scopeText,
+		dimension,
+		query,
+		fireOn,
+		daily = null,
+		actions
+	}: Props = $props();
 
 	let spec = $derived(dimensionSpec(dimension));
 
@@ -80,6 +91,9 @@
 					{#if node.key === 'when'}
 						<span class="text-sm">{triggerLabel(trigger)}</span>
 						<span class="truncate text-xs text-muted-foreground">{scopeText}</span>
+					{:else if node.key === 'if' && daily}
+						<span class="text-sm">{daily.label} rise</span>
+						<span class="truncate text-xs text-muted-foreground">{daily.detail}</span>
 					{:else if node.key === 'if'}
 						<span class="text-sm"
 							>A {spec.noun}

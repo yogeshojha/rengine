@@ -16,6 +16,7 @@ from shared.models.target import Target
 from shared.models.whois import WhoisRecord
 from shared.services import infostealer
 from shared.services.asset_query.lead_cache import bump_sync
+from shared.services.celery_dispatch import dispatch_daily_tripwires
 from shared.utils.datetime import utc_now
 from shared.utils.validation import validate_ip
 from stages.base import Stage, StageResult
@@ -148,16 +149,24 @@ class TargetEnrichmentStage(Stage):
         if infostealer.is_stale(infostealer.stored(self.session, target.id)):
             try:
                 report = HudsonRockClient().search_domain(domain)
-                infostealer.store(self.session, target.id, report)
+                change = infostealer.store(self.session, target.id, report)
                 infostealer.mark(target, TaskStatus.SUCCESS)
                 self.session.add(target)
                 self.session.commit()
                 bump_sync([target.id])
+                if change is not None:
+                    self._announce_change()
             except Exception as exc:
                 self.session.rollback()
                 logger.warning("in-scan infostealer refresh failed: %s", exc)
                 self._notes.append(f"Infostealer report was not refreshed. {exc}")
         return len(infostealer.hosts(self.session, target.id))
+
+    def _announce_change(self) -> None:
+        try:
+            dispatch_daily_tripwires()
+        except Exception:
+            logger.warning("daily tripwires not dispatched", exc_info=True)
 
     def _read_bgp(self) -> bool:
         bgp = self.session.execute(

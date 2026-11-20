@@ -9,10 +9,20 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from shared.definitions.domains import registrable_domain
-from shared.definitions.infostealer import MAX_ERROR_LENGTH, STALE_AFTER
+from shared.definitions.infostealer import (
+    DAILY_AFTER,
+    MAX_CHANGE_HOSTS,
+    MAX_ERROR_LENGTH,
+    STALE_AFTER,
+)
 from shared.enums.target import TargetType
 from shared.enums.task_status import TaskStatus
-from shared.models.infostealer import InfostealerLogin, TargetInfostealer
+from shared.models.infostealer import (
+    InfostealerChange,
+    InfostealerLogin,
+    InfostealerSighting,
+    TargetInfostealer,
+)
 from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.target import Target
 from shared.utils.datetime import utc_now
@@ -53,13 +63,74 @@ def mark(target: Target, status: TaskStatus, error: str | None = None) -> None:
     target.updated_at = utc_now()
 
 
-def store(session: Session, target_id: UUID, report: InfostealerReport) -> None:
-    """Replace the target's report and its logins."""
-    record = stored(session, target_id) or TargetInfostealer(
-        target_id=target_id, domain=report.domain
-    )
+def due(record: TargetInfostealer | None) -> bool:
+    """Whether a daily check reads the report again."""
+    return record is None or utc_now() - record.checked_at > DAILY_AFTER
+
+
+def _risen(
+    session: Session, target_id: UUID, report: InfostealerReport, now, *, first: bool
+) -> list[dict]:
+    """Hosts listed for the first time or above their highest count, sightings updated."""
+    totals: dict[tuple[str, str], int] = {}
+    for login in report.logins:
+        key = (login.audience, login.host)
+        totals[key] = totals.get(key, 0) + login.credentials
+    seen = {
+        (s.audience, s.host): s
+        for s in session.scalars(
+            select(InfostealerSighting).where(
+                InfostealerSighting.target_id == target_id
+            )
+        )
+    }
+    risen: list[dict] = []
+    for (audience, host), credentials in totals.items():
+        sighting = seen.get((audience, host))
+        if sighting is None:
+            session.add(
+                InfostealerSighting(
+                    target_id=target_id,
+                    audience=audience,
+                    host=host,
+                    first_seen=now,
+                    credentials_peak=credentials,
+                )
+            )
+            before = 0
+        elif credentials > sighting.credentials_peak:
+            before = sighting.credentials_peak
+            sighting.credentials_peak = credentials
+        else:
+            continue
+        if not first:
+            risen.append(
+                {
+                    "audience": audience,
+                    "host": host,
+                    "credentials_from": before,
+                    "credentials_to": credentials,
+                    "new": sighting is None,
+                }
+            )
+    risen.sort(key=lambda r: (r["audience"], -r["credentials_to"], r["host"]))
+    return risen
+
+
+def store(
+    session: Session, target_id: UUID, report: InfostealerReport
+) -> InfostealerChange | None:
+    """Replace the target's report and its logins. Returns what the lookup added."""
+    now = utc_now()
+    record = stored(session, target_id)
+    first = record is None
+    if record is None:
+        record = TargetInfostealer(target_id=target_id, domain=report.domain)
+    previous_checked_at = None if first else record.checked_at
+    employees_peak = report.employees if first else record.employees_peak
+    users_peak = report.users if first else record.users_peak
     record.domain = report.domain
-    record.checked_at = utc_now()
+    record.checked_at = now
     record.total = report.total
     record.employees = report.employees
     record.users = report.users
@@ -67,6 +138,8 @@ def store(session: Session, target_id: UUID, report: InfostealerReport) -> None:
     record.total_urls = report.total_urls
     record.last_employee_at = report.last_employee_at
     record.last_user_at = report.last_user_at
+    record.employees_peak = max(employees_peak, report.employees)
+    record.users_peak = max(users_peak, report.users)
     record.families = [f.model_dump() for f in report.families]
     record.passwords = report.passwords
     record.applications = [a.model_dump() for a in report.applications]
@@ -87,6 +160,22 @@ def store(session: Session, target_id: UUID, report: InfostealerReport) -> None:
         )
         for login in report.logins
     )
+    risen = _risen(session, target_id, report, now, first=first)
+    rose = report.employees > employees_peak or report.users > users_peak
+    if first or not (rose or risen):
+        return None
+    change = InfostealerChange(
+        target_id=target_id,
+        checked_at=now,
+        previous_checked_at=previous_checked_at,
+        employees_from=employees_peak,
+        employees_to=record.employees_peak,
+        users_from=users_peak,
+        users_to=record.users_peak,
+        hosts=risen[:MAX_CHANGE_HOSTS],
+    )
+    session.add(change)
+    return change
 
 
 def hosts(session: Session, target_id: UUID) -> set[str]:

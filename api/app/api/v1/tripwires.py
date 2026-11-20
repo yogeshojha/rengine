@@ -10,6 +10,8 @@ from app.api.pagination import Page
 from app.core.database import get_session
 from app.services.tripwire import TripwireError, TripwireService
 from shared.models.tripwire import (
+    DailyPreview,
+    DailyPreviewRequest,
     TripwireBacktest,
     TripwireCatalog,
     TripwireCreate,
@@ -68,6 +70,16 @@ async def preview_tripwire(
     project_id: ProjectId,
 ) -> TripwirePreview:
     return await service.preview(payload, project_id)
+
+
+@router.post("/daily/preview", response_model=DailyPreview)
+async def preview_daily_tripwire(
+    _user: CurrentUser,
+    service: ServiceDep,
+    payload: DailyPreviewRequest,
+    project_id: ProjectId,
+) -> DailyPreview:
+    return await service.daily_preview(payload, project_id)
 
 
 @router.post("/backtest", response_model=TripwireBacktest)

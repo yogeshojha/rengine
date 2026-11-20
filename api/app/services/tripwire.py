@@ -10,6 +10,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 
 from app.services.target_names import target_names
+from shared.definitions.infostealer import LOOKUPS_OFF_REASON
 from shared.definitions.rescan import RESCANNABLE_STAGES, stages_for
 from shared.definitions.surface import SURFACE_LABELS, SURFACE_NOUN, SURFACE_ORDER
 from shared.definitions.tripwires import (
@@ -25,6 +26,9 @@ from shared.definitions.tripwires import (
     MAX_TRIPWIRES,
     PREVIEW_ROW_CAP,
     RECENT_DAYS,
+    SCAN_TRIGGERS,
+    SOURCE_ORDER,
+    SOURCES,
     TEMPLATE_GROUPS,
     TEMPLATES,
     TRIGGER_HELP,
@@ -37,6 +41,8 @@ from shared.definitions.tripwires import (
 )
 from shared.enums.scan import SCAN_TERMINAL_STATUSES
 from shared.models.asset_query import QueryError
+from shared.models.infostealer import InfostealerChange, TargetInfostealer
+from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.notification_channel import NotificationChannel
 from shared.models.organization import Organization
 from shared.models.scan import Scan
@@ -45,9 +51,14 @@ from shared.models.target import Target, TargetOrganization
 from shared.models.tripwire import (
     ChannelChoice,
     ChoiceSpec,
+    DailyChange,
+    DailyPreview,
+    DailyPreviewRequest,
     FiredRow,
     Outcome,
     PreviewTarget,
+    SourceFieldRead,
+    SourceRead,
     StageChoice,
     TemplateRead,
     Tripwire,
@@ -64,7 +75,9 @@ from shared.models.tripwire import (
     TripwireScope,
     TripwireScopeRead,
     TripwireUpdate,
+    shape,
 )
+from shared.services import infostealer
 from shared.services.asset_query import (
     NO_JIT,
     STATEMENT_TIMEOUT,
@@ -76,6 +89,7 @@ from shared.services.scan_deltas import TABLES
 from shared.services.scan_scope import census_only, covers
 from shared.services.tripwires import Evaluation, evaluate, validate_query
 from shared.services.tripwires.actions import parse_actions
+from shared.services.tripwires.daily import rows_of
 from shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
@@ -166,6 +180,8 @@ class TripwireService:
                 query=row.query,
                 trigger=row.trigger,
                 fire_on=row.fire_on,
+                source=row.source,
+                params=dict(row.params or {}),
                 scope=TripwireScopeRead(
                     kind=row.scope_kind,
                     ids=[uuid.UUID(str(i)) for i in (row.scope_ids or [])],
@@ -234,7 +250,8 @@ class TripwireService:
         if int(total or 0) >= MAX_TRIPWIRES:
             msg = f"A project may hold {MAX_TRIPWIRES} tripwires."
             raise TripwireError(msg)
-        self._check_query(payload.dimension, payload.query)
+        if payload.trigger in SCAN_TRIGGERS:
+            self._check_query(payload.dimension, payload.query)
         await self._check_scope(payload.scope, project_id)
         await self._check_actions(payload.actions)
         row = Tripwire(
@@ -244,6 +261,8 @@ class TripwireService:
             query=payload.query.strip(),
             trigger=payload.trigger,
             fire_on=payload.fire_on,
+            source=payload.source,
+            params=payload.params,
             scope_kind=payload.scope.kind,
             scope_ids=[str(i) for i in payload.scope.ids],
             actions=[a.model_dump(mode="json") for a in payload.actions],
@@ -262,10 +281,20 @@ class TripwireService:
         if row is None:
             return None
         data = payload.model_dump(exclude_unset=True)
-        dimension = data.get("dimension", row.dimension)
-        query = data.get("query", row.query)
-        if "dimension" in data or "query" in data:
-            self._check_query(dimension, query or "")
+        condition = ("trigger", "dimension", "query", "fire_on", "source", "params")
+        if any(key in data for key in condition):
+            merged = {
+                key: data[key] if data.get(key) is not None else getattr(row, key)
+                for key in condition
+            }
+            try:
+                shaped = shape(**merged)
+            except ValueError as exc:
+                raise TripwireError(str(exc)) from exc
+            if shaped.trigger in SCAN_TRIGGERS:
+                self._check_query(shaped.dimension, shaped.query)
+            for key in condition:
+                setattr(row, key, getattr(shaped, key))
         if payload.scope is not None:
             await self._check_scope(payload.scope, project_id)
             row.scope_kind = payload.scope.kind
@@ -273,11 +302,9 @@ class TripwireService:
         if payload.actions is not None:
             await self._check_actions(payload.actions)
             row.actions = [a.model_dump(mode="json") for a in payload.actions]
-        for key in ("name", "dimension", "trigger", "fire_on", "enabled"):
+        for key in ("name", "enabled"):
             if data.get(key) is not None:
                 setattr(row, key, data[key])
-        if "query" in data and data["query"] is not None:
-            row.query = data["query"].strip()
         row.updated_at = utc_now()
         self.session.add(row)
         await self.session.commit()
@@ -388,6 +415,7 @@ class TripwireService:
                 target_id=row.target_id,
                 target_value=names.get(row.target_id, ""),
                 scan_id=row.scan_id,
+                event_id=row.event_id,
                 status=row.status,
                 matched=row.matched,
                 fired=row.fired,
@@ -554,6 +582,71 @@ class TripwireService:
             out.runs.append(self._row(scan, names, result))
         return out
 
+    # ---------- daily preview ----------
+
+    async def daily_preview(
+        self, payload: DailyPreviewRequest, project_id: uuid.UUID
+    ) -> DailyPreview:
+        """The targets a daily check reads, and the recent changes it fires on."""
+        ids = await self._scoped_targets(payload.scope, project_id)
+        out = DailyPreview(targets=len(ids), days=RECENT_DAYS)
+        on = await self.session.scalar(
+            select(InstanceSettings.infostealer_lookups).where(
+                InstanceSettings.singleton_key == SINGLETON_KEY
+            )
+        )
+        if on is False:
+            out.off_reason = LOOKUPS_OFF_REASON
+        if not ids:
+            return out
+        targets = (
+            await self.session.execute(
+                select(Target.id, Target.target_value, Target.target_type).where(
+                    Target.id.in_(ids)
+                )
+            )
+        ).all()
+        names = {
+            tid: value
+            for tid, value, kind in targets
+            if infostealer.lookup_domain(value, kind) is not None
+        }
+        out.read = len(names)
+        if not names:
+            return out
+        out.reported = int(
+            await self.session.scalar(
+                select(func.count()).where(TargetInfostealer.target_id.in_(names))
+            )
+            or 0
+        )
+        since = utc_now() - timedelta(days=RECENT_DAYS)
+        changes = (
+            await self.session.scalars(
+                select(InfostealerChange)
+                .where(
+                    InfostealerChange.target_id.in_(names),
+                    InfostealerChange.checked_at >= since,
+                )
+                .order_by(InfostealerChange.checked_at.desc())
+                .limit(MAX_BACKTEST_RUNS + 1)
+            )
+        ).all()
+        out.capped = len(changes) > MAX_BACKTEST_RUNS
+        for change in changes[:MAX_BACKTEST_RUNS]:
+            rows = rows_of(change, payload.params)
+            if rows:
+                out.changes.append(
+                    DailyChange(
+                        target_id=change.target_id,
+                        target_value=names[change.target_id],
+                        checked_at=change.checked_at,
+                        fired=len(rows),
+                        rows=rows[:PREVIEW_ROWS],
+                    )
+                )
+        return out
+
     # ---------- catalog ----------
 
     async def catalog(self) -> TripwireCatalog:
@@ -583,6 +676,29 @@ class TripwireService:
                 ChoiceSpec(key=k, label=FIRE_ON_LABELS[k], help=FIRE_ON_HELP[k])
                 for k in FIRE_ON_ORDER
             ],
+            sources=[
+                SourceRead(
+                    key=spec.key,
+                    label=spec.label,
+                    help=spec.help,
+                    dimension=spec.dimension,
+                    noun=spec.noun,
+                    noun_plural=spec.noun_plural,
+                    fields=[
+                        SourceFieldRead(
+                            key=f.key,
+                            label=f.label,
+                            default=f.default,
+                            options=[
+                                ChoiceSpec(key=o.key, label=o.label, help=o.help)
+                                for o in f.options
+                            ],
+                        )
+                        for f in spec.fields
+                    ],
+                )
+                for spec in (SOURCES[key] for key in SOURCE_ORDER)
+            ],
             actions=[
                 ChoiceSpec(key=k, label=ACTION_LABELS[k], help=ACTION_HELP[k])
                 for k in ACTION_ORDER
@@ -597,6 +713,7 @@ class TripwireService:
                     fire_on=t.fire_on,
                     trigger=t.trigger,
                     group=template_group(t),
+                    source=t.source,
                 )
                 for t in TEMPLATES
             ],

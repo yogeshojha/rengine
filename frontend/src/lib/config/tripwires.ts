@@ -1,10 +1,18 @@
+import CalendarClock from '@lucide/svelte/icons/calendar-clock';
+import KeyRound from '@lucide/svelte/icons/key-round';
 import type { BadgeVariant } from '$lib/components/ui/badge';
+import type { IconComponent } from '$lib/config/icons';
 import { SURFACE, SurfaceDimension, type SurfaceSpec } from '$lib/config/surface';
 
 // mirrors shared/definitions/tripwires.py
 export enum TripwireTrigger {
 	ScanSettled = 'scan_settled',
-	ScanLive = 'scan_live'
+	ScanLive = 'scan_live',
+	Daily = 'daily'
+}
+
+export enum TripwireSource {
+	LeakedLogins = 'leaked_logins'
 }
 
 export enum FireOn {
@@ -45,7 +53,8 @@ export const RECENT_DAYS = 30;
 
 export const TRIGGER_LABELS: Record<TripwireTrigger, string> = {
 	[TripwireTrigger.ScanSettled]: 'After a scan',
-	[TripwireTrigger.ScanLive]: 'During a scan'
+	[TripwireTrigger.ScanLive]: 'During a scan',
+	[TripwireTrigger.Daily]: 'Daily'
 };
 
 export const FIRE_ON_LABELS: Record<FireOn, string> = {
@@ -93,6 +102,27 @@ export const CHECK_STATUS_VARIANT: Record<CheckStatus, BadgeVariant> = {
 	[CheckStatus.NotCovered]: 'outline',
 	[CheckStatus.Error]: 'destructive'
 };
+
+export const SOURCE_ICONS: Record<TripwireSource, IconComponent> = {
+	[TripwireSource.LeakedLogins]: KeyRound
+};
+
+/** Where a daily check's target page shows what the source read. */
+export const SOURCE_PAGE: Record<TripwireSource, { tab: string; label: string }> = {
+	[TripwireSource.LeakedLogins]: { tab: 'infostealer', label: 'Open infostealer report' }
+};
+
+export function sourcePage(source: string | null | undefined) {
+	return SOURCE_PAGE[source as TripwireSource] ?? null;
+}
+
+export function isDaily(trigger: string): boolean {
+	return trigger === TripwireTrigger.Daily;
+}
+
+export function sourceIcon(source: string | null | undefined): IconComponent {
+	return SOURCE_ICONS[source as TripwireSource] ?? CalendarClock;
+}
 
 export const RUN_PARAM = 'run';
 export const TRIPWIRE_PARAM = 'tripwire';

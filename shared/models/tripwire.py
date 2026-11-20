@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from pydantic import Field as PField
-from sqlalchemy import Column, Index, PrimaryKeyConstraint
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
@@ -17,10 +17,14 @@ from shared.definitions.tripwires import (
     MAX_NAME,
     MAX_SCOPE_IDS,
     MAX_STAGES,
+    SCAN_TRIGGERS,
+    SOURCE_REQUIRED,
+    SOURCES,
     ActionKind,
     FireOn,
     ScopeKind,
     Trigger,
+    clean_params,
 )
 from shared.enums.scan import INTENSITIES
 from shared.models.asset_query import QueryError
@@ -41,6 +45,8 @@ class Tripwire(SQLModel, table=True):
     query: str = Field(default="", max_length=MAX_QUERY_LENGTH)
     trigger: str = Field(default=Trigger.SCAN_SETTLED.value, max_length=16)
     fire_on: str = Field(default=FireOn.APPEARS.value, max_length=16)
+    source: str | None = Field(default=None, max_length=32)
+    params: dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     scope_kind: str = Field(default=ScopeKind.ALL.value, max_length=16)
     scope_ids: list = Field(
         default_factory=list, sa_column=Column(JSON, nullable=False)
@@ -56,11 +62,18 @@ class Tripwire(SQLModel, table=True):
 
 
 class TripwireRun(SQLModel, table=True):
-    """One check of one tripwire against one scan."""
+    """One check of one tripwire against one scan or one daily change."""
 
     __tablename__ = "tripwire_runs"
     __table_args__ = (
         UniqueConstraint("tripwire_id", "scan_id", name="uq_tripwire_run"),
+        Index(
+            "uq_tripwire_run_event",
+            "tripwire_id",
+            "event_id",
+            unique=True,
+            postgresql_where=text("event_id IS NOT NULL"),
+        ),
         Index("ix_tripwire_runs_tripwire_checked", "tripwire_id", "checked_at"),
         Index("ix_tripwire_runs_project_fired", "project_id", "fired_at"),
     )
@@ -73,7 +86,10 @@ class TripwireRun(SQLModel, table=True):
     target_id: uuid.UUID = Field(
         foreign_key="targets.id", index=True, ondelete="CASCADE"
     )
-    scan_id: uuid.UUID = Field(foreign_key="scans.id", index=True, ondelete="CASCADE")
+    scan_id: uuid.UUID | None = Field(
+        default=None, foreign_key="scans.id", index=True, ondelete="CASCADE"
+    )
+    event_id: uuid.UUID | None = Field(default=None)
     status: str = Field(max_length=16, index=True)
     matched: int = Field(default=0)
     fired: int = Field(default=0)
@@ -178,23 +194,81 @@ def _some_query(value: str) -> str:
     return text
 
 
+class Condition(BaseModel):
+    """What a tripwire checks, in the one shape its trigger allows."""
+
+    trigger: str
+    dimension: str
+    query: str
+    fire_on: str
+    source: str | None = None
+    params: dict = PField(default_factory=dict)
+
+
+def shape(
+    *,
+    trigger: str,
+    dimension: str,
+    query: str,
+    fire_on: str,
+    source: str | None,
+    params: dict | None,
+) -> Condition:
+    """Raises ValueError for a condition its trigger cannot check."""
+    if trigger in SCAN_TRIGGERS:
+        return Condition(
+            trigger=trigger,
+            dimension=dimension,
+            query=_some_query(query),
+            fire_on=fire_on,
+        )
+    if source not in SOURCES:
+        raise ValueError(SOURCE_REQUIRED)
+    return Condition(
+        trigger=trigger,
+        dimension=SOURCES[source].dimension,
+        query="",
+        fire_on=FireOn.APPEARS.value,
+        source=source,
+        params=clean_params(source, params),
+    )
+
+
 class TripwireCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = PField(max_length=MAX_NAME)
     dimension: str = PField(max_length=32)
-    query: str = PField(max_length=MAX_QUERY_LENGTH)
+    query: str = PField(default="", max_length=MAX_QUERY_LENGTH)
     trigger: str = Trigger.SCAN_SETTLED.value
     fire_on: str = FireOn.APPEARS.value
+    source: str | None = PField(default=None, max_length=32)
+    params: dict[str, str] = PField(default_factory=dict)
     scope: TripwireScope = PField(default_factory=TripwireScope)
     actions: list[TripwireAction] = PField(default_factory=list, max_length=MAX_ACTIONS)
     enabled: bool = True
 
     _validate_name = field_validator("name")(partial(clean_name, max_len=MAX_NAME))
     _validate_dimension = field_validator("dimension")(_known_dimension)
-    _validate_query = field_validator("query")(_some_query)
     _validate_trigger = field_validator("trigger")(_known(Trigger, "trigger"))
     _validate_fire_on = field_validator("fire_on")(_known(FireOn, "fire mode"))
+
+    @model_validator(mode="after")
+    def _shape(self):
+        shaped = shape(
+            trigger=self.trigger,
+            dimension=self.dimension,
+            query=self.query,
+            fire_on=self.fire_on,
+            source=self.source,
+            params=self.params,
+        )
+        self.dimension = shaped.dimension
+        self.query = shaped.query
+        self.fire_on = shaped.fire_on
+        self.source = shaped.source
+        self.params = shaped.params
+        return self
 
     @field_validator("actions")
     @classmethod
@@ -214,6 +288,8 @@ class TripwireUpdate(BaseModel):
     query: str | None = PField(default=None, max_length=MAX_QUERY_LENGTH)
     trigger: str | None = None
     fire_on: str | None = None
+    source: str | None = PField(default=None, max_length=32)
+    params: dict[str, str] | None = None
     scope: TripwireScope | None = None
     actions: list[TripwireAction] | None = PField(default=None, max_length=MAX_ACTIONS)
     enabled: bool | None = None
@@ -262,6 +338,8 @@ class TripwireRead(BaseModel):
     query: str
     trigger: str
     fire_on: str
+    source: str | None = None
+    params: dict[str, str] = PField(default_factory=dict)
     scope: TripwireScopeRead
     actions: list[TripwireAction] = PField(default_factory=list)
     enabled: bool
@@ -296,7 +374,8 @@ class TripwireRunRead(BaseModel):
     tripwire_id: uuid.UUID
     target_id: uuid.UUID
     target_value: str = ""
-    scan_id: uuid.UUID
+    scan_id: uuid.UUID | None = None
+    event_id: uuid.UUID | None = None
     status: str
     matched: int
     fired: int
@@ -361,6 +440,44 @@ class TripwireBacktest(BaseModel):
     error: QueryError | None = None
 
 
+# ---------- daily preview ----------
+
+
+class DailyPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: str = PField(max_length=32)
+    params: dict[str, str] = PField(default_factory=dict)
+    scope: TripwireScope = PField(default_factory=TripwireScope)
+
+    @model_validator(mode="after")
+    def _known_source(self):
+        if self.source not in SOURCES:
+            raise ValueError(SOURCE_REQUIRED)
+        self.params = clean_params(self.source, self.params)
+        return self
+
+
+class DailyChange(BaseModel):
+    target_id: uuid.UUID
+    target_value: str
+    checked_at: datetime
+    fired: int
+    rows: list[FiredRow] = PField(default_factory=list)
+
+
+class DailyPreview(BaseModel):
+    """What a daily check reads in scope, and the changes of the last days it fires on."""
+
+    targets: int = 0
+    read: int = 0
+    reported: int = 0
+    off_reason: str | None = None
+    days: int
+    changes: list[DailyChange] = PField(default_factory=list)
+    capped: bool = False
+
+
 # ---------- catalog ----------
 
 
@@ -378,6 +495,24 @@ class TemplateRead(BaseModel):
     fire_on: str
     trigger: str
     group: str
+    source: str | None = None
+
+
+class SourceFieldRead(BaseModel):
+    key: str
+    label: str
+    options: list[ChoiceSpec] = PField(default_factory=list)
+    default: str
+
+
+class SourceRead(BaseModel):
+    key: str
+    label: str
+    help: str = ""
+    dimension: str
+    noun: str
+    noun_plural: str
+    fields: list[SourceFieldRead] = PField(default_factory=list)
 
 
 class TripwireDimension(BaseModel):
@@ -404,6 +539,7 @@ class TripwireCatalog(BaseModel):
     dimensions: list[TripwireDimension] = PField(default_factory=list)
     triggers: list[ChoiceSpec] = PField(default_factory=list)
     fire_modes: list[ChoiceSpec] = PField(default_factory=list)
+    sources: list[SourceRead] = PField(default_factory=list)
     actions: list[ChoiceSpec] = PField(default_factory=list)
     stages: list[StageChoice] = PField(default_factory=list)
     templates: list[TemplateRead] = PField(default_factory=list)

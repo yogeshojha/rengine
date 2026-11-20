@@ -20,6 +20,7 @@ from shared.definitions.tripwires import (
     FireOn,
     OutcomeStatus,
     ScopeKind,
+    Source,
     Trigger,
 )
 
@@ -58,6 +59,7 @@ def _const(name: str) -> str:
     ("ts_name", "members"),
     [
         ("TripwireTrigger", Trigger),
+        ("TripwireSource", Source),
         ("FireOn", FireOn),
         ("ScopeKind", ScopeKind),
         ("ActionKind", ActionKind),

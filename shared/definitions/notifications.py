@@ -647,6 +647,65 @@ def tripwire_fired(event: TripwireFired) -> dict:
 
 
 @dataclass
+class TripwireLeak:
+    name: str
+    target: str
+    employees: int
+    users: int
+    hosts: Sequence[FiredRowLike]
+    run_id: str
+    target_id: str
+    rescan: "TripwireRescan | None" = None
+
+
+def tripwire_leak(event: TripwireLeak) -> dict:
+    """One message per tripwire per daily change, with the rescan result when one ran."""
+    facts = []
+    if event.employees > 0:
+        facts.append(
+            _count(
+                event.employees,
+                "more compromised employee",
+                "more compromised employees",
+            )
+        )
+    if event.users > 0:
+        facts.append(
+            _count(event.users, "more compromised user", "more compromised users")
+        )
+    if not facts:
+        facts.append(
+            _count(
+                len(event.hosts),
+                "hostname with more leaked logins",
+                "hostnames with more leaked logins",
+            )
+        )
+    lines = [f"{facts[0]} on {event.target}", *facts[1:]]
+    shown = list(event.hosts[:TRIPWIRE_SAMPLE_ROWS])
+    lines += [r.label + (f" · {r.detail}" if r.detail else "") for r in shown]
+    lines += _more(len(event.hosts), len(shown))
+    severity = (
+        NotificationSeverity.WARNING
+        if event.employees > 0
+        else NotificationSeverity.INFO
+    )
+    if event.rescan is not None:
+        lines.append(_rescan_line(event.rescan))
+        severity = _louder(severity, _worst_severity(event.rescan.by_severity))
+    return {
+        "type": NotificationType.TRIPWIRE,
+        "severity": severity,
+        "title": f"Tripwire · {event.name}",
+        "message": "\n".join(lines),
+        "metadata": {
+            "target_id": event.target_id,
+            "url": routes.tripwires(event.run_id),
+        },
+    }
+
+
+@dataclass
 class TripwireRunResult:
     name: str
     target: str
