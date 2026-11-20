@@ -5,7 +5,6 @@ from datetime import timedelta
 
 import pytest
 from fastapi import HTTPException
-from fastapi.dependencies.utils import get_flat_dependant
 from sqlalchemy import select
 from starlette.requests import Request
 
@@ -36,6 +35,7 @@ from shared.models.user import User
 from shared.models.vulnerability import Vulnerability
 from shared.services import proxy_sync
 from shared.services.scan_resolve import MASK, seal_headers
+from tests.api.route_table import calls
 
 pytestmark = pytest.mark.api
 
@@ -128,10 +128,7 @@ def _route(path: str, method: str):
 
 
 def _needs_superuser(route) -> bool:
-    return any(
-        dep.call is get_current_superuser
-        for dep in get_flat_dependant(route.dependant).dependencies
-    )
+    return get_current_superuser in calls(route.dependant)
 
 
 @pytest.mark.parametrize(

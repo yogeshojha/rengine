@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import pytest
-from fastapi.dependencies.utils import get_flat_dependant
 
 from app.api.deps import get_current_superuser
 from app.api.v1 import remote_control
+from tests.api.route_table import calls
 
 pytestmark = pytest.mark.api
 
@@ -15,10 +15,7 @@ def _needs_superuser(path: str) -> bool:
         for r in remote_control.router.routes
         if r.path.endswith(path) and "GET" in r.methods
     )
-    return any(
-        dep.call is get_current_superuser
-        for dep in get_flat_dependant(route.dependant).dependencies
-    )
+    return get_current_superuser in calls(route.dependant)
 
 
 def test_the_chat_call_log_is_superuser_only():

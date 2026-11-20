@@ -11,7 +11,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -293,7 +293,7 @@ async def search_targets_by_value(
         project_slug=project_slug,
     )
 
-    return await paginate(
+    return await apaginate(
         session,
         query,
         transformer=lambda items: [service._to_target_read(t) for t in items],
@@ -339,7 +339,7 @@ async def list_targets(
         sort_dir=sort_dir,
     )
 
-    return await paginate(
+    return await apaginate(
         session,
         query,
         transformer=lambda items: [service._to_target_read(t) for t in items],

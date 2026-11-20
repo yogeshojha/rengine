@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser
@@ -145,7 +145,7 @@ async def list_runs(
     if await service.get(tripwire_id, project_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, NOT_FOUND)
     query = await service.runs(tripwire_id, project_id, status_filter)
-    page = await paginate(session, query)
+    page = await apaginate(session, query)
     return Page[TripwireRunRead](
         items=await service.run_reads(list(page.items)),
         total=page.total,

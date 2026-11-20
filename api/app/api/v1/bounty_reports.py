@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.capability import require_capability
@@ -104,7 +104,7 @@ async def list_reports(
         order=order,
         **filters.values,
     )
-    page = await paginate(session, query)
+    page = await apaginate(session, query)
     page.items = await service.to_read(spec, list(page.items))
     return page
 

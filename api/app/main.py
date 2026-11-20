@@ -57,8 +57,6 @@ app = FastAPI(
 )
 
 
-add_pagination(app)
-
 if "*" in settings.CORS_ORIGINS:
     msg = "CORS_ORIGINS must be an explicit allowlist (no '*') when credentials are enabled"
     raise ValueError(msg)
@@ -80,6 +78,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=API_V1_PREFIX)
+add_pagination(app)
 
 
 @app.get("/")

@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -74,7 +74,7 @@ async def list_notifications(
     query = _visible(
         select(Notification, NotificationReceipt.read_at), current_user, project_id
     ).order_by(Notification.created_at.desc())
-    return await paginate(
+    return await apaginate(
         session, query, unique=False, transformer=lambda rows: [_read(r) for r in rows]
     )
 

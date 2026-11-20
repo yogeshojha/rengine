@@ -44,6 +44,7 @@ from shared.services.credential_access import (
 from shared.services.scan_factory import ScanFactoryError, build_scan_for_target_sync
 from shared.services.vuln_templates import picked_predicate
 from shared.utils.crypto import encrypt_secret
+from tests.api.route_table import calls, routes
 
 pytestmark = pytest.mark.api
 
@@ -64,7 +65,7 @@ async def _user(session, *, superuser: bool = False) -> User:
 
 
 def _route(method: str, path: str):
-    for route in app.routes:
+    for route in routes(app):
         if getattr(route, "path", None) == API + path and method in route.methods:
             return route
     msg = f"{method} {path} is not routed"
@@ -72,13 +73,7 @@ def _route(method: str, path: str):
 
 
 def _admin_only(method: str, path: str) -> bool:
-    stack = [_route(method, path).dependant]
-    while stack:
-        dependant = stack.pop()
-        if dependant.call is get_current_superuser:
-            return True
-        stack.extend(dependant.dependencies)
-    return False
+    return get_current_superuser in calls(_route(method, path).dependant)
 
 
 # ---------- E1, E3, E4: routes ----------
@@ -121,7 +116,7 @@ def test_reading_a_shared_library_stays_open(method, path):
 def test_rule_suggestions_are_never_a_get():
     paths = {
         (method, route.path)
-        for route in app.routes
+        for route in routes(app)
         for method in getattr(route, "methods", ())
         if getattr(route, "path", "").endswith("/suggestions")
     }

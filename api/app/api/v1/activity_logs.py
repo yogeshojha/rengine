@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +26,7 @@ async def list_activity_logs(
         UUID | None, Query(description="Filter by project ID")
     ] = None,
 ):
-    return await paginate(session, feed_query(project_id))
+    return await apaginate(session, feed_query(project_id))
 
 
 def feed_query(project_id: UUID | None):

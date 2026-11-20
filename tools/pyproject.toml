@@ -3,6 +3,7 @@ name = "rengine-tools"
 version = "3.0.0"
 requires-python = ">=3.13"
 dependencies = [
+    "idna>=3.7",
     "requests[socks]>=2.32",
     "whoisit>=4.0.3",
 ]

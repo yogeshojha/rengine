@@ -12,6 +12,7 @@ from sqlalchemy.exc import DBAPIError
 from app.main import app as rengine
 from shared.services.asset_query import errors
 from shared.services.asset_query.errors import STATEMENT_TIMEOUT, query_deadline
+from tests.api.route_table import routes
 
 pytestmark = pytest.mark.api
 
@@ -97,6 +98,6 @@ async def test_the_deadline_reaches_the_route():
 
 @pytest.mark.parametrize("path", _SEARCH_PATHS)
 def test_search_routes_carry_the_deadline(path):
-    route = next(r for r in rengine.routes if getattr(r, "path", None) == path)
+    route = next(r for r in routes(rengine) if getattr(r, "path", None) == path)
 
     assert query_deadline in [d.call for d in route.dependant.dependencies]
