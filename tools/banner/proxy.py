@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import socket
 import ssl
+import threading
 import time
 from urllib.parse import SplitResult, unquote, urlsplit
 
@@ -83,13 +84,42 @@ def _remaining(timeout: float, deadline: float | None) -> float:
     return min(timeout, left)
 
 
+def resolve(host: str, port: int, timeout: float) -> list[tuple]:
+    """getaddrinfo bounded by timeout."""
+    answer: list = []
+
+    def run() -> None:
+        try:
+            answer.append(socket.getaddrinfo(host, port, type=socket.SOCK_STREAM))
+        except (OSError, UnicodeError) as e:
+            answer.append(e)
+
+    worker = threading.Thread(target=run, name="resolve", daemon=True)
+    worker.start()
+    worker.join(timeout)
+    if not answer:
+        raise TimeoutError
+    if isinstance(answer[0], BaseException):
+        raise answer[0]
+    return answer[0]
+
+
 def _dial(
     parts: SplitResult, scheme: str, timeout: float, deadline: float | None
 ) -> socket.socket:
-    return socket.create_connection(
-        (parts.hostname, url_port(parts) or _DEFAULT_PORT[scheme]),
-        timeout=_remaining(timeout, deadline),
-    )
+    port = url_port(parts) or _DEFAULT_PORT[scheme]
+    refused: OSError | None = None
+    for *_, address in resolve(parts.hostname, port, _remaining(timeout, deadline)):
+        try:
+            return socket.create_connection(
+                address[:2], timeout=_remaining(timeout, deadline)
+            )
+        except OSError as e:
+            refused = e
+    if refused is None:
+        msg = f"{parts.hostname} has no address"
+        raise OSError(msg)
+    raise refused
 
 
 def _recv_exact(

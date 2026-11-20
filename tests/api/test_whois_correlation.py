@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import importlib.util
 import uuid
+from pathlib import Path
 
 import pytest
-from sqlalchemy import literal, select
+from sqlalchemy import column, literal, select
+from sqlalchemy.dialects import postgresql
 
 from app.api.v1.whois import _target_correlations
 from shared.enums.whois import WhoisLookupType
@@ -32,8 +35,18 @@ NAMES = [
     "",
 ]
 
+PLACEHOLDERS = [
+    "Not shown, please visit www.dnsbelgium.be for webbased whois.",
+    "NOT DISCLOSED!",
+    "Not Disclosed - Visit www.internet.ee for webbased WHOIS",
+    "Hidden upon user request",
+    "not disclosed",
+]
 
-@pytest.mark.parametrize("name", NAMES)
+VERSIONS = Path(__file__).resolve().parents[2] / "alembic" / "versions"
+
+
+@pytest.mark.parametrize("name", [*NAMES, *PLACEHOLDERS, "Hidden Valley Ltd"])
 async def test_the_sql_key_and_the_python_key_agree(session, name):
     row = await session.scalar(select(registrant_key_sql(literal(name))))
     assert row == registrant_key(name)
@@ -47,6 +60,28 @@ def test_one_registrant_spelled_three_ways_is_one_party():
 def test_a_redacted_registrant_is_nobody():
     assert registrant_key("REDACTED FOR PRIVACY") == ""
     assert registrant_key("Domains By Proxy, LLC") == ""
+
+
+@pytest.mark.parametrize("name", PLACEHOLDERS)
+def test_a_registry_placeholder_is_nobody(name):
+    assert registrant_key(name) == ""
+
+
+def test_a_name_that_starts_like_a_placeholder_is_a_party():
+    assert registrant_key("Hidden Valley Ltd") == "hiddenvalley"
+
+
+def test_the_index_expression_is_the_sql_key():
+    latest = sorted(
+        p for p in VERSIONS.glob("*.py") if "\nREGISTRANT_KEY = (" in p.read_text()
+    )[-1]
+    spec = importlib.util.spec_from_file_location(latest.stem, latest)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    rendered = registrant_key_sql(column("registrant_name")).compile(
+        dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
+    )
+    assert f"({rendered})" == migration.REGISTRANT_KEY
 
 
 def test_a_managed_nameserver_is_the_provider():

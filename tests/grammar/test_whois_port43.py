@@ -473,6 +473,8 @@ def test_a_registrar_named_like_a_handle_with_no_block_is_kept():
     [
         ("Hidden upon user request", ""),
         ("NOT DISCLOSED!", ""),
+        ("Not Disclosed - Visit www.internet.ee for webbased WHOIS", ""),
+        ("Not shown, please visit www.dnsbelgium.be for webbased whois.", ""),
         ("Hidden Valley Ltd", "Hidden Valley Ltd"),
     ],
 )
@@ -485,3 +487,51 @@ def test_a_placeholder_is_withheld_and_a_name_that_starts_alike_is_kept(
     fields = _fields("example.tr", "whois.example", text)
 
     assert fields["registrant_name"] == stored
+
+
+RS_RESPONSE = """\
+Domain name: example.rs
+Registrar: Example d.o.o.
+
+DNS: ns1.example.net -
+DNS: ns2.example.net - 192.0.2.53
+"""
+
+DK_RESPONSE = """\
+Domain:               example.dk
+DNS:                  example.dk
+Registrar:            Example Inc.
+
+Nameservers
+Hostname:             ns1.example.net
+Hostname:             ns2.example.net
+"""
+
+MX_RESPONSE = """\
+Domain Name:       example.mx
+Registrar:         Example
+
+Name Servers:
+   DNS:            ns2.example.net
+   DNS:            ns1.example.net
+"""
+
+
+@pytest.mark.parametrize(
+    ("domain", "text", "nameservers"),
+    [
+        ("example.rs", RS_RESPONSE, ["ns1.example.net", "ns2.example.net"]),
+        ("example.dk", DK_RESPONSE, ["ns1.example.net", "ns2.example.net"]),
+        ("example.mx", MX_RESPONSE, ["ns2.example.net", "ns1.example.net"]),
+    ],
+)
+def test_a_dns_line_is_a_nameserver_only_where_no_other_key_lists_one(
+    domain: str, text: str, nameservers: list[str]
+):
+    assert _fields(domain, "whois.example", text)["nameservers"] == nameservers
+
+
+def test_a_dns_line_naming_the_domain_itself_is_not_a_nameserver():
+    text = "Domain: example.dk\nDNS: example.dk\nRegistrar: Example Inc.\n"
+
+    assert _fields("example.dk", "whois.example", text)["nameservers"] == []

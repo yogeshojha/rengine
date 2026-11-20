@@ -420,3 +420,54 @@ def test_a_value_over_its_column_width_is_not_stored(monkeypatch):
     assert fields["registrar_name"] == ""
     assert fields["nameservers"] == ["ns1.example.net"]
     assert fields["name"] == "example.be"
+
+
+def test_a_resolver_that_does_not_answer_is_cut_at_the_deadline(monkeypatch):
+    monkeypatch.setattr(port43, "CONNECT_SECONDS", 0.3)
+    resolutions: list[str] = []
+
+    def resolve(host, *_args, **_kwargs):
+        resolutions.append(host)
+        time.sleep(2)
+        raise socket.gaierror
+
+    monkeypatch.setattr(socket, "getaddrinfo", resolve)
+
+    started = time.monotonic()
+    with pytest.raises(port43.Port43Error, match="resolver did not answer"):
+        port43._query("whois.dns.be", "example.be")
+    assert time.monotonic() - started < 1
+
+    with pytest.raises(port43.Port43Error, match="resolver did not answer"):
+        port43._query("whois.dns.be", "example.be")
+    assert resolutions == ["whois.dns.be"]
+
+
+def test_a_proxy_name_that_does_not_resolve_is_cut_at_the_deadline(monkeypatch):
+    monkeypatch.setattr(port43, "CONNECT_SECONDS", 0.3)
+    resolutions: list[str] = []
+
+    def resolve(host, *_args, **_kwargs):
+        resolutions.append(host)
+        time.sleep(2)
+        raise socket.gaierror
+
+    monkeypatch.setattr(socket, "getaddrinfo", resolve)
+
+    started = time.monotonic()
+    with pytest.raises(port43.Port43Error, match="did not open a connection"):
+        port43._query("whois.dns.be", "example.be", "socks5://proxy.example:1080")
+    assert time.monotonic() - started < 1
+    assert resolutions == ["proxy.example"]
+
+
+def test_a_name_that_cannot_be_encoded_does_not_resolve(monkeypatch):
+    escaped: list = []
+    monkeypatch.setattr(threading, "excepthook", escaped.append)
+    server = f"{'a' * 64}.example"
+
+    with pytest.raises(port43.Port43Error, match="does not resolve"):
+        port43._query(server, "example.be")
+    with pytest.raises(port43.Port43Error, match="did not open a connection"):
+        port43._query("whois.dns.be", "example.be", f"socks5://{server}:1080")
+    assert escaped == []

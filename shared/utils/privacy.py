@@ -19,7 +19,6 @@ _NON_IDENTIFYING_EXACT = frozenset(
         "unknown",
         "not applicable",
         "not available",
-        "not disclosed",
     }
 )
 
@@ -49,6 +48,9 @@ _REDACTED_NAME_MARKERS = frozenset(
         "anonymize",
         "anonymised",
         "anonymized",
+        "not shown",
+        "not disclosed",
+        "hidden upon",
     }
 )
 

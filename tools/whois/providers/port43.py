@@ -15,7 +15,7 @@ from shared.logging import get_logger
 from shared.utils.net import is_public_address
 from shared.utils.privacy import clean_name
 from shared.utils.text import strip_control
-from tools.banner.proxy import ProxyError, open_tunnel
+from tools.banner.proxy import ProxyError, open_tunnel, resolve
 
 logger = get_logger(__name__)
 
@@ -98,6 +98,7 @@ _NS_KEYS = (
     "nameservers hostname",
     "name servers dns",
 )
+_NS_FALLBACK_KEYS = ("dns",)
 _STATUS_KEYS = ("domain status", "flags", "status", "state")
 _REGISTRAR_KEYS = (
     "registrar organization",
@@ -124,7 +125,6 @@ _REGISTRANT_NAME_KEYS = (
     "registrant",
     "org",
 )
-_WITHHELD = ("not shown", "not disclosed", "hidden upon")
 _NOT_REGISTERED = re.compile(
     r"no match|not found|no entries found|no data found|no object found"
     r"|not registered|status:\s*(available|free)\b",
@@ -173,8 +173,11 @@ def _left(deadline: float, cap: float = EXCHANGE_SECONDS) -> float:
 
 def _dial(server: str, deadline: float) -> socket.socket:
     try:
-        infos = socket.getaddrinfo(server, WHOIS_PORT, type=socket.SOCK_STREAM)
-    except OSError as e:
+        infos = resolve(server, WHOIS_PORT, _left(deadline, CONNECT_SECONDS))
+    except TimeoutError as e:
+        msg = f"The resolver did not answer for {server}."
+        raise _unreachable_error((server, None), msg) from e
+    except (OSError, UnicodeError) as e:
         msg = f"{server} does not resolve."
         raise _unreachable_error((server, None), msg) from e
     refused: OSError | None = None
@@ -386,6 +389,14 @@ def _tokens(fields: dict[str, list[str]], keys: tuple[str, ...]) -> list[str]:
     return out
 
 
+def _nameservers(fields: dict[str, list[str]], domain: str) -> list[str]:
+    hosts = [ns.lower().rstrip(".") for ns in _tokens(fields, _NS_KEYS)]
+    if hosts:
+        return hosts
+    fallback = [ns.lower().rstrip(".") for ns in _tokens(fields, _NS_FALLBACK_KEYS)]
+    return [ns for ns in fallback if ns != domain.lower()]
+
+
 def _statuses(fields: dict[str, list[str]]) -> list[str]:
     for key in _STATUS_KEYS:
         values = fields.get(key)
@@ -401,12 +412,6 @@ def _statuses(fields: dict[str, list[str]]) -> list[str]:
     return []
 
 
-def _disclosed(name: str) -> str:
-    if name.lower().startswith(_WITHHELD):
-        return ""
-    return clean_name(name)
-
-
 def _holder(text: str, handle: str, key: str = _HANDLE_KEY) -> str:
     """The organization or person a registry handle names."""
     for block in _BLOCKS.split(text):
@@ -420,7 +425,7 @@ def _registrant(fields: dict[str, list[str]], text: str) -> str:
     name = _first(fields, _REGISTRANT_NAME_KEYS)
     if name and _HANDLE_KEY in fields:
         name = _holder(text, name) or name
-    return _disclosed(name)
+    return clean_name(name)
 
 
 def _signed(fields: dict[str, list[str]]) -> bool:
@@ -450,7 +455,7 @@ def to_whoisit_shape(domain: str, server: str, text: str) -> dict[str, Any]:
     def date(keys: tuple[str, ...]) -> datetime | None:
         return _parse_date(_first(own, keys) or _first(fields, keys))
 
-    nameservers = [ns.lower().rstrip(".") for ns in _tokens(fields, _NS_KEYS)]
+    nameservers = _nameservers(fields, domain)
     registrar = _first(fields, _REGISTRAR_KEYS)
     registrar_url = _first(fields, _REGISTRAR_URL_KEYS)
     with_url = _WITH_URL.fullmatch(registrar)
