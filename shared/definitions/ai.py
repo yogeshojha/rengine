@@ -81,6 +81,11 @@ class Effort(StrEnum):
     HIGH = "high"
 
 
+GOOGLE_THINKING_LEVEL: dict[str, str] = {e.value: e.name for e in Effort}
+# thinking allowance added to Gemini's maxOutputTokens
+GOOGLE_THINKING_TOKENS = 8_192
+
+
 TASK_EFFORT: dict[str, str] = {
     AITask.EXECUTIVE_SUMMARY.value: Effort.MEDIUM.value,
     AITask.RISK_NARRATIVE.value: Effort.LOW.value,
@@ -271,6 +276,7 @@ MODELS: tuple[ModelSpec, ...] = (
         2.0,
         10.0,
         1_050_000,
+        supports_effort=True,
         recommended=True,
         default=True,
         cache_read_per_mtok=0.1,
@@ -283,6 +289,7 @@ MODELS: tuple[ModelSpec, ...] = (
         0.1,
         0.5,
         1_050_000,
+        supports_effort=True,
         note="Lower cost.",
         recommended=True,
         cache_read_per_mtok=0.01,
@@ -295,6 +302,7 @@ MODELS: tuple[ModelSpec, ...] = (
         10.0,
         50.0,
         1_050_000,
+        supports_effort=True,
         cache_read_per_mtok=1.0,
         cache_write_per_mtok=12.5,
     ),
@@ -305,6 +313,7 @@ MODELS: tuple[ModelSpec, ...] = (
         0.75,
         3.75,
         1_048_576,
+        supports_effort=True,
         recommended=True,
         default=True,
         cache_read_per_mtok=0.075,
@@ -316,6 +325,7 @@ MODELS: tuple[ModelSpec, ...] = (
         0.3,
         2.5,
         1_048_576,
+        supports_effort=True,
         note="Lower cost.",
         recommended=True,
         cache_read_per_mtok=0.03,

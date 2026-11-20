@@ -8,6 +8,7 @@ import threading
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field, replace
+from functools import partial
 from typing import Any
 
 from shared.definitions.ai import (
@@ -32,9 +33,12 @@ from shared.services.ai.client import (
     chat_headers,
     chat_url,
     complete,
+    effort_retry,
+    google_generation,
     google_headers,
     google_url,
     google_usage,
+    openai_extras,
     openai_usage,
     post_json,
     provider_proxy,
@@ -65,8 +69,6 @@ _GOOGLE_DECLINED = frozenset(
 )
 _GOOGLE_DONE = "STOP"
 _GOOGLE_LENGTH = "MAX_TOKENS"
-# thinking allowance added to Gemini's maxOutputTokens
-GOOGLE_THINKING_TOKENS = 8_192
 STOPPED_WITHOUT_ANSWER = "The model stopped without an answer. Reason: {reason}."
 
 
@@ -276,11 +278,29 @@ async def converse(
         )
     elif cfg.provider == AIProvider.GOOGLE.value:
         stream = _google(
-            cfg, model, system, messages, tools, call_tool, max_tokens, budget, tally
+            cfg,
+            model,
+            system,
+            messages,
+            tools,
+            call_tool,
+            max_tokens,
+            effort,
+            budget,
+            tally,
         )
     else:
         stream = _openai(
-            cfg, model, system, messages, tools, call_tool, max_tokens, budget, tally
+            cfg,
+            model,
+            system,
+            messages,
+            tools,
+            call_tool,
+            max_tokens,
+            effort,
+            budget,
+            tally,
         )
 
     try:
@@ -430,6 +450,17 @@ def _google_spent(body: dict) -> Usage:
     return google_usage(body.get("usageMetadata"))
 
 
+async def _answer(
+    tally: Tally, send: Callable[[dict], dict], payload: dict
+) -> tuple[dict, Usage | None]:
+    """One round's answer, with what the conversation spent on a failure."""
+    try:
+        return await asyncio.to_thread(effort_retry, send, payload)
+    except AIError as exc:
+        exc.usage = tally.total()
+        raise
+
+
 def _post_round(
     tally: Tally,
     url: str,
@@ -460,6 +491,7 @@ async def _openai(
     tools: list[AgentTool],
     call_tool: ToolCaller,
     max_tokens: int,
+    effort: str,
     budget: _Budget,
     tally: Tally,
 ) -> AsyncIterator[AgentEvent]:
@@ -478,23 +510,24 @@ async def _openai(
     headers = chat_headers(cfg)
     url = chat_url(cfg)
     proxy = provider_proxy(cfg)
+    extras = openai_extras(cfg.provider, model, effort)
     voice = _Voice()
+
+    send = partial(
+        _post_round, tally, url, headers=headers, timeout=cfg.timeout, proxy=proxy
+    )
 
     for round_no in range(1, budget.rounds + 1):
         payload: dict[str, Any] = {
             "model": model,
             "max_completion_tokens": max_tokens,
             "messages": history,
+            **extras,
         }
         if specs:
             payload["tools"] = specs
-        try:
-            body = await asyncio.to_thread(
-                _post_round, tally, url, payload, headers, cfg.timeout, proxy
-            )
-        except AIError as exc:
-            exc.usage = tally.total()
-            raise
+        body, first = await _answer(tally, send, payload)
+        extras = extras if first is None else {}
         choices = body.get("choices") or []
         if not choices:
             raise AIError(NO_COMPLETION, usage=tally.total())
@@ -578,6 +611,7 @@ async def _google(
     tools: list[AgentTool],
     call_tool: ToolCaller,
     max_tokens: int,
+    effort: str,
     budget: _Budget,
     tally: Tally,
 ) -> AsyncIterator[AgentEvent]:
@@ -592,32 +626,30 @@ async def _google(
     url = google_url(model)
     headers = google_headers(cfg)
     proxy = provider_proxy(cfg)
+    generation = google_generation(model, max_tokens, effort, room=True)
     voice = _Voice()
+
+    send = partial(
+        _post_round,
+        tally,
+        url,
+        headers=headers,
+        timeout=cfg.timeout,
+        proxy=proxy,
+        spent_in=_google_spent,
+    )
 
     for round_no in range(1, budget.rounds + 1):
         payload: dict[str, Any] = {
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": contents,
-            "generationConfig": {
-                "maxOutputTokens": max_tokens + GOOGLE_THINKING_TOKENS
-            },
+            "generationConfig": generation,
         }
         if declarations:
             payload["tools"] = [{"functionDeclarations": declarations}]
-        try:
-            body = await asyncio.to_thread(
-                _post_round,
-                tally,
-                url,
-                payload,
-                headers,
-                cfg.timeout,
-                proxy,
-                _google_spent,
-            )
-        except AIError as exc:
-            exc.usage = tally.total()
-            raise
+        body, first = await _answer(tally, send, payload)
+        if first is not None:
+            generation = google_generation(model, max_tokens, None, room=True)
         candidates = body.get("candidates") or []
         if not candidates:
             blocked = (body.get("promptFeedback") or {}).get("blockReason")

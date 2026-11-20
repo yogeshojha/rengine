@@ -16,6 +16,8 @@ from shared.definitions.ai import (
     BILLED_REFUSALS,
     GATEWAY_TIMEOUTS,
     GOOGLE_GENERATE,
+    GOOGLE_THINKING_LEVEL,
+    GOOGLE_THINKING_TOKENS,
     MAX_MODEL_ID,
     MAX_OUTPUT_TOKENS,
     MODEL_LIST_PAGES,
@@ -50,6 +52,8 @@ _OPENAI_API = "https://api.openai.com/v1"
 _OPENAI_URL = f"{_OPENAI_API}/chat/completions"
 _GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _ANTHROPIC_THINKING: dict = {"type": "adaptive"}
+_EFFORT_FIELDS = frozenset({"thinking", "output_config", "reasoning_effort"})
+_GOOGLE_THINKING = "thinkingConfig"
 _HTTP_ERROR = 400
 _REDIRECT = 300
 _PAGE_SIZE = 1000
@@ -78,9 +82,12 @@ _UNSENT = frozenset(
 class AIError(RuntimeError):
     """The provider could not answer."""
 
-    def __init__(self, message: str, *, usage: Usage | None = None):
+    def __init__(
+        self, message: str, *, usage: Usage | None = None, status: int | None = None
+    ):
         super().__init__(message)
         self.usage = UNREPORTED if usage is None else usage
+        self.status = status
 
 
 def chat_url(cfg: AIConfig) -> str:
@@ -180,8 +187,8 @@ def http_error(status: int, body: object, usage: Usage | None = None) -> AIError
     message = provider_message(body)
     spent = (Usage() if usage is None else usage) + _answered(status, body)
     if not message:
-        return AIError(f"Provider returned {status}.", usage=spent)
-    return AIError(f"Provider returned {status}: {message}", usage=spent)
+        return AIError(f"Provider returned {status}.", usage=spent, status=status)
+    return AIError(f"Provider returned {status}: {message}", usage=spent, status=status)
 
 
 def _answered(status: int, body: object) -> Usage:
@@ -380,9 +387,9 @@ def complete(cfg: AIConfig, *, system: str, prompt: str, task: str) -> AIResult:
         if cfg.provider == AIProvider.ANTHROPIC.value:
             text, usage = _anthropic(cfg, model, system, prompt, max_tokens, effort)
         elif cfg.provider == AIProvider.GOOGLE.value:
-            text, usage = _google(cfg, model, system, prompt, max_tokens)
+            text, usage = _google(cfg, model, system, prompt, max_tokens, effort)
         else:
-            text, usage = _openai(cfg, model, system, prompt, max_tokens)
+            text, usage = _openai(cfg, model, system, prompt, max_tokens, effort)
     except Exception as exc:
         spent = exc.usage if isinstance(exc, AIError) else UNREPORTED
         write(spent, ok=False, error=scrub_error(str(exc), cfg))
@@ -416,6 +423,67 @@ def anthropic_extras(model: str, effort: str) -> dict[str, Any]:
     return extras
 
 
+def _reasons(provider: str, model: str) -> bool:
+    spec = model_spec(model)
+    return spec is not None and spec.provider == provider and spec.supports_effort
+
+
+def openai_extras(provider: str, model: str, effort: str) -> dict[str, Any]:
+    """The reasoning effort a catalog model accepts."""
+    return {"reasoning_effort": effort} if _reasons(provider, model) else {}
+
+
+def google_generation(
+    model: str, max_tokens: int, effort: str | None, *, room: bool = False
+) -> dict[str, Any]:
+    """Gemini's generation config, with the thinking level a catalog model accepts."""
+    reasons = _reasons(AIProvider.GOOGLE.value, model)
+    allowance = GOOGLE_THINKING_TOKENS if reasons or room else 0
+    config: dict[str, Any] = {"maxOutputTokens": max_tokens + allowance}
+    if effort is not None and reasons:
+        level = GOOGLE_THINKING_LEVEL.get(effort, Effort.LOW.name)
+        config[_GOOGLE_THINKING] = {"thinkingLevel": level}
+    return config
+
+
+def rejected(exc: BaseException) -> bool:
+    """A 400 answer, from an SDK or from post_json."""
+    if isinstance(exc, AIError):
+        return exc.status == _HTTP_ERROR
+    return getattr(exc, "status_code", None) == _HTTP_ERROR
+
+
+def without_effort(request: dict[str, Any]) -> dict[str, Any] | None:
+    """The request without its thinking and effort fields, or None when it carried none."""
+    plain = {k: v for k, v in request.items() if k not in _EFFORT_FIELDS}
+    generation = request.get("generationConfig")
+    if isinstance(generation, dict) and _GOOGLE_THINKING in generation:
+        plain["generationConfig"] = {
+            k: v for k, v in generation.items() if k != _GOOGLE_THINKING
+        }
+    elif len(plain) == len(request):
+        return None
+    return plain
+
+
+def effort_retry[T](
+    send: Callable[[dict[str, Any]], T], request: dict[str, Any]
+) -> tuple[T, Usage | None]:
+    """The answer, asked once more without effort after a 400, and what the 400 used."""
+    try:
+        return send(request), None
+    except Exception as exc:
+        plain = without_effort(request)
+        if plain is None or not rejected(exc):
+            raise
+        first = exc.usage if isinstance(exc, AIError) else Usage()
+    try:
+        return send(plain), first
+    except AIError as exc:
+        exc.usage = first + exc.usage
+        raise
+
+
 def _anthropic(
     cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int, effort: str
 ) -> tuple[str, Usage]:
@@ -437,14 +505,7 @@ def _anthropic(
         http_client=anthropic.DefaultHttpxClient(proxy=proxy) if proxy else None,
     )
     try:
-        response = client.messages.create(**kwargs)
-    except anthropic.BadRequestError as exc:
-        kwargs.pop("thinking", None)
-        kwargs.pop("output_config", None)
-        try:
-            response = client.messages.create(**kwargs)
-        except anthropic.APIError as retry_exc:
-            raise sdk_error(retry_exc) from exc
+        response, _ = effort_retry(lambda kw: client.messages.create(**kw), kwargs)
     except anthropic.APIError as exc:
         raise sdk_error(exc) from exc
 
@@ -459,7 +520,7 @@ def _anthropic(
 
 
 def _openai(
-    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
+    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int, effort: str
 ) -> tuple[str, Usage]:
     payload = {
         "model": model,
@@ -468,15 +529,13 @@ def _openai(
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ],
+        **openai_extras(cfg.provider, model, effort),
     }
-    body = post_json(
-        chat_url(cfg),
-        payload,
-        chat_headers(cfg),
-        cfg.timeout,
-        proxy=provider_proxy(cfg),
+    url, headers, proxy = chat_url(cfg), chat_headers(cfg), provider_proxy(cfg)
+    body, first = effort_retry(
+        lambda sent: post_json(url, sent, headers, cfg.timeout, proxy=proxy), payload
     )
-    usage = openai_usage(body.get("usage"))
+    usage = openai_usage(body.get("usage")) + (first or Usage())
     choices = body.get("choices") or []
     if not choices:
         msg = "The provider returned no completion."
@@ -486,22 +545,18 @@ def _openai(
 
 
 def _google(
-    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int
+    cfg: AIConfig, model: str, system: str, prompt: str, max_tokens: int, effort: str
 ) -> tuple[str, Usage]:
-    url = google_url(model)
+    url, headers, proxy = google_url(model), google_headers(cfg), provider_proxy(cfg)
     payload = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": max_tokens},
+        "generationConfig": google_generation(model, max_tokens, effort),
     }
-    body = post_json(
-        url,
-        payload,
-        google_headers(cfg),
-        cfg.timeout,
-        proxy=provider_proxy(cfg),
+    body, first = effort_retry(
+        lambda sent: post_json(url, sent, headers, cfg.timeout, proxy=proxy), payload
     )
-    usage = google_usage(body.get("usageMetadata"))
+    usage = google_usage(body.get("usageMetadata")) + (first or Usage())
     candidates = body.get("candidates") or []
     if not candidates:
         msg = "The provider returned no completion."
