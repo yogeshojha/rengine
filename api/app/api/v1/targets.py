@@ -266,7 +266,7 @@ async def bulk_enrich_targets(
     return {"queued": queued}
 
 
-@router.post("/tags/bulk", response_model=dict[str, int])
+@router.post("/tags/bulk", summary="Add tags to targets", response_model=dict[str, int])
 async def bulk_add_tags(
     request: BulkTagRequest,
     current_user: CurrentUser,
@@ -312,7 +312,7 @@ async def search_targets_by_value(
     )
 
 
-@router.get("", response_model=Page[TargetRead])
+@router.get("", summary="Targets of a project", response_model=Page[TargetRead])
 async def list_targets(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -356,7 +356,12 @@ async def list_targets(
     )
 
 
-@router.post("", response_model=TargetRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    summary="Add a target",
+    response_model=TargetRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_target(
     target_in: TargetCreate,
     current_user: CurrentUser,
@@ -368,6 +373,7 @@ async def create_target(
 
 @router.post(
     "/bulk",
+    summary="Add targets",
     response_model=TargetBulkCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -420,7 +426,11 @@ async def import_targets_csv(
     )
 
 
-@router.get("/{target_id}/detail", response_model=TargetDetailRead)
+@router.get(
+    "/{target_id}/detail",
+    summary="One target with its WHOIS, DNS and BGP records",
+    response_model=TargetDetailRead,
+)
 async def get_target_detail(
     target_id: str,
     _current_user: CurrentUser,
@@ -430,7 +440,11 @@ async def get_target_detail(
     return await service.get_target_detail(target_id, access=access)
 
 
-@router.get("/{target_id}/summary", response_model=TargetSummaryRead)
+@router.get(
+    "/{target_id}/summary",
+    summary="Counts and coverage of a target by dimension",
+    response_model=TargetSummaryRead,
+)
 async def get_target_summary(
     target_id: UUID,
     _current_user: CurrentUser,
@@ -610,7 +624,7 @@ async def delete_target_seed(
     await service.delete_seed(target_id, seed_id, access=access)
 
 
-@router.get("/{target_id}", response_model=TargetRead)
+@router.get("/{target_id}", summary="One target", response_model=TargetRead)
 async def get_target(
     target_id: str,
     _current_user: CurrentUser,
@@ -620,7 +634,7 @@ async def get_target(
     return await service.get_target(target_id, access=access)
 
 
-@router.patch("/{target_id}", response_model=TargetRead)
+@router.patch("/{target_id}", summary="Update a target", response_model=TargetRead)
 async def update_target(
     target_id: str,
     target_in: TargetUpdate,
@@ -633,7 +647,11 @@ async def update_target(
     )
 
 
-@router.delete("/{target_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{target_id}",
+    summary="Remove a target and its scans",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_target(
     target_id: str,
     _current_user: CurrentUser,

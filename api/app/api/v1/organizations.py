@@ -37,7 +37,9 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=list[OrganizationRead])
+@router.get(
+    "", summary="Organizations of a project", response_model=list[OrganizationRead]
+)
 async def list_organizations(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],

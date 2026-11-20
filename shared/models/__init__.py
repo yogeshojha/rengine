@@ -1,4 +1,5 @@
 import shared.models._tztypes  # patch datetime->timestamptz first
+from shared.models.access_key import AccessKey
 from shared.models.activity_log import ActivityLog
 from shared.models.ai import AiCall, AiConnection, AiNarrative
 from shared.models.api_key import APIKey
@@ -101,6 +102,7 @@ TargetRead.model_rebuild()
 
 __all__ = [
     "APIKey",
+    "AccessKey",
     "ActivityLog",
     "AiCall",
     "AiConnection",

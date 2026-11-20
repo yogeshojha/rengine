@@ -80,6 +80,7 @@ def _fire_one(schedule_id: uuid.UUID) -> int:
                         schedule_id=sched.id,
                         schedule_type=sched.schedule_type,
                         intensity=sched.intensity,
+                        as_key=sched.created_with_key,
                     )
                 queued.append((str(scan.id), scan.run_epoch))
             except Exception as exc:

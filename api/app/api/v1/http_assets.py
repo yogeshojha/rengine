@@ -22,7 +22,11 @@ def get_service(
     return HttpAssetService(session)
 
 
-@router.get("/{asset_id}", response_model=HttpAssetDetail)
+@router.get(
+    "/{asset_id}",
+    summary="One web asset response with its headers and body",
+    response_model=HttpAssetDetail,
+)
 async def get_http_asset(
     _current_user: CurrentUser,
     service: Annotated[HttpAssetService, Depends(get_service)],

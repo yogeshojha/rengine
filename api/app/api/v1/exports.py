@@ -25,7 +25,12 @@ def get_service(
     return ExportService(session)
 
 
-@router.post("", response_model=ExportRead, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "",
+    summary="Start an export",
+    response_model=ExportRead,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def create_export(
     data: ExportCreate,
     current_user: CurrentUser,
@@ -35,7 +40,7 @@ async def create_export(
     return await service.create(data, project_id, current_user.id)
 
 
-@router.get("", response_model=list[ExportRead])
+@router.get("", summary="Exports of a project", response_model=list[ExportRead])
 async def list_exports(
     _current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
@@ -46,7 +51,9 @@ async def list_exports(
     return await service.list(project_id, scan_id, target_id)
 
 
-@router.get("/{export_id}", response_model=ExportRead)
+@router.get(
+    "/{export_id}", summary="One export and its status", response_model=ExportRead
+)
 async def get_export(
     export_id: UUID,
     _current_user: CurrentUser,
@@ -70,7 +77,7 @@ async def rerun_export(
     return await service.rerun(export_id, project_id)
 
 
-@router.get("/{export_id}/download")
+@router.get("/{export_id}/download", summary="Download an export file")
 async def download_export(
     export_id: UUID,
     _current_user: CurrentUser,

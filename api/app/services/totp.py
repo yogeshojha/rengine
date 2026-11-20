@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password_async, verify_password_async
+from app.services.access_keys import revoke_account_keys
 from shared.logging import get_logger
 from shared.models.user import User
 from shared.redis import async_client
@@ -95,6 +96,7 @@ class TOTPService:
         user.totp_backup_codes = [await hash_password_async(c) for c in codes]
         user.updated_at = utc_now()
         self.session.add(user)
+        await revoke_account_keys(self.session, user.id)
         await self.session.commit()
         return codes
 
@@ -107,6 +109,7 @@ class TOTPService:
         user.totp_backup_codes = None
         user.updated_at = utc_now()
         self.session.add(user)
+        await revoke_account_keys(self.session, user.id)
         await self.session.commit()
 
     async def verify_code(self, user: User, code: str) -> bool:

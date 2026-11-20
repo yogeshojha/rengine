@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.access import Access
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentUser, key_owner
 from app.core.database import get_session
 from app.services.scan_engine import ScanEngineService
 from shared.logging import get_logger
@@ -24,7 +24,7 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=list[ProjectRead])
+@router.get("", summary="Projects this account opens", response_model=list[ProjectRead])
 async def list_projects(
     _current_user: CurrentUser,
     access: Access,
@@ -34,13 +34,20 @@ async def list_projects(
     return result.scalars().all()
 
 
-@router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    summary="Create a project",
+    response_model=ProjectRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_project(
     project_in: ProjectCreate,
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    request: Request,
 ):
-    if not may_create_projects(current_user):
+    owner = key_owner(request) or current_user
+    if not may_create_projects(owner):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This account cannot create projects.",
@@ -52,7 +59,7 @@ async def create_project(
         created_by=current_user.id,
     )
     await add_with_unique_slug(
-        session, project, project_in.name, opaque=not current_user.is_superuser
+        session, project, project_in.name, opaque=not owner.is_superuser
     )
     await add_member(session, project.id, current_user.id, current_user.id)
     await ScanEngineService(session).ensure_builtin(project.id, current_user.id)

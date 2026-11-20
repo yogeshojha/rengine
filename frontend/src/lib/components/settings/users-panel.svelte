@@ -23,6 +23,7 @@
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
 	import ProjectAccessDialog from './project-access-dialog.svelte';
+	import UserAccessKeysDialog from './user-access-keys-dialog.svelte';
 	import ProjectChecklist from './project-checklist.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { usersApi, type UserAccount } from '$lib/api/users';
@@ -31,6 +32,7 @@
 	import { PROJECT_ACCESS_LABELS, projectAccess, ROLE_LABELS, roleLabel } from '$lib/config/users';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
+	import { PROFILE_TAB_LABELS } from '$lib/config/routes';
 	import { BODY_ROW, HEAD_ROW, USER_COL, USER_SKELETON } from './columns';
 
 	const ADMIN = 'admin';
@@ -51,6 +53,7 @@
 	let saving = $state(false);
 
 	let editingAccess = $state<UserAccount | null>(null);
+	let viewingKeys = $state<UserAccount | null>(null);
 
 	let removing = $state<UserAccount | null>(null);
 	let deleting = $state(false);
@@ -258,6 +261,9 @@
 											{PROJECT_ACCESS_LABELS.title}
 										</DropdownMenu.Item>
 									{/if}
+									<DropdownMenu.Item onSelect={() => (viewingKeys = user)}>
+										{PROFILE_TAB_LABELS['access-keys']}
+									</DropdownMenu.Item>
 									<DropdownMenu.Item
 										onSelect={() => update(user, { is_superuser: !user.is_superuser })}
 									>
@@ -385,6 +391,8 @@
 	onclose={() => (editingAccess = null)}
 	onsaved={replaceUser}
 />
+
+<UserAccessKeysDialog user={viewingKeys} onclose={() => (viewingKeys = null)} />
 
 <ConfirmDialog
 	open={removing !== null}

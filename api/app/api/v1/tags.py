@@ -33,7 +33,7 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=list[TagRead])
+@router.get("", summary="Tags of a project", response_model=list[TagRead])
 async def list_tags(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],

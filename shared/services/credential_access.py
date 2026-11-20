@@ -61,15 +61,27 @@ def plain_tool_options(options: dict | None) -> dict[str, str]:
     }
 
 
+KEY_HOLDER = "access_key_holder"
+
+
+def hold_as_key(session, user_id: uuid.UUID | None) -> None:
+    """Mark the account that acts through an access key on this session, or none."""
+    session.info[KEY_HOLDER] = user_id
+
+
+def held_as_key(session, user_id: uuid.UUID) -> bool:
+    return session.info.get(KEY_HOLDER) == user_id
+
+
 async def superuser_of(session, user_id: uuid.UUID | None) -> bool:
-    if user_id is None:
+    if user_id is None or held_as_key(session, user_id):
         return False
     user = await session.get(User, user_id)
     return bool(user is not None and user.is_active and user.is_superuser)
 
 
 def superuser_of_sync(session, user_id: uuid.UUID | None) -> bool:
-    if user_id is None:
+    if user_id is None or held_as_key(session, user_id):
         return False
     user = session.get(User, user_id)
     return bool(user is not None and user.is_active and user.is_superuser)

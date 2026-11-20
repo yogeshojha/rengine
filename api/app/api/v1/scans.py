@@ -124,7 +124,10 @@ async def preview_scan(
 
 
 @router.post(
-    "/batch", response_model=list[ScanRead], status_code=status.HTTP_201_CREATED
+    "/batch",
+    summary="Start scans",
+    response_model=list[ScanRead],
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_scans(
     data: ScanBatchCreate,
@@ -137,7 +140,7 @@ async def create_scans(
     )
 
 
-@router.get("", response_model=Page[ScanRead])
+@router.get("", summary="Scans of a project", response_model=Page[ScanRead])
 async def list_scans(
     _current_user: CurrentUser,
     access: Access,
@@ -212,7 +215,9 @@ async def list_scans(
     return page
 
 
-@router.get("/latest", response_model=list[ScanRead])
+@router.get(
+    "/latest", summary="Latest scan of each target", response_model=list[ScanRead]
+)
 async def latest_runs(
     _current_user: CurrentUser,
     access: Access,
@@ -251,7 +256,7 @@ async def daily_runs(
     return await service.daily(project_id, days, target_id, include_focused)
 
 
-@router.get("/stats", response_model=ScanStats)
+@router.get("/stats", summary="Scan counts by status", response_model=ScanStats)
 async def scan_stats(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
@@ -268,7 +273,9 @@ async def scan_stats(
     )
 
 
-@router.get("/compare", response_model=ScanComparison)
+@router.get(
+    "/compare", summary="Compare two runs of a target", response_model=ScanComparison
+)
 async def compare_scans(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
@@ -283,7 +290,11 @@ async def compare_scans(
     )
 
 
-@router.get("/compare/rows", response_model=ChangeRows)
+@router.get(
+    "/compare/rows",
+    summary="Changed rows of one dimension between two runs",
+    response_model=ChangeRows,
+)
 async def compare_scan_rows(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
@@ -313,7 +324,11 @@ async def compare_scan_rows(
     )
 
 
-@router.get("/compare/diff", response_class=PlainTextResponse)
+@router.get(
+    "/compare/diff",
+    summary="Two runs compared as a text diff",
+    response_class=PlainTextResponse,
+)
 async def compare_scan_diff(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
@@ -352,7 +367,11 @@ async def cancel_all_scans(
     )
 
 
-@router.get("/{id}/comparable", response_model=list[ComparableRun])
+@router.get(
+    "/{id}/comparable",
+    summary="Runs a scan can be compared with",
+    response_model=list[ComparableRun],
+)
 async def comparable_runs(
     id: UUID,
     _current_user: CurrentUser,
@@ -362,7 +381,7 @@ async def comparable_runs(
     return await service.comparable(scan_id=id, project_id=project_id)
 
 
-@router.get("/{id}", response_model=ScanRead)
+@router.get("/{id}", summary="One scan", response_model=ScanRead)
 async def get_scan(
     id: UUID,
     _current_user: CurrentUser,
@@ -373,7 +392,11 @@ async def get_scan(
     return await service.get(id=id, project_id=project_id, access=access)
 
 
-@router.get("/{id}/activities", response_model=list[ScanActivityRead])
+@router.get(
+    "/{id}/activities",
+    summary="Stages of a scan and their status",
+    response_model=list[ScanActivityRead],
+)
 async def list_scan_activities(
     id: UUID,
     _current_user: CurrentUser,
@@ -411,7 +434,7 @@ async def get_scan_command(
     )
 
 
-@router.post("/{id}/cancel", response_model=ScanRead)
+@router.post("/{id}/cancel", summary="Cancel a scan", response_model=ScanRead)
 async def cancel_scan(
     id: UUID,
     current_user: CurrentUser,
@@ -423,7 +446,7 @@ async def cancel_scan(
     )
 
 
-@router.post("/{id}/pause", response_model=ScanRead)
+@router.post("/{id}/pause", summary="Pause a scan", response_model=ScanRead)
 async def pause_scan(
     id: UUID,
     _current_user: CurrentUser,
@@ -433,7 +456,7 @@ async def pause_scan(
     return await service.pause(id=id, project_id=project_id)
 
 
-@router.post("/{id}/resume", response_model=ScanRead)
+@router.post("/{id}/resume", summary="Resume a paused scan", response_model=ScanRead)
 async def resume_scan(
     id: UUID,
     _current_user: CurrentUser,
@@ -443,7 +466,11 @@ async def resume_scan(
     return await service.resume(id=id, project_id=project_id)
 
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{id}",
+    summary="Delete a scan and its results",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_scan(
     id: UUID,
     _current_user: CurrentUser,

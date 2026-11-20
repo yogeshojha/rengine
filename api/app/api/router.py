@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.v1 import (
     about,
+    access_keys,
     activity_logs,
     ai,
     api_keys,
@@ -37,6 +38,7 @@ from app.api.v1 import (
     ports,
     projects,
     proxies,
+    reference,
     remote_control,
     reports,
     scan_contexts,
@@ -69,6 +71,8 @@ search = [Depends(query_deadline)]
 
 router.include_router(auth.router)
 router.include_router(users.router)
+router.include_router(access_keys.router)
+router.include_router(reference.router)
 router.include_router(events.router)
 router.include_router(projects.router)
 router.include_router(organizations.router)

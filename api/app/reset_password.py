@@ -13,6 +13,7 @@ from sqlmodel import select
 from app.core.database import async_db_session, engine
 from app.core.ratelimit import clear_login_failures, revoke_user_tokens
 from app.core.security import hash_password_async
+from app.services.access_keys import revoke_account_keys
 from app.utils.validation import validate_password_strength
 from shared.models.user import User
 from shared.utils.datetime import utc_now
@@ -100,6 +101,7 @@ async def reset(
         user.totp_backup_codes = None
     user.updated_at = utc_now()
     session.add(user)
+    await revoke_account_keys(session, user.id)
     await session.commit()
     signed_out = await revoke_user_tokens(user.id)
     return await clear_login_failures(user.username) and signed_out

@@ -12,6 +12,7 @@ from app.core.database import get_session
 from app.core.ratelimit import revoke_user_tokens
 from app.core.security import hash_password_async
 from app.core.validation_errors import validation_detail
+from app.services.access_keys import revoke_account_keys
 from app.utils.validation import validate_password_strength, validate_username
 from shared.logging import get_logger
 from shared.models.project import Project
@@ -171,6 +172,8 @@ async def update_user(
     }
     for field, value in moved.items():
         setattr(user, field, value)
+    if moved.get("is_active") is False:
+        await revoke_account_keys(session, user.id)
     await session.commit()
     if moved:
         await revoke_user_tokens(user.id)

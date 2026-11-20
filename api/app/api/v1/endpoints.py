@@ -60,7 +60,7 @@ async def open_scan(
 ScanId = Annotated[UUID, Depends(open_scan)]
 
 
-@router.post("/search", response_model=EndpointPage)
+@router.post("/search", summary="Search endpoints", response_model=EndpointPage)
 async def search_endpoints(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -93,7 +93,11 @@ class EndpointCountRequest(QueryCountRequest):
     filter: EndpointFilter | None = None
 
 
-@router.post("/search/counts", response_model=QueryCounts)
+@router.post(
+    "/search/counts",
+    summary="Endpoint counts for several queries",
+    response_model=QueryCounts,
+)
 async def endpoint_counts(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -113,7 +117,9 @@ async def endpoint_leads(
     return await service.leads(scope, body)
 
 
-@router.post("/search/groups", response_model=QueryGroups)
+@router.post(
+    "/search/groups", summary="Endpoints grouped by a field", response_model=QueryGroups
+)
 async def endpoint_groups(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -124,7 +130,9 @@ async def endpoint_groups(
     return await service.groups(scope, body, group_by)
 
 
-@router.post("/tree", response_model=EndpointTree)
+@router.post(
+    "/tree", summary="Endpoints as a directory tree", response_model=EndpointTree
+)
 async def endpoint_tree(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -165,7 +173,11 @@ async def endpoint_verify_branch(
     return await service.verify_branch(scan_id, body)
 
 
-@router.post("/gone", response_model=GonePage)
+@router.post(
+    "/gone",
+    summary="Endpoints absent from a scan that earlier runs found",
+    response_model=GonePage,
+)
 async def endpoint_gone(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -175,7 +187,11 @@ async def endpoint_gone(
     return await service.gone(scan_id, body)
 
 
-@router.get("/facets", response_model=EndpointFacets)
+@router.get(
+    "/facets",
+    summary="Facet values and counts for endpoints",
+    response_model=EndpointFacets,
+)
 async def endpoint_facets(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -194,7 +210,11 @@ async def endpoint_facets(
     )
 
 
-@router.get("/summary", response_model=EndpointSummary)
+@router.get(
+    "/summary",
+    summary="Endpoint counts by class and source",
+    response_model=EndpointSummary,
+)
 async def endpoint_summary(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
@@ -249,7 +269,11 @@ async def endpoint_structure(
     )
 
 
-@router.get("/{endpoint_id}", response_model=EndpointDetail)
+@router.get(
+    "/{endpoint_id}",
+    summary="One endpoint with its response",
+    response_model=EndpointDetail,
+)
 async def get_endpoint(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],

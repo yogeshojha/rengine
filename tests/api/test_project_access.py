@@ -61,6 +61,10 @@ INSTANCE: frozenset[tuple[str, str]] = frozenset(
     {
         ("GET", "/"),
         ("GET", "/auth/me"),
+        ("GET", "/access-keys"),
+        ("POST", "/access-keys"),
+        ("DELETE", "/access-keys/{key_id}"),
+        ("GET", "/reference"),
         ("POST", "/projects"),
         ("POST", "/auth/change-password"),
         ("POST", "/auth/change-username"),
@@ -772,11 +776,13 @@ async def test_project_creation_needs_the_right_and_makes_a_member(
     granted = await estate.member(estate.project_id, can_create_projects=True)
 
     refused = await _refused(
-        projects_api.create_project(ProjectCreate(name="Nope"), plain, flush_only)
+        projects_api.create_project(
+            ProjectCreate(name="Nope"), plain, flush_only, _Request()
+        )
     )
     assert refused.status_code == 403
     made = await projects_api.create_project(
-        ProjectCreate(name="Mine"), granted, flush_only
+        ProjectCreate(name="Mine"), granted, flush_only, _Request()
     )
     assert made.id in await member_projects(flush_only, granted)
 

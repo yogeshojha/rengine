@@ -139,7 +139,7 @@ def note_filter(
 Filtered = Annotated[NoteFilter, Depends(note_filter)]
 
 
-@router.get("", response_model=Page[NoteRead])
+@router.get("", summary="Notes of a project", response_model=Page[NoteRead])
 async def list_notes(
     _current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
@@ -169,7 +169,9 @@ async def note_facets(
     return await service.facets(project_id, f, asset_query=asset_q)
 
 
-@router.get("/tags", response_model=list[NoteTagCount])
+@router.get(
+    "/tags", summary="Note tags and their counts", response_model=list[NoteTagCount]
+)
 async def list_note_tags(
     _current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
@@ -179,7 +181,7 @@ async def list_note_tags(
     return await service.tags(project_id, prefix=q)
 
 
-@router.get("/{note_id}", response_model=NoteRead)
+@router.get("/{note_id}", summary="One note", response_model=NoteRead)
 async def get_note(
     note_id: UUID,
     _current_user: CurrentUser,
@@ -189,7 +191,12 @@ async def get_note(
     return await service.get(note_id=note_id, project_id=project_id)
 
 
-@router.post("", response_model=NoteRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    summary="Add a note",
+    response_model=NoteRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_note(
     data: NoteCreate,
     current_user: CurrentUser,
@@ -201,7 +208,7 @@ async def create_note(
     )
 
 
-@router.patch("/{note_id}", response_model=NoteRead)
+@router.patch("/{note_id}", summary="Edit a note", response_model=NoteRead)
 async def update_note(
     note_id: UUID,
     data: NoteUpdate,
@@ -214,7 +221,9 @@ async def update_note(
     )
 
 
-@router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{note_id}", summary="Delete a note", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_note(
     note_id: UUID,
     current_user: CurrentUser,

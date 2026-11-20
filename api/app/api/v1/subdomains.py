@@ -55,7 +55,9 @@ def get_service(
     return SubdomainService(session)
 
 
-@router.post("/search", response_model=SubdomainSearchResult)
+@router.post(
+    "/search", summary="Search web assets", response_model=SubdomainSearchResult
+)
 async def search_subdomains(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -79,7 +81,11 @@ class SubdomainCountRequest(QueryCountRequest):
     filter: SubdomainFilter | None = None
 
 
-@router.post("/search/counts", response_model=QueryCounts)
+@router.post(
+    "/search/counts",
+    summary="Web asset counts for several queries",
+    response_model=QueryCounts,
+)
 async def subdomain_search_counts(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -114,7 +120,11 @@ async def subdomain_search_leads(
     return await service.leads(project_id=project_id, scope=scope, f=body)
 
 
-@router.post("/search/groups", response_model=QueryGroups)
+@router.post(
+    "/search/groups",
+    summary="Web assets grouped by a field",
+    response_model=QueryGroups,
+)
 async def subdomain_search_groups(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -187,7 +197,11 @@ async def subdomain_correlation_graph(
     )
 
 
-@router.get("/facets", response_model=SubdomainFacets)
+@router.get(
+    "/facets",
+    summary="Facet values and counts for web assets",
+    response_model=SubdomainFacets,
+)
 async def subdomain_facets(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -204,7 +218,11 @@ async def subdomain_facets(
     )
 
 
-@router.get("/tech", response_model=list[Facet])
+@router.get(
+    "/tech",
+    summary="Technologies and their web asset counts",
+    response_model=list[Facet],
+)
 async def subdomain_tech(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -243,7 +261,9 @@ async def subdomain_insights(
     )
 
 
-@router.get("/hygiene", response_model=HygieneSummary)
+@router.get(
+    "/hygiene", summary="Web hygiene check results", response_model=HygieneSummary
+)
 async def subdomain_hygiene(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -260,7 +280,9 @@ async def subdomain_hygiene(
     )
 
 
-@router.get("/posture", response_model=HygieneSummary)
+@router.get(
+    "/posture", summary="Domain posture check results", response_model=HygieneSummary
+)
 async def subdomain_posture(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
@@ -291,7 +313,11 @@ async def subdomain_correlation(
     return await service.correlation(project_id=project_id, scope=scope, name=name)
 
 
-@router.post("/timeline", response_model=TimelineSearchResult)
+@router.post(
+    "/timeline",
+    summary="Web assets across recent runs",
+    response_model=TimelineSearchResult,
+)
 async def subdomain_timeline(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],

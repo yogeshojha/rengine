@@ -6,9 +6,16 @@ import {
 	type McpSession,
 	type McpToken
 } from '$lib/types/mcp';
-import { formatClock, MS_PER_DAY } from '$lib/utilities/dates';
+import {
+	EXPIRY_WARN_DAYS,
+	expiresSoon,
+	formatClock,
+	MS_PER_DAY,
+	type ExpiryTone
+} from '$lib/utilities/dates';
 import { formatMilliseconds } from '$lib/utilities/format';
 import { safeHref } from '$lib/utilities/links';
+import { plural } from '$lib/utilities/strings';
 
 const HOUR_MS = 3_600_000;
 
@@ -16,7 +23,6 @@ export const MCP_POLL_MS = 10_000;
 export const CONNECT_POLL_MS = 2_000;
 export const BURST_GAP_MS = 5 * 60_000;
 export const SESSION_LIVE_MS = 60_000;
-export const EXPIRY_WARN_DAYS = 7;
 export const TRAIL_CAP = 200;
 
 export interface ClientInfo {
@@ -117,13 +123,10 @@ export const timeOfDay = (iso: string) => formatClock(iso);
 
 export const timeWithSeconds = (iso: string) => formatClock(iso, true);
 
-export type ExpiryTone = 'none' | 'soon' | 'expired';
-
 export function expiryTone(token: McpToken): ExpiryTone {
 	if (token.revoked || !token.expires_at) return 'none';
 	if (token.expired) return 'expired';
-	const days = (new Date(token.expires_at).getTime() - Date.now()) / MS_PER_DAY;
-	return days <= EXPIRY_WARN_DAYS ? 'soon' : 'none';
+	return expiresSoon(token.expires_at) ? 'soon' : 'none';
 }
 
 export function expiryLabel(token: McpToken): string {
@@ -133,7 +136,7 @@ export function expiryLabel(token: McpToken): string {
 	const days = Math.floor(diff / MS_PER_DAY);
 	const hours = Math.max(1, Math.floor(diff / HOUR_MS));
 	if (days < 1) return `In ${formatMilliseconds(hours * HOUR_MS)}`;
-	if (days <= EXPIRY_WARN_DAYS) return `In ${days} day${days === 1 ? '' : 's'}`;
+	if (days <= EXPIRY_WARN_DAYS) return `In ${plural(days, 'day')}`;
 	return new Date(token.expires_at).toLocaleDateString('en-US', {
 		month: 'short',
 		day: 'numeric',

@@ -1,6 +1,19 @@
 import { plural } from '$lib/utilities/strings';
 
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
+export const EXPIRY_WARN_DAYS = 7;
+
+/** True when a credential expires within EXPIRY_WARN_DAYS. */
+export const expiresSoon = (iso: string, now = Date.now()): boolean =>
+	(new Date(iso).getTime() - now) / MS_PER_DAY <= EXPIRY_WARN_DAYS;
+
+export type ExpiryTone = 'none' | 'soon' | 'expired';
+
+export const EXPIRY_TONE_CLASS: Readonly<Record<ExpiryTone, string>> = {
+	none: '',
+	soon: 'text-warning',
+	expired: 'text-destructive'
+};
 
 /** UTC calendar days from the day of `since` through today, as `YYYY-MM-DD`. */
 export function utcDaysSince(since: string, now = Date.now()): string[] {

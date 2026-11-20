@@ -41,7 +41,7 @@ def get_service(
     return PortService(session)
 
 
-@router.post("/search", response_model=ServicePage)
+@router.post("/search", summary="Search services", response_model=ServicePage)
 async def search_services(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
@@ -74,7 +74,11 @@ class ServiceCountRequest(QueryCountRequest):
     filter: ServiceFilter | None = None
 
 
-@router.post("/search/counts", response_model=QueryCounts)
+@router.post(
+    "/search/counts",
+    summary="Service counts for several queries",
+    response_model=QueryCounts,
+)
 async def service_counts(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
@@ -94,7 +98,9 @@ async def service_leads(
     return await service.leads(scope, body)
 
 
-@router.post("/search/groups", response_model=QueryGroups)
+@router.post(
+    "/search/groups", summary="Services grouped by a field", response_model=QueryGroups
+)
 async def service_groups(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
@@ -105,7 +111,11 @@ async def service_groups(
     return await service.groups(scope, body, group_by)
 
 
-@router.get("/facets", response_model=ServiceFacets)
+@router.get(
+    "/facets",
+    summary="Facet values and counts for services",
+    response_model=ServiceFacets,
+)
 async def service_facets(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
@@ -138,7 +148,11 @@ async def service_ai(
     )
 
 
-@router.get("/origins", response_model=OriginExposure)
+@router.get(
+    "/origins",
+    summary="Origin addresses reachable behind a CDN",
+    response_model=OriginExposure,
+)
 async def origin_exposure(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -156,7 +170,9 @@ async def origin_exposure(
     )
 
 
-@router.get("/exposure", response_model=ScanExposure)
+@router.get(
+    "/exposure", summary="Exposed services by class", response_model=ScanExposure
+)
 async def scan_exposure(
     _current_user: CurrentUser,
     service: Annotated[PortService, Depends(get_service)],
@@ -172,7 +188,11 @@ async def scan_exposure(
     )
 
 
-@router.post("/timeline", response_model=ServiceTimelineResult)
+@router.post(
+    "/timeline",
+    summary="Services across recent runs",
+    response_model=ServiceTimelineResult,
+)
 async def service_timeline(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],

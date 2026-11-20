@@ -1,11 +1,12 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from sqlalchemy.exc import DBAPIError
 
+from app.api.deps import access_key_gate
 from app.api.router import router as api_router
 from app.config import API_V1_PREFIX, settings
 from app.core import ai_ledger
@@ -51,6 +52,7 @@ app = FastAPI(
     title=APP_NAME,
     version=APP_VERSION,
     lifespan=lifespan,
+    dependencies=[Depends(access_key_gate)],
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
     openapi_url="/openapi.json" if settings.DEBUG else None,

@@ -5,7 +5,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import RungMeter from '$lib/components/access/rung-meter.svelte';
 	import Hint from '$lib/components/hint.svelte';
-	import { relativeTime } from '$lib/utilities/dates';
+	import { EXPIRY_TONE_CLASS, relativeTime } from '$lib/utilities/dates';
+	import { plural } from '$lib/utilities/strings';
 	import { expiryLabel, expiryTone, parseClient, presenceOf } from '$lib/utilities/mcp';
 	import {
 		AGENT_PRESENCE_DOT,
@@ -110,20 +111,13 @@
 				{#if token.last_used_at}
 					{relativeTime(token.last_used_at)}
 					<div class="text-2xs text-muted-foreground tabular-nums">
-						{token.calls.toLocaleString()} call{token.calls === 1 ? '' : 's'}
+						{plural(token.calls, 'call')}
 					</div>
 				{:else}
 					<span class="text-muted-foreground">Unused</span>
 				{/if}
 			</div>
-			<div
-				class="{AGENT_COL.expires} text-sm leading-5 {tone === 'soon'
-					? 'text-warning'
-					: tone === 'expired'
-						? 'text-destructive'
-						: ''}"
-				role="cell"
-			>
+			<div class="{AGENT_COL.expires} text-sm leading-5 {EXPIRY_TONE_CLASS[tone]}" role="cell">
 				{#if token.revoked}
 					<span class="text-muted-foreground">Revoked</span>
 				{:else}

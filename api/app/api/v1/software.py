@@ -25,7 +25,11 @@ def get_service(
     return SoftwareService(session)
 
 
-@router.post("/search", response_model=SoftwarePage)
+@router.post(
+    "/search",
+    summary="Search software CVEs inferred from versions",
+    response_model=SoftwarePage,
+)
 async def search_software(
     _current_user: CurrentUser,
     service: Annotated[SoftwareService, Depends(get_service)],
@@ -44,7 +48,11 @@ async def search_software(
     )
 
 
-@router.post("/search/counts", response_model=QueryCounts)
+@router.post(
+    "/search/counts",
+    summary="Software CVE counts for several queries",
+    response_model=QueryCounts,
+)
 async def software_search_counts(
     _current_user: CurrentUser,
     service: Annotated[SoftwareService, Depends(get_service)],

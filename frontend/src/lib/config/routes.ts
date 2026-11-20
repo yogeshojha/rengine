@@ -54,7 +54,8 @@ export const routeLabels: Record<string, string> = {
 	ai: 'AI',
 	users: 'Users',
 
-	profile: 'Profile'
+	profile: 'Profile',
+	'api-reference': 'API reference'
 };
 
 export const SETTINGS_SECTIONS = [
@@ -72,6 +73,14 @@ export const ADMIN_SETTINGS: readonly SettingsSection[] = [
 	'notifications',
 	'users'
 ];
+
+export const PROFILE_TABS = ['account', 'two-factor', 'access-keys'] as const;
+export type ProfileTab = (typeof PROFILE_TABS)[number];
+export const PROFILE_TAB_LABELS: Record<ProfileTab, string> = {
+	account: 'Account',
+	'two-factor': 'Two-factor',
+	'access-keys': 'Access keys'
+};
 
 export const BOUNTY_HUB_TABS = ['watching', 'programs', 'updates'] as const;
 export type BountyHubTab = (typeof BOUNTY_HUB_TABS)[number];
@@ -109,6 +118,8 @@ export const ROUTES = {
 	},
 	onboarding: '/onboarding',
 	profile: '/profile',
+	profileTab: (tab: ProfileTab) => (tab === PROFILE_TABS[0] ? '/profile' : `/profile?tab=${tab}`),
+	apiReference: '/profile/api-reference',
 	targets: '/targets',
 	target: (id: string, tab?: string) => (tab ? `/targets/${id}?tab=${tab}` : `/targets/${id}`),
 	scans: '/scans',

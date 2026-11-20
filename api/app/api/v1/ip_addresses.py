@@ -28,7 +28,7 @@ def get_service(
     return IpAddressService(session)
 
 
-@router.post("/search", response_model=IpGroupPage)
+@router.post("/search", summary="Search IP addresses", response_model=IpGroupPage)
 async def ip_search(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
@@ -61,7 +61,11 @@ class IpCountRequest(QueryCountRequest):
     filter: IpGroupFilter | None = None
 
 
-@router.post("/search/counts", response_model=QueryCounts)
+@router.post(
+    "/search/counts",
+    summary="IP address counts for several queries",
+    response_model=QueryCounts,
+)
 async def ip_search_counts(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
@@ -71,7 +75,11 @@ async def ip_search_counts(
     return await service.counts(scope, body.queries, body.filter)
 
 
-@router.post("/search/leads", response_model=QueryLeads)
+@router.post(
+    "/search/leads",
+    summary="Suggested IP address queries with counts",
+    response_model=QueryLeads,
+)
 async def ip_search_leads(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
@@ -81,7 +89,11 @@ async def ip_search_leads(
     return await service.leads(scope=scope, f=body)
 
 
-@router.post("/search/groups", response_model=QueryGroups)
+@router.post(
+    "/search/groups",
+    summary="IP addresses grouped by a field",
+    response_model=QueryGroups,
+)
 async def ip_search_groups(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],
@@ -92,7 +104,11 @@ async def ip_search_groups(
     return await service.groups(scope=scope, f=body, key=group_by)
 
 
-@router.get("/facets", response_model=IpFacets)
+@router.get(
+    "/facets",
+    summary="Facet values and counts for IP addresses",
+    response_model=IpFacets,
+)
 async def ip_facets(
     _current_user: CurrentUser,
     service: Annotated[IpAddressService, Depends(get_service)],

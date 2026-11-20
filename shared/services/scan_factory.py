@@ -76,6 +76,7 @@ def build_scan_for_target_sync(
     schedule_id: uuid.UUID | None = None,
     schedule_type: str | None = None,
     intensity: str | None = None,
+    as_key: bool = False,
 ) -> Scan:
     """Resolve engine/context/target on a sync Session and flush a PENDING Scan."""
     from shared.models.scan_context import ScanContext  # noqa: PLC0415
@@ -98,7 +99,7 @@ def build_scan_for_target_sync(
         engine=engine,
         context=context,
         user_id=created_by,
-        superuser=superuser_of_sync(session, created_by),
+        superuser=not as_key and superuser_of_sync(session, created_by),
     )
     if problem:
         raise ScanFactoryError(problem)

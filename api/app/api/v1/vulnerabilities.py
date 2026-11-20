@@ -56,7 +56,7 @@ def _check_state(state: str) -> None:
         )
 
 
-@router.post("/search", response_model=VulnerabilityPage)
+@router.post("/search", summary="Search findings", response_model=VulnerabilityPage)
 async def search_vulnerabilities(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -75,7 +75,11 @@ async def search_vulnerabilities(
     )
 
 
-@router.post("/search/issues", response_model=IssuePage)
+@router.post(
+    "/search/issues",
+    summary="Findings grouped into issues by check",
+    response_model=IssuePage,
+)
 async def search_issues(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -99,7 +103,11 @@ class VulnerabilityCountRequest(QueryCountRequest):
     filter: VulnerabilityFilter | None = None
 
 
-@router.post("/search/counts", response_model=QueryCounts)
+@router.post(
+    "/search/counts",
+    summary="Finding counts for several queries",
+    response_model=QueryCounts,
+)
 async def vulnerability_counts(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -119,7 +127,9 @@ async def vulnerability_leads(
     return await service.leads(scope, body)
 
 
-@router.post("/search/groups", response_model=QueryGroups)
+@router.post(
+    "/search/groups", summary="Findings grouped by a field", response_model=QueryGroups
+)
 async def vulnerability_groups(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -154,7 +164,11 @@ async def finding_timeline(
     )
 
 
-@router.get("/facets", response_model=VulnerabilityFacets)
+@router.get(
+    "/facets",
+    summary="Facet values and counts for findings",
+    response_model=VulnerabilityFacets,
+)
 async def vulnerability_facets(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -170,7 +184,11 @@ async def vulnerability_facets(
     )
 
 
-@router.get("/overview", response_model=ScanVulnerabilities)
+@router.get(
+    "/overview",
+    summary="Finding counts by severity",
+    response_model=ScanVulnerabilities,
+)
 async def vulnerability_overview(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -186,7 +204,11 @@ async def vulnerability_overview(
     )
 
 
-@router.get("/coverage", response_model=list[CoverageRead])
+@router.get(
+    "/coverage",
+    summary="Vulnerability scan coverage by tier",
+    response_model=list[CoverageRead],
+)
 async def vulnerability_coverage(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -195,7 +217,11 @@ async def vulnerability_coverage(
     return await service.coverage(scope)
 
 
-@router.get("/{vulnerability_id}", response_model=VulnerabilityRead)
+@router.get(
+    "/{vulnerability_id}",
+    summary="One finding with its request and response",
+    response_model=VulnerabilityRead,
+)
 async def get_vulnerability(
     _current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -210,7 +236,11 @@ async def get_vulnerability(
     return found
 
 
-@router.post("/triage/bulk", response_model=BulkTriageResult)
+@router.post(
+    "/triage/bulk",
+    summary="Set the triage state of several findings",
+    response_model=BulkTriageResult,
+)
 async def triage_many(
     current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],
@@ -221,7 +251,11 @@ async def triage_many(
     return await service.triage_many(scope, body, current_user.id)
 
 
-@router.patch("/triage/{fingerprint}", response_model=TriageResult)
+@router.patch(
+    "/triage/{fingerprint}",
+    summary="Set the triage state of a finding",
+    response_model=TriageResult,
+)
 async def triage_vulnerability(
     current_user: CurrentUser,
     service: Annotated[VulnerabilityService, Depends(get_service)],

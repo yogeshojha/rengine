@@ -27,7 +27,11 @@ from shared.models.scan_schedule import (
     ScheduleTargetRef,
 )
 from shared.models.target import Target
-from shared.services.credential_access import launch_refusal, superuser_of
+from shared.services.credential_access import (
+    held_as_key,
+    launch_refusal,
+    superuser_of,
+)
 from shared.services.schedule_timing import compute_next_run_at, describe_schedule
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
@@ -270,6 +274,7 @@ class ScanScheduleService:
             timezone=tz,
             status=ScheduleStatus.ACTIVE.value,
             created_by=created_by,
+            created_with_key=held_as_key(self.session, created_by),
         )
         self._apply_timing(sched, data, tz)
         sched.next_run_at = compute_next_run_at(sched)
@@ -315,6 +320,10 @@ class ScanScheduleService:
                 project_id,
             )
             await self._guard(engine, context, actor_id, sched.created_by)
+            if held_as_key(self.session, sched.created_by):
+                sched.created_with_key = True
+            elif actor_id == sched.created_by:
+                sched.created_with_key = False
 
         if data.name is not None:
             sched.name = data.name.strip() or sched.name

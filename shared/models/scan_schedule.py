@@ -3,7 +3,7 @@ from datetime import datetime
 from functools import partial
 
 from pydantic import BaseModel, field_validator
-from sqlalchemy import Column
+from sqlalchemy import Column, text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
@@ -43,6 +43,9 @@ class ScanSchedule(SQLModel, table=True):
     total_run_count: int = Field(default=0)
 
     created_by: uuid.UUID = Field(foreign_key="users.id")
+    created_with_key: bool = Field(
+        default=False, sa_column_kwargs={"server_default": text("false")}
+    )
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
 

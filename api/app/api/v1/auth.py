@@ -42,6 +42,7 @@ from app.core.security import (
     verify_password_async,
 )
 from app.core.validation_errors import validation_detail
+from app.services.access_keys import revoke_account_keys
 from app.utils.validation import (
     MAX_PASSWORD_LENGTH,
     MAX_USERNAME_LENGTH,
@@ -345,6 +346,7 @@ async def change_password(
     current_user.updated_at = utc_now()
 
     session.add(current_user)
+    await revoke_account_keys(session, current_user.id)
     await session.commit()
     await reissue_session(response, current_user)
     logger.info("password changed", user=str(current_user.id))
@@ -376,6 +378,7 @@ async def change_username(
     current_user.updated_at = utc_now()
 
     session.add(current_user)
+    await revoke_account_keys(session, current_user.id)
     try:
         await session.commit()
     except IntegrityError as e:

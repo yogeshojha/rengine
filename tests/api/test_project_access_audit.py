@@ -6,6 +6,7 @@ import asyncio
 import re
 import uuid
 from contextlib import asynccontextmanager
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -46,16 +47,17 @@ async def test_a_members_project_slug_says_nothing_of_other_projects(
     member = await estate.member(estate.project_id, can_create_projects=True)
     admin = await flush_only.get(User, estate.user_id)
 
+    request = SimpleNamespace(state=SimpleNamespace())
     taken = await projects_api.create_project(
-        ProjectCreate(name=hidden.slug), member, flush_only
+        ProjectCreate(name=hidden.slug), member, flush_only, request
     )
     free = await projects_api.create_project(
-        ProjectCreate(name="nothing like it"), member, flush_only
+        ProjectCreate(name="nothing like it"), member, flush_only, request
     )
     assert re.fullmatch(rf"{re.escape(hidden.slug)}-[0-9a-f]{{8}}", taken.slug)
     assert re.fullmatch(r"nothing-like-it-[0-9a-f]{8}", free.slug)
     named = await projects_api.create_project(
-        ProjectCreate(name="Admin Named"), admin, flush_only
+        ProjectCreate(name="Admin Named"), admin, flush_only, request
     )
     assert named.slug == "admin-named"
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -24,26 +24,50 @@ from shared.models.export import Export, ExportCreate, ExportRead
 from shared.models.project import Project
 from shared.models.scan import Scan
 from shared.models.target import Target
+from shared.services.asset_query import QueryScope, QuerySyntaxError
 from shared.services.celery_dispatch import dispatch_export
 from shared.services.surface_query import for_dimension
 from shared.utils.datetime import utc_now
 from shared.utils.files import purge_dir
+from shared.utils.text import scrub
 
 MAX_LIST = 100
 _NOT_QUEUED = "Export not queued. Check that the redis and worker services are running."
 
 
-def _check_filters(dimension: str, filters: dict) -> None:
+def _invalid_filter(field: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail=validation_detail(
+            ["body", "filters"], f"Export filter {field} is not valid."
+        ),
+    )
+
+
+def _refused_field(filters: dict) -> str | None:
+    """The first filter postgres would refuse, if any."""
+    return next((str(k) for k, v in filters.items() if scrub({k: v}) != {k: v}), None)
+
+
+def _check_filters(dimension: str, filters: dict, project_id: UUID) -> None:
+    query = for_dimension(dimension)
+    if refused := _refused_field(filters or {}):
+        raise _invalid_filter(scrub(refused))
     try:
-        for_dimension(dimension).filter_model.model_validate(filters or {})
+        f = query.filter_model.model_validate(filters or {})
     except ValidationError as exc:
         field = ".".join(str(part) for part in exc.errors()[0]["loc"]) or "filters"
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=validation_detail(
-                ["body", "filters"], f"Export filter {field} is not valid."
-            ),
-        ) from None
+        raise _invalid_filter(field) from None
+    try:
+        query.filtered(
+            QueryScope((uuid4(),), project_id=project_id),
+            f,
+            utc_now(),
+            project_id=project_id,
+        )
+    except QuerySyntaxError:
+        field = "q"
+        raise _invalid_filter(field) from None
 
 
 class ExportService:
@@ -64,7 +88,7 @@ class ExportService:
                 detail=f"'{data.export_format}' is not an export format.",
             )
         if data.dimension != BUNDLE:
-            _check_filters(data.dimension, data.filters)
+            _check_filters(data.dimension, data.filters, project_id)
         await self._check_capacity(project_id)
         scope, subject = await self._subject(data, project_id)
 

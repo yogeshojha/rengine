@@ -8,6 +8,8 @@ from starlette.responses import JSONResponse
 from app.config import API_V1_PREFIX, settings
 from app.core.client_ip import client_id
 from app.core.security import ACCESS_TOKEN_COOKIE, TOKEN_TYPE_ACCESS, decode_token
+from app.services.access_keys import owner_of
+from shared.definitions.access_keys import ACCESS_KEY_PREFIX
 from shared.redis import async_client, state_available, state_failed
 
 logger = logging.getLogger(__name__)
@@ -24,12 +26,15 @@ def _session_user(token: str | None) -> str | None:
     return sub if isinstance(sub, str) and sub else None
 
 
-def throttle_identity(request: Request) -> str:
-    """The signed-in user a valid access token names, else the client address."""
+async def throttle_identity(request: Request) -> str:
+    """The signed-in user a session or an access key names, else the client address."""
     header = request.headers.get("authorization", "")
     bearer = (
         header[len(_BEARER) :].strip() if header.lower().startswith(_BEARER) else None
     )
+    if bearer and bearer.startswith(ACCESS_KEY_PREFIX):
+        owner = await owner_of(bearer)
+        return f"user:{owner}" if owner else f"ip:{client_id(request)}"
     for token in (bearer, request.cookies.get(ACCESS_TOKEN_COOKIE)):
         user = _session_user(token)
         if user:
@@ -51,7 +56,7 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
 
         bucket = int(time.time() // 60)
         try:
-            key = f"throttle:{throttle_identity(request)}:{bucket}"
+            key = f"throttle:{await throttle_identity(request)}:{bucket}"
             pipe = async_client().pipeline(transaction=True)
             pipe.incr(key)
             pipe.expire(key, 60, nx=True)

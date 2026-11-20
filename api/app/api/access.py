@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, StreamUser
+from app.api.deps import CurrentUser, StreamUser, key_owner
 from app.core.database import async_db_session, get_session
 from shared.models.project import Project
 from shared.models.user import User
@@ -50,7 +50,7 @@ async def get_access(
 ) -> ProjectSet:
     known, access = _remembered(request, user)
     if not known:
-        access = await member_projects(session, user)
+        access = await member_projects(session, key_owner(request) or user)
         setattr(request.state, _STATE, (user.id, access))
     return access
 
