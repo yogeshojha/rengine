@@ -136,22 +136,17 @@ class WhoisService:
         try:
             raw = self._provider.lookup_domain(domain)
             return parse_domain_response(raw, domain)
-        except RDAPUnsupportedError as e:
-            return self._lookup_domain_port43(domain, e)
+        except RDAPUnsupportedError:
+            return self._lookup_domain_port43(domain)
         except RDAPProviderError as e:
             raise WhoisLookupError(str(e)) from e
 
-    def _lookup_domain_port43(
-        self, domain: str, rdap_error: RDAPUnsupportedError
-    ) -> WhoisResponse:
-        """Fall back to legacy WHOIS for a registry with no RDAP server."""
-        if self._proxy_url:
-            # port 43 cannot ride the egress proxy, and must not bypass it
-            raise WhoisLookupError(str(rdap_error)) from rdap_error
+    def _lookup_domain_port43(self, domain: str) -> WhoisResponse:
+        """Ask the registry's port-43 server."""
         try:
-            raw = port43.lookup_domain(domain)
+            raw = port43.lookup_domain(domain, proxy_url=self._proxy_url)
         except port43.Port43Error as e:
-            msg = f"{rdap_error}; port-43 fallback failed: {e}"
+            msg = f"No RDAP server for .{domain.rsplit('.', 1)[-1]}. {e}"
             raise WhoisLookupError(msg) from e
         return parse_domain_response(raw, domain)
 
