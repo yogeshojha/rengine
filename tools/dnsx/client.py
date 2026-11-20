@@ -16,6 +16,7 @@ from tools.runner.models import CommandRecorder
 
 DNSX_BINARY = "dnsx"
 DEFAULT_TIMEOUT = 120
+DNSX_ALIASES: dict[str, str] = {"-l": "-list", "-j": "-json", "-o": "-output"}
 DEFAULT_RETRY = 3
 DEFAULT_THREADS = 10
 
@@ -44,7 +45,9 @@ class DnsxClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(DNSX_BINARY, default_timeout=timeout)
+            self._runner = CLIToolRunner(
+                DNSX_BINARY, default_timeout=timeout, aliases=DNSX_ALIASES
+            )
         except ToolNotFoundError as e:
             raise DnsxError(str(e)) from e
 

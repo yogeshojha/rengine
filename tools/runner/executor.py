@@ -61,7 +61,7 @@ def _terminate(proc: subprocess.Popen) -> None:
 
 
 def _flag_name(token: str) -> str:
-    return token.split("=", 1)[0]
+    return "-" + token.split("=", 1)[0].lstrip("-")
 
 
 def merge_extra_args(
@@ -71,14 +71,14 @@ def merge_extra_args(
     aliases: dict[str, str] | None = None,
 ) -> list[str]:
     """Tool args, minus any flag the stage already set, under either spelling."""
-    names = aliases or {}
+    names = {_flag_name(k): _flag_name(v) for k, v in (aliases or {}).items()}
 
     def canonical(token: str) -> str:
         name = _flag_name(token)
         return names.get(name, name)
 
     taken = {canonical(a) for a in args if a.startswith("-")} | {
-        names.get(r, r) for r in reserved if r
+        canonical(r) for r in reserved if r
     }
     out: list[str] = []
     skip = False

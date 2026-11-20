@@ -25,6 +25,7 @@ from tools.runner.models import CommandRecorder
 
 NAABU_BINARY = "naabu"
 DEFAULT_TIMEOUT = 3600
+NAABU_ALIASES: dict[str, str] = {"-l": "-list", "-j": "-json", "-o": "-output"}
 SCAN_TYPES = {"connect": "c", "syn": "s"}
 
 
@@ -100,7 +101,9 @@ class NaabuClient:
         self.recorder = recorder
         self._proxy_args, self.proxy_warning = proxy_args(self.options.proxy_url)
         try:
-            self._runner = CLIToolRunner(NAABU_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                NAABU_BINARY, default_timeout=DEFAULT_TIMEOUT, aliases=NAABU_ALIASES
+            )
         except ToolNotFoundError as e:
             raise NaabuError(str(e)) from e
 

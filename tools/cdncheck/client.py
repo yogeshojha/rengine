@@ -5,6 +5,7 @@ from tools.runner.models import CommandRecorder
 
 CDNCHECK_BINARY = "cdncheck"
 DEFAULT_TIMEOUT = 120
+CDNCHECK_ALIASES: dict[str, str] = {"-j": "-jsonl", "-o": "-output"}
 
 
 class CdncheckError(Exception):
@@ -23,7 +24,9 @@ class CdncheckClient:
 
         try:
             self._runner = CLIToolRunner(
-                CDNCHECK_BINARY, default_timeout=DEFAULT_TIMEOUT
+                CDNCHECK_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                aliases=CDNCHECK_ALIASES,
             )
         except ToolNotFoundError as e:
             raise CdncheckError(str(e)) from e

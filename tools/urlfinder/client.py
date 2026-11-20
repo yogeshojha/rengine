@@ -5,6 +5,7 @@ from tools.runner.models import CommandRecorder
 
 URLFINDER_BINARY = "urlfinder"
 DEFAULT_TIMEOUT = 900
+URLFINDER_ALIASES: dict[str, str] = {"-d": "-list", "-j": "-jsonl", "-o": "-output"}
 
 
 class UrlfinderError(Exception):
@@ -29,7 +30,9 @@ class UrlfinderClient:
 
         try:
             self._runner = CLIToolRunner(
-                URLFINDER_BINARY, default_timeout=DEFAULT_TIMEOUT
+                URLFINDER_BINARY,
+                default_timeout=DEFAULT_TIMEOUT,
+                aliases=URLFINDER_ALIASES,
             )
         except ToolNotFoundError as e:
             raise UrlfinderError(str(e)) from e
@@ -42,6 +45,7 @@ class UrlfinderClient:
             args=args,
             use_output_file=False,
             output_format=OutputFormat.PLAIN,
+            json_flag="-jsonl",
             silent=True,
             silent_flag="-silent",
             recorder=self.recorder,

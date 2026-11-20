@@ -16,6 +16,7 @@ from tools.runner import (
 
 FFUF_BINARY = "ffuf"
 DEFAULT_TIMEOUT = 1800
+FFUF_ALIASES: dict[str, str] = {"-silent": "-s"}
 
 # ffuf takes -H only
 HEADER_FLAG = "-H"
@@ -60,7 +61,9 @@ class FfufClient:
         self.extra_args = extra_args or []
 
         try:
-            self._runner = CLIToolRunner(FFUF_BINARY, default_timeout=DEFAULT_TIMEOUT)
+            self._runner = CLIToolRunner(
+                FFUF_BINARY, default_timeout=DEFAULT_TIMEOUT, aliases=FFUF_ALIASES
+            )
         except ToolNotFoundError as e:
             raise FfufError(str(e)) from e
 
