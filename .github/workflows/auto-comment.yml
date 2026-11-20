@@ -20,7 +20,7 @@ jobs:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const { owner, repo } = context.repo;
-            const author = context.payload.sender.login;
+            const author = (context.payload.pull_request || context.payload.issue).user.login;
             const comment = (body) =>
               github.rest.issues.createComment({ issue_number: context.issue.number, owner, repo, body });
 
@@ -51,9 +51,4 @@ jobs:
 
             if (context.payload.pull_request.merged) {
               await comment(`Merged. Thanks for the contribution, @${author}.`);
-            } else {
-              await comment(
-                `Closed without merging. Thanks for the contribution, @${author}. ` +
-                `The issue tracker is the place to raise the change again if it should be reconsidered.`
-              );
             }
