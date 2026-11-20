@@ -70,6 +70,12 @@ from shared.services.ai import AIError, ledger, load_config_async
 from shared.services.ai.agent import CALL, DONE, RESULT, TEXT, AgentEvent, converse
 from shared.services.ai.config import AIConfig
 from shared.services.asset_query import QueryScope
+from shared.services.project_access import (
+    ProjectSet,
+    may_open,
+    member_projects,
+    project_clause,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.text import clip_line, strip_control
 
@@ -148,12 +154,18 @@ class AskService:
         self.session = session
 
     async def threads(
-        self, user_id: uuid.UUID, target_id: uuid.UUID, dimension: str, asset_key: str
+        self,
+        user_id: uuid.UUID,
+        access: ProjectSet,
+        target_id: uuid.UUID,
+        dimension: str,
+        asset_key: str,
     ) -> list[AskThreadRead]:
         stmt = (
             select(AskThread)
             .where(
                 AskThread.user_id == user_id,
+                project_clause(access, AskThread.project_id),
                 AskThread.target_id == target_id,
                 AskThread.dimension == dimension,
                 AskThread.asset_key == asset_key,
@@ -203,9 +215,13 @@ class AskService:
         await self.session.refresh(row)
         return _thread_read(row)
 
-    async def get(self, user_id: uuid.UUID, thread_id: uuid.UUID) -> AskThread | None:
+    async def get(
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
+    ) -> AskThread | None:
         row = await self.session.get(AskThread, thread_id)
         if row is None or row.user_id != user_id:
+            return None
+        if not may_open(access, row.project_id):
             return None
         return row if row.subject == AskSubject.ASSET.value else None
 
@@ -218,9 +234,9 @@ class AskService:
         return list((await self.session.execute(stmt)).scalars().all())
 
     async def detail(
-        self, user_id: uuid.UUID, thread_id: uuid.UUID
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
     ) -> AskThreadDetail | None:
-        row = await self.get(user_id, thread_id)
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             return None
         rows = await self.messages(thread_id)
@@ -229,12 +245,18 @@ class AskService:
         )
 
     async def delete_all(
-        self, user_id: uuid.UUID, target_id: uuid.UUID, dimension: str, asset_key: str
+        self,
+        user_id: uuid.UUID,
+        access: ProjectSet,
+        target_id: uuid.UUID,
+        dimension: str,
+        asset_key: str,
     ) -> int:
         stmt = (
             delete(AskThread)
             .where(
                 AskThread.user_id == user_id,
+                project_clause(access, AskThread.project_id),
                 AskThread.target_id == target_id,
                 AskThread.dimension == dimension,
                 AskThread.asset_key == asset_key,
@@ -245,8 +267,10 @@ class AskService:
         await self.session.commit()
         return gone
 
-    async def delete(self, user_id: uuid.UUID, thread_id: uuid.UUID) -> bool:
-        row = await self.get(user_id, thread_id)
+    async def delete(
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
+    ) -> bool:
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             return False
         await self.session.delete(row)
@@ -389,7 +413,8 @@ async def _open(
     session: AsyncSession, user: User, thread_id: uuid.UUID, question: AskQuestion
 ) -> _Turn | str:
     service = AskService(session)
-    thread = await service.get(user.id, thread_id)
+    access = await member_projects(session, user)
+    thread = await service.get(user.id, thread_id, access)
     if thread is None:
         return "Thread not found."
     cfg = await load_config_async(session)

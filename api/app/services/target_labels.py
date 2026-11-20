@@ -6,7 +6,6 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import noload
 
 from shared.definitions.tripwires import ScopeKind
 from shared.models.bounty_program import BountyProgram
@@ -27,20 +26,6 @@ async def target_counts(
         .group_by(link_column)
     )
     return dict(rows.tuples().all())
-
-
-async def get_label[T](
-    session: AsyncSession, model: type[T], label_id: uuid.UUID, noun: str
-) -> T:
-    options = [noload(model.targets)] if hasattr(model, "targets") else []
-    row = await session.scalar(
-        select(model).where(model.id == label_id).options(*options)
-    )
-    if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"{noun} not found."
-        )
-    return row
 
 
 async def rename(session: AsyncSession, row: Any, name: str, noun: str) -> None:

@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, require_owned
 from app.api.deps import CurrentUser
 from app.api.scope import EndpointScope
 from app.core.database import get_session
@@ -33,6 +34,7 @@ from shared.models.endpoint import (
     VerifyBranchRequest,
     VerifyBranchResponse,
 )
+from shared.models.scan import Scan
 from shared.services.asset_query import lead_cache
 
 router = APIRouter(prefix="/endpoints", tags=["endpoints"])
@@ -44,6 +46,18 @@ def get_service(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> EndpointService:
     return EndpointService(session)
+
+
+async def open_scan(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    access: Access,
+    scan_id: Annotated[UUID, Query(description="Scan ID")],
+) -> UUID:
+    await require_owned(session, access, Scan, scan_id, "Scan")
+    return scan_id
+
+
+ScanId = Annotated[UUID, Depends(open_scan)]
 
 
 @router.post("/search", response_model=EndpointPage)
@@ -145,7 +159,7 @@ async def endpoint_tree_leaves(
 async def endpoint_verify_branch(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scan_id: ScanId,
     body: VerifyBranchRequest,
 ):
     return await service.verify_branch(scan_id, body)
@@ -155,7 +169,7 @@ async def endpoint_verify_branch(
 async def endpoint_gone(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scan_id: ScanId,
     body: EndpointFilter,
 ):
     return await service.gone(scan_id, body)
@@ -214,7 +228,7 @@ async def endpoint_host_brief(
 async def endpoint_coverage(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scan_id: ScanId,
 ):
     return await service.coverage(scan_id)
 
@@ -223,7 +237,7 @@ async def endpoint_coverage(
 async def endpoint_structure(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scan_id: ScanId,
 ):
     return await lead_cache.cached(
         session,
@@ -239,7 +253,7 @@ async def endpoint_structure(
 async def get_endpoint(
     _current_user: CurrentUser,
     service: Annotated[EndpointService, Depends(get_service)],
-    scan_id: Annotated[UUID, Query(description="Scan ID")],
+    scan_id: ScanId,
     endpoint_id: Annotated[UUID, Path(description="Endpoint ID")],
 ):
     row = await service.detail(scan_id, endpoint_id)

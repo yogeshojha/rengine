@@ -48,6 +48,7 @@ from shared.models.api_key import APIKey
 from shared.models.notification_channel import NotificationChannel
 from shared.models.project import Project
 from shared.models.user import User
+from shared.services.project_access import may_open, member_projects
 from shared.utils.crypto import encrypt_secret, try_decrypt
 from shared.utils.datetime import utc_now
 
@@ -56,6 +57,10 @@ logger = get_logger(__name__)
 DRIVERS: dict[str, ModuleType] = {ChannelKind.TELEGRAM.value: telegram_driver}
 PAIRED_MESSAGE = "Paired. Send /help for the command list."
 REVOKED_MESSAGE = "Chat access revoked."
+NOT_A_MEMBER = (
+    "The account is not a member of the project. Add it under Settings, Users, "
+    "Project access."
+)
 
 
 class ChannelConfigError(ValueError):
@@ -363,10 +368,7 @@ class ChannelService:
         if user is None or not user.is_active:
             msg = "The account does not exist or is inactive."
             raise ChannelConfigError(msg)
-        project = await self.session.get(Project, data.project_id)
-        if project is None or not project.is_active:
-            msg = "The project does not exist."
-            raise ChannelConfigError(msg)
+        project = await self._opened_by(user, data.project_id)
 
         cfg = settings.read(await self.row())
         granted = _granted(data.capabilities, cfg.ceiling)
@@ -398,6 +400,16 @@ class ChannelService:
 
         await self._notify(row.external_id, PAIRED_MESSAGE)
         return await self._read(row)
+
+    async def _opened_by(self, user: User, project_id: uuid.UUID) -> Project:
+        project = await self.session.get(Project, project_id)
+        if project is None or not project.is_active:
+            msg = "The project does not exist."
+            raise ChannelConfigError(msg)
+        if not may_open(await member_projects(self.session, user), project.id):
+            msg = NOT_A_MEMBER
+            raise ChannelConfigError(msg)
+        return project
 
     async def block(self, code: str, admin_id: uuid.UUID) -> None:
         request = await pairing.take(self.channel, code)
@@ -439,10 +451,11 @@ class ChannelService:
             msg = "Only an active chat can be changed."
             raise ChannelConfigError(msg)
         if data.project_id is not None:
-            project = await self.session.get(Project, data.project_id)
-            if project is None or not project.is_active:
-                msg = "The project does not exist."
+            user = await self.session.get(User, row.user_id) if row.user_id else None
+            if user is None:
+                msg = "The account does not exist or is inactive."
                 raise ChannelConfigError(msg)
+            await self._opened_by(user, data.project_id)
             row.project_id = data.project_id
         if data.capabilities is not None:
             cfg = settings.read(await self.row())

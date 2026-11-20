@@ -208,6 +208,7 @@ class ToolRunRead(BaseModel):
     pivot: Pivot | None = None
     raw: dict | None = None
     error: str | None = None
+    project_id: str | None = None
     queued_at: str
     started_at: str | None = None
     finished_at: str | None = None

@@ -15,6 +15,11 @@ function createProjectsStore() {
 	let error = $state<string | null>(null);
 	let loadError = $state<string | null>(null);
 	let hasFetched = $state(false);
+	let reconciling: Promise<void> | null = null;
+
+	function forgetStoredSlug() {
+		if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEYS.activeProjectSlug);
+	}
 
 	return {
 		get projects() {
@@ -74,6 +79,27 @@ function createProjectsStore() {
 			await this.fetchProjects();
 		},
 
+		/** Re-read the list and drop an active project it no longer holds. */
+		reconcile(): Promise<void> {
+			if (!hasFetched) return Promise.resolve();
+			reconciling ??= projectsApi
+				.list()
+				.then((listed) => {
+					projects = listed;
+					const kept = listed.find((p) => p.id === activeProject?.id);
+					if (kept) {
+						activeProject = kept;
+						return;
+					}
+					forgetStoredSlug();
+					activeProject = null;
+					if (listed.length) this.setActiveProject(listed[0]);
+				})
+				.catch(() => {})
+				.finally(() => (reconciling = null));
+			return reconciling;
+		},
+
 		setActiveProject(project: Project) {
 			const previousProject = activeProject;
 			activeProject = project;
@@ -104,9 +130,7 @@ function createProjectsStore() {
 			error = null;
 			loadError = null;
 			hasFetched = false;
-			if (typeof window !== 'undefined') {
-				localStorage.removeItem(STORAGE_KEYS.activeProjectSlug);
-			}
+			forgetStoredSlug();
 		}
 	};
 }

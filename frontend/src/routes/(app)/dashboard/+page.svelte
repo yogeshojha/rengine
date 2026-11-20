@@ -62,6 +62,8 @@
 	import { isScoped, type TargetScope } from '$lib/utilities/surface-scope';
 	import { cappedPlural, plural } from '$lib/utilities/strings';
 	import { packedSpans } from '$lib/utilities/bento';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { mayCreateProjects } from '$lib/config/users';
 	import { Severity } from '$lib/config/vulnerabilities';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
@@ -357,7 +359,9 @@
 		<EmptyState
 			icon={FolderOpen}
 			title="No project selected"
-			description="Select or create a project."
+			description={mayCreateProjects(auth.user)
+				? 'Select or create a project.'
+				: 'Select a project.'}
 		/>
 	{:else if dashboardStore.error && !overview}
 		<EmptyState

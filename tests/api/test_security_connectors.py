@@ -196,18 +196,18 @@ async def test_a_scan_of_another_project_is_not_found(estate, now):
     dimension = SurfaceDimension.ENDPOINTS.value
 
     with pytest.raises(HTTPException) as exc:
-        await scope_module.resolve_scope(estate.session, dimension, sid, other)
+        await scope_module.resolve_scope(estate.session, None, dimension, sid, other)
     assert exc.value.status_code == 404
     with pytest.raises(HTTPException):
         await scope_module.resolve_scope(
-            estate.session, dimension, uuid.uuid4(), estate.project_id
+            estate.session, None, dimension, uuid.uuid4(), estate.project_id
         )
 
     own = await scope_module.resolve_scope(
-        estate.session, dimension, sid, estate.project_id
+        estate.session, None, dimension, sid, estate.project_id
     )
     assert own.ids == (sid,)
-    bare = await scope_module.resolve_scope(estate.session, dimension, sid, None)
+    bare = await scope_module.resolve_scope(estate.session, None, dimension, sid, None)
     assert bare.ids == (sid,)
 
 

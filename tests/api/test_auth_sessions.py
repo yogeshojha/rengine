@@ -215,7 +215,7 @@ async def test_a_busy_event_stream_rechecks_its_token(monkeypatch):
     request = SimpleNamespace(is_disconnected=AsyncMock(return_value=False))
     user = SimpleNamespace(id=uuid.uuid4())
     response = await events.event_stream(
-        request, user, "stream-token", channels=SSEChannel.BROADCAST
+        request, user, "stream-token", access=None, channels=SSEChannel.BROADCAST
     )
 
     async def _publish():

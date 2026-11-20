@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId, StreamAccess, require_owned
 from app.api.deps import CurrentUser, StreamUser
 from app.api.scope import TargetFilterDep, VulnScope
 from app.api.v1.events import STREAM_HEADERS
@@ -34,6 +35,7 @@ from shared.models.ask import (
     EstateThreadDetail,
     EstateThreadRead,
 )
+from shared.models.target import Target
 
 router = APIRouter(prefix="/ask", tags=["ask"])
 Session = Annotated[AsyncSession, Depends(get_session)]
@@ -51,7 +53,6 @@ def get_estate(session: Session) -> EstateService:
 
 
 Estate = Annotated[EstateService, Depends(get_estate)]
-ProjectId = Annotated[UUID, Query(description="Project ID")]
 ThreadId = Annotated[UUID, Path(description="Thread ID")]
 BlockId = Annotated[
     str, Path(pattern=BLOCK_ID.pattern, max_length=4, description="Block ID")
@@ -107,12 +108,15 @@ def _dimension(value: str) -> str:
 @router.get("/threads", response_model=list[AskThreadRead])
 async def list_threads(
     user: CurrentUser,
+    access: Access,
     service: Service,
     target_id: Annotated[UUID, Query(description="Target ID")],
     asset_key: AssetKey,
     dimension: Dimension = SurfaceDimension.VULNERABILITIES.value,
 ):
-    return await service.threads(user.id, target_id, _dimension(dimension), asset_key)
+    return await service.threads(
+        user.id, access, target_id, _dimension(dimension), asset_key
+    )
 
 
 @router.post(
@@ -122,7 +126,7 @@ async def create_thread(
     data: AskThreadCreate,
     user: CurrentUser,
     service: Service,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(user.id, project_id, data)
 
@@ -130,14 +134,16 @@ async def create_thread(
 @router.delete("/threads")
 async def delete_threads(
     user: CurrentUser,
+    access: Access,
     service: Service,
     target_id: Annotated[UUID, Query(description="Target ID")],
     asset_key: AssetKey,
     dimension: Dimension = SurfaceDimension.VULNERABILITIES.value,
 ) -> dict[str, int]:
+    await require_owned(service.session, access, Target, target_id, "Target")
     return {
         "deleted": await service.delete_all(
-            user.id, target_id, _dimension(dimension), asset_key
+            user.id, access, target_id, _dimension(dimension), asset_key
         )
     }
 
@@ -145,10 +151,11 @@ async def delete_threads(
 @router.get("/threads/{thread_id}", response_model=AskThreadDetail)
 async def get_thread(
     user: CurrentUser,
+    access: Access,
     service: Service,
     thread_id: Annotated[UUID, Path(description="Thread ID")],
 ):
-    found = await service.detail(user.id, thread_id)
+    found = await service.detail(user.id, thread_id, access)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
     return found
@@ -157,10 +164,11 @@ async def get_thread(
 @router.delete("/threads/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_thread(
     user: CurrentUser,
+    access: Access,
     service: Service,
     thread_id: Annotated[UUID, Path(description="Thread ID")],
 ):
-    if not await service.delete(user.id, thread_id):
+    if not await service.delete(user.id, thread_id, access):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
 
 
@@ -168,10 +176,11 @@ async def delete_thread(
 async def ask(
     data: AskQuestion,
     user: StreamUser,
+    access: StreamAccess,
     thread_id: Annotated[UUID, Path(description="Thread ID")],
 ):
     async with async_db_session() as session:
-        owned = await AskService(session).get(user.id, thread_id) is not None
+        owned = await AskService(session).get(user.id, thread_id, access) is not None
     if not owned:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
     return StreamingResponse(
@@ -234,16 +243,20 @@ async def create_estate_thread(
 
 
 @router.get("/estate/threads/{thread_id}", response_model=EstateThreadDetail)
-async def get_estate_thread(user: CurrentUser, service: Estate, thread_id: ThreadId):
-    found = await service.detail(user.id, thread_id)
+async def get_estate_thread(
+    user: CurrentUser, access: Access, service: Estate, thread_id: ThreadId
+):
+    found = await service.detail(user.id, thread_id, access)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
     return found
 
 
 @router.get("/estate/threads/{thread_id}/blocks", response_model=list[BlockData])
-async def estate_blocks(user: CurrentUser, service: Estate, thread_id: ThreadId):
-    found = await service.blocks(user.id, thread_id)
+async def estate_blocks(
+    user: CurrentUser, access: Access, service: Estate, thread_id: ThreadId
+):
+    found = await service.blocks(user.id, thread_id, access)
     if found is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
     return found
@@ -252,12 +265,13 @@ async def estate_blocks(user: CurrentUser, service: Estate, thread_id: ThreadId)
 @router.get("/estate/threads/{thread_id}/blocks/{block_id}", response_model=BlockData)
 async def estate_block_page(
     user: CurrentUser,
+    access: Access,
     service: Estate,
     thread_id: ThreadId,
     block_id: BlockId,
     offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
 ):
-    return await service.page(user.id, thread_id, block_id, offset)
+    return await service.page(user.id, thread_id, access, block_id, offset)
 
 
 @router.put(
@@ -266,23 +280,28 @@ async def estate_block_page(
 async def edit_estate_block(
     data: BlockQueryEdit,
     user: CurrentUser,
+    access: Access,
     service: Estate,
     thread_id: ThreadId,
     block_id: BlockId,
 ):
-    return await service.edit(user.id, thread_id, block_id, data.query)
+    return await service.edit(user.id, thread_id, access, block_id, data.query)
 
 
 @router.delete("/estate/threads/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_estate_thread(user: CurrentUser, service: Estate, thread_id: ThreadId):
-    if not await service.delete(user.id, thread_id):
+async def delete_estate_thread(
+    user: CurrentUser, access: Access, service: Estate, thread_id: ThreadId
+):
+    if not await service.delete(user.id, thread_id, access):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
 
 
 @router.post("/estate/threads/{thread_id}/messages")
-async def ask_estate(data: EstateQuestion, user: StreamUser, thread_id: ThreadId):
+async def ask_estate(
+    data: EstateQuestion, user: StreamUser, access: StreamAccess, thread_id: ThreadId
+):
     async with async_db_session() as session:
-        owned = await EstateService(session).get(user.id, thread_id) is not None
+        owned = await EstateService(session).get(user.id, thread_id, access) is not None
     if not owned:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Thread not found.")
     return StreamingResponse(

@@ -5,15 +5,18 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from pydantic import ValidationError
-from sqlalchemy import tuple_
+from sqlalchemy import ColumnElement, and_, exists, func, or_, true, tuple_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from shared.enums.api_key import APIProvider
 from shared.logging import get_logger
+from shared.models.target import Target
 from shared.models.viewdns import ViewDNSCache
+from shared.models.whois import WhoisNameserver, WhoisRecord
 from shared.services.api_key.async_api_key import APIKeyService
+from shared.services.project_access import ProjectSet, project_clause
 from shared.utils.datetime import utc_now
 from tools.viewdns.client import (
     ViewDNSAPIError,
@@ -36,6 +39,7 @@ from tools.viewdns.parser import (
     parse_reverse_ns,
     parse_reverse_whois,
 )
+from tools.whois.service import record_visible
 
 logger = get_logger(__name__)
 
@@ -58,6 +62,40 @@ def domains_of(response: ViewDNSResponse) -> list[str]:
     return []
 
 
+def cache_visible(access: ProjectSet) -> ColumnElement[bool]:
+    """Every cached lookup for an administrator, else one whose value an open project holds."""
+    if access is None:
+        return true()
+    held = record_visible(access)
+    value = ViewDNSCache.query_value
+    address = exists(
+        select(Target.id).where(
+            func.lower(Target.target_value) == value,
+            project_clause(access, Target.project_id),
+        )
+    )
+    registrant = exists(
+        select(WhoisRecord.id).where(
+            held,
+            or_(
+                func.btrim(WhoisRecord.registrant_name) == value,
+                func.btrim(WhoisRecord.registrant_email) == value,
+            ),
+        )
+    )
+    nameserver = exists(
+        select(WhoisNameserver.whois_record_id)
+        .join(WhoisRecord, WhoisRecord.id == WhoisNameserver.whois_record_id)
+        .where(held, WhoisNameserver.nameserver == value)
+    )
+    kind = ViewDNSCache.lookup_type
+    return or_(
+        and_(kind == ViewDNSLookupType.REVERSE_IP.value, address),
+        and_(kind == ViewDNSLookupType.REVERSE_WHOIS.value, registrant),
+        and_(kind == ViewDNSLookupType.REVERSE_NS.value, nameserver),
+    )
+
+
 class ViewDNSError(Exception):
     """Base exception for ViewDNS service errors."""
 
@@ -71,8 +109,9 @@ class ViewDNSLookupError(ViewDNSError):
 
 
 class ViewDNSService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, access: ProjectSet) -> None:
         self._session = session
+        self._visible = cache_visible(access)
         self._api_key_service = APIKeyService(session)
 
     def _is_fresh(self, record: ViewDNSCache) -> bool:
@@ -134,6 +173,7 @@ class ViewDNSService:
             select(ViewDNSCache).where(
                 ViewDNSCache.lookup_type == lookup_type.value,
                 ViewDNSCache.query_value == query_value,
+                self._visible,
             )
         )
         return result.scalar_one_or_none()
@@ -255,7 +295,8 @@ class ViewDNSService:
                 select(ViewDNSCache).where(
                     tuple_(ViewDNSCache.lookup_type, ViewDNSCache.query_value).in_(
                         list(keys)
-                    )
+                    ),
+                    self._visible,
                 )
             )
             for record in rows.scalars():

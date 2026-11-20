@@ -17,6 +17,7 @@ from shared.models.target import (
     TargetImportRequest,
     TargetValidationBatch,
 )
+from shared.services.project_access import EVERY_PROJECT
 
 pytestmark = pytest.mark.api
 
@@ -44,7 +45,9 @@ async def test_a_long_value_imports_without_a_display_name(session, estate, serv
     slug = await _slug(session, estate)
 
     result = await service.bulk_create_targets(
-        TargetBulkCreate(project_slug=slug, targets=[LONG]), str(estate.user_id)
+        TargetBulkCreate(project_slug=slug, targets=[LONG]),
+        str(estate.user_id),
+        access=EVERY_PROJECT,
     )
 
     assert result.imported == 1
@@ -58,6 +61,7 @@ async def test_an_overlong_value_fails_alone(session, estate, service):
     result = await service.bulk_create_targets(
         TargetBulkCreate(project_slug=slug, targets=[TOO_LONG, "example.org"]),
         str(estate.user_id),
+        access=EVERY_PROJECT,
     )
 
     assert (result.imported, result.failed) == (1, 1)
@@ -74,7 +78,9 @@ async def test_an_overlong_display_name_fails_alone(session, estate, service):
         ],
     )
 
-    result = await service.import_targets_structured(request, str(estate.user_id))
+    result = await service.import_targets_structured(
+        request, str(estate.user_id), access=EVERY_PROJECT
+    )
 
     assert (result.imported, result.failed) == (1, 1)
 
@@ -89,7 +95,7 @@ async def test_batch_validation_answers_every_value_in_order(service):
     values = [" Example.COM ", "not a target", "example.com"]
 
     answers = await validate_target_batch(
-        TargetValidationBatch(values=values), None, service
+        TargetValidationBatch(values=values), None, EVERY_PROJECT, service
     )
 
     assert [a.valid for a in answers] == [True, False, True]
@@ -117,6 +123,7 @@ async def test_batch_validation_names_the_projects_existing_target(
             project_slug=slug,
         ),
         None,
+        EVERY_PROJECT,
         service,
     )
 
@@ -129,7 +136,7 @@ async def test_batch_validation_without_a_project_matches_nothing(
     await estate.target("example.com")
 
     answers = await validate_target_batch(
-        TargetValidationBatch(values=["example.com"]), None, service
+        TargetValidationBatch(values=["example.com"]), None, EVERY_PROJECT, service
     )
 
     assert answers[0].target_id is None
@@ -140,5 +147,6 @@ async def test_batch_validation_refuses_an_unknown_project(service):
         await validate_target_batch(
             TargetValidationBatch(values=["example.com"], project_slug="no-such"),
             None,
+            EVERY_PROJECT,
             service,
         )

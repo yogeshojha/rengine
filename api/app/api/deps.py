@@ -69,6 +69,12 @@ async def resolve_user(token: str, session: AsyncSession) -> User:
     return await user_for_payload(payload, session)
 
 
+async def revoked_since_issue(user_id: UUID, issued: object) -> bool:
+    """True when the user's sessions were revoked after the token was issued."""
+    cutoff = await tokens_valid_after(user_id)
+    return cutoff is not None and (not isinstance(issued, int) or issued < cutoff)
+
+
 async def user_for_payload(payload: dict, session: AsyncSession) -> User:
     """The account a validated token names."""
     user_id_str = payload.get("sub")
@@ -88,15 +94,12 @@ async def user_for_payload(payload: dict, session: AsyncSession) -> User:
             headers=BEARER_HEADERS,
         ) from e
 
-    cutoff = await tokens_valid_after(user_id)
-    if cutoff is not None:
-        issued = payload.get(ISSUED_MS_CLAIM)
-        if not isinstance(issued, int) or issued < cutoff:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked.",
-                headers=BEARER_HEADERS,
-            )
+    if await revoked_since_issue(user_id, payload.get(ISSUED_MS_CLAIM)):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked.",
+            headers=BEARER_HEADERS,
+        )
 
     user = await session.scalar(select(User).where(User.id == user_id))
     if not user:

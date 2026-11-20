@@ -3,6 +3,7 @@ from typing import Annotated, NoReturn
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.core.ratelimit import record_failure, too_many_attempts
@@ -29,8 +30,9 @@ async def _throttle_lookup(user: User, lookup: str) -> None:
 
 def get_viewdns_service(
     session: Annotated[AsyncSession, Depends(get_session)],
+    access: Access,
 ) -> ViewDNSService:
-    return ViewDNSService(session)
+    return ViewDNSService(session, access)
 
 
 def _raise_lookup(e: ViewDNSError) -> NoReturn:

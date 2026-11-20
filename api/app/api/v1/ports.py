@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId, check_open, project_of, require_owned
 from app.api.deps import CurrentUser
 from app.api.scope import ServiceScope
 from app.core.database import get_session
@@ -16,6 +17,7 @@ from shared.models.asset_query import (
     QueryGroups,
     QueryLeads,
 )
+from shared.models.scan import Scan
 from shared.models.scan_correlation import (
     AiSummary,
     OriginExposure,
@@ -140,8 +142,10 @@ async def service_ai(
 async def origin_exposure(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    access: Access,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
+    await require_owned(session, access, Scan, scan_id, "Scan")
     return await lead_cache.cached(
         session,
         name="origins",
@@ -173,9 +177,12 @@ async def service_timeline(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     body: ServiceTimelineFilter,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
+    check_open(
+        frozenset({project_id}), await project_of(session, Scan, scan_id), "Scan"
+    )
     service = ServiceTimelineService(session)
     return await lead_cache.cached(
         session,

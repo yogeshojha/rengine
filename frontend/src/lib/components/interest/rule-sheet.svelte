@@ -15,6 +15,7 @@
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { RULE_MODE, type InterestRule, type RulePreview } from '$lib/types/interest';
 	import { InterestKind } from '$lib/config/interest';
+	import { auth } from '$lib/stores/auth.svelte';
 
 	interface Props {
 		rule: InterestRule | null;
@@ -47,6 +48,7 @@
 
 	let isEdit = $derived(rule !== null);
 	let locked = $derived(rule?.builtin === true);
+	let readOnly = $derived(locked && !(auth.user?.is_superuser ?? false));
 	let kinds = $derived(interestCatalog.catalog?.kinds ?? []);
 	let kindLabel = $derived(kinds.find((k) => k.key === kind)?.label ?? 'Select a reason');
 	let ready = $derived(!!name.trim() && (locked || !!query.trim()));
@@ -132,9 +134,11 @@
 		<Sheet.Header class="border-b px-5 py-4 pr-12">
 			<Sheet.Title>{isEdit ? rule?.name : 'New rule'}</Sheet.Title>
 			<Sheet.Description>
-				{locked
-					? 'Default rule. The query is read-only.'
-					: 'A saved query. Matches are flagged as exposures.'}
+				{readOnly
+					? 'Default rule. Set by an administrator.'
+					: locked
+						? 'Default rule. The query is read-only.'
+						: 'A saved query. Matches are flagged as exposures.'}
 			</Sheet.Description>
 		</Sheet.Header>
 
@@ -194,12 +198,12 @@
 							Sends a notification the first time the rule flags an asset.
 						</span>
 					</span>
-					<Switch bind:checked={notify} />
+					<Switch bind:checked={notify} disabled={readOnly} />
 				</label>
 
 				<label class="flex items-center justify-between gap-4 text-sm">
 					<span>Enabled</span>
-					<Switch bind:checked={enabled} />
+					<Switch bind:checked={enabled} disabled={readOnly} />
 				</label>
 			</div>
 		</ScrollArea.Root>
@@ -210,7 +214,7 @@
 				size="sm"
 				loading={saving}
 				loadingLabel="Saving"
-				disabled={!ready}
+				disabled={!ready || readOnly}
 				onclick={save}
 			>
 				{isEdit ? 'Save' : 'Add rule'}

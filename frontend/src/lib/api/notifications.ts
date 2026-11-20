@@ -17,7 +17,7 @@ export const notificationsApi = {
 		);
 	},
 
-	markAsRead: (id: number): Promise<{ success: boolean; message: string }> => {
+	markAsRead: (id: string): Promise<{ success: boolean; message: string }> => {
 		return api.patch<{ success: boolean; message: string }>(
 			`/notifications/${encodeURIComponent(id)}/read`,
 			{}
@@ -33,7 +33,7 @@ export const notificationsApi = {
 		);
 	},
 
-	delete: (id: number): Promise<void> => {
+	delete: (id: string): Promise<void> => {
 		return api.delete(`/notifications/${encodeURIComponent(id)}`);
 	},
 

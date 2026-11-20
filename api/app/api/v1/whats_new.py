@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.core.validation_errors import validation_detail
@@ -79,7 +80,7 @@ async def whats_new(
     current_user: CurrentUser,
     service: ServiceDep,
     session: SessionDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     since: datetime | None = None,
     window: Annotated[str | None, Query(max_length=8)] = None,
     day: date | None = None,
@@ -126,7 +127,7 @@ async def whats_new(
 async def whats_new_visual(
     current_user: CurrentUser,
     service: ServiceDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     since: datetime | None = None,
     window: Annotated[str | None, Query(max_length=8)] = None,
     day: date | None = None,
@@ -155,7 +156,7 @@ async def whats_new_unseen(
     current_user: CurrentUser,
     service: ServiceDep,
     session: SessionDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     tz: Annotated[str, Query(max_length=64)] = DEFAULT_ZONE,
 ) -> NewUnseen:
     _zone(tz)
@@ -168,6 +169,6 @@ async def whats_new_unseen(
 async def whats_new_seen(
     current_user: CurrentUser,
     service: ServiceDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ) -> NewMark:
     return NewMark(marked_at=await service.mark_seen(current_user.id, project_id))

@@ -7,7 +7,7 @@ import httpx
 import pytest
 from fastapi import FastAPI, HTTPException
 
-from app.api import scope
+from app.api import access, scope
 from app.api.deps import get_current_active_user
 from app.api.v1 import cves
 from app.api.v1.vulnerabilities import _check_state
@@ -53,7 +53,7 @@ def test_string_detail_422s_carry_the_list_shape(call):
 
 async def test_scope_without_a_project_answers_the_list_shape():
     with pytest.raises(HTTPException) as caught:
-        await scope.resolve_scope(None, "web_assets", None, None)
+        await scope.resolve_scope(None, None, "web_assets", None, None)
     assert caught.value.status_code == 422
     _documented(caught.value.detail)
 
@@ -62,6 +62,7 @@ async def test_route_body_carries_the_list_shape():
     app = FastAPI()
     app.include_router(cves.router)
     app.dependency_overrides[get_current_active_user] = lambda: object()
+    app.dependency_overrides[access.get_access] = lambda: None
     app.dependency_overrides[cves.get_service] = lambda: None
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

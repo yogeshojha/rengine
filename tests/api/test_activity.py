@@ -8,6 +8,7 @@ from app.api.v1.activity_logs import feed_query
 from app.services.target import TargetService
 from shared.enums.activity import ActivityEvent
 from shared.models.activity_log import ActivityLog
+from shared.services.project_access import EVERY_PROJECT
 
 pytestmark = pytest.mark.api
 
@@ -49,7 +50,7 @@ async def test_deleting_a_target_writes_no_activity(session, estate, service):
     await session.flush()
     before = await _count(session)
 
-    await service.delete_target(str(target_id))
+    await service.delete_target(str(target_id), access=EVERY_PROJECT)
 
     assert await _count(session) == before
 
@@ -74,7 +75,7 @@ async def test_the_feed_lists_run_results_and_drops_bookkeeping(session, estate)
         )
     await session.flush()
 
-    rows = (await session.scalars(feed_query(estate.project_id))).all()
+    rows = (await session.scalars(feed_query(frozenset({estate.project_id})))).all()
 
     assert {r.event_type for r in rows} == {
         ActivityEvent.SCAN_COMPLETED,

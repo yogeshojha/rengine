@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.api.scope import VulnScope
 from app.core.database import get_session
@@ -32,8 +33,8 @@ def trackers(session: Session) -> IssueTrackerService:
     return IssueTrackerService(session)
 
 
-def filing(session: Session, user: CurrentUser) -> IssueFilingService:
-    return IssueFilingService(session, admin=user.is_superuser)
+def filing(session: Session, user: CurrentUser, access: Access) -> IssueFilingService:
+    return IssueFilingService(session, access=access, admin=user.is_superuser)
 
 
 Trackers = Annotated[IssueTrackerService, Depends(trackers)]
@@ -64,7 +65,7 @@ async def test_tracker_config(
 
 @router.get("/routes", response_model=list[RouteRead])
 async def list_routes(
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     _user: CurrentUser,
     service: Trackers,
 ):
@@ -86,7 +87,7 @@ async def delete_route(route_id: UUID, _user: CurrentSuperuser, service: Tracker
 
 @router.get("/issues", response_model=list[TrackedIssueRead])
 async def list_issues(
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     _user: CurrentUser,
     service: Filing,
 ):

@@ -95,7 +95,7 @@
 		returnToModal = false;
 	});
 
-	const openNotification = (notificationId: number) => {
+	const openNotification = (notificationId: string) => {
 		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
 		if (!notification) return;
 
@@ -123,7 +123,7 @@
 		if (metadata?.url) openNotificationUrl(metadata.url);
 	};
 
-	const handleActionClick = (notificationId: number, event: Event) => {
+	const handleActionClick = (notificationId: string, event: Event) => {
 		event.stopPropagation();
 		const notification = notificationStore.notifications.find((n) => n.id === notificationId);
 		if (!notification) return;
@@ -136,12 +136,12 @@
 		if (metadata?.url) openNotificationUrl(metadata.url);
 	};
 
-	const handleMarkRead = async (id: number, event: Event) => {
+	const handleMarkRead = async (id: string, event: Event) => {
 		event.stopPropagation();
 		if (!(await notificationStore.markAsRead(id))) toast.error('Notification not marked read');
 	};
 
-	const handleDeleteNotification = async (id: number, event: Event) => {
+	const handleDeleteNotification = async (id: string, event: Event) => {
 		event.stopPropagation();
 		try {
 			await notificationStore.deleteNotification(id);

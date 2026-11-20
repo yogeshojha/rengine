@@ -107,9 +107,6 @@ class WhoisRecordRead(BaseModel):
 
     parsed_data: dict | None
 
-    created_at: datetime
-    updated_at: datetime
-
     @computed_field
     @property
     def registrant_redacted(self) -> bool:

@@ -201,6 +201,18 @@ const PROJECT_SWITCH_REDIRECTS: { match: RegExp; list: string }[] = [
 
 export const PROJECT_PARAM = 'project';
 
+const PROJECTLESS_ROUTES = [
+	ROUTES.profile,
+	ROUTES.settings(),
+	ROUTES.arsenal(),
+	ROUTES.bountyHub()
+];
+
+/** A page that reads the active project. */
+export function needsProject(path: string): boolean {
+	return !PROJECTLESS_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
+}
+
 export function projectSwitchRedirect(path: string, slug: string): string | null {
 	const list = PROJECT_SWITCH_REDIRECTS.find((r) => r.match.test(path))?.list;
 	if (!list) return null;

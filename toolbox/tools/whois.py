@@ -40,7 +40,7 @@ from toolbox.base import (
 from toolbox.pivot import target_pivot
 from tools.whois.models import WhoisEntity
 from tools.whois.service import WhoisError as WhoisServiceError
-from tools.whois.service import WhoisService
+from tools.whois.service import WhoisService, record_visible
 
 EXPIRY_CRITICAL_DAYS = 30
 EXPIRY_WARNING_DAYS = 90
@@ -81,7 +81,10 @@ class WhoisLookup(Tool):
         service = WhoisService(proxy_url=egress_proxy())
         try:
             result = await service.lookup(
-                query=args.query, store_in_db=True, session=ctx.session
+                query=args.query,
+                store_in_db=True,
+                session=ctx.session,
+                cache_where=record_visible(ctx.access),
             )
         except WhoisServiceError as exc:
             raise ToolError(str(exc)) from exc

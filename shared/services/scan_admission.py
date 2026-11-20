@@ -15,6 +15,7 @@ from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.scan import Scan
 from shared.services import locks, worker_presence
 from shared.services.celery_dispatch import dispatch_scan_run
+from shared.services.project_access import ProjectSet, project_clause
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -126,17 +127,24 @@ def admit_waiting(session: Session) -> list[str]:
     return started
 
 
-def positions_query(ids: list) -> object:
-    """Place of each waiting scan in the queue, counted from one."""
+def positions_query(ids: list, access: ProjectSet) -> object:
+    """Place of each waiting scan in the queue and among the scans the access opens."""
+    order = queue_order()
     ranked = (
         select(
             Scan.id.label("id"),
-            func.row_number().over(order_by=queue_order()).label("place"),
+            func.row_number().over(order_by=order).label("place"),
+            func.count()
+            .filter(project_clause(access, Scan.project_id))
+            .over(order_by=order)
+            .label("seen"),
         )
         .where(waiting())
         .subquery()
     )
-    return select(ranked.c.id, ranked.c.place).where(ranked.c.id.in_(ids))
+    return select(ranked.c.id, ranked.c.place, ranked.c.seen).where(
+        ranked.c.id.in_(ids)
+    )
 
 
 def running_query() -> object:

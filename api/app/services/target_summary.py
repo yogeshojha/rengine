@@ -39,6 +39,7 @@ from shared.models.target_summary import (
 from shared.models.vulnerability import SeverityCount, Vulnerability
 from shared.services import scan_deltas
 from shared.services.asset_query import lead_cache, vuln_suppressed
+from shared.services.project_access import ProjectSet
 from shared.services.scan_scope import census_only, covering_stages, covers
 from shared.services.schedule_timing import describe_schedule
 
@@ -57,7 +58,9 @@ class TargetSummaryService:
         self.session = session
         self.scans = ScanService(session)
 
-    async def summary(self, target_id: UUID, project_id: UUID) -> TargetSummaryRead:
+    async def summary(
+        self, target_id: UUID, project_id: UUID, access: ProjectSet
+    ) -> TargetSummaryRead:
         recent = await self._runs(target_id, project_id)
         summary = TargetSummaryRead(target_id=target_id)
         if not recent:
@@ -65,7 +68,7 @@ class TargetSummaryService:
             return summary
 
         await self._totals(summary, target_id, project_id)
-        latest = await self.scans.get(recent[0].id, project_id)
+        latest = await self.scans.get(recent[0].id, project_id, access)
         summary.latest_scan = latest
 
         counts = await self._counts(recent)

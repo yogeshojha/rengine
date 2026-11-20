@@ -110,7 +110,11 @@ class AddTarget(Tool):
                 organization_names=args.organizations or None,
             )
             for row in created:
-                await _guard(service.update_target(str(row.id), patch, issued_by))
+                await _guard(
+                    service.update_target(
+                        str(row.id), patch, issued_by, access=ctx.token.projects
+                    )
+                )
 
         project = await ctx.session.get(Project, project_id)
         return ToolResult(
@@ -190,6 +194,7 @@ class UpdateTarget(Tool):
                     organization_names=args.organizations,
                 ),
                 issued_by,
+                access=ctx.token.projects,
             )
         )
         return ToolResult(
@@ -248,7 +253,11 @@ class DeleteTarget(Tool):
             )
             raise ToolError(msg)
 
-        await _guard(TargetService(ctx.session).delete_target(str(scope.target.id)))
+        await _guard(
+            TargetService(ctx.session).delete_target(
+                str(scope.target.id), access=ctx.token.projects
+            )
+        )
         return ToolResult(
             summary=f"Deleted {value} and everything recorded against it",
             data={"value": value, "scans_deleted": scans, "results_deleted": holdings},

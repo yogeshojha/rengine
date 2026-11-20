@@ -50,6 +50,7 @@ from shared.models.vulnerability import Vulnerability
 from shared.services.ai.agent import CALL, DONE, RESULT, TEXT, AgentEvent
 from shared.services.ai.config import AIConfig
 from shared.services.asset_query import build_schema
+from shared.services.project_access import EVERY_PROJECT
 
 pytestmark = pytest.mark.api
 
@@ -506,7 +507,9 @@ async def test_an_answer_survives_expired_rows(estate, thread, monkeypatch):
     )
     done = next(d for k, d in frames if k == StreamEvent.DONE.value)
     assert done["answer"]["blocks"][0]["total"] == 3
-    datas = await EstateService(estate.session).blocks(estate.user_id, thread.id)
+    datas = await EstateService(estate.session).blocks(
+        estate.user_id, thread.id, EVERY_PROJECT
+    )
     assert [d.total for d in datas] == [3]
 
 
@@ -880,7 +883,7 @@ async def test_follow_up_reads_earlier_blocks(estate, thread, monkeypatch):
     assert done["question"]["about"] == "B1"
 
     service = EstateService(estate.session)
-    datas = await service.blocks(estate.user_id, thread.id)
+    datas = await service.blocks(estate.user_id, thread.id, EVERY_PROJECT)
     assert [d.total for d in datas] == [3, 2]
 
 
@@ -995,23 +998,30 @@ async def test_edit_page_and_ownership(estate, thread, monkeypatch):
         )
     )
     service = EstateService(estate.session)
-    edited = await service.edit(estate.user_id, thread.id, "B1", "tech:confluence")
+    edited = await service.edit(
+        estate.user_id, thread.id, EVERY_PROJECT, "B1", "tech:confluence"
+    )
     assert edited.total == 2
-    detail = await service.detail(estate.user_id, thread.id)
+    detail = await service.detail(estate.user_id, thread.id, EVERY_PROJECT)
     block = detail.messages[-1].blocks[0]
     assert (block.query, block.edited, block.total) == ("tech:confluence", True, 2)
 
     with pytest.raises(HTTPException) as broken:
-        await service.edit(estate.user_id, thread.id, "B1", "nosuchfield:x")
+        await service.edit(
+            estate.user_id, thread.id, EVERY_PROJECT, "B1", "nosuchfield:x"
+        )
     assert broken.value.status_code == 422
 
-    page = await service.page(estate.user_id, thread.id, "B1", offset=1)
+    page = await service.page(estate.user_id, thread.id, EVERY_PROJECT, "B1", offset=1)
     assert len(page.rows) == 1
 
     stranger = uuid.uuid4()
-    assert await service.detail(stranger, thread.id) is None
-    assert await AskService(estate.session).get(estate.user_id, thread.id) is None
-    assert await service.delete(estate.user_id, thread.id)
+    assert await service.detail(stranger, thread.id, EVERY_PROJECT) is None
+    assert (
+        await AskService(estate.session).get(estate.user_id, thread.id, EVERY_PROJECT)
+        is None
+    )
+    assert await service.delete(estate.user_id, thread.id, EVERY_PROJECT)
 
 
 async def test_a_message_role_pair_per_turn(estate, thread, monkeypatch):

@@ -173,6 +173,10 @@ def _draft_key(
     return ""
 
 
+def _owned(owner: uuid.UUID | None) -> tuple:
+    return () if owner is None else (AiCall.user_id == owner,)
+
+
 class AiSettingsService:
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -245,7 +249,9 @@ class AiSettingsService:
 
     # ---------- status ----------
 
-    async def status(self, *, full: bool = False) -> AiStatus:
+    async def status(
+        self, *, full: bool = False, owner: uuid.UUID | None = None
+    ) -> AiStatus:
         settings, row = await self._in_use()
         key = (try_decrypt(row.api_key_encrypted) or "") if row else ""
         return AiStatus(
@@ -258,13 +264,15 @@ class AiSettingsService:
             base_url=(row.base_url or "") if row and full else None,
             key_masked=mask_tail(key) if key else None,
             features=feature_switches(settings.ai_features),
-            usage=await self.usage(),
-            cached_narratives=int(
-                await self.session.scalar(select(func.count(AiNarrative.id))) or 0
-            ),
+            usage=await self.usage(owner),
+            cached_narratives=0 if owner is not None else await self._narratives(),
         )
 
-    async def usage(self) -> AiUsageRead:
+    async def _narratives(self) -> int:
+        return int(await self.session.scalar(select(func.count(AiNarrative.id))) or 0)
+
+    async def usage(self, owner: uuid.UUID | None = None) -> AiUsageRead:
+        """Calls per feature: every call, or the owner's own."""
         rows = (
             await self.session.execute(
                 select(
@@ -282,7 +290,9 @@ class AiSettingsService:
                     ),
                     func.max(AiCall.at),
                     func.min(AiCall.at),
-                ).group_by(AiCall.feature)
+                )
+                .where(*_owned(owner))
+                .group_by(AiCall.feature)
             )
         ).all()
         by_feature = [
@@ -327,9 +337,16 @@ class AiSettingsService:
         )
 
     async def calls(
-        self, limit: int, before: tuple[datetime, uuid.UUID] | None = None
+        self,
+        limit: int,
+        before: tuple[datetime, uuid.UUID] | None = None,
+        owner: uuid.UUID | None = None,
     ) -> AiCallPage:
-        query = select(AiCall).order_by(AiCall.at.desc(), AiCall.id.desc())
+        query = (
+            select(AiCall)
+            .where(*_owned(owner))
+            .order_by(AiCall.at.desc(), AiCall.id.desc())
+        )
         if before is not None:
             at, row_id = before
             query = query.where(

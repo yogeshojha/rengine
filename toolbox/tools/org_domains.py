@@ -63,7 +63,7 @@ from tools.viewdns.service import (
     ViewDNSLookupError,
     ViewDNSService,
 )
-from tools.whois.service import WhoisError, WhoisService
+from tools.whois.service import WhoisError, WhoisService, record_visible
 
 logger = get_logger(__name__)
 
@@ -132,7 +132,7 @@ class OrgDomains(Tool):
         owner = await self._owner(ctx, query)
         sources = Sources()
         await asyncio.gather(
-            self._certificates(owner, sources),
+            self._certificates(ctx, owner, sources),
             self._networks(owner, sources),
             self._registrations(ctx, query, owner, sources),
         )
@@ -247,7 +247,12 @@ class OrgDomains(Tool):
         service = WhoisService(proxy_url=egress_proxy())
         try:
             result = await asyncio.wait_for(
-                service.lookup(query=domain, store_in_db=True, session=ctx.session),
+                service.lookup(
+                    query=domain,
+                    store_in_db=True,
+                    session=ctx.session,
+                    cache_where=record_visible(ctx.access),
+                ),
                 timeout=WHOIS_TIMEOUT,
             )
         except (WhoisError, TimeoutError) as exc:
@@ -259,14 +264,16 @@ class OrgDomains(Tool):
                 return name
         return ""
 
-    async def _certificates(self, owner: Owner | None, sources: Sources) -> None:
+    async def _certificates(
+        self, ctx: ToolContext, owner: Owner | None, sources: Sources
+    ) -> None:
         if owner is None:
             sources.certificates = NOT_FOR_EMAIL
             return
         variants = list(dict.fromkeys([owner.name, org_lookup.fold(owner.name)]))
         variants = [v for v in variants if v.strip()]
         results = await asyncio.gather(
-            *(CrtShClient().search_organization(v) for v in variants),
+            *(CrtShClient().search_organization(v, ctx.project_id) for v in variants),
             return_exceptions=True,
         )
         answers = [r for r in results if not isinstance(r, BaseException)]
@@ -331,7 +338,7 @@ class OrgDomains(Tool):
     ) -> None:
         term = query.value if query.kind == InputKind.EMAIL else owner.name
         try:
-            read = await ViewDNSService(ctx.session).reverse_whois(term)
+            read = await ViewDNSService(ctx.session, ctx.access).reverse_whois(term)
         except ViewDNSKeyNotConfiguredError:
             sources.registrations = "Not queried. Add a ViewDNS.info key in Settings."
             return

@@ -1,23 +1,23 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import noload
 
+from app.api.access import Access, OptionalProjectSlug, owned, project_by_slug
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.target_labels import (
-    get_label,
     refuse_if_in_use,
     rename,
     target_counts,
 )
 from shared.definitions.tripwires import ScopeKind
-from shared.models.project import Project
 from shared.models.tag import Tag, TagCreate, TagRead, TagUpdate, TargetTag
+from shared.services.project_access import scoped
 from shared.utils.slug import add_with_unique_slug
 
 
@@ -37,22 +37,13 @@ router = APIRouter(
 async def list_tags(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_slug: Annotated[
-        str | None, Query(description="Filter by project slug")
-    ] = None,
+    projects: OptionalProjectSlug,
 ):
-    query = select(Tag).options(noload(Tag.targets)).order_by(Tag.name)
-
-    if project_slug:
-        project_result = await session.execute(
-            select(Project.id).where(Project.slug == project_slug)
-        )
-        project_id = project_result.scalar_one_or_none()
-        if project_id:
-            query = query.where(Tag.project_id == project_id)
-        else:
-            return []
-
+    query = scoped(
+        select(Tag).options(noload(Tag.targets)).order_by(Tag.name),
+        projects,
+        Tag.project_id,
+    )
     tags = (await session.execute(query)).scalars().all()
     counts = await target_counts(session, TargetTag.tag_id, [t.id for t in tags])
     return [_read(t, counts) for t in tags]
@@ -62,18 +53,10 @@ async def list_tags(
 async def create_tag(
     tag_in: TagCreate,
     current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    project_result = await session.execute(
-        select(Project).where(Project.slug == tag_in.project_slug)
-    )
-    project = project_result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
-        )
-
+    project = await project_by_slug(session, access, tag_in.project_slug)
     normalized_name = tag_in.name.lower()
 
     existing_tag = await session.execute(
@@ -112,9 +95,10 @@ async def update_tag(
     tag_id: uuid.UUID,
     tag_in: TagUpdate,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    tag = await get_label(session, Tag, tag_id, "Tag")
+    tag = await owned(session, access, Tag, tag_id, "Tag", noload(Tag.targets))
     if tag_in.name is not None:
         await rename(session, tag, tag_in.name, "Tag")
     if tag_in.color is not None:
@@ -135,9 +119,10 @@ async def update_tag(
 async def delete_tag(
     tag_id: uuid.UUID,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    tag = await get_label(session, Tag, tag_id, "Tag")
+    tag = await owned(session, access, Tag, tag_id, "Tag", noload(Tag.targets))
     await refuse_if_in_use(session, tag, ScopeKind.TAG)
     await session.delete(tag)
     await session.commit()

@@ -83,9 +83,11 @@ class CveLookup(Tool):
     async def run(self, ctx: ToolContext, args: Input) -> ToolOutcome:
         epss = await ctx.session.get(EpssScore, args.cve)
         kev = await ctx.session.get(KevEntry, args.cve)
-        intel = await ctx.session.get(CveIntel, args.cve)
         findings, inferred = await estate.cve_counts(
             ctx.session, ctx.project_id, args.cve
+        )
+        intel = (
+            await ctx.session.get(CveIntel, args.cve) if findings or inferred else None
         )
         checks, loaded = await estate.library_checks(ctx.session, args.cve)
         template = _template(intel, checks, loaded)

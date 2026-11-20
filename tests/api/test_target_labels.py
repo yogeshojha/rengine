@@ -17,6 +17,7 @@ from shared.models.tag import Tag, TagUpdate, TargetTag
 from shared.models.target import Target
 from shared.models.tripwire import Tripwire
 from shared.models.user import User
+from shared.services.project_access import EVERY_PROJECT
 
 pytestmark = pytest.mark.api
 
@@ -46,7 +47,11 @@ async def test_a_tag_is_renamed_recoloured_and_reslugged(durable):
     project, user = await _project(durable)
     tag = await _tag(durable, project, user, "prod typo")
     renamed = await update_tag(
-        tag.id, TagUpdate(name="  Production ", color="#ef4444"), user, durable
+        tag.id,
+        TagUpdate(name="  Production ", color="#ef4444"),
+        user,
+        EVERY_PROJECT,
+        durable,
     )
     assert (renamed.name, renamed.slug, renamed.color) == (
         "production",
@@ -60,7 +65,9 @@ async def test_a_rename_onto_another_tag_is_refused(durable):
     tag = await _tag(durable, project, user, "staging")
     await _tag(durable, project, user, "production")
     with pytest.raises(HTTPException) as refused:
-        await update_tag(tag.id, TagUpdate(name="Production"), user, durable)
+        await update_tag(
+            tag.id, TagUpdate(name="Production"), user, EVERY_PROJECT, durable
+        )
     assert refused.value.status_code == 409
 
 
@@ -68,7 +75,7 @@ async def test_an_empty_name_is_refused(durable):
     project, user = await _project(durable)
     tag = await _tag(durable, project, user, "staging")
     with pytest.raises(HTTPException) as refused:
-        await update_tag(tag.id, TagUpdate(name="   "), user, durable)
+        await update_tag(tag.id, TagUpdate(name="   "), user, EVERY_PROJECT, durable)
     assert refused.value.status_code == 400
 
 
@@ -86,10 +93,10 @@ async def test_deleting_a_tag_keeps_its_targets(durable):
     durable.add(TargetTag(target_id=target.id, tag_id=tag.id))
     await durable.commit()
 
-    listed = await list_tags(user, durable, project_slug=project.slug)
+    listed = await list_tags(user, durable, frozenset({project.id}))
     assert [(t.name, t.target_count) for t in listed] == [("legacy", 1)]
 
-    await delete_tag(tag.id, user, durable)
+    await delete_tag(tag.id, user, EVERY_PROJECT, durable)
     assert await durable.get(Target, target.id) is not None
     assert (await durable.scalars(select(TargetTag))).all() == []
 
@@ -108,7 +115,7 @@ async def test_a_tag_a_tripwire_is_scoped_to_is_not_deleted(durable):
     )
     await durable.commit()
     with pytest.raises(HTTPException) as refused:
-        await delete_tag(tag.id, user, durable)
+        await delete_tag(tag.id, user, EVERY_PROJECT, durable)
     assert refused.value.status_code == 409
     assert "New admin panel" in refused.value.detail
 
@@ -121,12 +128,16 @@ async def test_an_organization_is_renamed_and_deleted(durable):
     durable.add(org)
     await durable.commit()
     renamed = await update_organization(
-        org.id, OrganizationUpdate(name="Acme Inc", description="Parent"), user, durable
+        org.id,
+        OrganizationUpdate(name="Acme Inc", description="Parent"),
+        user,
+        EVERY_PROJECT,
+        durable,
     )
     assert (renamed.name, renamed.slug, renamed.description) == (
         "acme inc",
         "acme-inc",
         "Parent",
     )
-    await delete_organization(org.id, user, durable)
+    await delete_organization(org.id, user, EVERY_PROJECT, durable)
     assert await durable.get(Organization, org.id) is None

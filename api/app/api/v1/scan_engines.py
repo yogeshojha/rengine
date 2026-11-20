@@ -1,10 +1,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.oast import instance_reason
@@ -48,16 +49,17 @@ async def engine_catalog(
 async def preview_engine_stages(
     data: EnginePreviewRequest,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    return await preview_engine(data, session)
+    return await preview_engine(data, session, access)
 
 
 @router.get("", response_model=list[ScanEngineRead])
 async def list_engines(
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.list(
         project_id, ensure=True, superuser=current_user.is_superuser
@@ -69,7 +71,7 @@ async def create_engine(
     data: ScanEngineCreate,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(
         project_id=project_id,
@@ -86,7 +88,7 @@ async def import_engine(
     body: YamlBody,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.import_yaml(
         project_id=project_id,
@@ -101,7 +103,7 @@ async def get_engine(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.get(
         id=id, project_id=project_id, superuser=current_user.is_superuser
@@ -114,7 +116,7 @@ async def update_engine(
     data: ScanEngineUpdate,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.update(
         id=id,
@@ -130,7 +132,7 @@ async def delete_engine(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await service.delete(
         id=id,
@@ -150,7 +152,7 @@ async def duplicate_engine(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.duplicate(
         id=id,
@@ -165,7 +167,7 @@ async def export_engine(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanEngineService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     yaml_str = await service.export_yaml(
         id=id, project_id=project_id, superuser=current_user.is_superuser

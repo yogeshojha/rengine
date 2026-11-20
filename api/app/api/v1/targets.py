@@ -15,6 +15,13 @@ from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import (
+    Access,
+    OptionalProjectSlug,
+    ProjectId,
+    ProjectSlug,
+    require_owned,
+)
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
@@ -31,6 +38,7 @@ from app.services.target_summary import TargetSummaryService
 from shared.definitions.mode_features import CAP_BOUNTY_PROGRAMS
 from shared.enums.target import EnrichmentKind
 from shared.models import (
+    Project,
     TargetBulkCreate,
     TargetBulkCreateResponse,
     TargetCreate,
@@ -47,7 +55,7 @@ from shared.models import (
 from shared.models.estate import EstateTriageUpdate, ProjectEstate, TargetEstate
 from shared.models.infostealer import TargetInfostealerRead
 from shared.models.relations import TargetPrograms, TargetRelations
-from shared.models.target import TargetValidationBatch
+from shared.models.target import Target, TargetValidationBatch
 from shared.models.target_asset import TargetAssetFilter, TargetAssetPage
 from shared.models.target_summary import TargetSummaryRead
 from shared.schemas.target_detail import (
@@ -107,12 +115,15 @@ async def validate_target_endpoint(
 async def validate_target_batch(
     request: TargetValidationBatch,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     results = [await _validated(value, service) for value in request.values]
     if request.project_slug:
         existing = await service.existing_targets(
-            request.project_slug, [r.target_value for r in results if r.valid]
+            request.project_slug,
+            [r.target_value for r in results if r.valid],
+            access=access,
         )
         for result in results:
             result.target_id = existing.get(result.target_value)
@@ -123,7 +134,7 @@ async def validate_target_batch(
 async def get_project_estate(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Domains the project's targets point at that are not targets."""
     return await TargetEstateService(session).for_project(project_id)
@@ -134,7 +145,7 @@ async def triage_estate(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     body: EstateTriageUpdate,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Set the review state of candidate targets."""
     updated = await TargetEstateService(session).triage(
@@ -147,14 +158,14 @@ async def triage_estate(
 async def get_target_counts(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
-    project_slug: Annotated[str, Query(description="Filter by project slug")],
+    project_id: ProjectSlug,
     search: Annotated[str | None, Query(max_length=200)] = None,
     organization_ids: Annotated[list[UUID] | None, Query()] = None,
     tag_ids: Annotated[list[UUID] | None, Query()] = None,
     signal: Annotated[SignalName | None, Query()] = None,
 ):
     return await service.get_target_counts(
-        project_slug,
+        project_id,
         search=search,
         organization_ids=organization_ids,
         tag_ids=tag_ids,
@@ -180,7 +191,7 @@ class TargetStatsResponse(BaseModel):
 async def get_target_stats(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
-    project_slug: Annotated[str, Query(description="Filter by project slug")],
+    project_id: ProjectSlug,
     search: Annotated[
         str | None,
         Query(description="Search by target value or display name", max_length=200),
@@ -196,7 +207,7 @@ async def get_target_stats(
     ] = None,
 ):
     return await service.get_target_stats(
-        project_slug=project_slug,
+        project_id=project_id,
         search=search,
         organization_ids=organization_ids,
         tag_ids=tag_ids,
@@ -208,7 +219,7 @@ async def get_target_stats(
 async def list_matching_target_ids(
     _current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
-    project_slug: Annotated[str, Query(description="Filter by project slug")],
+    project_id: ProjectSlug,
     search: Annotated[str | None, Query(max_length=200)] = None,
     organization_ids: Annotated[list[UUID] | None, Query()] = None,
     tag_ids: Annotated[list[UUID] | None, Query()] = None,
@@ -216,7 +227,7 @@ async def list_matching_target_ids(
     signal: Annotated[SignalName | None, Query()] = None,
 ):
     return await service.get_matching_target_ids(
-        project_slug=project_slug,
+        project_id=project_id,
         search=search,
         organization_ids=organization_ids,
         tag_ids=tag_ids,
@@ -248,9 +259,10 @@ class BulkOrgRequest(BaseModel):
 async def bulk_enrich_targets(
     request: BulkEnrichRequest,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    queued = await service.bulk_enrich(request.target_ids, request.kind)
+    queued = await service.bulk_enrich(request.target_ids, request.kind, access=access)
     return {"queued": queued}
 
 
@@ -258,10 +270,11 @@ async def bulk_enrich_targets(
 async def bulk_add_tags(
     request: BulkTagRequest,
     current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     updated = await service.bulk_add_tags(
-        request.target_ids, request.tag_names, current_user.id
+        request.target_ids, request.tag_names, current_user.id, access=access
     )
     return {"updated": updated}
 
@@ -270,10 +283,11 @@ async def bulk_add_tags(
 async def bulk_add_organizations(
     request: BulkOrgRequest,
     current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
     updated = await service.bulk_add_organizations(
-        request.target_ids, request.organization_names, current_user.id
+        request.target_ids, request.organization_names, current_user.id, access=access
     )
     return {"updated": updated}
 
@@ -284,13 +298,11 @@ async def search_targets_by_value(
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[TargetService, Depends(get_target_service)],
     target_value: Annotated[str, Query(description="Target value")],
-    project_slug: Annotated[
-        str | None, Query(description="Filter by project slug")
-    ] = None,
+    projects: OptionalProjectSlug,
 ):
     query = await service.search_targets_by_value(
         target_value=target_value,
-        project_slug=project_slug,
+        projects=projects,
     )
 
     return await apaginate(
@@ -305,9 +317,7 @@ async def list_targets(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[TargetService, Depends(get_target_service)],
-    project_slug: Annotated[
-        str | None, Query(description="Filter by project slug")
-    ] = None,
+    projects: OptionalProjectSlug,
     search: Annotated[
         str | None,
         Query(description="Search by target value or display name", max_length=200),
@@ -329,7 +339,7 @@ async def list_targets(
     sort_dir: Annotated[SortDir, Query(description="Sort direction")] = "desc",
 ):
     query = await service.list_targets(
-        project_slug=project_slug,
+        projects=projects,
         search=search,
         organization_ids=organization_ids,
         tag_ids=tag_ids,
@@ -350,9 +360,10 @@ async def list_targets(
 async def create_target(
     target_in: TargetCreate,
     current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.create_target(target_in, current_user.id)
+    return await service.create_target(target_in, current_user.id, access=access)
 
 
 @router.post(
@@ -363,9 +374,10 @@ async def create_target(
 async def bulk_create_targets(
     bulk_in: TargetBulkCreate,
     current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.bulk_create_targets(bulk_in, current_user.id)
+    return await service.bulk_create_targets(bulk_in, current_user.id, access=access)
 
 
 @router.post(
@@ -376,9 +388,12 @@ async def bulk_create_targets(
 async def import_targets_json(
     import_request: TargetImportRequest,
     current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.import_targets_structured(import_request, current_user.id)
+    return await service.import_targets_structured(
+        import_request, current_user.id, access=access
+    )
 
 
 @router.post(
@@ -387,7 +402,7 @@ async def import_targets_json(
     status_code=status.HTTP_201_CREATED,
 )
 async def import_targets_csv(
-    project_slug: Annotated[str, Query(description="Project slug")],
+    project_id: ProjectSlug,
     file: Annotated[UploadFile, File(...)],
     current_user: CurrentUser,
     service: Annotated[TargetService, Depends(get_target_service)],
@@ -399,8 +414,9 @@ async def import_targets_csv(
         list[str] | None, Form(description="Tags added to every imported target.")
     ] = None,
 ):
+    project = await service.session.get(Project, project_id)
     return await service.import_targets_csv(
-        project_slug, file, current_user.id, organization_names, tag_names
+        project, file, current_user.id, organization_names, tag_names
     )
 
 
@@ -408,20 +424,24 @@ async def import_targets_csv(
 async def get_target_detail(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.get_target_detail(target_id)
+    return await service.get_target_detail(target_id, access=access)
 
 
 @router.get("/{target_id}/summary", response_model=TargetSummaryRead)
 async def get_target_summary(
     target_id: UUID,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetSummaryService, Depends(get_summary_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await require_target(service.session, project_id, target_id)
-    return await service.summary(target_id=target_id, project_id=project_id)
+    return await service.summary(
+        target_id=target_id, project_id=project_id, access=access
+    )
 
 
 @router.post("/{target_id}/assets", response_model=TargetAssetPage)
@@ -430,7 +450,7 @@ async def search_target_assets(
     body: TargetAssetFilter,
     _current_user: CurrentUser,
     service: Annotated[TargetAssetService, Depends(get_asset_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await require_target(service.session, project_id, target_id)
     return await service.page(project_id=project_id, target_id=target_id, f=body)
@@ -440,9 +460,10 @@ async def search_target_assets(
 async def get_target_dns(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.get_target_dns(target_id)
+    return await service.get_target_dns(target_id, access=access)
 
 
 @router.get("/{target_id}/relations", response_model=TargetRelations)
@@ -450,7 +471,7 @@ async def get_target_relations(
     target_id: UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Other targets in the project shown to be the same estate."""
     await require_target(session, project_id, target_id)
@@ -462,7 +483,7 @@ async def get_target_estate(
     target_id: UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
 ):
     """Domains this target points at, providers it runs on, targets it shares with."""
@@ -480,7 +501,7 @@ async def get_target_programs(
     target_id: UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Bounty programs whose scope covers this target."""
     await require_target(session, project_id, target_id)
@@ -491,27 +512,30 @@ async def get_target_programs(
 async def get_target_bgp(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.get_target_bgp(target_id)
+    return await service.get_target_bgp(target_id, access=access)
 
 
 @router.post("/{target_id}/dns/refresh", response_model=EnrichmentRefreshResponse)
 async def refresh_target_dns(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.refresh_target_dns(target_id)
+    return await service.refresh_target_dns(target_id, access=access)
 
 
 @router.post("/{target_id}/whois/refresh", response_model=EnrichmentRefreshResponse)
 async def refresh_target_whois(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.refresh_target_whois(target_id)
+    return await service.refresh_target_whois(target_id, access=access)
 
 
 @router.post(
@@ -520,9 +544,10 @@ async def refresh_target_whois(
 async def refresh_target_infostealer(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.refresh_target_infostealer(target_id)
+    return await service.refresh_target_infostealer(target_id, access=access)
 
 
 @router.get("/{target_id}/infostealer", response_model=TargetInfostealerRead)
@@ -530,8 +555,10 @@ async def get_target_infostealer(
     target_id: UUID,
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
+    access: Access,
     scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
 ):
+    await require_owned(session, access, Target, target_id, "Target")
     report = await InfostealerService(session).report(target_id, scan_id)
     if report is None:
         raise HTTPException(
@@ -545,18 +572,20 @@ async def get_target_infostealer(
 async def refresh_target_bgp(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.refresh_target_bgp(target_id)
+    return await service.refresh_target_bgp(target_id, access=access)
 
 
 @router.get("/{target_id}/seeds", response_model=list[TargetSeedRead])
 async def list_target_seeds(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.list_seeds(target_id)
+    return await service.list_seeds(target_id, access=access)
 
 
 @router.put("/{target_id}/seeds", response_model=TargetSeedResult)
@@ -564,9 +593,10 @@ async def write_target_seeds(
     target_id: str,
     body: TargetSeedWrite,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.write_seeds(target_id, body)
+    return await service.write_seeds(target_id, body, access=access)
 
 
 @router.delete("/{target_id}/seeds/{seed_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -574,18 +604,20 @@ async def delete_target_seed(
     target_id: str,
     seed_id: UUID,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    await service.delete_seed(target_id, seed_id)
+    await service.delete_seed(target_id, seed_id, access=access)
 
 
 @router.get("/{target_id}", response_model=TargetRead)
 async def get_target(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.get_target(target_id)
+    return await service.get_target(target_id, access=access)
 
 
 @router.patch("/{target_id}", response_model=TargetRead)
@@ -593,15 +625,19 @@ async def update_target(
     target_id: str,
     target_in: TargetUpdate,
     current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    return await service.update_target(target_id, target_in, current_user.id)
+    return await service.update_target(
+        target_id, target_in, current_user.id, access=access
+    )
 
 
 @router.delete("/{target_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_target(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[TargetService, Depends(get_target_service)],
 ):
-    await service.delete_target(target_id)
+    await service.delete_target(target_id, access=access)

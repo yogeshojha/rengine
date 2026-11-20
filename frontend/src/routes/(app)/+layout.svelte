@@ -20,9 +20,21 @@
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import ServerOff from '@lucide/svelte/icons/server-off';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import FolderLock from '@lucide/svelte/icons/folder-lock';
+	import PlusIcon from '@lucide/svelte/icons/plus';
+	import AddProjectModal from '$lib/components/modals/add-project-modal.svelte';
 	import CreateFirstProjectModal from '$lib/components/modals/create-first-project-modal.svelte';
 	import ProxySendConfirm from '$lib/components/scans/results/endpoints/proxy-send-confirm.svelte';
-	import { crumbHref, getRouteLabel, PROJECT_PARAM, ROUTES, UUID_REGEX } from '$lib/config/routes';
+	import {
+		crumbHref,
+		getRouteLabel,
+		needsProject,
+		PROJECT_PARAM,
+		ROUTES,
+		UUID_REGEX
+	} from '$lib/config/routes';
+	import { PROJECT_LOST_EVENT } from '$lib/api/client';
+	import { mayCreateProjects, NO_PROJECT_ACCESS } from '$lib/config/users';
 	import { breadcrumbStore } from '$lib/stores/breadcrumbs.svelte';
 	import { previousPage } from '$lib/stores/previous-page.svelte';
 	import ActivityPanel from '$lib/components/activity/activity-panel.svelte';
@@ -31,6 +43,13 @@
 	let { children } = $props();
 
 	let sidebarOpen = $state(true);
+	let addingProject = $state(false);
+
+	onMount(() => {
+		const reconcile = () => void projectsStore.reconcile();
+		window.addEventListener(PROJECT_LOST_EVENT, reconcile);
+		return () => window.removeEventListener(PROJECT_LOST_EVENT, reconcile);
+	});
 
 	onMount(() => {
 		const saved = document.cookie
@@ -119,7 +138,7 @@
 		if (auth.isAuthenticated && !auth.isLoading) {
 			const projectId = projectsStore.activeProject?.id;
 			sseStore.init(projectId);
-			notificationStore.subscribeSSE();
+			notificationStore.subscribeSSE(projectId);
 
 			return () => {
 				notificationStore.unsubscribeSSE();
@@ -137,14 +156,21 @@
 		!!projectsStore.loadError && !projectsStore.hasFetched && projectsStore.projects.length === 0
 	);
 
-	let showRequiredProjectCreateModal = $derived(
+	let noProjects = $derived(
 		auth.isAuthenticated &&
 			!auth.isLoading &&
-			onboardingStore.status?.completed === true &&
 			!projectsStore.isLoading &&
 			projectsStore.hasFetched &&
 			projectsStore.projects.length === 0
 	);
+
+	let isAdmin = $derived(auth.user?.is_superuser ?? false);
+
+	let showRequiredProjectCreateModal = $derived(
+		noProjects && isAdmin && onboardingStore.status?.completed === true
+	);
+
+	let noProjectAccess = $derived(noProjects && !isAdmin && needsProject(page.url.pathname));
 
 	const NEW_ENTITY_LABEL: Record<string, string> = {
 		contexts: 'New context',
@@ -215,6 +241,7 @@
 
 <NotificationToasts />
 <CreateFirstProjectModal open={showRequiredProjectCreateModal} />
+<AddProjectModal bind:open={addingProject} />
 <ProxySendConfirm />
 
 {#if auth.isLoading}
@@ -273,6 +300,19 @@
 										>
 											Retry
 										</Button>
+									</EmptyState>
+								{:else if noProjectAccess}
+									<EmptyState
+										icon={FolderLock}
+										title={NO_PROJECT_ACCESS.title}
+										description={NO_PROJECT_ACCESS.description}
+									>
+										{#if mayCreateProjects(auth.user)}
+											<Button size="sm" onclick={() => (addingProject = true)}>
+												<PlusIcon class="size-4" />
+												Create project
+											</Button>
+										{/if}
 									</EmptyState>
 								{:else}
 									{@render children()}

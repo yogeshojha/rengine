@@ -16,7 +16,7 @@ from mcp import auth, server, telemetry
 from mcp import settings as server_settings
 from mcp.capabilities import Capability
 from mcp.context import TokenIdentity, ToolContext, Transport
-from mcp.errors import UNAUTHORIZED, AuthError, ScopeError, ToolError
+from mcp.errors import UNAUTHORIZED, AuthError, ToolError
 from mcp.models import McpToken
 from mcp.protocol import Request as RpcRequest
 from mcp.registry import get as tool_spec
@@ -206,10 +206,7 @@ async def test_a_target_scope_refuses_another_targets_run(estate, now):
         token=_identity(estate, targets=frozenset({estate.targets["example.com"]})),
         ui_base_url="",
     )
-    from shared.models.scan import Scan  # noqa: PLC0415
-
-    with pytest.raises(ScopeError):
-        await _scope.scan_in_scope(ctx, await estate.session.get(Scan, other))
+    assert await _scope.scan_by_id(ctx, other) is None
 
 
 # ---------- C3 ----------

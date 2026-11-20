@@ -6,6 +6,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
+from app.api.access import get_access
 from app.api.deps import get_current_active_user
 from app.api.v1 import notes
 from shared.definitions.notes import (
@@ -31,6 +32,7 @@ def _client() -> httpx.AsyncClient:
     app = FastAPI()
     app.include_router(notes.router)
     app.dependency_overrides[get_current_active_user] = lambda: object()
+    app.dependency_overrides[get_access] = lambda: None
     app.dependency_overrides[notes.get_service] = lambda: _Service()
     return httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

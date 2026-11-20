@@ -1,11 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, OptionalProject
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
@@ -17,28 +18,26 @@ from shared.models.notification import (
 )
 from shared.models.user import User
 from shared.services.notification import NotificationManager
+from shared.services.project_access import ProjectSet
 
 router = APIRouter(
     prefix="/notifications",
     tags=["notifications"],
 )
 
-ProjectScope = Annotated[
-    UUID | None,
-    Query(description="Project ID. Global notifications are included."),
-]
 
-
-def _visible(query, user: User, project_id: UUID | None):
+def _visible(query, user: User, projects: ProjectSet):
     return NotificationManager.receipt_join(
-        NotificationManager.in_scope(query, project_id), user.id
+        NotificationManager.in_scope(query, projects), user.id
     )
 
 
 def _read(row) -> NotificationRead:
     notification, read_at = row
     return NotificationRead(
-        **notification.model_dump(exclude={"is_read"}), is_read=read_at is not None
+        **notification.model_dump(exclude={"id", "uid", "is_read"}),
+        id=notification.uid,
+        is_read=read_at is not None,
     )
 
 
@@ -46,7 +45,7 @@ def _read(row) -> NotificationRead:
 async def get_notification_stats(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: ProjectScope = None,
+    projects: OptionalProject,
 ):
     row = (
         await session.execute(
@@ -58,7 +57,7 @@ async def get_notification_stats(
                     ),
                 ),
                 current_user,
-                project_id,
+                projects,
             )
         )
     ).one()
@@ -69,10 +68,10 @@ async def get_notification_stats(
 async def list_notifications(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: ProjectScope = None,
+    projects: OptionalProject,
 ):
     query = _visible(
-        select(Notification, NotificationReceipt.read_at), current_user, project_id
+        select(Notification, NotificationReceipt.read_at), current_user, projects
     ).order_by(Notification.created_at.desc())
     return await apaginate(
         session, query, unique=False, transformer=lambda rows: [_read(r) for r in rows]
@@ -81,12 +80,13 @@ async def list_notifications(
 
 @router.patch("/{notification_id}/read", response_model=dict)
 async def mark_notification_as_read(
-    notification_id: int,
+    notification_id: UUID,
     current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     updated = await NotificationManager.mark_as_read(
-        session, notification_id, current_user.id
+        session, notification_id, current_user.id, access
     )
 
     if not updated:
@@ -102,10 +102,10 @@ async def mark_notification_as_read(
 async def mark_all_notifications_as_read(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: ProjectScope = None,
+    projects: OptionalProject,
 ):
     count = await NotificationManager.mark_all_as_read(
-        session, current_user.id, project_id
+        session, current_user.id, projects
     )
 
     return {
@@ -117,12 +117,13 @@ async def mark_all_notifications_as_read(
 
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification(
-    notification_id: int,
+    notification_id: UUID,
     current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     deleted = await NotificationManager.dismiss(
-        session, notification_id, current_user.id
+        session, notification_id, current_user.id, access
     )
 
     if not deleted:
@@ -136,6 +137,6 @@ async def delete_notification(
 async def clear_all_notifications(
     current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: ProjectScope = None,
+    projects: OptionalProject,
 ):
-    await NotificationManager.dismiss_all(session, current_user.id, project_id)
+    await NotificationManager.dismiss_all(session, current_user.id, projects)

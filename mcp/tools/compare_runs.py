@@ -12,7 +12,7 @@ from mcp import links
 from mcp.context import ToolContext
 from mcp.errors import ToolError
 from mcp.result import ToolResult
-from mcp.tools._scope import find_target, parse_id, scan_in_scope
+from mcp.tools._scope import find_target, parse_id, scan_by_id
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.compare import Comparability
 from shared.enums.scan import SCAN_OPEN_STATUSES, ScanScope
@@ -145,11 +145,10 @@ class CompareRuns(Tool):
     ) -> tuple[_uuid.UUID, _uuid.UUID | None, _uuid.UUID]:
         if args.current:
             current_id = parse_id(args.current, "current")
-            scan = await ctx.session.get(Scan, current_id)
+            scan = await scan_by_id(ctx, current_id)
             if scan is None:
                 msg = f"No run with id {args.current}."
                 raise ToolError(msg)
-            await scan_in_scope(ctx, scan)
             baseline = parse_id(args.baseline, "baseline")
             return current_id, baseline, scan.project_id
 

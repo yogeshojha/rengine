@@ -1,9 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.scan_schedule import ScanScheduleService
@@ -29,7 +30,7 @@ async def create_schedule(
     data: ScanScheduleCreate,
     current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(
         data=data, project_id=project_id, created_by=current_user.id
@@ -40,7 +41,7 @@ async def create_schedule(
 async def list_schedules(
     _current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.list_schedules(project_id=project_id)
 
@@ -51,7 +52,7 @@ async def update_schedule(
     data: ScanScheduleUpdate,
     current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.update(
         id=id, project_id=project_id, data=data, actor_id=current_user.id
@@ -63,7 +64,7 @@ async def pause_schedule(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.set_status(id, project_id, ScheduleStatus.PAUSED)
 
@@ -73,7 +74,7 @@ async def resume_schedule(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.set_status(id, project_id, ScheduleStatus.ACTIVE)
 
@@ -83,7 +84,7 @@ async def run_schedule_now(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.run_now(
         id=id, project_id=project_id, created_by=current_user.id
@@ -95,6 +96,6 @@ async def delete_schedule(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanScheduleService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await service.delete(id=id, project_id=project_id)

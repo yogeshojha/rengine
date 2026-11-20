@@ -84,7 +84,7 @@ async def resolve(
         from app.services.target_summary import TargetSummaryService  # noqa: PLC0415
 
         summary = await TargetSummaryService(ctx.session).summary(
-            match.id, match.project_id
+            match.id, match.project_id, ctx.token.projects
         )
         surface = {
             m.key: Coverage(m.scan_id, m.covered, m.value, m.observed_at, m.current)
@@ -235,10 +235,19 @@ def active_project_ids():
     return select(Project.id).where(col(Project.is_active).is_(True))
 
 
-async def scan_in_scope(ctx: ToolContext, scan: Scan) -> None:
-    """A run of a target inside the token's scope."""
-    await in_scope(ctx, scan.project_id)
-    ctx.check_target(scan.target_id)
+async def scan_by_id(ctx: ToolContext, scan_id: uuid.UUID | None) -> Scan | None:
+    """A run inside the token's scope, else None."""
+    row = await ctx.session.get(Scan, scan_id) if scan_id else None
+    if row is None:
+        return None
+    scoped = ctx.scoped_projects()
+    targets = ctx.scoped_targets()
+    if scoped is not None and row.project_id not in scoped:
+        return None
+    if targets is not None and row.target_id not in targets:
+        return None
+    project = await ctx.session.get(Project, row.project_id)
+    return row if project is not None and project.is_active else None
 
 
 async def in_scope(ctx: ToolContext, project_id: uuid.UUID) -> uuid.UUID:
@@ -274,9 +283,12 @@ async def project_for(ctx: ToolContext, project_id: uuid.UUID | None) -> uuid.UU
     if project_id is not None:
         return await in_scope(ctx, project_id)
     if ctx.token.project_id is not None:
-        return ctx.token.project_id
+        return await in_scope(ctx, ctx.token.project_id)
 
-    rows = (await ctx.session.execute(active_projects())).scalars().all()
+    statement = active_projects()
+    if (scoped := ctx.scoped_projects()) is not None:
+        statement = statement.where(col(Project.id).in_(scoped))
+    rows = (await ctx.session.execute(statement)).scalars().all()
     if len(rows) == 1:
         return rows[0].id
     if not rows:

@@ -38,6 +38,11 @@ def _pending[T](
     return taken
 
 
+def opaque_slug(name: str) -> str:
+    """A slug with a random suffix."""
+    return f"{generate_slug(name) or FALLBACK_SLUG}-{uuid.uuid4().hex[:8]}"
+
+
 async def unique_slug[T](
     session: AsyncSession, model: type[T], name: str, **scope: Any
 ) -> str:
@@ -63,11 +68,15 @@ def _slug_conflict(exc: IntegrityError) -> bool:
 
 
 async def add_with_unique_slug[T](
-    session: AsyncSession, row: T, name: str, **scope: Any
+    session: AsyncSession, row: T, name: str, *, opaque: bool = False, **scope: Any
 ) -> T:
     """Add the row under a slug free in its scope, retrying on a slug conflict."""
     for _ in range(MAX_SLUG_ATTEMPTS):
-        row.slug = await unique_slug(session, type(row), name, **scope)
+        row.slug = (
+            opaque_slug(name)
+            if opaque
+            else await unique_slug(session, type(row), name, **scope)
+        )
         try:
             async with session.begin_nested():
                 session.add(row)

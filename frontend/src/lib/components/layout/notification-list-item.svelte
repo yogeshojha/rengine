@@ -13,10 +13,10 @@
 	interface Props {
 		notification: Notification;
 		variant?: 'compact' | 'full';
-		onSelect: (id: number) => void;
-		onAction: (id: number, event: Event) => void;
-		onDelete: (id: number, event: Event) => void;
-		onMarkRead: (id: number, event: Event) => void;
+		onSelect: (id: string) => void;
+		onAction: (id: string, event: Event) => void;
+		onDelete: (id: string, event: Event) => void;
+		onMarkRead: (id: string, event: Event) => void;
 	}
 
 	let {

@@ -37,7 +37,7 @@ export interface NotificationMetadata {
 }
 
 export interface Notification {
-	id: number;
+	id: string;
 	project_id?: string | null;
 	type: NotificationType;
 	severity: NotificationSeverity;

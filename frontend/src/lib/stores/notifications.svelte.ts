@@ -117,7 +117,7 @@ export const notificationStore = {
 		}
 	},
 
-	async markAsRead(id: number): Promise<boolean> {
+	async markAsRead(id: string): Promise<boolean> {
 		if (state.notifications.find((n) => n.id === id)?.is_read) return true;
 		try {
 			await notificationsApi.markAsRead(id);
@@ -143,7 +143,7 @@ export const notificationStore = {
 		return result.count;
 	},
 
-	async deleteNotification(id: number) {
+	async deleteNotification(id: string) {
 		await notificationsApi.delete(id);
 
 		const notification = state.notifications.find((n) => n.id === id);
@@ -165,16 +165,18 @@ export const notificationStore = {
 		state.totalCount = 0;
 	},
 
-	subscribeSSE() {
+	subscribeSSE(projectId?: string) {
 		if (sseUnsub) return;
 
-		sseUnsub = sseStore.on<Notification>(
-			SSEChannel.BROADCAST,
-			SSEEventType.NOTIFICATION,
-			(data) => {
+		const channels = projectId
+			? [SSEChannel.BROADCAST, SSEChannel.project(projectId)]
+			: [SSEChannel.BROADCAST];
+		const unsubs = channels.map((channel) =>
+			sseStore.on<Notification>(channel, SSEEventType.NOTIFICATION, (data) => {
 				this.handleNewNotification(data);
-			}
+			})
 		);
+		sseUnsub = () => unsubs.forEach((unsub) => unsub());
 		resumeUnsub = sseStore.onResume(() => void this.loadNotifications(state.projectId));
 	},
 

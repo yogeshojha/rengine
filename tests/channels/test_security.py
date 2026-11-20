@@ -9,6 +9,7 @@ from channels.telegram import driver
 from mcp.capabilities import Capability
 from shared.definitions.channels import PAIRING_ALPHABET, PAIRING_CODE_LENGTH
 from shared.models.user import User
+from shared.services.project_access import EVERY_PROJECT
 from shared.services.scan_resolve import MASK
 
 TOKEN = "1234567890:AAFxYz0123456789abcdefghijklmnopqrst"
@@ -90,7 +91,7 @@ def test_no_authenticator_means_read_only():
 def test_the_ceiling_caps_a_chat_below_what_it_was_granted():
     ceiling = {"read": True, "plan": True, "write": False, "launch": False}
     chat = _chat(["read", "plan", "write", "launch"])
-    identity = identity_for(chat, _user(totp=True), ceiling)
+    identity = identity_for(chat, _user(totp=True), ceiling, EVERY_PROJECT)
     assert identity.capabilities == frozenset({"read", "plan"})
     assert identity.project_id == chat.project_id
     assert identity.name == "telegram:@op"

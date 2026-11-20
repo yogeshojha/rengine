@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -18,21 +19,62 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from shared.config import BaseAppSettings
+from shared.definitions.ask import AskSubject
+from shared.definitions.issue_trackers import TrackerKind
+from shared.definitions.lookalikes import Verdict
 from shared.definitions.scan_surface import SurfaceState
+from shared.definitions.secrets import SecretGroup
 from shared.definitions.vulnerabilities import Scanner, TemplateOrigin
+from shared.definitions.watch import WatchHostState
+from shared.enums.activity import ActivityEvent
+from shared.enums.notification import NotificationSeverity, NotificationType
+from shared.enums.scan import ScanActivityStatus
 from shared.enums.target import TargetType
+from shared.models import (
+    ActivityLog,
+    AskThread,
+    CloudBucket,
+    Connector,
+    DomainPosture,
+    Export,
+    InterestDismissal,
+    InterestRule,
+    IpAddress,
+    IssueTracker,
+    LookalikeDomain,
+    Note,
+    Notification,
+    Organization,
+    Report,
+    ScanCommand,
+    ScanContext,
+    ScanEngine,
+    ScanSchedule,
+    ScanTag,
+    ScanTagLink,
+    Secret,
+    Tag,
+    TrackedIssue,
+    Tripwire,
+    TripwireRun,
+)
+from shared.models.bounty_program import BountyProgram
 from shared.models.endpoint import Endpoint
 from shared.models.http_asset import HttpAsset
 from shared.models.port import Port
 from shared.models.project import Project
+from shared.models.project_member import ProjectMember
 from shared.models.scan import Scan
 from shared.models.scan_activity import ScanActivity
 from shared.models.scan_surface import ScanSurfaceItem
 from shared.models.subdomain import Subdomain
-from shared.models.target import Target
+from shared.models.tag import TargetTag
+from shared.models.target import Target, TargetOrganization
+from shared.models.target_seed import TargetSeed
 from shared.models.user import User
 from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import Vulnerability, VulnerabilityTriage
+from shared.models.watch import ProgramWatch, WatchHost
 from shared.utils.datetime import utc_now
 
 TEST_DB = os.environ.get("POSTGRES_TEST_DB", "rengine_test")
@@ -128,34 +170,76 @@ async def session(engine) -> AsyncIterator[AsyncSession]:
 class Estate:
     """A project, a target and the scans under it, addressed by name."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        project_id: uuid.UUID | None = None,
+        user_id: uuid.UUID | None = None,
+    ):
         self.session = session
-        self.project_id = uuid.uuid4()
-        self.user_id = uuid.uuid4()
+        self.project_id = project_id or uuid.uuid4()
+        self.user_id = user_id or uuid.uuid4()
         self.targets: dict[str, uuid.UUID] = {}
         self.scans: dict[str, uuid.UUID] = {}
 
-    async def setup(self) -> Estate:
-        self.session.add(
-            User(
-                id=self.user_id,
-                username=f"t{self.user_id.hex[:8]}",
-                email=f"{self.user_id.hex[:8]}@test.local",
-                hashed_password="x",
-                is_superuser=True,
+    async def setup(self, *, name: str = "Test", with_user: bool = True) -> Estate:
+        if with_user:
+            self.session.add(
+                User(
+                    id=self.user_id,
+                    username=f"t{self.user_id.hex[:8]}",
+                    email=f"{self.user_id.hex[:8]}@test.local",
+                    hashed_password="x",
+                    is_superuser=True,
+                )
             )
-        )
-        await self.session.flush()
+            await self.session.flush()
+        self.slug = f"{name.lower().replace(' ', '-')}-{self.project_id.hex[:8]}"
         self.session.add(
             Project(
                 id=self.project_id,
-                name="Test",
-                slug=f"test-{self.project_id.hex[:8]}",
+                name=name,
+                slug=self.slug,
                 created_by=self.user_id,
             )
         )
         await self.session.flush()
         return self
+
+    async def sibling(
+        self, name: str = "Other", project_id: uuid.UUID | None = None
+    ) -> Estate:
+        """A second project of the same administrator."""
+        other = Estate(self.session, project_id=project_id, user_id=self.user_id)
+        return await other.setup(name=name, with_user=False)
+
+    async def member(
+        self,
+        *projects: uuid.UUID,
+        user_id: uuid.UUID | None = None,
+        can_create_projects: bool = False,
+    ) -> User:
+        """A standard user who opens these projects, this one when none is named."""
+        user = User(
+            id=user_id or uuid.uuid4(),
+            username=f"m{uuid.uuid4().hex[:8]}",
+            email=f"m{uuid.uuid4().hex[:8]}@test.local",
+            hashed_password="x",
+            can_create_projects=can_create_projects,
+        )
+        self.session.add(user)
+        await self.session.flush()
+        for project_id in projects or (self.project_id,):
+            self.session.add(ProjectMember(project_id=project_id, user_id=user.id))
+        await self.session.flush()
+        return user
+
+    async def canary(
+        self, word: str, at: datetime, *, owner: uuid.UUID | None = None
+    ) -> dict[str, Any]:
+        """Rows of every kind a route reads, each text carrying the word, ids keyed by parameter name."""
+        return await seed_canary(self, word, at, owner or self.user_id)
 
     async def target(
         self, value: str, kind: TargetType = TargetType.DOMAIN
@@ -466,6 +550,303 @@ class Estate:
         await self.session.flush()
 
 
+async def seed_canary(
+    estate: Estate, word: str, at: datetime, owner: uuid.UUID
+) -> dict[str, Any]:
+    s = estate.session
+    pid = estate.project_id
+    apex = f"{word}.test"
+    www, api = f"www.{apex}", f"api.{apex}"
+    ip = "198.51.100.77"
+    target_id = await estate.target(apex)
+    scan_id = await estate.scan(apex, f"{word} census", at=at, engine=f"{word} engine")
+    await estate.activity(
+        f"{word} census",
+        dict.fromkeys(
+            (
+                "subdomain_discovery",
+                "http_probe",
+                "port_scan",
+                "url_discovery",
+                "endpoint_probe",
+                "vulnerability_scan",
+            ),
+            ScanActivityStatus.SUCCESS.value,
+        ),
+        at=at,
+    )
+    name = f"{word} census"
+    await estate.hosts(
+        name, [www, api], at=at, ips=[ip], status=200, title=f"{word} title"
+    )
+    await estate.assets(name, [www, api], at=at, ip=ip, body=f"{word} body")
+    await estate.endpoints(name, [f"/{word}/login"], at=at, host=www, status=200)
+    await estate.ports(name, [(ip, 443, "https")], at=at, product=word)
+    fingerprint = f"{word}-fp"
+    await estate.vulns(
+        name, [(fingerprint, "high")], at=at, host=www, template=f"{word}-check"
+    )
+    await estate.surface(name, [www])
+    s.add(
+        IpAddress(
+            scan_id=scan_id, target_id=target_id, project_id=pid, ip=ip, source=word
+        )
+    )
+
+    def one(model, **fields):
+        row = model(**fields)
+        s.add(row)
+        return row
+
+    tag = one(
+        Tag, name=f"{word} tag", slug=f"{word}-tag", project_id=pid, created_by=owner
+    )
+    org = one(
+        Organization,
+        name=f"{word} org",
+        slug=f"{word}-org",
+        project_id=pid,
+        created_by=owner,
+    )
+    engine = one(ScanEngine, project_id=pid, created_by=owner, name=f"{word} engine")
+    context = one(ScanContext, project_id=pid, created_by=owner, name=f"{word} context")
+    program = one(
+        BountyProgram,
+        platform="hackerone",
+        handle=f"h{uuid.uuid4().hex[:10]}",
+        name="Program",
+        program_state="open",
+        submission_state="open",
+    )
+    tracker = one(
+        IssueTracker,
+        name="Tracker",
+        kind=TrackerKind.GITHUB.value,
+        url="https://github.com",
+    )
+    await s.flush()
+    s.add(TargetTag(target_id=target_id, tag_id=tag.id))
+    s.add(TargetOrganization(target_id=target_id, organization_id=org.id))
+    scan_tag = one(ScanTag, project_id=pid, name=f"{word}-run")
+    await s.flush()
+    s.add(ScanTagLink(scan_id=scan_id, tag_id=scan_tag.id))
+    schedule = one(
+        ScanSchedule,
+        project_id=pid,
+        name=f"{word} nightly",
+        target_ids=[str(target_id)],
+        engine_id=engine.id,
+        engine_name=engine.name,
+        schedule_type="interval",
+        interval_every=1,
+        interval_unit="days",
+        created_by=owner,
+    )
+    note = one(
+        Note, project_id=pid, target_id=target_id, body=f"{word} note", created_by=owner
+    )
+    notification = one(
+        Notification,
+        type=NotificationType.SCAN,
+        severity=NotificationSeverity.INFO,
+        title=f"{word} alert",
+        message=f"{word} message",
+        project_id=pid,
+    )
+    one(
+        ActivityLog,
+        event_type=ActivityEvent.SCAN_COMPLETED,
+        title=f"{word} scan completed",
+        project_id=pid,
+        target_id=target_id,
+        scan_id=scan_id,
+        target_value=apex,
+    )
+    tripwire = one(
+        Tripwire,
+        project_id=pid,
+        name=f"{word} wire",
+        dimension="web_assets",
+        query=word,
+    )
+    export = one(
+        Export,
+        project_id=pid,
+        dimension="web_assets",
+        scan_id=scan_id,
+        subject=f"{word} export",
+        created_by=owner,
+    )
+    report = one(
+        Report,
+        project_id=pid,
+        scan_id=scan_id,
+        target_id=target_id,
+        subject=f"{word} report",
+        title=f"{word} report",
+        created_by=owner,
+    )
+    rule = one(InterestRule, project_id=pid, name=f"{word} rule", kind=word, query=word)
+    dismissal = one(
+        InterestDismissal, target_id=target_id, project_id=pid, host=www, note=word
+    )
+    connector = one(
+        Connector,
+        project_id=pid,
+        name=f"{word} burp",
+        token_hash=uuid.uuid4().hex,
+        token_prefix=word[:8],
+    )
+    secret = one(
+        Secret,
+        scan_id=scan_id,
+        target_id=target_id,
+        project_id=pid,
+        fingerprint=uuid.uuid4().hex,
+        kind="generic",
+        group=SecretGroup.AUTH.value,
+        value=f"{word}-secret-value",
+        host=www,
+        url=f"https://{www}/{word}.js",
+    )
+    command = one(
+        ScanCommand,
+        scan_id=scan_id,
+        project_id=pid,
+        tool="nuclei",
+        command=f"nuclei -u {www}",
+    )
+    seed = one(TargetSeed, target_id=target_id, project_id=pid, value=f"seed.{apex}")
+    one(
+        CloudBucket,
+        scan_id=scan_id,
+        target_id=target_id,
+        project_id=pid,
+        name=f"{word}-bucket",
+        provider="aws",
+        url=f"https://{word}-bucket.s3.amazonaws.com",
+        source="test",
+        access="public",
+    )
+    one(
+        DomainPosture,
+        scan_id=scan_id,
+        target_id=target_id,
+        project_id=pid,
+        zone=apex,
+    )
+    one(
+        LookalikeDomain,
+        scan_id=scan_id,
+        target_id=target_id,
+        project_id=pid,
+        apex=apex,
+        domain=f"{word}-login.test",
+        display=f"{word}-login.test",
+        technique="addition",
+        verdict=Verdict.LIVE.value,
+    )
+    await s.flush()
+    run = one(
+        TripwireRun,
+        tripwire_id=tripwire.id,
+        project_id=pid,
+        target_id=target_id,
+        scan_id=scan_id,
+        status="fired",
+        rows=[{"key": www}],
+        detail=word,
+    )
+    watch = one(ProgramWatch, project_id=pid, program_id=program.id, created_by=owner)
+    issue = one(
+        TrackedIssue,
+        tracker_id=tracker.id,
+        project_id=pid,
+        target_id=target_id,
+        template_id=f"{word}-check",
+        severity="high",
+        destination="owner/repo",
+        title=f"{word} issue",
+    )
+    await s.flush()
+    host = one(
+        WatchHost,
+        watch_id=watch.id,
+        project_id=pid,
+        target_id=target_id,
+        name=f"new.{apex}",
+        state=WatchHostState.NEW.value,
+    )
+    await s.flush()
+    vulnerability_id = await s.scalar(
+        sa.select(Vulnerability.id).where(Vulnerability.scan_id == scan_id)
+    )
+    return {
+        "project_id": pid,
+        "project_slug": estate.slug,
+        "target_id": target_id,
+        "scan_id": scan_id,
+        "vulnerability_id": vulnerability_id,
+        "fingerprint": fingerprint,
+        "endpoint_id": await s.scalar(
+            sa.select(Endpoint.id).where(Endpoint.scan_id == scan_id)
+        ),
+        "asset_id": await s.scalar(
+            sa.select(HttpAsset.id).where(HttpAsset.scan_id == scan_id)
+        ),
+        "subdomain_id": await s.scalar(
+            sa.select(Subdomain.id).where(Subdomain.scan_id == scan_id)
+        ),
+        "tag_id": tag.id,
+        "organization_id": org.id,
+        "engine_id": engine.id,
+        "context_id": context.id,
+        "schedule_id": schedule.id,
+        "note_id": note.id,
+        "notification_id": notification.uid,
+        "tripwire_id": tripwire.id,
+        "tripwire_run_id": run.id,
+        "export_id": export.id,
+        "report_id": report.id,
+        "rule_id": rule.id,
+        "dismissal_id": dismissal.id,
+        "connector_id": connector.id,
+        "secret_id": secret.id,
+        "command_id": command.id,
+        "seed_id": seed.id,
+        "scan_tag_id": scan_tag.id,
+        "watch_id": watch.id,
+        "host_id": host.id,
+        "issue_id": issue.id,
+        "host": www,
+        "ip": ip,
+    }
+
+
+async def ask_threads(
+    estate: Estate, word: str, user_id: uuid.UUID, target_id: uuid.UUID
+) -> dict[str, uuid.UUID]:
+    """One asset thread and one estate thread of this user in the estate's project."""
+    asset = AskThread(
+        project_id=estate.project_id,
+        target_id=target_id,
+        user_id=user_id,
+        asset_key=f"{word}-fp",
+        title=f"{word} thread",
+        message_count=1,
+    )
+    whole = AskThread(
+        project_id=estate.project_id,
+        subject=AskSubject.ESTATE.value,
+        user_id=user_id,
+        title=f"{word} estate thread",
+        message_count=1,
+    )
+    estate.session.add_all([asset, whole])
+    await estate.session.flush()
+    return {"thread_id": asset.id, "estate_thread_id": whole.id}
+
+
 @pytest.fixture
 def flush_only(session: AsyncSession, monkeypatch) -> AsyncSession:
     """The test session with commit reduced to flush."""
@@ -484,8 +865,8 @@ async def _truncate(engine) -> None:
     async with engine.begin() as conn:
         await conn.execute(
             sa.text(
-                "TRUNCATE users, projects, instance_settings, issue_trackers "
-                "RESTART IDENTITY CASCADE"
+                "TRUNCATE users, projects, instance_settings, issue_trackers, "
+                "bounty_programs, notifications RESTART IDENTITY CASCADE"
             )
         )
 

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId, check_open, not_found, owned
 from app.api.deps import CurrentUser
 from app.api.scope import TargetFilterDep
 from app.core.database import get_session
@@ -34,17 +35,15 @@ from shared.services.celery_dispatch import (
     dispatch_interest_evaluation,
     dispatch_interest_refresh,
 )
+from shared.services.project_access import ProjectSet, project_clause
 
 router = APIRouter(prefix="/interest", tags=["interest"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
-async def _scan(session: AsyncSession, scan_id: UUID) -> Scan:
-    scan = await session.get(Scan, scan_id)
-    if scan is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found.")
-    return scan
+async def _scan(session: AsyncSession, access: ProjectSet, scan_id: UUID) -> Scan:
+    return await owned(session, access, Scan, scan_id, "Scan")
 
 
 @router.get("/catalog", response_model=InterestCatalog)
@@ -56,7 +55,7 @@ async def get_catalog(_user: CurrentUser) -> InterestCatalog:
 async def list_rules(
     session: SessionDep,
     _user: CurrentUser,
-    project_id: Annotated[UUID, Query()],
+    project_id: ProjectId,
 ) -> list[InterestRuleRead]:
     return await InterestReadService(session).rules(project_id)
 
@@ -68,7 +67,7 @@ async def create_rule(
     session: SessionDep,
     user: CurrentUser,
     payload: InterestRuleCreate,
-    project_id: Annotated[UUID, Query()],
+    project_id: ProjectId,
 ) -> InterestRuleRead:
     try:
         rule = await InterestReadService(session).create(payload, project_id, user.id)
@@ -81,13 +80,15 @@ async def create_rule(
 @router.patch("/rules/{rule_id}", response_model=InterestRuleRead)
 async def update_rule(
     session: SessionDep,
-    _user: CurrentUser,
+    user: CurrentUser,
     rule_id: Annotated[UUID, Path()],
     payload: InterestRuleUpdate,
-    project_id: Annotated[UUID, Query()],
+    project_id: ProjectId,
 ) -> InterestRuleRead:
     try:
-        rule = await InterestReadService(session).update(rule_id, payload, project_id)
+        rule = await InterestReadService(session).update(
+            rule_id, payload, project_id, superuser=user.is_superuser
+        )
     except InterestError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
     if rule is None:
@@ -101,7 +102,7 @@ async def delete_rule(
     session: SessionDep,
     _user: CurrentUser,
     rule_id: Annotated[UUID, Path()],
-    project_id: Annotated[UUID, Query()],
+    project_id: ProjectId,
 ) -> None:
     if not await InterestReadService(session).delete(rule_id, project_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Rule not found or read-only.")
@@ -112,10 +113,17 @@ async def delete_rule(
 async def preview_rule(
     session: SessionDep,
     _user: CurrentUser,
+    access: Access,
     query: Annotated[str, Body(embed=True, max_length=MAX_QUERY_LENGTH)],
     scan_id: Annotated[UUID | None, Query()] = None,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> RulePreview:
+    if project_id is not None:
+        check_open(access, project_id)
+    if scan_id is not None:
+        scan = await _scan(session, access, scan_id)
+        if project_id not in (None, scan.project_id):
+            raise not_found(noun="Scan")
     return await InterestReadService(session).preview(query, scan_id, project_id)
 
 
@@ -123,10 +131,11 @@ async def preview_rule(
 async def scan_interest(
     session: SessionDep,
     _user: CurrentUser,
+    access: Access,
     scan_id: Annotated[UUID, Path()],
     body: InterestFilter,
 ) -> InterestPage:
-    scan = await _scan(session, scan_id)
+    scan = await _scan(session, access, scan_id)
     service = InterestReadService(session)
     page = await service.page(
         QueryScope((scan.id,), project_id=scan.project_id), body, scan
@@ -142,12 +151,14 @@ async def scan_interest(
 async def project_interest(
     session: SessionDep,
     _user: CurrentUser,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     body: InterestFilter,
     spec: TargetFilterDep,
 ) -> InterestPage:
     """Flagged assets across each target's latest covering scan."""
     targets = await resolve_targets(session, project_id, spec)
+    if targets is not None and not set(spec.target_ids) <= targets:
+        raise not_found(noun="Target")
     scope = await SurfaceScopeService(session).scope(
         project_id, SurfaceDimension.WEB_ASSETS.value, targets=targets
     )
@@ -158,9 +169,10 @@ async def project_interest(
 async def judge_scan(
     session: SessionDep,
     _user: CurrentUser,
+    access: Access,
     scan_id: Annotated[UUID, Path()],
 ) -> dict:
-    await _scan(session, scan_id)
+    await _scan(session, access, scan_id)
     await asyncio.to_thread(dispatch_interest_evaluation, str(scan_id), include_ai=True)
     return {"status": "queued"}
 
@@ -169,9 +181,10 @@ async def judge_scan(
 async def rule_suggestions(
     session: SessionDep,
     _user: CurrentUser,
+    access: Access,
     scan_id: Annotated[UUID, Path()],
 ) -> list[RuleSuggestion]:
-    scan = await _scan(session, scan_id)
+    scan = await _scan(session, access, scan_id)
     return await InterestReadService(session).suggestions(scan)
 
 
@@ -179,11 +192,10 @@ async def rule_suggestions(
 async def dismiss(
     session: SessionDep,
     user: CurrentUser,
+    access: Access,
     payload: DismissRequest,
 ) -> None:
-    target = await session.get(Target, payload.target_id)
-    if target is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found.")
+    target = await owned(session, access, Target, payload.target_id, "Target")
     await InterestReadService(session).dismiss(
         target_id=payload.target_id,
         project_id=target.project_id,
@@ -198,18 +210,21 @@ async def dismiss(
 async def dismiss_many(
     session: SessionDep,
     user: CurrentUser,
+    access: Access,
     payload: BulkDismissRequest,
 ) -> BulkDismissResult:
     wanted = {row.target_id for row in payload.rows}
     targets = dict(
         (
             await session.execute(
-                select(Target.id, Target.project_id).where(Target.id.in_(wanted))
+                select(Target.id, Target.project_id).where(
+                    Target.id.in_(wanted), project_clause(access, Target.project_id)
+                )
             )
         ).all()
     )
     if wanted - targets.keys():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Target not found.")
+        raise not_found(noun="Target")
     count = await InterestReadService(session).dismiss_many(
         [
             (row.target_id, targets[row.target_id], row.host, row.kind or "")
@@ -224,7 +239,7 @@ async def dismiss_many(
 async def list_dismissals(
     session: SessionDep,
     _user: CurrentUser,
-    project_id: Annotated[UUID, Query()],
+    project_id: ProjectId,
 ) -> list[dict]:
     rows = await InterestReadService(session).dismissals(project_id=project_id)
     return [
@@ -245,7 +260,7 @@ async def restore_dismissal(
     session: SessionDep,
     _user: CurrentUser,
     dismissal_id: Annotated[UUID, Path()],
-    project_id: Annotated[UUID, Query()],
+    project_id: ProjectId,
 ) -> None:
     if not await InterestReadService(session).restore(dismissal_id, project_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Dismissal not found.")

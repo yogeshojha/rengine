@@ -194,19 +194,21 @@
 					{/if}
 				</section>
 
-				<section class="mt-4 flex flex-col">
-					<SettingRow label="Cached narratives" class="border-y px-5">
-						<span class="text-sm tabular-nums">{cached.toLocaleString()}</span>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={!isAdmin || !cached}
-							onclick={() => (clearOpen = true)}
-						>
-							Clear
-						</Button>
-					</SettingRow>
-				</section>
+				{#if isAdmin}
+					<section class="mt-4 flex flex-col">
+						<SettingRow label="Cached narratives" class="border-y px-5">
+							<span class="text-sm tabular-nums">{cached.toLocaleString()}</span>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={!cached}
+								onclick={() => (clearOpen = true)}
+							>
+								Clear
+							</Button>
+						</SettingRow>
+					</section>
+				{/if}
 
 				<section class="mt-4 flex flex-col">
 					<div class="px-5 pt-1 pb-2"><SectionHead title="Recent calls" /></div>

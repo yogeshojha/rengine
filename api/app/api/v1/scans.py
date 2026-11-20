@@ -7,6 +7,7 @@ from fastapi.responses import PlainTextResponse
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
@@ -85,7 +86,7 @@ async def rescan_assets(
     data: RescanCreate,
     current_user: CurrentUser,
     service: Annotated[RescanService, Depends(get_rescan_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(
         data=data, project_id=project_id, created_by=current_user.id
@@ -97,7 +98,7 @@ async def rescan_preview(
     data: RescanCreate,
     _current_user: CurrentUser,
     service: Annotated[RescanService, Depends(get_rescan_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.preview(data=data, project_id=project_id)
 
@@ -107,7 +108,7 @@ async def scan_rechecks(
     scan_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[RescanService, Depends(get_rescan_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.rechecks(parent_scan_id=scan_id, project_id=project_id)
 
@@ -117,7 +118,7 @@ async def preview_scan(
     data: ScanCreate,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.preview(data=data, project_id=project_id)
 
@@ -129,7 +130,7 @@ async def create_scans(
     data: ScanBatchCreate,
     current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create_batch(
         data=data, project_id=project_id, created_by=current_user.id
@@ -139,9 +140,10 @@ async def create_scans(
 @router.get("", response_model=Page[ScanRead])
 async def list_scans(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     target_id: Annotated[
         list[UUID] | None, Query(description="Filter by target ID")
     ] = None,
@@ -204,7 +206,7 @@ async def list_scans(
         query,
         transformer=lambda items: [service.to_read(s) for s in items],
     )
-    await service.attach_deltas(page.items)
+    await service.attach_deltas(page.items, access)
     if latest:
         await service.attach_target_runs(page.items, include_focused)
     return page
@@ -213,20 +215,21 @@ async def list_scans(
 @router.get("/latest", response_model=list[ScanRead])
 async def latest_runs(
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     target_id: Annotated[
         list[UUID], Query(description="Targets", max_length=MAX_TREND_TARGETS)
     ],
 ):
-    return await service.latest_for_targets(project_id, target_id)
+    return await service.latest_for_targets(project_id, target_id, access)
 
 
 @router.get("/trends", response_model=list[ScanTargetTrend])
 async def finding_trends(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     target_id: Annotated[
         list[UUID], Query(description="Targets", max_length=MAX_TREND_TARGETS)
     ],
@@ -238,7 +241,7 @@ async def finding_trends(
 async def daily_runs(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     days: Annotated[int, Query(ge=1, le=MAX_DAILY_WINDOW)] = 30,
     target_id: Annotated[
         list[UUID] | None, Query(description="Filter by target ID")
@@ -252,7 +255,7 @@ async def daily_runs(
 async def scan_stats(
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     target_id: Annotated[
         list[UUID] | None, Query(description="Filter by target ID")
     ] = None,
@@ -269,7 +272,7 @@ async def scan_stats(
 async def compare_scans(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     current: Annotated[UUID, Query(description="Later run")],
     baseline: Annotated[
         UUID | None, Query(description="Earlier run. Defaults to the previous run.")
@@ -284,7 +287,7 @@ async def compare_scans(
 async def compare_scan_rows(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     current: Annotated[UUID, Query(description="Later run")],
     dimension: Annotated[
         str, Query(description="Result dimension", max_length=MAX_DIMENSION_LENGTH)
@@ -314,7 +317,7 @@ async def compare_scan_rows(
 async def compare_scan_diff(
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     current: Annotated[UUID, Query(description="Later run")],
     baseline: Annotated[
         UUID | None, Query(description="Earlier run. Defaults to the previous run.")
@@ -341,7 +344,7 @@ async def compare_scan_diff(
 async def cancel_all_scans(
     current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     target_id: Annotated[list[UUID] | None, Query(description="Target ID")] = None,
 ):
     return await service.cancel_all(
@@ -354,7 +357,7 @@ async def comparable_runs(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanCompareService, Depends(get_compare_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.comparable(scan_id=id, project_id=project_id)
 
@@ -363,10 +366,11 @@ async def comparable_runs(
 async def get_scan(
     id: UUID,
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
-    return await service.get(id=id, project_id=project_id)
+    return await service.get(id=id, project_id=project_id, access=access)
 
 
 @router.get("/{id}/activities", response_model=list[ScanActivityRead])
@@ -374,7 +378,7 @@ async def list_scan_activities(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.list_activities(scan_id=id, project_id=project_id)
 
@@ -384,7 +388,7 @@ async def list_scan_commands(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     activity_id: Annotated[
         UUID | None, Query(description="Filter by stage activity ID")
     ] = None,
@@ -400,7 +404,7 @@ async def get_scan_command(
     command_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.get_command(
         scan_id=id, command_id=command_id, project_id=project_id
@@ -412,7 +416,7 @@ async def cancel_scan(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.cancel(
         id=id, project_id=project_id, actor=current_user.username
@@ -424,7 +428,7 @@ async def pause_scan(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.pause(id=id, project_id=project_id)
 
@@ -434,7 +438,7 @@ async def resume_scan(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.resume(id=id, project_id=project_id)
 
@@ -444,6 +448,6 @@ async def delete_scan(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await service.delete(id=id, project_id=project_id)

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from shared.definitions.endpoints import MAX_HOST_LENGTH
@@ -21,9 +22,15 @@ from shared.models.whois import (
     WhoisRecordRead,
     WhoisRecordSummary,
 )
+from shared.services.project_access import ProjectSet, scoped
 from shared.utils.infra import is_shared_nameserver
 from shared.utils.privacy import registrant_key, registrant_key_sql
-from tools.whois.service import MAX_CORRELATION_RECORDS, WhoisError, WhoisService
+from tools.whois.service import (
+    MAX_CORRELATION_RECORDS,
+    WhoisError,
+    WhoisService,
+    record_visible,
+)
 
 router = APIRouter(
     prefix="/tools/whois",
@@ -36,6 +43,20 @@ _REGISTRANT_KEY = registrant_key_sql(WhoisRecord.registrant_name)
 
 def get_whois_service() -> WhoisService:
     return WhoisService(proxy_url=egress_proxy())
+
+
+async def _record(
+    session: AsyncSession, access: ProjectSet, record_id: _uuid.UUID
+) -> WhoisRecord:
+    record = await session.scalar(
+        select(WhoisRecord).where(WhoisRecord.id == record_id, record_visible(access))
+    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="WHOIS record not found.",
+        )
+    return record
 
 
 class WhoisRefreshResponse(BaseModel):
@@ -52,20 +73,10 @@ class WhoisRefreshResponse(BaseModel):
 async def get_whois_record(
     record_id: _uuid.UUID,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    result = await session.execute(
-        select(WhoisRecord).where(WhoisRecord.id == record_id)
-    )
-    record = result.scalar_one_or_none()
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="WHOIS record not found.",
-        )
-
-    return WhoisRecordRead.model_validate(record)
+    return WhoisRecordRead.model_validate(await _record(session, access, record_id))
 
 
 @router.post(
@@ -77,19 +88,10 @@ async def get_whois_record(
 async def refresh_whois_record(
     record_id: _uuid.UUID,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    result = await session.execute(
-        select(WhoisRecord).where(WhoisRecord.id == record_id)
-    )
-    record = result.scalar_one_or_none()
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="WHOIS record not found.",
-        )
-
+    record = await _record(session, access, record_id)
     previous_queried_at = record.queried_at.isoformat() if record.queried_at else None
 
     service = WhoisService(cache_ttl_days=0, proxy_url=egress_proxy())
@@ -135,9 +137,12 @@ def _capped(key, *where):
 
 
 async def _correlations(
-    session: AsyncSession, records: dict[_uuid.UUID, WhoisRecord]
+    session: AsyncSession,
+    records: dict[_uuid.UUID, WhoisRecord],
+    project_id: _uuid.UUID,
 ) -> dict[_uuid.UUID, dict[str, list[WhoisRecord]]]:
-    """Correlation groups for many records, one statement per kind."""
+    """Correlation groups for many records of one project, one statement per kind."""
+    held = record_visible(frozenset({project_id}))
     keys = {rid: registrant_key(r.registrant_name) for rid, r in records.items()}
     by_key: dict[str, list[WhoisRecord]] = defaultdict(list)
     if wanted := {k for k in keys.values() if k}:
@@ -145,6 +150,7 @@ async def _correlations(
             await session.execute(
                 _capped(
                     _REGISTRANT_KEY,
+                    held,
                     WhoisRecord.registrant_name != "",
                     _REGISTRANT_KEY.in_(sorted(wanted)),
                 )
@@ -158,6 +164,7 @@ async def _correlations(
             await session.execute(
                 _capped(
                     WhoisRecord.network_cidr,
+                    held,
                     WhoisRecord.network_cidr != "",
                     WhoisRecord.network_cidr.in_(sorted(cidrs)),
                 )
@@ -183,7 +190,7 @@ async def _correlations(
         ranked = (
             select(WhoisRecord.id, WhoisNameserver.nameserver, rank)
             .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
-            .where(WhoisNameserver.nameserver.in_(sorted(names)))
+            .where(held, WhoisNameserver.nameserver.in_(sorted(names)))
             .subquery()
         )
         for row, nameserver in (
@@ -231,10 +238,18 @@ async def _correlations_by_target(
             )
         ).scalars()
     }
-    correlations = await _correlations(session, records)
+    correlations: dict[_uuid.UUID, dict[_uuid.UUID, dict[str, list[WhoisRecord]]]] = {}
+    for project_id in {t.project_id for t in targets}:
+        own = {
+            t.whois_record_id: records[t.whois_record_id]
+            for t in targets
+            if t.project_id == project_id and t.whois_record_id in records
+        }
+        correlations[project_id] = await _correlations(session, own, project_id)
     linked_ids = {
         r.id
-        for groups in correlations.values()
+        for by_record in correlations.values()
+        for groups in by_record.values()
         for group in groups.values()
         for r in group
     }
@@ -256,7 +271,7 @@ async def _correlations_by_target(
             continue
         out[str(target.id)] = _grouped(
             records[target.whois_record_id],
-            correlations[target.whois_record_id],
+            correlations[target.project_id][target.whois_record_id],
             {
                 record_id: target_id
                 for (project_id, record_id), target_id in target_by_record.items()
@@ -318,6 +333,7 @@ def _grouped(
 )
 async def get_targets_correlations(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     ids: Annotated[str, Query(description="Comma-separated target IDs")],
 ):
@@ -329,7 +345,11 @@ async def get_targets_correlations(
             continue
     if not wanted:
         return {}
-    rows = await session.execute(select(Target).where(Target.id.in_(wanted[:100])))
+    rows = await session.execute(
+        scoped(
+            select(Target).where(Target.id.in_(wanted[:100])), access, Target.project_id
+        )
+    )
     return await _correlations_by_target(session, list(rows.scalars().all()))
 
 
@@ -342,6 +362,7 @@ async def get_targets_correlations(
 async def get_target_correlations(
     target_id: str,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
     try:
@@ -352,7 +373,9 @@ async def get_target_correlations(
             detail="Invalid target ID.",
         ) from e
 
-    target_result = await session.execute(select(Target).where(Target.id == tid))
+    target_result = await session.execute(
+        scoped(select(Target).where(Target.id == tid), access, Target.project_id)
+    )
     target = target_result.scalar_one_or_none()
     if not target:
         return []
@@ -395,12 +418,15 @@ async def _correlation_results(
 )
 async def correlate_by_registrant(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
     name: Annotated[str, Query(description="Registrant name", max_length=500)],
-    project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
-    records = await service.find_by_registrant(session, name)
+    records = await service.find_by_registrant(
+        session, name, where=record_visible(access)
+    )
     return await _correlation_results(
         session, project_id, "registrant_name", name, records
     )
@@ -414,12 +440,15 @@ async def correlate_by_registrant(
 )
 async def correlate_by_registrar(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
     name: Annotated[str, Query(description="Registrar name", max_length=500)],
-    project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
-    records = await service.find_by_registrar(session, name)
+    records = await service.find_by_registrar(
+        session, name, where=record_visible(access)
+    )
     return await _correlation_results(
         session, project_id, "registrar_name", name, records
     )
@@ -433,14 +462,15 @@ async def correlate_by_registrar(
 )
 async def correlate_by_network(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
     cidr: Annotated[
         str, Query(description="Network CIDR such as 8.8.8.0/24", max_length=64)
     ],
-    project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
-    records = await service.find_by_network(session, cidr)
+    records = await service.find_by_network(session, cidr, where=record_visible(access))
     return await _correlation_results(
         session, project_id, "network_cidr", cidr, records
     )
@@ -454,6 +484,7 @@ async def correlate_by_network(
 )
 async def correlate_by_nameserver(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     service: Annotated[WhoisService, Depends(get_whois_service)],
     ns: Annotated[
@@ -463,9 +494,11 @@ async def correlate_by_nameserver(
             max_length=MAX_HOST_LENGTH,
         ),
     ],
-    project_id: Annotated[_uuid.UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
-    records = await service.find_by_nameserver(session, ns)
+    records = await service.find_by_nameserver(
+        session, ns, where=record_visible(access)
+    )
     return await _correlation_results(session, project_id, "nameserver", ns, records)
 
 

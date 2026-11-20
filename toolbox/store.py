@@ -30,6 +30,7 @@ def new_run(
     label: str,
     payload: dict,
     status: str,
+    project_id: uuid.UUID | None = None,
 ) -> ToolRunRead:
     return ToolRunRead(
         id=str(uuid.uuid4()),
@@ -38,6 +39,7 @@ def new_run(
         label=label,
         input=payload,
         status=status,
+        project_id=str(project_id) if project_id else None,
         queued_at=utc_now().isoformat(),
     )
 

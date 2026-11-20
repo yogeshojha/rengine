@@ -8,6 +8,7 @@ from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import AfterValidator, BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId, check_open
 from app.api.capability import require_capability
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.api.pagination import Page
@@ -265,7 +266,7 @@ async def sync_feed(
 async def list_programs(
     session: SessionDep,
     service: ServiceDep,
-    _current_user: CurrentUser,
+    access: Access,
     platform: str | None = Query(None, description="Platform key"),
     platforms: Annotated[list[str] | None, Query()] = None,
     sources: Annotated[list[str] | None, Query()] = None,
@@ -280,6 +281,8 @@ async def list_programs(
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> Page[BountyProgramRead]:
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
+    if project_id is not None:
+        check_open(access, project_id)
     if platform:
         BountyProgramService.require_platform(platform)
     query = service.list_query(
@@ -317,15 +320,18 @@ async def validate_query(
 
 @router.get("/watches/stream", response_model=StreamStatus)
 async def stream_status(
-    _current_user: CurrentUser, session: SessionDep
+    _current_user: CurrentUser, access: Access, session: SessionDep
 ) -> StreamStatus:
     await require_capability(session, CAP_PROGRAM_WATCHES)
-    return await WatchService.stream_status()
+    return await WatchService(session).stream_status_for(access)
 
 
 @router.get("/watches", response_model=list[WatchRead])
 async def list_watches(
-    project_id: UUID, current_user: CurrentUser, watches: WatchDep, session: SessionDep
+    project_id: ProjectId,
+    current_user: CurrentUser,
+    watches: WatchDep,
+    session: SessionDep,
 ) -> list[WatchRead]:
     await require_capability(session, CAP_PROGRAM_WATCHES)
     return await watches.list(project_id, current_user.id)
@@ -334,7 +340,7 @@ async def list_watches(
 @router.get("/watches/{watch_id}", response_model=WatchRead)
 async def get_watch(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -346,7 +352,7 @@ async def get_watch(
 @router.patch("/watches/{watch_id}", response_model=WatchRead)
 async def update_watch(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     data: WatchUpdate,
     current_user: CurrentUser,
     watches: WatchDep,
@@ -359,7 +365,7 @@ async def update_watch(
 @router.delete("/watches/{watch_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_watch(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -371,7 +377,7 @@ async def delete_watch(
 @router.post("/watches/{watch_id}/seen")
 async def mark_watch_seen(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -384,7 +390,7 @@ async def mark_watch_seen(
 @router.get("/watches/{watch_id}/hosts", response_model=Page[WatchHostRead])
 async def list_watch_hosts(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -404,7 +410,7 @@ async def list_watch_hosts(
 @router.get("/watches/{watch_id}/hosts/counts", response_model=WatchHostCounts)
 async def watch_host_counts(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -418,7 +424,7 @@ async def watch_host_counts(
 async def mute_watch_host(
     watch_id: UUID,
     host_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -430,7 +436,7 @@ async def mute_watch_host(
 @router.get("/watches/{watch_id}/events", response_model=Page[WatchEventRead])
 async def list_watch_events(
     watch_id: UUID,
-    project_id: UUID,
+    project_id: ProjectId,
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -450,7 +456,7 @@ async def list_watch_events(
 async def watch_preview(
     platform: PlatformPath,
     handle: str,
-    project_id: UUID,
+    project_id: ProjectId,
     _current_user: CurrentUser,
     watches: WatchDep,
     session: SessionDep,
@@ -467,10 +473,12 @@ async def create_watch(
     handle: str,
     data: WatchCreate,
     current_user: CurrentUser,
+    access: Access,
     watches: WatchDep,
     session: SessionDep,
 ) -> WatchRead:
     await require_capability(session, CAP_PROGRAM_WATCHES)
+    check_open(access, data.project_id)
     return await watches.create(
         BountyProgramService.require_platform(platform), handle, data, current_user.id
     )
@@ -480,12 +488,14 @@ async def create_watch(
 async def program_detail(
     session: SessionDep,
     service: ServiceDep,
-    _current_user: CurrentUser,
+    access: Access,
     platform: PlatformPath,
     handle: str,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> BountyProgramDetail:
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
+    if project_id is not None:
+        check_open(access, project_id)
     BountyProgramService.require_platform(platform)
     return await service.detail(platform, handle, project_id=project_id)
 
@@ -514,11 +524,13 @@ async def import_program(
     session: SessionDep,
     service: ServiceDep,
     current_user: CurrentUser,
+    access: Access,
     platform: PlatformPath,
     handle: str,
     request: BountyImportRequest,
 ) -> BountyImportResult:
     """Add the program's scannable assets to a project as targets."""
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
+    check_open(access, request.project_id)
     BountyProgramService.require_platform(platform)
     return await service.import_scopes(platform, handle, request, current_user.id)

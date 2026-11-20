@@ -103,8 +103,10 @@ def catalog() -> InterestCatalog:
     )
 
 
-def _in_project(rule: InterestRule, project_id: uuid.UUID) -> bool:
-    return rule.project_id is None or rule.project_id == project_id
+def _editable(rule: InterestRule, project_id: uuid.UUID, superuser: bool) -> bool:
+    if rule.project_id is None:
+        return superuser
+    return rule.project_id == project_id
 
 
 def _to_read(rule: InterestRule, matches: int | None = None) -> InterestRuleRead:
@@ -262,10 +264,15 @@ class InterestReadService:
         return _to_read(rule, 0)
 
     async def update(
-        self, rule_id: uuid.UUID, payload: InterestRuleUpdate, project_id: uuid.UUID
+        self,
+        rule_id: uuid.UUID,
+        payload: InterestRuleUpdate,
+        project_id: uuid.UUID,
+        *,
+        superuser: bool = False,
     ) -> InterestRuleRead | None:
         rule = await self.session.get(InterestRule, rule_id)
-        if rule is None or not _in_project(rule, project_id):
+        if rule is None or not _editable(rule, project_id, superuser):
             return None
         data = payload.model_dump(exclude_unset=True)
 

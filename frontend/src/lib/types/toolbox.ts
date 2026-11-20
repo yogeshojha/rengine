@@ -146,6 +146,7 @@ export interface ToolRun {
 	pivot: Pivot | null;
 	raw: Record<string, unknown> | null;
 	error: string | null;
+	project_id: string | null;
 	queued_at: string;
 	started_at: string | null;
 	finished_at: string | null;

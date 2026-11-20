@@ -387,7 +387,7 @@ export interface DashboardWatches {
 	ladder: DashboardLadderStep[];
 	latest_alert: DashboardWatchAlert | null;
 	stream_running: boolean;
-	stream_certificates: number;
+	stream_certificates: number | null;
 	last_certificate_at: string | null;
 }
 

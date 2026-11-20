@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import time
+import uuid
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import and_, delete, exists, not_, or_, select, text
 from sqlalchemy.orm import Session
+from sqlmodel import col
 
 from shared.definitions.bounty_programs import (
     DEFAULT_SYNC_INTERVAL,
@@ -20,6 +22,7 @@ from shared.definitions.bounty_programs import (
 )
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram, BountyScope
+from shared.models.watch import ProgramWatch
 from shared.services.bounty_providers import AccessDeniedError, BountyProvider
 from shared.utils.datetime import utc_now
 
@@ -357,3 +360,29 @@ def sync_due(session: Session) -> bool:
 def mark_synced(session: Session) -> None:
     session.execute(text("UPDATE instance_settings SET bounty_synced_at = now()"))
     session.commit()
+
+
+# ---------- alerts ----------
+
+
+def _instance_alerting():
+    """Changes on bookmarked or joined programs, and every out-of-scope move."""
+    followed = or_(BountyProgram.bookmarked.is_(True), BountyProgram.joined.is_(True))
+    return or_(
+        BountyEventRow.kind == BountyEvent.WENT_OUT_OF_SCOPE.value,
+        exists().where(BountyProgram.id == BountyEventRow.program_id, followed),
+    )
+
+
+def alert_scopes(kinds: set[str], watched: list[uuid.UUID]) -> list[tuple]:
+    """The instance alert, then one alert per project on its watched programs."""
+    kind_match = col(BountyEventRow.kind).in_(sorted(kinds))
+    instance = _instance_alerting()
+    scopes = [(None, and_(kind_match, instance))]
+    for project_id in watched:
+        own = exists().where(
+            ProgramWatch.program_id == BountyEventRow.program_id,
+            ProgramWatch.project_id == project_id,
+        )
+        scopes.append((project_id, and_(kind_match, own, not_(instance))))
+    return scopes

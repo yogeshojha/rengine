@@ -120,6 +120,7 @@
 			pivot: null,
 			raw: null,
 			error: null,
+			project_id: projectId ?? null,
 			queued_at: new Date().toISOString(),
 			started_at: null,
 			finished_at: null,

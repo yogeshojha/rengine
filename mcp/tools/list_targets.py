@@ -72,8 +72,8 @@ class ListTargets(Tool):
             summary=f"{counted(total, 'target')} in scope",
             data={
                 "scope": "all projects"
-                if ctx.token.project_id is None
-                else projects.get(ctx.token.project_id, str(ctx.token.project_id)),
+                if (scoped := ctx.scoped_projects()) is None
+                else ", ".join(projects.get(p, str(p)) for p in scoped) or "no project",
                 "total": total,
                 "targets": [
                     {

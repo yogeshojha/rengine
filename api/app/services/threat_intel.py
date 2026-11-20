@@ -5,7 +5,8 @@ from __future__ import annotations
 import uuid
 from datetime import timedelta
 
-from sqlalchemy import case, exists, func, literal_column, not_, or_, select, text
+from sqlalchemy import case, cast, exists, func, literal_column, not_, or_, select, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.datasets import DatasetService
@@ -27,6 +28,7 @@ from shared.enums.api_key import APIProvider
 from shared.models.api_key import APIKey
 from shared.models.target import Target
 from shared.models.threat_intel import (
+    CveIntel,
     CveIntelRead,
     ExposureProduct,
     FindingIntel,
@@ -98,6 +100,16 @@ class ThreatIntelService:
         if scope is None:
             return []
         return [scope.match(Vulnerability.scan_id), not_(vuln_suppressed(scope))]
+
+    def _cached(self, scope: QueryScope | None):
+        """Cached provider rows for the CVEs a scope's findings carry."""
+        held = select(func.count(), func.max(CveIntel.fetched_at))
+        if scope is None:
+            return held
+        cves = select(
+            func.jsonb_array_elements_text(cast(Vulnerability.cve_ids, JSONB))
+        ).where(*self._reach(scope))
+        return held.where(CveIntel.cve.in_(cves))
 
     async def coverage(self, scope: QueryScope | None = None) -> IntelCoverage:
         reach = self._reach(scope)
@@ -308,11 +320,7 @@ class ThreatIntelService:
     async def status(self, scope: QueryScope | None = None) -> ThreatIntelStatus:
         feeds = await self.feeds()
         coverage = await self.coverage(scope)
-        cached, fetched = (
-            await self.session.execute(
-                text("SELECT count(*), max(fetched_at) FROM cve_intel")
-            )
-        ).one()
+        cached, fetched = (await self.session.execute(self._cached(scope))).one()
         has_key = bool(
             await self.session.scalar(
                 select(APIKey.id)

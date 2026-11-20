@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import uuid
 
 import httpx
 
@@ -16,25 +17,30 @@ logger = get_logger(__name__)
 BASE_URL = "https://crt.sh"
 REQUEST_TIMEOUT = 25.0
 CACHE_TTL_SECONDS = 6 * 3600
-CACHE_KEY = "crtsh:org:{digest}"
+CACHE_KEY = "crtsh:org:{project}:{digest}"
 
 
 class CrtShError(Exception):
     """crt.sh did not answer or returned something unreadable."""
 
 
-def _cache_key(organization: str) -> str:
+def _cache_key(organization: str, project_id: uuid.UUID) -> str:
     digest = hashlib.sha256(organization.casefold().encode()).hexdigest()[:32]
-    return CACHE_KEY.format(digest=digest)
+    return CACHE_KEY.format(project=project_id, digest=digest)
 
 
 class CrtShClient:
-    async def search_organization(self, organization: str) -> CrtShResult:
-        stored = await self._stored(organization)
+    async def search_organization(
+        self, organization: str, project_id: uuid.UUID | None = None
+    ) -> CrtShResult:
+        if project_id is None:
+            return await self._fetch(organization)
+        key = _cache_key(organization, project_id)
+        stored = await self._stored(key)
         if stored is not None:
             return stored
         result = await self._fetch(organization)
-        await self._store(organization, result)
+        await self._store(key, result)
         return result
 
     async def _fetch(self, organization: str) -> CrtShResult:
@@ -59,19 +65,19 @@ class CrtShClient:
             raise CrtShError(msg)
         return result
 
-    async def _stored(self, organization: str) -> CrtShResult | None:
+    async def _stored(self, key: str) -> CrtShResult | None:
         try:
-            raw = await cache_client().get(_cache_key(organization))
+            raw = await cache_client().get(key)
             return CrtShResult.model_validate_json(raw) if raw else None
         except Exception as exc:
             logger.debug("crt.sh cache read failed", error=type(exc).__name__)
             return None
 
-    async def _store(self, organization: str, result: CrtShResult) -> None:
+    async def _store(self, key: str, result: CrtShResult) -> None:
         stamped = result.model_copy(update={"stored_at": utc_now()})
         try:
             await cache_client().set(
-                _cache_key(organization),
+                key,
                 stamped.model_dump_json(),
                 ex=CACHE_TTL_SECONDS,
             )

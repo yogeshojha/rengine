@@ -7,10 +7,12 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
+from app.api.access import get_access
 from app.api.deps import get_current_active_user
 from app.api.v1 import bounty_programs
 from app.core.database import get_session
 from shared.models.watch import WatchHostCounts
+from shared.services.project_access import EVERY_PROJECT
 
 pytestmark = pytest.mark.api
 
@@ -39,6 +41,7 @@ def _client(watches: _Watches) -> httpx.AsyncClient:
     app.include_router(bounty_programs.router)
     app.dependency_overrides[get_current_active_user] = lambda: object()
     app.dependency_overrides[get_session] = lambda: None
+    app.dependency_overrides[get_access] = lambda: EVERY_PROJECT
     app.dependency_overrides[bounty_programs.get_watches] = lambda: watches
     return httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

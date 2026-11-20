@@ -35,7 +35,11 @@ def _resolve_group(
     """Resolve one registry query and stamp its outcome on every target sharing it."""
     try:
         record = service.get_or_create_record_sync(
-            session, normalized_query, targets[0].target_type, force=force
+            session,
+            normalized_query,
+            targets[0].target_type,
+            force=force,
+            projects={target.project_id for target in targets},
         )
     except WhoisNotApplicableError as exc:
         reason = str(exc)[:1000]

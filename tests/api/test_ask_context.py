@@ -18,6 +18,7 @@ from shared.models.ask import AskQuestion, AskThreadCreate
 from shared.models.user import User
 from shared.models.vulnerability import AssetContext
 from shared.services.ai.agent import DONE, TEXT, AgentEvent
+from shared.services.project_access import EVERY_PROJECT
 from tests.api.test_ask import _finding as pure_finding
 from tests.api.test_ask_service import (
     _cfg,
@@ -174,7 +175,9 @@ async def test_a_thread_reads_the_newest_scan_it_is_asked_about(
     assert frames[-1][0] == StreamEvent.DONE.value
     assert "fresh-evidence-from-the-rescan" in seen["system"]
     assert '"status": "ok"' not in seen["system"]
-    detail = await AskService(estate.session).detail(estate.user_id, two["a"].id)
+    detail = await AskService(estate.session).detail(
+        estate.user_id, two["a"].id, EVERY_PROJECT
+    )
     assert [m.role for m in detail.messages] == [
         MessageRole.USER.value,
         MessageRole.ASSISTANT.value,
@@ -188,23 +191,31 @@ async def test_clear_history_removes_only_my_threads_on_that_finding(
     await _ask(estate, two["a"], two["user"], "q", seen, monkeypatch)
     service = AskService(estate.session)
     gone = await service.delete_all(
-        estate.user_id, two["target"], SurfaceDimension.VULNERABILITIES.value, two["fp"]
+        estate.user_id,
+        EVERY_PROJECT,
+        two["target"],
+        SurfaceDimension.VULNERABILITIES.value,
+        two["fp"],
     )
     assert gone == 2
     assert (
         await service.threads(
             estate.user_id,
+            EVERY_PROJECT,
             two["target"],
             SurfaceDimension.VULNERABILITIES.value,
             two["fp"],
         )
         == []
     )
-    assert await service.detail(estate.user_id, two["a"].id) is None
-    assert await service.detail(estate.user_id, two["other"].id) is not None
+    assert await service.detail(estate.user_id, two["a"].id, EVERY_PROJECT) is None
+    assert (
+        await service.detail(estate.user_id, two["other"].id, EVERY_PROJECT) is not None
+    )
     assert (
         await service.delete_all(
             uuid.uuid4(),
+            EVERY_PROJECT,
             two["target"],
             SurfaceDimension.VULNERABILITIES.value,
             two["fp"],

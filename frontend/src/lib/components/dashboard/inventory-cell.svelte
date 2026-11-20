@@ -200,7 +200,9 @@
 		{#if programs}
 			<span>
 				{programs.watches.stream_running
-					? `CT stream listening · ${programs.watches.stream_certificates.toLocaleString()} certificates`
+					? programs.watches.stream_certificates === null
+						? 'CT stream listening'
+						: `CT stream listening · ${programs.watches.stream_certificates.toLocaleString()} certificates`
 					: 'CT stream stopped'}
 			</span>
 		{:else if feedsAt}

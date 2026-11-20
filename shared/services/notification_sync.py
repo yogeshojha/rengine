@@ -58,10 +58,12 @@ class SyncNotificationPublisher:
             session.flush()
 
         self._event_publisher.publish(
-            channel=SSEChannel.BROADCAST,
+            channel=SSEChannel.project(str(notification.project_id))
+            if notification.project_id
+            else SSEChannel.BROADCAST,
             event_type=SSEEventType.NOTIFICATION,
             data={
-                "id": notification.id,
+                "id": str(notification.uid),
                 "project_id": str(notification.project_id)
                 if notification.project_id
                 else None,

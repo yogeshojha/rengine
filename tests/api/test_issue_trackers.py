@@ -66,6 +66,7 @@ from shared.services.issue_trackers.jira import JiraCloud, JiraDataCenter
 from shared.services.issue_tracking import sync
 from shared.services.issue_tracking.body import issue_body, mask_secrets, title_for
 from shared.services.issue_tracking.plan import OpenIssue, plan_filing
+from shared.services.project_access import EVERY_PROJECT
 from shared.services.scan_resolve import MASK
 
 pytestmark = pytest.mark.api
@@ -456,7 +457,7 @@ async def test_filing_groups_by_check_files_and_reports_on_the_finding(
     await _tracker(estate)
     await estate.session.commit()
 
-    service = IssueFilingService(estate.session)
+    service = IssueFilingService(estate.session, access=EVERY_PROJECT)
     selection = FileSelection(fingerprints=["a", "b", "c"])
     plan = await service.plan(estate.scans["run"], selection)
     assert plan.refusal is None
@@ -494,7 +495,7 @@ async def test_no_route_refuses_and_a_project_route_is_followed(
     await _tracker(estate)
     second = await _tracker(estate)
     await estate.session.commit()
-    service = IssueFilingService(estate.session)
+    service = IssueFilingService(estate.session, access=EVERY_PROJECT)
     selection = FileSelection(fingerprints=["a"])
 
     plan = await service.plan(estate.scans["run"], selection)
@@ -524,7 +525,7 @@ async def test_a_later_location_joins_the_open_grouped_issue_as_a_comment(
     await _finding(estate, "run", "c", "low", now, template="csp")
     await _tracker(estate)
     await estate.session.commit()
-    service = IssueFilingService(estate.session)
+    service = IssueFilingService(estate.session, access=EVERY_PROJECT)
     await service.file(
         estate.scans["run"], FileSelection(fingerprints=["b", "c"]), estate.user_id
     )
@@ -553,7 +554,7 @@ async def test_a_clean_rescan_comments_on_what_it_no_longer_observes(
     await _check(estate, "a")
     await _tracker(estate)
     await estate.session.commit()
-    service = IssueFilingService(estate.session)
+    service = IssueFilingService(estate.session, access=EVERY_PROJECT)
     await service.file(
         estate.scans["first"], FileSelection(fingerprints=["a"]), estate.user_id
     )
@@ -588,7 +589,7 @@ async def test_done_in_the_tracker_but_still_observed_is_said_once(
     await _finding(estate, "first", "a", "critical", now)
     await _tracker(estate)
     await estate.session.commit()
-    await IssueFilingService(estate.session).file(
+    await IssueFilingService(estate.session, access=EVERY_PROJECT).file(
         estate.scans["first"], FileSelection(fingerprints=["a"]), estate.user_id
     )
     await _file_now(estate)
@@ -639,7 +640,7 @@ async def test_absence_is_claimed_only_where_the_run_tested_the_check(
     await _check(estate, "a")
     await _tracker(estate)
     await estate.session.commit()
-    await IssueFilingService(estate.session).file(
+    await IssueFilingService(estate.session, access=EVERY_PROJECT).file(
         estate.scans["first"], FileSelection(fingerprints=["a"]), estate.user_id
     )
     await _file_now(estate)
@@ -677,7 +678,7 @@ async def test_absence_is_not_claimed_for_a_check_the_run_did_not_select(
     await _check(estate, "a", needs_oast=callback)
     await _tracker(estate)
     await estate.session.commit()
-    await IssueFilingService(estate.session).file(
+    await IssueFilingService(estate.session, access=EVERY_PROJECT).file(
         estate.scans["first"], FileSelection(fingerprints=["a"]), estate.user_id
     )
     await _file_now(estate)
@@ -717,7 +718,7 @@ async def test_a_later_run_is_not_overwritten_by_an_older_one(
     await _finding(estate, "first", "a", "critical", now)
     await _tracker(estate)
     await estate.session.commit()
-    await IssueFilingService(estate.session).file(
+    await IssueFilingService(estate.session, access=EVERY_PROJECT).file(
         estate.scans["first"], FileSelection(fingerprints=["a"]), estate.user_id
     )
     await _file_now(estate)
@@ -740,11 +741,11 @@ async def test_non_admin_files_only_into_routed_destinations(durable_estate, fak
     outside = FileSelection(
         fingerprints=["a"], tracker_id=tracker.id, destination="OPS"
     )
-    member = IssueFilingService(estate.session)
+    member = IssueFilingService(estate.session, access=EVERY_PROJECT)
     refused = await member.plan(estate.scans["run"], outside)
     assert refused.refusal is not None
     assert "OPS" in refused.refusal
-    admin = IssueFilingService(estate.session, admin=True)
+    admin = IssueFilingService(estate.session, access=EVERY_PROJECT, admin=True)
     allowed = await admin.plan(estate.scans["run"], outside)
     assert (allowed.refusal, allowed.destination) == (None, "OPS")
     default = await member.plan(
@@ -766,7 +767,7 @@ async def test_a_route_to_a_switched_off_tracker_refuses(durable_estate, fake, n
         )
     )
     await estate.session.commit()
-    plan = await IssueFilingService(estate.session).plan(
+    plan = await IssueFilingService(estate.session, access=EVERY_PROJECT).plan(
         estate.scans["run"], FileSelection(fingerprints=["a"])
     )
     assert plan.refusal == "Tracker for example.com is disabled."
@@ -791,7 +792,7 @@ async def test_set_aside_findings_are_not_filed_and_the_selection_is_capped(
         )
     )
     await estate.session.commit()
-    service = IssueFilingService(estate.session)
+    service = IssueFilingService(estate.session, access=EVERY_PROJECT)
     plan = await service.plan(estate.scans["run"], FileSelection(template_ids=["csp"]))
     assert plan.findings == 2
     monkeypatch.setattr("app.services.issue_tracking.MAX_FILE_SELECTION", 1)
@@ -809,7 +810,7 @@ async def test_a_retry_finds_the_issue_an_ambiguous_create_left_behind(
     await _finding(estate, "run", "a", "high", now)
     await _tracker(estate)
     await estate.session.commit()
-    service = IssueFilingService(estate.session)
+    service = IssueFilingService(estate.session, access=EVERY_PROJECT)
     await service.file(
         estate.scans["run"], FileSelection(fingerprints=["a"]), estate.user_id
     )
@@ -831,7 +832,7 @@ async def test_a_public_repository_gets_no_evidence(durable_estate, fake, now):
     await _tracker(estate)
     await estate.session.commit()
     fake.public = True
-    await IssueFilingService(estate.session).file(
+    await IssueFilingService(estate.session, access=EVERY_PROJECT).file(
         estate.scans["run"], FileSelection(fingerprints=["a"]), estate.user_id
     )
     await _file_now(estate)
@@ -848,7 +849,7 @@ async def test_a_pending_issue_whose_task_was_lost_is_swept(durable_estate, fake
     await _finding(estate, "run", "a", "high", now)
     await _tracker(estate)
     await estate.session.commit()
-    await IssueFilingService(estate.session).file(
+    await IssueFilingService(estate.session, access=EVERY_PROJECT).file(
         estate.scans["run"], FileSelection(fingerprints=["a"]), estate.user_id
     )
     assert await estate.session.run_sync(sync.sweep_pending) == 0

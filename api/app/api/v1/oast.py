@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.oast import OastService
@@ -20,9 +21,10 @@ def get_service(
 @router.get("", response_model=OastRead)
 async def read_oast(
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[OastService, Depends(get_service)],
 ):
-    return await service.read()
+    return await service.read(access)
 
 
 @router.patch("", response_model=OastRead)

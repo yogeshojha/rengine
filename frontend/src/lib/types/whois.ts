@@ -94,8 +94,6 @@ export interface WhoisRecordRead {
 	asn_range_start: number | null;
 	asn_range_end: number | null;
 	parsed_data: WhoisParsedData | null;
-	created_at: string;
-	updated_at: string;
 	registrant_redacted: boolean;
 }
 

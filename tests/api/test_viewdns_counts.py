@@ -5,6 +5,7 @@ from datetime import timedelta
 import pytest
 
 from shared.models.viewdns import ViewDNSCache
+from shared.services.project_access import EVERY_PROJECT
 from shared.utils.datetime import utc_now
 from tools.viewdns.models import CachedCountQuery, ViewDNSLookupType
 from tools.viewdns.service import DEFAULT_CACHE_TTL_DAYS, ViewDNSService
@@ -58,7 +59,7 @@ async def test_a_cached_count_is_the_answer_minus_the_target(session):
     )
     await session.flush()
 
-    counts = await ViewDNSService(session).cached_counts(
+    counts = await ViewDNSService(session, EVERY_PROJECT).cached_counts(
         [
             CachedCountQuery(
                 source=NS, query=" NS1.example.net", exclude="EXAMPLE.com"
@@ -74,4 +75,4 @@ async def test_a_cached_count_is_the_answer_minus_the_target(session):
 
 
 async def test_no_queries_reads_nothing(session):
-    assert await ViewDNSService(session).cached_counts([]) == []
+    assert await ViewDNSService(session, EVERY_PROJECT).cached_counts([]) == []

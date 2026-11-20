@@ -5,16 +5,25 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.models.notification import Notification, NotificationReceipt
+from shared.services.project_access import ProjectSet, project_clause
 from shared.utils.datetime import utc_now
 
 
 class NotificationManager:
     @staticmethod
-    def in_scope(stmt, project_id: uuid.UUID | None):
-        if project_id is None:
+    def in_scope(stmt, access: ProjectSet):
+        """Notifications of the projects the access opens, plus instance-wide ones."""
+        if access is None:
             return stmt
         return stmt.where(
-            (Notification.project_id == project_id) | Notification.project_id.is_(None)
+            project_clause(access, Notification.project_id)
+            | Notification.project_id.is_(None)
+        )
+
+    @staticmethod
+    def _one(notification_id: uuid.UUID, access: ProjectSet):
+        return NotificationManager.in_scope(
+            select(Notification.id).where(Notification.uid == notification_id), access
         )
 
     @staticmethod
@@ -58,40 +67,52 @@ class NotificationManager:
 
     @staticmethod
     async def mark_as_read(
-        session: AsyncSession, notification_id: int, user_id: uuid.UUID
+        session: AsyncSession,
+        notification_id: uuid.UUID,
+        user_id: uuid.UUID,
+        access: ProjectSet,
     ) -> bool:
         return (
             await NotificationManager._stamp(
-                session, user_id, [notification_id], dismiss=False
+                session,
+                user_id,
+                NotificationManager._one(notification_id, access),
+                dismiss=False,
             )
             > 0
         )
 
     @staticmethod
     async def mark_all_as_read(
-        session: AsyncSession, user_id: uuid.UUID, project_id: uuid.UUID | None = None
+        session: AsyncSession, user_id: uuid.UUID, access: ProjectSet
     ) -> int:
         unread = NotificationManager.receipt_join(
-            NotificationManager.in_scope(select(Notification.id), project_id), user_id
+            NotificationManager.in_scope(select(Notification.id), access), user_id
         ).where(NotificationReceipt.read_at.is_(None))
         return await NotificationManager._stamp(session, user_id, unread, dismiss=False)
 
     @staticmethod
     async def dismiss(
-        session: AsyncSession, notification_id: int, user_id: uuid.UUID
+        session: AsyncSession,
+        notification_id: uuid.UUID,
+        user_id: uuid.UUID,
+        access: ProjectSet,
     ) -> bool:
         return (
             await NotificationManager._stamp(
-                session, user_id, [notification_id], dismiss=True
+                session,
+                user_id,
+                NotificationManager._one(notification_id, access),
+                dismiss=True,
             )
             > 0
         )
 
     @staticmethod
     async def dismiss_all(
-        session: AsyncSession, user_id: uuid.UUID, project_id: uuid.UUID | None = None
+        session: AsyncSession, user_id: uuid.UUID, access: ProjectSet
     ) -> int:
         shown = NotificationManager.receipt_join(
-            NotificationManager.in_scope(select(Notification.id), project_id), user_id
+            NotificationManager.in_scope(select(Notification.id), access), user_id
         )
         return await NotificationManager._stamp(session, user_id, shown, dismiss=True)

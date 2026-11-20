@@ -27,6 +27,7 @@ export const CHANNEL_COL = {
 export const USER_COL = {
 	user: 'min-w-0 flex-1',
 	role: 'w-[104px] shrink-0',
+	projects: 'hidden w-[200px] shrink-0 @lg/users:block',
 	twoFactor: 'hidden w-[104px] shrink-0 @xl/users:block',
 	created: 'hidden w-[120px] shrink-0 @2xl/users:block',
 	actions: 'flex w-8 shrink-0 justify-end'
@@ -97,6 +98,7 @@ export const CHANNEL_SKELETON: TableColumn[] = [
 export const USER_SKELETON: TableColumn[] = [
 	{ key: 'user', label: 'User', width: USER_COL.user },
 	{ key: 'role', label: 'Role', width: USER_COL.role },
+	{ key: 'projects', label: 'Projects', width: USER_COL.projects },
 	{ key: 'twoFactor', label: 'Two-factor', width: USER_COL.twoFactor },
 	{ key: 'created', label: 'Added', width: USER_COL.created },
 	{ key: 'actions', label: '', width: USER_COL.actions }

@@ -58,6 +58,13 @@ def keeps(targets: Targets, target_id: UUID | None) -> bool:
     return targets is None or target_id in targets
 
 
+async def require_scan(session: AsyncSession, project_id: UUID, scan_id: UUID) -> None:
+    """Refuse a scan outside the project."""
+    owner = await session.scalar(select(Scan.project_id).where(Scan.id == scan_id))
+    if owner != project_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Scan not found.")
+
+
 async def require_target(
     session: AsyncSession,
     project_id: UUID,

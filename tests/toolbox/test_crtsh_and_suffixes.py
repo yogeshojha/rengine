@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import date
 
 import httpx
@@ -207,8 +208,9 @@ async def test_crtsh_client_caches_an_answer(monkeypatch):
     _transport(monkeypatch, crtsh_client, handler)
     monkeypatch.setattr(crtsh_client, "cache_client", lambda: redis)
 
-    first = await CrtShClient().search_organization("Acme")
-    second = await CrtShClient().search_organization("ACME")
+    project = uuid.uuid4()
+    first = await CrtShClient().search_organization("Acme", project)
+    second = await CrtShClient().search_organization("ACME", project)
     assert calls == ["Acme"]
     assert first.stored_at is None
     assert second.stored_at is not None

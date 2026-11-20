@@ -1,15 +1,15 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectSlug, owned, project_by_slug
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.target_labels import (
-    get_label,
     refuse_if_in_use,
     rename,
     target_counts,
@@ -21,7 +21,6 @@ from shared.models.organization import (
     OrganizationRead,
     OrganizationUpdate,
 )
-from shared.models.project import Project
 from shared.models.target import TargetOrganization
 from shared.utils.slug import add_with_unique_slug
 
@@ -42,15 +41,8 @@ router = APIRouter(
 async def list_organizations(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_slug: Annotated[str, Query(description="Project slug")],
+    project_id: ProjectSlug,
 ):
-    project_result = await session.execute(
-        select(Project.id).where(Project.slug == project_slug)
-    )
-    project_id = project_result.scalar_one_or_none()
-    if not project_id:
-        return []
-
     result = await session.execute(
         select(Organization)
         .where(Organization.project_id == project_id)
@@ -67,18 +59,10 @@ async def list_organizations(
 async def create_organization(
     organization_in: OrganizationCreate,
     current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    project_result = await session.execute(
-        select(Project).where(Project.slug == organization_in.project_slug)
-    )
-    project = project_result.scalar_one_or_none()
-
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
-        )
-
+    project = await project_by_slug(session, access, organization_in.project_slug)
     normalized_name = organization_in.name.strip().lower()
 
     existing_org = await session.execute(
@@ -119,9 +103,10 @@ async def update_organization(
     organization_id: uuid.UUID,
     organization_in: OrganizationUpdate,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    org = await get_label(session, Organization, organization_id, "Organization")
+    org = await owned(session, access, Organization, organization_id, "Organization")
     if organization_in.name is not None:
         await rename(session, org, organization_in.name, "Organization")
     if "description" in organization_in.model_fields_set:
@@ -142,9 +127,10 @@ async def update_organization(
 async def delete_organization(
     organization_id: uuid.UUID,
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
-    org = await get_label(session, Organization, organization_id, "Organization")
+    org = await owned(session, access, Organization, organization_id, "Organization")
     await refuse_if_in_use(session, org, ScopeKind.ORGANIZATION)
     await session.delete(org)
     await session.commit()

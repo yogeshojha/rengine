@@ -94,6 +94,27 @@ async def test_approve_refuses_an_unknown_account_or_project(estate, quiet):
         )
 
 
+async def test_approve_refuses_a_project_the_account_does_not_open(estate, quiet):
+    other = await estate.sibling()
+    user = await estate.member()
+    service = ChannelService(estate.session, CHANNEL)
+    with pytest.raises(ChannelConfigError, match="project"):
+        await service.approve(
+            "H7K2-Q9XZ",
+            PairingApprove(user_id=user.id, project_id=other.project_id),
+            estate.user_id,
+        )
+    chat = await service.approve(
+        "H7K2-Q9XZ",
+        PairingApprove(user_id=user.id, project_id=estate.project_id),
+        estate.user_id,
+    )
+    with pytest.raises(ChannelConfigError, match="project"):
+        await service.update_chat(
+            chat.id, ChannelChatUpdate(project_id=other.project_id)
+        )
+
+
 async def test_lowering_the_ceiling_narrows_every_chat(estate, quiet):
     service = ChannelService(estate.session, CHANNEL)
     await service.update(

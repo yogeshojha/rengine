@@ -51,6 +51,7 @@ from app.utils.validation import (
 from shared.definitions.auth import LOGIN_ACCOUNT_KEY, LOGIN_ADDRESS_KEY
 from shared.logging import get_logger
 from shared.models.user import User, UserRead
+from shared.services.project_access import members_by_user
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -311,8 +312,14 @@ async def logout(
 
 
 @router.get("/me", response_model=UserRead)
-async def get_current_user_info(current_user: CurrentUser):
-    return current_user
+async def get_current_user_info(
+    current_user: CurrentUser,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    held = await members_by_user(session, [current_user.id])
+    return UserRead.model_validate(current_user).model_copy(
+        update={"project_ids": held.get(current_user.id, [])}
+    )
 
 
 @router.post("/change-password")

@@ -40,6 +40,7 @@ from shared.models.notification_channel import NotificationChannel
 from shared.models.organization import Organization, OrganizationSummary
 from shared.models.port import Port
 from shared.models.project import Project
+from shared.models.project_member import ProjectMember
 from shared.models.proxy import Proxy
 from shared.models.report import Report, ReportFont, ReportTemplate, ReportTheme
 from shared.models.ripestat import (
@@ -146,6 +147,7 @@ __all__ = [
     "Port",
     "ProgramWatch",
     "Project",
+    "ProjectMember",
     "Proxy",
     "RIPEStatASNNeighbour",
     "RIPEStatASOverview",

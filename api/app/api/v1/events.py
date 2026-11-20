@@ -1,18 +1,23 @@
 import asyncio
 import re
+import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
+from app.api.access import StreamAccess
 from app.api.deps import (
     StreamUser,
     get_token_from_request,
+    revoked_since_issue,
     token_still_valid,
 )
+from app.core.security import ISSUED_MS_CLAIM, decode_token
 from shared.enums.sse import SSEChannel
 from shared.logging import get_logger
+from shared.services.project_access import ProjectSet, may_open
 from shared.sse import STREAM_CLOSED, sse_manager
 
 logger = get_logger(__name__)
@@ -20,6 +25,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/events", tags=["events"])
 
 HEARTBEAT_SECONDS = 30.0
+UNAUTHORIZED = "event: unauthorized\ndata: {}\n\n"
 
 STREAM_HEADERS = {
     "Cache-Control": "no-cache",
@@ -32,14 +38,35 @@ CHANNEL_PATTERN = re.compile(
 )
 
 
-def validate_channels(requested: list[str]) -> list[str]:
+async def _closing(user_id: uuid.UUID, issued: object) -> str | None:
+    """The frame that ends the stream, empty when it ends without one."""
+    try:
+        revoked = await revoked_since_issue(user_id, issued)
+    except HTTPException:
+        return ""
+    return UNAUTHORIZED if revoked else None
+
+
+def _opens(channel: str, access: ProjectSet) -> bool:
+    if channel == SSEChannel.BROADCAST:
+        return True
+    try:
+        project_id = uuid.UUID(channel.partition(":")[2])
+    except ValueError:
+        return False
+    return may_open(access, project_id)
+
+
+def validate_channels(requested: list[str], access: ProjectSet) -> list[str]:
     validated: list[str] = []
 
     for channel in requested:
-        if CHANNEL_PATTERN.match(channel):
-            validated.append(channel)
-        else:
+        if not CHANNEL_PATTERN.match(channel):
             logger.warning("SSE channel rejected (malformed): %s", channel)
+        elif not _opens(channel, access):
+            logger.warning("SSE channel rejected (no access): %s", channel)
+        else:
+            validated.append(channel)
 
     return validated
 
@@ -49,6 +76,7 @@ async def event_stream(
     request: Request,
     current_user: StreamUser,
     token: Annotated[str, Depends(get_token_from_request)],
+    access: StreamAccess,
     channels: str = Query(
         ...,
         description="Comma-separated channels",
@@ -63,7 +91,7 @@ async def event_stream(
             detail="At least one channel is required.",
         )
 
-    validated = validate_channels(requested)
+    validated = validate_channels(requested, access)
 
     if not validated:
         raise HTTPException(
@@ -89,6 +117,8 @@ async def event_stream(
         if not started:
             sse_manager.release(owner)
 
+    issued = (decode_token(token) or {}).get(ISSUED_MS_CLAIM)
+
     async def generate():
         nonlocal started
         loop = asyncio.get_running_loop()
@@ -106,7 +136,7 @@ async def event_stream(
                         except HTTPException:
                             break
                         if not valid:
-                            yield "event: unauthorized\ndata: {}\n\n"
+                            yield UNAUTHORIZED
                             break
                         deadline = loop.time() + HEARTBEAT_SECONDS
 
@@ -118,6 +148,11 @@ async def event_stream(
                         yield "event: heartbeat\ndata: {}\n\n"
                         continue
                     if message is STREAM_CLOSED:
+                        break
+                    closing = await _closing(current_user.id, issued)
+                    if closing is not None:
+                        if closing:
+                            yield closing
                         break
                     yield message
 

@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId
 from app.api.deps import CurrentUser
 from app.api.scope import resolve_scope
 from app.core.database import get_session
@@ -36,7 +37,7 @@ async def surface_schemas(_current_user: CurrentUser) -> dict[str, QuerySchema]:
 async def surface_overview(
     _current_user: CurrentUser,
     service: Annotated[SurfaceScopeService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.overview(project_id)
 
@@ -44,12 +45,13 @@ async def surface_overview(
 @router.post("/delete", response_model=SurfaceDeleteResult)
 async def delete_rows(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
     body: SurfaceDelete,
     scan_id: Annotated[UUID | None, Query(description="Scan ID")] = None,
     project_id: Annotated[UUID | None, Query(description="Project ID")] = None,
 ):
-    scope = await resolve_scope(session, body.dimension, scan_id, project_id)
+    scope = await resolve_scope(session, access, body.dimension, scan_id, project_id)
     return await SurfaceDeleteService(session).delete(
         scope, body.dimension, body.ids, body.key
     )

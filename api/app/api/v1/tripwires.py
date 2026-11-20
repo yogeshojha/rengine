@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
@@ -26,7 +27,6 @@ from shared.models.tripwire import (
 router = APIRouter(prefix="/tripwires", tags=["tripwires"])
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-ProjectId = Annotated[UUID, Query(description="Project ID")]
 NOT_FOUND = "Tripwire not found."
 
 

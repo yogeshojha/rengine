@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, check_open
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from shared.definitions.toolbox import (
@@ -16,6 +17,7 @@ from shared.definitions.toolbox import (
 from shared.logging import get_logger
 from shared.models.user import User
 from shared.services.celery_dispatch import dispatch_toolbox_run
+from shared.services.project_access import ProjectSet, may_open
 from shared.utils.net import redact_url_queries
 from toolbox import registry, store
 from toolbox.base import ToolContext, ToolError
@@ -38,18 +40,32 @@ async def toolbox_catalog(_current_user: CurrentUser):
     return registry.catalog()
 
 
+def _opens(access: ProjectSet, run: ToolRunRead) -> bool:
+    if not run.project_id:
+        return True
+    try:
+        return may_open(access, uuid.UUID(run.project_id))
+    except ValueError:
+        return False
+
+
 @router.get("/runs", response_model=list[ToolRunRead])
-async def toolbox_runs(current_user: CurrentUser):
-    return [expire(run) for run in await store.recent(current_user.id)]
+async def toolbox_runs(current_user: CurrentUser, access: Access):
+    return [
+        expire(run)
+        for run in await store.recent(current_user.id)
+        if _opens(access, run)
+    ]
 
 
 @router.get("/runs/{run_id}", response_model=ToolRunRead)
 async def toolbox_run(
     current_user: CurrentUser,
+    access: Access,
     run_id: Annotated[str, Path()],
 ):
     run = await store.get(current_user.id, run_id)
-    if run is None:
+    if run is None or not _opens(access, run):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Run expired."
         )
@@ -69,8 +85,12 @@ async def clear_toolbox_runs(current_user: CurrentUser):
 async def run_tool(
     body: ToolRunRequest,
     current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
 ):
+    project_id = _project_id(body.project_id)
+    if project_id is not None:
+        check_open(access, project_id)
     spec = registry.get(body.tool)
     if spec is None:
         raise HTTPException(
@@ -78,7 +98,7 @@ async def run_tool(
             detail=f"No tool called {body.tool!r}.",
         )
     await _check_rate(current_user)
-    ctx = ToolContext(session=session, project_id=_project_id(body.project_id))
+    ctx = ToolContext(session=session, project_id=project_id)
     return await _start(spec, body.input, ctx, current_user)
 
 
@@ -106,6 +126,7 @@ async def _start(
         label=spec.tool_cls.label_for(args),
         payload=args.model_dump(mode="json"),
         status=RunStatus.QUEUED.value,
+        project_id=ctx.project_id,
     )
 
     if spec.queued:

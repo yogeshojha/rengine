@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column
+from sqlalchemy import Column, text
 from sqlalchemy.types import JSON
 from sqlmodel import Field, SQLModel
 
 from shared.utils.datetime import utc_now
+
+MAX_PROJECTS = 1000
 
 
 class UserBase(SQLModel):
@@ -13,6 +15,9 @@ class UserBase(SQLModel):
     username: str = Field(unique=True, index=True, max_length=50)
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
+    can_create_projects: bool = Field(
+        default=False, sa_column_kwargs={"server_default": text("false")}
+    )
 
 
 class User(UserBase, table=True):
@@ -34,11 +39,18 @@ class UserAdminCreate(SQLModel):
     username: str
     password: str
     is_superuser: bool = False
+    can_create_projects: bool = False
+    project_ids: list[uuid.UUID] = Field(default_factory=list, max_length=MAX_PROJECTS)
 
 
 class UserAdminUpdate(SQLModel):
     is_active: bool | None = None
     is_superuser: bool | None = None
+    can_create_projects: bool | None = None
+
+
+class UserProjects(SQLModel):
+    project_ids: list[uuid.UUID] = Field(max_length=MAX_PROJECTS)
 
 
 class UserRead(UserBase):
@@ -46,6 +58,7 @@ class UserRead(UserBase):
     totp_enabled: bool = False
     created_at: datetime
     updated_at: datetime | None = None
+    project_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
 class UserSummary(SQLModel):

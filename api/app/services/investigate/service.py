@@ -12,6 +12,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import not_found
 from app.config import settings
 from app.core.database import async_db_session
 from app.services.ask.service import software_hit
@@ -463,24 +464,31 @@ class InvestigateService:
             model=cfg.model if cfg and reason is None else None,
         )
 
+    async def _project_plans(
+        self, project_id: uuid.UUID, plan_ids: list[uuid.UUID]
+    ) -> tuple[Investigation, list[InvestigationPlan]]:
+        rows = (
+            await self.session.execute(
+                select(InvestigationPlan, Investigation)
+                .join(
+                    Investigation,
+                    Investigation.id == InvestigationPlan.investigation_id,
+                )
+                .where(
+                    InvestigationPlan.id.in_(plan_ids),
+                    Investigation.project_id == project_id,
+                )
+            )
+        ).all()
+        if not rows:
+            raise not_found(noun="Investigation")
+        return rows[0][1], [plan for plan, _ in rows]
+
     async def approve(
         self, user: User, project_id: uuid.UUID, plan_ids: list[uuid.UUID]
     ) -> InvestigationRead:
-        plans = (
-            (
-                await self.session.execute(
-                    select(InvestigationPlan).where(InvestigationPlan.id.in_(plan_ids))
-                )
-            )
-            .scalars()
-            .all()
-        )
-        if not plans:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "No plan found.")
-        investigation_id = plans[0].investigation_id
-        inv = await self.session.get(Investigation, investigation_id)
-        if inv is None or inv.project_id != project_id:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Investigation not found.")
+        inv, plans = await self._project_plans(project_id, plan_ids)
+        investigation_id = inv.id
         scan = await self.session.get(Scan, inv.scan_id)
         if scan is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Scan not found.")
@@ -513,20 +521,7 @@ class InvestigateService:
     async def decline(
         self, project_id: uuid.UUID, plan_ids: list[uuid.UUID]
     ) -> InvestigationRead:
-        plans = (
-            (
-                await self.session.execute(
-                    select(InvestigationPlan).where(InvestigationPlan.id.in_(plan_ids))
-                )
-            )
-            .scalars()
-            .all()
-        )
-        if not plans:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "No plan found.")
-        inv = await self.session.get(Investigation, plans[0].investigation_id)
-        if inv is None or inv.project_id != project_id:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Investigation not found.")
+        inv, plans = await self._project_plans(project_id, plan_ids)
         for plan in plans:
             if (
                 plan.investigation_id == inv.id

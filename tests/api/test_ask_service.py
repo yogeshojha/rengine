@@ -28,6 +28,7 @@ from shared.models.vulnerability import Vulnerability
 from shared.services.ai.agent import CALL, DONE, RESULT, TEXT, AgentEvent
 from shared.services.ai.client import AIError
 from shared.services.ai.config import AIConfig
+from shared.services.project_access import EVERY_PROJECT
 
 pytestmark = pytest.mark.api
 
@@ -184,6 +185,7 @@ async def test_threads_are_per_user(ready, estate):
     thread = ready["thread"]
     mine = await service.threads(
         estate.user_id,
+        EVERY_PROJECT,
         thread.target_id,
         SurfaceDimension.VULNERABILITIES.value,
         ready["fp"],
@@ -192,16 +194,17 @@ async def test_threads_are_per_user(ready, estate):
     assert (
         await service.threads(
             other.id,
+            EVERY_PROJECT,
             thread.target_id,
             SurfaceDimension.VULNERABILITIES.value,
             ready["fp"],
         )
         == []
     )
-    assert await service.get(other.id, thread.id) is None
-    assert await service.detail(other.id, thread.id) is None
-    assert await service.delete(other.id, thread.id) is False
-    assert await service.detail(estate.user_id, thread.id) is not None
+    assert await service.get(other.id, thread.id, EVERY_PROJECT) is None
+    assert await service.detail(other.id, thread.id, EVERY_PROJECT) is None
+    assert await service.delete(other.id, thread.id, EVERY_PROJECT) is False
+    assert await service.detail(estate.user_id, thread.id, EVERY_PROJECT) is not None
 
 
 async def test_thread_cap_per_finding(ready, estate):
@@ -283,7 +286,9 @@ async def test_reply_streams_and_stores_a_cited_answer(ready, estate, monkeypatc
     )
     assert seen["tool_text"][0].rstrip().endswith(">>")
 
-    stored = await AskService(estate.session).detail(estate.user_id, ready["thread"].id)
+    stored = await AskService(estate.session).detail(
+        estate.user_id, ready["thread"].id, EVERY_PROJECT
+    )
     assert [m.role for m in stored.messages] == [
         MessageRole.USER.value,
         MessageRole.ASSISTANT.value,
@@ -319,7 +324,9 @@ async def test_reply_refuses_when_ai_is_off(ready, estate, monkeypatch):
         )
     )
     assert frames == [(StreamEvent.ERROR.value, {"message": "AI is switched off."})]
-    stored = await AskService(estate.session).detail(estate.user_id, ready["thread"].id)
+    stored = await AskService(estate.session).detail(
+        estate.user_id, ready["thread"].id, EVERY_PROJECT
+    )
     assert stored.messages == []
 
 
@@ -393,7 +400,9 @@ async def test_reply_stores_nothing_when_the_provider_fails(ready, estate, monke
     )
     assert [e for e, _ in frames] == [StreamEvent.DELTA.value, StreamEvent.ERROR.value]
     assert frames[1][1] == {"message": "boom"}
-    stored = await AskService(estate.session).detail(estate.user_id, ready["thread"].id)
+    stored = await AskService(estate.session).detail(
+        estate.user_id, ready["thread"].id, EVERY_PROJECT
+    )
     assert stored.messages == []
     assert stored.thread.message_count == 0
     assert stored.thread.title == ask_service.DEFAULT_TITLE

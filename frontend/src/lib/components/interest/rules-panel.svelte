@@ -24,6 +24,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { interestCatalog } from '$lib/stores/interest-catalog.svelte';
 	import { projectsStore } from '$lib/stores/projects.svelte';
+	import { auth } from '$lib/stores/auth.svelte';
 	import { kindIcon } from '$lib/config/interest';
 	import { RULE_MODE, type InterestRule } from '$lib/types/interest';
 	import { parseCsv } from '$lib/utilities/parse';
@@ -40,6 +41,8 @@
 	let deleting = $state(false);
 
 	let projectId = $derived(projectsStore.activeProject?.id ?? '');
+	let isAdmin = $derived(auth.user?.is_superuser ?? false);
+	const fixed = (rule: InterestRule): boolean => rule.builtin && !isAdmin;
 	let keywordRule = $derived(rules.find((r) => r.mode === RULE_MODE.KEYWORD && r.builtin) ?? null);
 	let queryRules = $derived(
 		rules
@@ -139,6 +142,7 @@
 					placeholder="admin, ftp, cpanel, dashboard"
 					aria-label="Keywords"
 					class="font-mono text-sm"
+					disabled={fixed(kr)}
 					onchange={(e) => patch(kr, { keywords: parseCsv(e.currentTarget.value) })}
 				/>
 				<div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
@@ -146,6 +150,7 @@
 						<label class="flex items-center gap-2">
 							<Switch
 								checked={kr.keyword_fields.includes(key)}
+								disabled={fixed(kr)}
 								onCheckedChange={(v) =>
 									patch(kr, {
 										keyword_fields: v
@@ -157,15 +162,27 @@
 						</label>
 					{/each}
 					<label class="flex items-center gap-2">
-						<Switch checked={kr.live_only} onCheckedChange={(v) => patch(kr, { live_only: v })} />
+						<Switch
+							checked={kr.live_only}
+							disabled={fixed(kr)}
+							onCheckedChange={(v) => patch(kr, { live_only: v })}
+						/>
 						Only assets that answered
 					</label>
 					<label class="ml-auto flex items-center gap-2">
-						<Switch checked={kr.notify} onCheckedChange={(v) => patch(kr, { notify: v })} />
+						<Switch
+							checked={kr.notify}
+							disabled={fixed(kr)}
+							onCheckedChange={(v) => patch(kr, { notify: v })}
+						/>
 						Notify
 					</label>
 				</div>
-				<p class="text-xs text-muted-foreground">An edit re-labels every past scan.</p>
+				<p class="text-xs text-muted-foreground">
+					{fixed(kr)
+						? 'Default keywords are set by an administrator.'
+						: 'An edit re-labels every past scan.'}
+				</p>
 			</div>
 		</Card.Root>
 	{/if}
@@ -267,6 +284,7 @@
 							{/if}
 							<Switch
 								checked={rule.enabled}
+								disabled={fixed(rule)}
 								onCheckedChange={(v) => patch(rule, { enabled: v })}
 								aria-label="Enable {rule.name}"
 							/>

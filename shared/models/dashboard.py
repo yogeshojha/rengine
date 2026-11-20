@@ -293,7 +293,7 @@ class DashboardWatches(BaseModel):
     ladder: list[DashboardLadderStep] = Field(default_factory=list)
     latest_alert: DashboardWatchAlert | None = None
     stream_running: bool = False
-    stream_certificates: int = 0
+    stream_certificates: int | None = None
     last_certificate_at: datetime | None = None
 
 

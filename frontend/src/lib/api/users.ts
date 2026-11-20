@@ -11,6 +11,8 @@ export interface UserAccount {
 	email: string;
 	is_active: boolean;
 	is_superuser: boolean;
+	can_create_projects: boolean;
+	project_ids: string[];
 	totp_enabled: boolean;
 	created_at: string;
 }
@@ -20,11 +22,14 @@ export interface UserAccountCreate {
 	email: string;
 	password: string;
 	is_superuser: boolean;
+	can_create_projects: boolean;
+	project_ids: string[];
 }
 
 export interface UserAccountUpdate {
 	is_active?: boolean;
 	is_superuser?: boolean;
+	can_create_projects?: boolean;
 }
 
 const cache = new Map<string, Promise<UserSummary>>();
@@ -44,6 +49,12 @@ export const usersApi = {
 
 	update(userId: string, data: UserAccountUpdate): Promise<UserAccount> {
 		return api.patch<UserAccount>(`/users/${encodeURIComponent(userId)}`, data);
+	},
+
+	setProjects(userId: string, projectIds: string[]): Promise<UserAccount> {
+		return api.put<UserAccount>(`/users/${encodeURIComponent(userId)}/projects`, {
+			project_ids: projectIds
+		});
 	},
 
 	remove(userId: string): Promise<void> {

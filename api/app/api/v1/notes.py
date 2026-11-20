@@ -6,6 +6,7 @@ from fastapi_pagination.ext.sqlalchemy import apaginate
 from pydantic import StringConstraints
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
@@ -142,7 +143,7 @@ Filtered = Annotated[NoteFilter, Depends(note_filter)]
 async def list_notes(
     _current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     f: Filtered,
 ):
     query = await service.list(project_id, f)
@@ -158,7 +159,7 @@ async def list_notes(
 async def note_facets(
     _current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     f: Filtered,
     asset_q: Annotated[
         str | None,
@@ -172,7 +173,7 @@ async def note_facets(
 async def list_note_tags(
     _current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     q: Annotated[str | None, Query(description="Tag prefix")] = None,
 ):
     return await service.tags(project_id, prefix=q)
@@ -183,7 +184,7 @@ async def get_note(
     note_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.get(note_id=note_id, project_id=project_id)
 
@@ -193,7 +194,7 @@ async def create_note(
     data: NoteCreate,
     current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(
         data=data, project_id=project_id, created_by=current_user.id
@@ -206,7 +207,7 @@ async def update_note(
     data: NoteUpdate,
     current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.update(
         note_id=note_id, data=data, project_id=project_id, actor=current_user
@@ -218,6 +219,6 @@ async def delete_note(
     note_id: UUID,
     current_user: CurrentUser,
     service: Annotated[NoteService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await service.delete(note_id=note_id, project_id=project_id, actor=current_user)

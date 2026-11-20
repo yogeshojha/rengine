@@ -1,9 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.api.scope import TargetFilterDep, WebAssetScope
 from app.core.database import get_session
@@ -26,7 +27,7 @@ async def domain_posture(
     _current_user: CurrentUser,
     service: Annotated[DomainPostureService, Depends(get_service)],
     scope: WebAssetScope,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Zones of one scan, with each check's count."""
     return await lead_cache.cached(
@@ -44,7 +45,7 @@ async def project_domain_posture(
     _current_user: CurrentUser,
     service: Annotated[DomainPostureService, Depends(get_service)],
     spec: TargetFilterDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Every target's newest settled run."""
     targets = await resolve_targets(service.session, project_id, spec)
@@ -56,7 +57,7 @@ async def target_domain_posture(
     _current_user: CurrentUser,
     service: Annotated[DomainPostureService, Depends(get_service)],
     target_id: UUID,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """The target's newest settled run that checked its zones."""
     await require_target(service.session, project_id, target_id)

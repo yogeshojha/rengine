@@ -6,6 +6,8 @@ from celery import shared_task
 
 from app.database import get_sync_session
 from shared.logging import get_logger
+from shared.models.user import User
+from shared.services.project_access import may_open, member_projects_sync
 from shared.utils.net import redact_url_queries
 from toolbox import registry, store
 from toolbox.base import ToolContext, ToolError
@@ -15,6 +17,15 @@ logger = get_logger(__name__)
 
 SOFT_TIME_LIMIT = 300
 HARD_TIME_LIMIT = 360
+
+
+def _opens(session, user_id: str, project_id: str | None) -> bool:
+    user = session.get(User, uuid.UUID(user_id))
+    if user is None or not user.is_active:
+        return False
+    if not project_id:
+        return True
+    return may_open(member_projects_sync(session, user), uuid.UUID(project_id))
 
 
 @shared_task(
@@ -41,6 +52,9 @@ def run(
         return {"run_id": run_id, "status": record.status}
 
     with get_sync_session() as session:
+        if not _opens(session, user_id, project_id):
+            store.save_sync(user_id, fail(record, "Project not found."))
+            return {"run_id": run_id, "status": record.status}
         ctx = ToolContext(
             session=session,
             project_id=uuid.UUID(project_id) if project_id else None,

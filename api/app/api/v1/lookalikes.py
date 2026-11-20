@@ -1,17 +1,16 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.lookalikes import LookalikeService
-from app.services.target_scope import require_target
+from app.services.target_scope import require_scan, require_target
 from shared.models.lookalike import LookalikeSummary, LookalikeTriageUpdate
-from shared.models.target import Target
 
 router = APIRouter(prefix="/lookalikes", tags=["lookalikes"])
 
@@ -30,10 +29,11 @@ def get_service(
 async def scan_lookalikes(
     _current_user: CurrentUser,
     service: Annotated[LookalikeService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
     """Registered lookalikes of one scan."""
+    await require_scan(service.session, project_id, scan_id)
     return await service.for_scan(project_id, scan_id)
 
 
@@ -42,7 +42,7 @@ async def target_lookalikes(
     _current_user: CurrentUser,
     service: Annotated[LookalikeService, Depends(get_service)],
     target_id: UUID,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """The target's newest settled run that checked lookalikes."""
     await require_target(service.session, project_id, target_id)
@@ -54,16 +54,10 @@ async def triage_lookalikes(
     _current_user: CurrentUser,
     service: Annotated[LookalikeService, Depends(get_service)],
     body: LookalikeTriageUpdate,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     """Set the review state of lookalikes of one target."""
-    owned = await service.session.scalar(
-        select(Target.id).where(
-            Target.id == body.target_id, Target.project_id == project_id
-        )
-    )
-    if owned is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Target not found.")
+    await require_target(service.session, project_id, body.target_id)
     updated = await service.triage(
         project_id, body.target_id, body.domains, body.state.value
     )

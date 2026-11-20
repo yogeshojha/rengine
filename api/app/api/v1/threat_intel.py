@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, require_owned
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.api.scope import TargetFilterDep, resolve_scope
 from app.core.database import get_session
@@ -20,8 +21,10 @@ from shared.models.threat_intel import (
     SyncResult,
     ThreatIntelStatus,
 )
+from shared.models.vulnerability import Vulnerability
 from shared.services.asset_query import QueryScope
 from shared.services.celery_dispatch import dispatch_threat_intel_refresh
+from shared.services.project_access import EVERY_PROJECT, ProjectSet
 
 router = APIRouter(prefix="/threat-intel", tags=["threat intelligence"])
 
@@ -33,49 +36,61 @@ def get_service(
 
 
 async def _findings_scope(
-    session: AsyncSession, project_id: UUID | None, spec: TargetFilter
+    session: AsyncSession,
+    access: ProjectSet,
+    project_id: UUID | None,
+    spec: TargetFilter,
 ) -> QueryScope | None:
-    if project_id is None:
+    if project_id is None and access is EVERY_PROJECT:
         return None
     return await resolve_scope(
-        session, SurfaceDimension.VULNERABILITIES.value, None, project_id, spec
+        session,
+        access,
+        SurfaceDimension.VULNERABILITIES.value,
+        None,
+        project_id,
+        spec,
+        every=True,
     )
 
 
 @router.get("/status", response_model=ThreatIntelStatus)
 async def status(
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[ThreatIntelService, Depends(get_service)],
     spec: TargetFilterDep,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> ThreatIntelStatus:
-    scope = await _findings_scope(service.session, project_id, spec)
+    scope = await _findings_scope(service.session, access, project_id, spec)
     return await service.status(scope)
 
 
 @router.get("/changes", response_model=list[IntelChange])
 async def changes(
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[ThreatIntelService, Depends(get_service)],
     spec: TargetFilterDep,
     project_id: Annotated[UUID | None, Query()] = None,
     days: Annotated[int, Query(ge=1, le=90)] = 7,
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> list[IntelChange]:
-    scope = await _findings_scope(service.session, project_id, spec)
+    scope = await _findings_scope(service.session, access, project_id, spec)
     return await service.changes(scope, days=days, limit=limit)
 
 
 @router.put("/auto-sync", response_model=ThreatIntelStatus)
 async def set_auto_sync(
     _current_user: CurrentSuperuser,
+    access: Access,
     service: Annotated[ThreatIntelService, Depends(get_service)],
     body: AutoSyncUpdate,
     project_id: Annotated[UUID | None, Query()] = None,
 ) -> ThreatIntelStatus:
     """Turn the nightly download on or off."""
     await service.set_auto_sync(body.enabled)
-    scope = await _findings_scope(service.session, project_id, TargetFilter())
+    scope = await _findings_scope(service.session, access, project_id, TargetFilter())
     return await service.status(scope)
 
 
@@ -96,14 +111,19 @@ async def sync(_current_user: CurrentSuperuser) -> SyncResult:
 async def finding(
     _current_user: CurrentUser,
     service: Annotated[ThreatIntelService, Depends(get_service)],
+    access: Access,
     vulnerability_id: Annotated[UUID, Path()],
 ) -> FindingIntel:
+    await require_owned(
+        service.session, access, Vulnerability, vulnerability_id, "Finding"
+    )
     return await service.finding(vulnerability_id)
 
 
 @router.get("/signal/{kind}", response_model=list[SignalFinding])
 async def signal_findings(
     _current_user: CurrentUser,
+    access: Access,
     service: Annotated[ThreatIntelService, Depends(get_service)],
     kind: Annotated[str, Path(max_length=32)],
     spec: TargetFilterDep,
@@ -111,5 +131,5 @@ async def signal_findings(
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ) -> list[SignalFinding]:
     """Findings behind one signal count."""
-    scope = await _findings_scope(service.session, project_id, spec)
+    scope = await _findings_scope(service.session, access, project_id, spec)
     return await service.signal_findings(kind, scope, limit=limit)

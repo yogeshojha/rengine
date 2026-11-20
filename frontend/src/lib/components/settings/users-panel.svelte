@@ -15,16 +15,20 @@
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
 	import TableSkeleton from '$lib/components/skeleton/table-skeleton.svelte';
 	import ConfirmDialog from '$lib/components/confirm-dialog.svelte';
 	import EmptyState from '$lib/components/empty-state.svelte';
 	import FormField from '$lib/components/form-field.svelte';
 	import LoadingButton from '$lib/components/loading-button.svelte';
 	import UnsavedChangesDialog from '$lib/components/unsaved-changes-dialog.svelte';
+	import ProjectAccessDialog from './project-access-dialog.svelte';
+	import ProjectChecklist from './project-checklist.svelte';
+	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { usersApi, type UserAccount } from '$lib/api/users';
 	import { auth } from '$lib/stores/auth.svelte';
 	import { settingsActions } from '$lib/stores/settings-actions.svelte';
-	import { ROLE_LABELS, roleLabel } from '$lib/config/users';
+	import { PROJECT_ACCESS_LABELS, projectAccess, ROLE_LABELS, roleLabel } from '$lib/config/users';
 	import { formatShortDate } from '$lib/utilities/dates';
 	import { DiscardGuard } from '$lib/utilities/discard-guard.svelte';
 	import { BODY_ROW, HEAD_ROW, USER_COL, USER_SKELETON } from './columns';
@@ -42,7 +46,11 @@
 	let password = $state('');
 	let showPassword = $state(false);
 	let role = $state(MEMBER);
+	let projectIds = $state<string[]>([]);
+	let canCreateProjects = $state(false);
 	let saving = $state(false);
+
+	let editingAccess = $state<UserAccount | null>(null);
 
 	let removing = $state<UserAccount | null>(null);
 	let deleting = $state(false);
@@ -50,7 +58,14 @@
 	const isAdmin = $derived(auth.user?.is_superuser ?? false);
 	const selfId = $derived(auth.user?.id ?? null);
 	const canSave = $derived(!saving && !!username.trim() && !!email.trim() && password.length > 0);
-	const dirty = $derived(!!username.trim() || !!email.trim() || !!password || role !== MEMBER);
+	const dirty = $derived(
+		!!username.trim() ||
+			!!email.trim() ||
+			!!password ||
+			role !== MEMBER ||
+			projectIds.length > 0 ||
+			canCreateProjects
+	);
 	const guard = new DiscardGuard(
 		() => dirty,
 		() => (dialogOpen = false)
@@ -79,6 +94,8 @@
 		password = '';
 		showPassword = false;
 		role = MEMBER;
+		projectIds = [];
+		canCreateProjects = false;
 		dialogOpen = true;
 	}
 
@@ -90,7 +107,9 @@
 				username: username.trim(),
 				email: email.trim(),
 				password,
-				is_superuser: role === ADMIN
+				is_superuser: role === ADMIN,
+				can_create_projects: role !== ADMIN && canCreateProjects,
+				project_ids: role === ADMIN ? [] : projectIds
 			});
 			users = [...users, created];
 			toast.success(`User ${created.username} added`);
@@ -102,10 +121,13 @@
 		}
 	}
 
+	function replaceUser(updated: UserAccount) {
+		users = users.map((u) => (u.id === updated.id ? updated : u));
+	}
+
 	async function update(user: UserAccount, patch: { is_active?: boolean; is_superuser?: boolean }) {
 		try {
-			const updated = await usersApi.update(user.id, patch);
-			users = users.map((u) => (u.id === updated.id ? updated : u));
+			replaceUser(await usersApi.update(user.id, patch));
 			if (patch.is_active !== undefined) {
 				toast.success(`User ${user.username} ${patch.is_active ? 'enabled' : 'disabled'}`);
 			} else {
@@ -167,12 +189,14 @@
 			<div class={HEAD_ROW} role="row">
 				<div class={USER_COL.user} role="columnheader">User</div>
 				<div class={USER_COL.role} role="columnheader">Role</div>
+				<div class={USER_COL.projects} role="columnheader">Projects</div>
 				<div class={USER_COL.twoFactor} role="columnheader">Two-factor</div>
 				<div class={USER_COL.created} role="columnheader">Added</div>
 				<div class={USER_COL.actions} role="columnheader"><span class="sr-only">Actions</span></div>
 			</div>
 			{#each users as user (user.id)}
 				{@const isSelf = user.id === selfId}
+				{@const access = projectAccess(user, projectsStore.projects)}
 				<div class="{BODY_ROW} {user.is_active ? '' : 'text-muted-foreground'}" role="row">
 					<div class="{USER_COL.user} flex flex-col" role="cell">
 						<span class="flex items-center gap-2 text-sm leading-5 font-medium">
@@ -187,6 +211,21 @@
 						<span class="text-2xs text-muted-foreground wrap-anywhere">{user.email}</span>
 					</div>
 					<div class="{USER_COL.role} text-sm" role="cell">{roleLabel(user.is_superuser)}</div>
+					<div class={USER_COL.projects} role="cell">
+						{#if access.kind === 'all'}
+							<span class="text-sm">{PROJECT_ACCESS_LABELS.all}</span>
+						{:else if access.kind === 'none'}
+							<Badge variant="outline" class="h-5 px-1.5 text-2xs text-muted-foreground">
+								{PROJECT_ACCESS_LABELS.none}
+							</Badge>
+						{:else}
+							<span class="flex flex-wrap gap-1">
+								{#each access.projects as project (project.id)}
+									<Badge variant="secondary" class="h-5 px-1.5 text-2xs">{project.name}</Badge>
+								{/each}
+							</span>
+						{/if}
+					</div>
 					<div class="{USER_COL.twoFactor} text-sm" role="cell">
 						{#if user.totp_enabled}
 							On
@@ -214,6 +253,11 @@
 									{/snippet}
 								</DropdownMenu.Trigger>
 								<DropdownMenu.Content align="end">
+									{#if !user.is_superuser}
+										<DropdownMenu.Item onSelect={() => (editingAccess = user)}>
+											{PROJECT_ACCESS_LABELS.title}
+										</DropdownMenu.Item>
+									{/if}
 									<DropdownMenu.Item
 										onSelect={() => update(user, { is_superuser: !user.is_superuser })}
 									>
@@ -306,6 +350,23 @@
 						</Select.Root>
 					{/snippet}
 				</FormField>
+				{#if role !== ADMIN}
+					<div class="flex flex-col gap-2">
+						<span class="text-sm font-medium">Projects</span>
+						<ProjectChecklist
+							projects={projectsStore.projects}
+							bind:selected={projectIds}
+							disabled={saving}
+						/>
+					</div>
+					<label
+						class="flex cursor-pointer items-center justify-between gap-4 rounded-lg border px-4 py-3"
+						for="user-create-projects"
+					>
+						<span class="text-sm font-medium">{PROJECT_ACCESS_LABELS.create}</span>
+						<Switch id="user-create-projects" bind:checked={canCreateProjects} disabled={saving} />
+					</label>
+				{/if}
 			</div>
 			<Dialog.Footer class="border-t px-6 py-4">
 				<Button type="button" variant="outline" disabled={saving} onclick={() => guard.close()}>
@@ -318,6 +379,12 @@
 		</form>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ProjectAccessDialog
+	user={editingAccess}
+	onclose={() => (editingAccess = null)}
+	onsaved={replaceUser}
+/>
 
 <ConfirmDialog
 	open={removing !== null}

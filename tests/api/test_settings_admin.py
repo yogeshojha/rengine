@@ -503,8 +503,12 @@ async def test_only_an_admin_reads_the_ai_server(estate, flush_only):
         )
     )
 
-    member = await ai_status(SimpleNamespace(is_superuser=False), flush_only)
-    admin = await ai_status(SimpleNamespace(is_superuser=True), flush_only)
+    member = await ai_status(
+        SimpleNamespace(is_superuser=False, id=uuid.uuid4()), flush_only
+    )
+    admin = await ai_status(
+        SimpleNamespace(is_superuser=True, id=uuid.uuid4()), flush_only
+    )
     listed = await list_connections(SimpleNamespace(is_superuser=False), flush_only)
     full = await list_connections(SimpleNamespace(is_superuser=True), flush_only)
 

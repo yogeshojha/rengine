@@ -13,7 +13,7 @@ from sqlalchemy import String, cast, select
 from channels import commands, pairing, render, settings, stepup
 from channels.base import Channel, Inbound
 from channels.commands import CommandError, CommandSpec, Parsed
-from channels.identity import effective_capabilities, identity_for
+from channels.identity import effective_capabilities, identity_for, selected_project
 from channels.models import MAX_COMMAND, ChannelChat, ChannelConfig
 from channels.render import Line, bold, code, italic, line
 from mcp import limits, server, telemetry
@@ -36,6 +36,12 @@ from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.models.user import User
 from shared.services.celery_dispatch import dispatch_toolbox_run
+from shared.services.project_access import (
+    ProjectSet,
+    may_open,
+    member_projects,
+    opened_projects,
+)
 from shared.utils.datetime import utc_now
 from shared.utils.net import redact_url_queries
 from shared.utils.text import strip_control
@@ -217,11 +223,12 @@ class Dispatcher:
         if not confirmed:
             await stepup.take(kind, external_id)
 
+        access = await member_projects(session, user)
         if spec.builtin:
-            await self._builtin(session, cfg, chat, user, parsed, spec)
+            await self._builtin(session, cfg, chat, user, parsed, spec, access)
             return
 
-        identity = identity_for(chat, user, cfg.ceiling)
+        identity = identity_for(chat, user, cfg.ceiling, access)
         if spec.capability not in identity.capabilities:
             await self._refused(identity, spec, "Capability not granted.", parsed)
             await self.channel.reply(
@@ -229,7 +236,7 @@ class Dispatcher:
             )
             return
 
-        if chat.project_id is None:
+        if identity.project_id is None:
             await self._say(external_id, "Select a project first: /project <name>.")
             return
 
@@ -265,7 +272,7 @@ class Dispatcher:
 
         if spec.source == CommandSource.TOOLBOX.value:
             await self._lookup(
-                session, chat, user, identity, spec, args, external_id, said(parsed)
+                session, user, identity, spec, args, external_id, said(parsed)
             )
         else:
             await self._tool(session, identity, spec, args, external_id, said(parsed))
@@ -298,7 +305,6 @@ class Dispatcher:
     async def _lookup(  # noqa: PLR0911
         self,
         session: Any,
-        chat: ChannelChat,
         user: User,
         identity: TokenIdentity,
         spec: CommandSpec,
@@ -316,7 +322,7 @@ class Dispatcher:
             await self._say(external_id, str(exc))
             return
 
-        ctx = LookupContext(session=session, project_id=chat.project_id)
+        ctx = LookupContext(session=session, project_id=identity.project_id)
         label = tool.tool_cls.label_for(payload)
 
         if tool.queued:
@@ -326,6 +332,7 @@ class Dispatcher:
                 label=label,
                 payload=payload.model_dump(mode="json"),
                 status=RunStatus.QUEUED.value,
+                project_id=identity.project_id,
             )
             await store.save(user.id, run)
             accepted = dispatch_toolbox_run(
@@ -333,7 +340,7 @@ class Dispatcher:
                 user_id=str(user.id),
                 tool=tool.name,
                 payload=run.input,
-                project_id=str(chat.project_id) if chat.project_id else None,
+                project_id=str(identity.project_id),
             )
             if not accepted:
                 await self._say(
@@ -419,11 +426,23 @@ class Dispatcher:
             await self._observe(identity, tool, False, started, "timeout", command)
             await self._say(external_id, f"Run {short_id(run_id)} did not complete.")
             return
+        if not await self._still_opens(user_id, run.project_id):
+            await self._say(external_id, "Run expired.")
+            return
         ok = run.status == RunStatus.COMPLETED.value
         await self._observe(
             identity, tool, ok, started, None if ok else run.error, command
         )
         await self.channel.reply(external_id, render.run_lines(run, self.ui_base))
+
+    async def _still_opens(self, user_id: uuid.UUID, project_id: str | None) -> bool:
+        async with self.sessions() as session:
+            user = await session.get(User, user_id)
+            if user is None or not user.is_active:
+                return False
+            if not project_id:
+                return True
+            return may_open(await member_projects(session, user), uuid.UUID(project_id))
 
     async def _observe(
         self,
@@ -484,6 +503,7 @@ class Dispatcher:
         user: User,
         parsed: Parsed,
         spec: CommandSpec,
+        access: ProjectSet,
     ) -> None:
         external_id = chat.external_id
         if spec.name == "help":
@@ -491,12 +511,14 @@ class Dispatcher:
             await self.channel.reply(external_id, self._help(target))
         elif spec.name in {"start", "whoami"}:
             await self.channel.reply(
-                external_id, await self._whoami(session, cfg, chat, user)
+                external_id, await self._whoami(session, cfg, chat, user, access)
             )
         elif spec.name == "projects":
-            await self.channel.reply(external_id, await self._projects(session, chat))
+            await self.channel.reply(
+                external_id, await self._projects(session, chat, access)
+            )
         elif spec.name == "project":
-            await self._project(session, chat, parsed)
+            await self._project(session, chat, parsed, access)
         elif spec.name == "unpair":
             chat.state = ChatState.REVOKED.value
             chat.revoked_at = utc_now()
@@ -557,11 +579,15 @@ class Dispatcher:
         return out
 
     async def _whoami(
-        self, session: Any, cfg: settings.ChannelSettings, chat: ChannelChat, user: User
+        self,
+        session: Any,
+        cfg: settings.ChannelSettings,
+        chat: ChannelChat,
+        user: User,
+        access: ProjectSet,
     ) -> list[Line]:
-        project = (
-            await session.get(Project, chat.project_id) if chat.project_id else None
-        )
+        selected = selected_project(chat, access)
+        project = await session.get(Project, selected) if selected else None
         granted = effective_capabilities(chat, user, cfg.ceiling)
         remaining = await stepup.grace_remaining(self.channel.kind, chat.external_id)
         out = [
@@ -579,12 +605,10 @@ class Dispatcher:
             out.append(line("Authenticator: not enrolled · read only"))
         return out
 
-    async def _projects(self, session: Any, chat: ChannelChat) -> list[Line]:
-        rows = (
-            (await session.execute(select(Project).where(Project.is_active.is_(True))))
-            .scalars()
-            .all()
-        )
+    async def _projects(
+        self, session: Any, chat: ChannelChat, access: ProjectSet
+    ) -> list[Line]:
+        rows = (await session.execute(opened_projects(access))).scalars().all()
         if not rows:
             return [line("No projects.")]
         out = [line(bold("Projects"))]
@@ -595,13 +619,14 @@ class Dispatcher:
         out.append(line("Switch with /project <name>."))
         return out
 
-    async def _project(self, session: Any, chat: ChannelChat, parsed: Parsed) -> None:
+    async def _project(
+        self, session: Any, chat: ChannelChat, parsed: Parsed, access: ProjectSet
+    ) -> None:
         external_id = chat.external_id
         wanted = " ".join(parsed.bare).strip()
         if not wanted:
-            project = (
-                await session.get(Project, chat.project_id) if chat.project_id else None
-            )
+            selected = selected_project(chat, access)
+            project = await session.get(Project, selected) if selected else None
             if project is None:
                 await self._say(
                     external_id, "No project selected. Send /project <name>."
@@ -609,11 +634,7 @@ class Dispatcher:
             else:
                 await self._say(external_id, f"Project: {project.name}.")
             return
-        rows = (
-            (await session.execute(select(Project).where(Project.is_active.is_(True))))
-            .scalars()
-            .all()
-        )
+        rows = (await session.execute(opened_projects(access))).scalars().all()
         match = _pick_project(rows, wanted)
         if match is None:
             names = ", ".join(sorted(r.name for r in rows)[:8])

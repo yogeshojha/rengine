@@ -106,6 +106,7 @@ from shared.services.celery_dispatch import (
 from shared.services.credential_access import launch_refusal, superuser_of
 from shared.services.launch_plan import AdHocEngine, plan_label
 from shared.services.orchestrator.events import ScanEventPublisher
+from shared.services.project_access import ProjectSet
 from shared.services.scan_factory import build_scan_row
 from shared.services.scan_resolve import (
     MASK,
@@ -277,6 +278,20 @@ class ScanService:
                 "Reload the target list.",
             )
         return [found[tid] for tid in target_ids]
+
+    async def _in_project(self, target_ids: list[UUID], project_id: UUID) -> list[UUID]:
+        if not target_ids:
+            return []
+        held = set(
+            (
+                await self.session.scalars(
+                    select(Target.id).where(
+                        Target.id.in_(target_ids), Target.project_id == project_id
+                    )
+                )
+            ).all()
+        )
+        return [t for t in dict.fromkeys(target_ids) if t in held]
 
     async def _get_target(self, target_id: UUID, project_id: UUID) -> Target:
         result = await self.session.execute(
@@ -532,6 +547,8 @@ class ScanService:
         *,
         reused_context: bool = False,
     ) -> ScanRead:
+        if data.parent_scan_id is not None:
+            await self._get_scan(data.parent_scan_id, project_id)
         engine, context, target, resolved = await self._resolve_and_validate(
             data, project_id, created_by, reused_context=reused_context
         )
@@ -944,13 +961,13 @@ class ScanService:
             tags=[ScanFacet(name=name, count=n) for name, n in tag_rows],
         )
 
-    async def get(self, id: UUID, project_id: UUID) -> ScanRead:
+    async def get(self, id: UUID, project_id: UUID, access: ProjectSet) -> ScanRead:
         scan = await self._get_scan(id, project_id)
         read = self._to_read(scan)
-        await self.attach_deltas([read])
+        await self.attach_deltas([read], access)
         return read
 
-    async def attach_deltas(self, items: list[ScanRead]) -> None:
+    async def attach_deltas(self, items: list[ScanRead], access: ProjectSet) -> None:
         if not items:
             return
         scan_ids = [i.id for i in items]
@@ -969,7 +986,7 @@ class ScanService:
         ok = await self.ok_counts(scan_ids)
         tags = await ScanTagService(self.session).summaries(scan_ids)
         queued = await self.queue_positions(
-            [i.id for i in items if i.status == ScanStatus.PENDING.value]
+            [i.id for i in items if i.status == ScanStatus.PENDING.value], access
         )
         for i in items:
             i.queue_position = queued.get(i.id)
@@ -983,14 +1000,16 @@ class ScanService:
             i.rescans = rescans.get(i.id)
             i.recheck = rechecks.get(i.id)
 
-    async def queue_positions(self, scan_ids: list[UUID]) -> dict[UUID, int]:
-        """Scans ahead of each pending scan the limit holds back."""
+    async def queue_positions(
+        self, scan_ids: list[UUID], access: ProjectSet
+    ) -> dict[UUID, int]:
+        """Scans the access opens ahead of each pending scan the limit holds back."""
         if not scan_ids:
             return {}
-        places = dict(
-            (await self.session.execute(scan_admission.positions_query(scan_ids))).all()
-        )
-        if not places:
+        rows = (
+            await self.session.execute(scan_admission.positions_query(scan_ids, access))
+        ).all()
+        if not rows:
             return {}
         busy = await self.session.scalar(scan_admission.running_query()) or 0
         configured = await self.session.scalar(
@@ -1000,8 +1019,8 @@ class ScanService:
         )
         limit = await asyncio.to_thread(scan_admission.resolve, configured)
         return {
-            scan_id: place - 1
-            for scan_id, place in places.items()
+            scan_id: seen - 1
+            for scan_id, place, seen in rows
             if busy + place - 1 >= limit
         }
 
@@ -1109,7 +1128,7 @@ class ScanService:
             i.target_runs = int(runs.get(i.target_id, 0))
 
     async def latest_for_targets(
-        self, project_id: UUID, target_ids: list[UUID]
+        self, project_id: UUID, target_ids: list[UUID], access: ProjectSet
     ) -> list[ScanRead]:
         """The newest census run of each target, with the fields the history rows show."""
         if not target_ids:
@@ -1141,7 +1160,7 @@ class ScanService:
             .all()
         )
         items = [self.to_read(s) for s in rows]
-        await self.attach_deltas(items)
+        await self.attach_deltas(items, access)
         await self.attach_target_runs(items)
         await self._attach_covering_findings(project_id, items)
         return items
@@ -1182,6 +1201,7 @@ class ScanService:
         self, project_id: UUID, target_ids: list[UUID], limit: int = TREND_POINTS
     ) -> list[ScanTargetTrend]:
         """Per target, open findings of its last completed census runs, oldest first."""
+        target_ids = await self._in_project(target_ids, project_id)
         if not target_ids:
             return []
         started = func.coalesce(Scan.started_at, Scan.created_at)
@@ -1399,6 +1419,7 @@ class ScanService:
     ) -> ScanCancelAll:
         conds = [Scan.project_id == project_id, Scan.status.in_(SCAN_OPEN_STATUSES)]
         if target_ids:
+            await self._get_targets(target_ids, project_id)
             conds.append(Scan.target_id.in_(target_ids))
         scans = list(
             (

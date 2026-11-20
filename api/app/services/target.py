@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col
 
+from app.api.access import not_found, project_by_slug
 from app.core.validation_errors import validation_detail
 from app.services.infostealer import InfostealerService
 from app.services.target_filters import (
@@ -27,7 +28,6 @@ from app.services.target_filters import (
     SortKey,
     apply_filters,
     apply_sort,
-    empty_signal_counts,
     signal_count_columns,
     with_whois_join,
 )
@@ -100,6 +100,7 @@ from shared.services.celery_dispatch import (
     dispatch_whois_lookups,
 )
 from shared.services.organization import get_or_create_organization
+from shared.services.project_access import ProjectSet, may_open, scoped
 from shared.services.tag import get_or_create_tag
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
@@ -140,13 +141,6 @@ async def _queue(send: Callable[[list[str]], None], ids: list[str]) -> None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=QUEUE_REFUSED
         ) from exc
-
-
-def _bulk_targets(target_ids: list[UUID], project_id: UUID | None) -> Select:
-    query = select(Target).where(Target.id.in_(target_ids))
-    if project_id is not None:
-        query = query.where(Target.project_id == project_id)
-    return query
 
 
 @dataclass
@@ -294,14 +288,10 @@ class TargetService:
         return validate_target(target_value)
 
     async def existing_targets(
-        self, project_slug: str, values: list[str]
+        self, project_slug: str, values: list[str], *, access: ProjectSet
     ) -> dict[str, UUID]:
         """The project's targets whose value is one of the given values."""
-        project = await self._get_project_by_slug(project_slug)
-        if project is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found."
-            )
+        project = await project_by_slug(self.session, access, project_slug)
         if not values:
             return {}
         rows = await self.session.execute(
@@ -313,20 +303,16 @@ class TargetService:
 
     async def get_target_counts(
         self,
-        project_slug: str,
+        project_id: UUID,
         *,
         search: str | None = None,
         organization_ids: list[UUID] | None = None,
         tag_ids: list[UUID] | None = None,
         signal: SignalName | None = None,
     ) -> dict[str, int]:
-        project = await self._get_project_by_slug(project_slug)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found.")
-
         query = with_whois_join(
             select(Target.target_type, func.count(Target.id)).select_from(Target)
-        ).where(Target.project_id == project.id)
+        ).where(Target.project_id == project_id)
         query = apply_filters(
             query,
             search=search,
@@ -347,24 +333,17 @@ class TargetService:
     async def search_targets_by_value(
         self,
         target_value: str,
-        project_slug: str | None = None,
+        projects: ProjectSet,
     ) -> Select:
         query = select(Target).where(
             Target.target_value.icontains(target_value, autoescape=True)
         )
-
-        if project_slug:
-            project = await self._get_project_by_slug(project_slug)
-            if not project:
-                return query.where(col(Target.id).is_(None))
-            query = query.where(Target.project_id == project.id)
-
-        return query
+        return scoped(query, projects, Target.project_id)
 
     async def list_targets(
         self,
         *,
-        project_slug: str | None = None,
+        projects: ProjectSet,
         search: str | None = None,
         organization_ids: list[UUID] | None = None,
         tag_ids: list[UUID] | None = None,
@@ -373,13 +352,7 @@ class TargetService:
         sort_by: SortKey = "updated",
         sort_dir: SortDir = "desc",
     ) -> Select:
-        query = with_whois_join(select(Target))
-
-        if project_slug:
-            project = await self._get_project_by_slug(project_slug)
-            if not project:
-                return query.where(col(Target.id).is_(None))
-            query = query.where(Target.project_id == project.id)
+        query = scoped(with_whois_join(select(Target)), projects, Target.project_id)
 
         query = apply_filters(
             query,
@@ -395,19 +368,15 @@ class TargetService:
     async def get_target_stats(
         self,
         *,
-        project_slug: str,
+        project_id: UUID,
         search: str | None = None,
         organization_ids: list[UUID] | None = None,
         tag_ids: list[UUID] | None = None,
         target_type: TargetType | None = None,
     ) -> dict[str, int]:
-        project = await self._get_project_by_slug(project_slug)
-        if not project:
-            return empty_signal_counts()
-
         query = with_whois_join(
             select(*signal_count_columns()).select_from(Target)
-        ).where(Target.project_id == project.id)
+        ).where(Target.project_id == project_id)
         query = apply_filters(
             query,
             search=search,
@@ -423,7 +392,7 @@ class TargetService:
     async def get_matching_target_ids(
         self,
         *,
-        project_slug: str,
+        project_id: UUID,
         search: str | None = None,
         organization_ids: list[UUID] | None = None,
         tag_ids: list[UUID] | None = None,
@@ -431,11 +400,8 @@ class TargetService:
         signal: SignalName | None = None,
         limit: int = 10000,
     ) -> list[UUID]:
-        project = await self._get_project_by_slug(project_slug)
-        if not project:
-            return []
         query = with_whois_join(select(Target.id)).where(
-            Target.project_id == project.id
+            Target.project_id == project_id
         )
         query = apply_filters(
             query,
@@ -452,10 +418,10 @@ class TargetService:
         self,
         target_ids: list[UUID],
         kind: EnrichmentKind,
-        project_id: UUID | None = None,
+        *,
+        access: ProjectSet,
     ) -> int:
-        result = await self.session.execute(_bulk_targets(target_ids, project_id))
-        targets = list(result.scalars().all())
+        targets = await self._bulk_targets(target_ids, access)
         eligible: list[Target] = []
 
         for target in targets:
@@ -506,10 +472,10 @@ class TargetService:
         target_ids: list[UUID],
         tag_names: list[str],
         user_id: str,
-        project_id: UUID | None = None,
+        *,
+        access: ProjectSet,
     ) -> int:
-        result = await self.session.execute(_bulk_targets(target_ids, project_id))
-        targets = list(result.scalars().all())
+        targets = await self._bulk_targets(target_ids, access)
         cache: dict[tuple, Tag] = {}
 
         for target in targets:
@@ -538,10 +504,10 @@ class TargetService:
         target_ids: list[UUID],
         org_names: list[str],
         user_id: str,
-        project_id: UUID | None = None,
+        *,
+        access: ProjectSet,
     ) -> int:
-        result = await self.session.execute(_bulk_targets(target_ids, project_id))
-        targets = list(result.scalars().all())
+        targets = await self._bulk_targets(target_ids, access)
         cache: dict[tuple, Organization] = {}
 
         for target in targets:
@@ -565,7 +531,9 @@ class TargetService:
         await self.session.commit()
         return len(targets)
 
-    async def create_target(self, target_in: TargetCreate, user_id: str) -> TargetRead:
+    async def create_target(
+        self, target_in: TargetCreate, user_id: str, *, access: ProjectSet
+    ) -> TargetRead:
         target_value = normalize_target_value(target_in.target_value)
         if len(target_value) > MAX_TARGET_VALUE_LEN:
             raise HTTPException(
@@ -578,12 +546,7 @@ class TargetService:
                 detail=unrecognised_target(target_in.target_value),
             )
 
-        project = await self._get_project_by_slug(target_in.project_slug)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found.",
-            )
+        project = await project_by_slug(self.session, access, target_in.project_slug)
 
         await self._check_duplicate_target(target_value, project.id)
 
@@ -729,14 +692,9 @@ class TargetService:
                 await self._write_seeds(target, lines, replace=False)
 
     async def bulk_create_targets(
-        self, bulk_in: TargetBulkCreate, user_id: str
+        self, bulk_in: TargetBulkCreate, user_id: str, *, access: ProjectSet
     ) -> TargetBulkCreateResponse:
-        project = await self._get_project_by_slug(bulk_in.project_slug)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found.",
-            )
+        project = await project_by_slug(self.session, access, bulk_in.project_slug)
 
         items = [
             TargetImportItem(target_value=value, seeds=bulk_in.seeds)
@@ -903,8 +861,10 @@ class TargetService:
             ],
         )
 
-    async def list_seeds(self, target_id: str) -> list[TargetSeedRead]:
-        target = await self._get_target_or_404(target_id)
+    async def list_seeds(
+        self, target_id: str, *, access: ProjectSet
+    ) -> list[TargetSeedRead]:
+        target = await self._get_target_or_404(target_id, access)
         rows = (
             (
                 await self.session.execute(
@@ -921,14 +881,16 @@ class TargetService:
         ]
 
     async def write_seeds(
-        self, target_id: str, data: TargetSeedWrite
+        self, target_id: str, data: TargetSeedWrite, *, access: ProjectSet
     ) -> TargetSeedResult:
-        target = await self._get_target_or_404(target_id)
+        target = await self._get_target_or_404(target_id, access)
         _, result = await self._write_seeds(target, data.values, replace=data.replace)
         return result
 
-    async def delete_seed(self, target_id: str, seed_id: UUID) -> None:
-        target = await self._get_target_or_404(target_id)
+    async def delete_seed(
+        self, target_id: str, seed_id: UUID, *, access: ProjectSet
+    ) -> None:
+        target = await self._get_target_or_404(target_id, access)
         deleted = (
             await self.session.execute(
                 sa_delete(TargetSeed).where(
@@ -942,14 +904,19 @@ class TargetService:
             )
         await self.session.commit()
 
-    async def get_target(self, target_id: str) -> TargetRead:
-        target = await self._get_target_or_404(target_id)
+    async def get_target(self, target_id: str, *, access: ProjectSet) -> TargetRead:
+        target = await self._get_target_or_404(target_id, access)
         return self._to_target_read(target, await self._seed_count(target.id))
 
     async def update_target(
-        self, target_id: str, target_in: TargetUpdate, user_id: str
+        self,
+        target_id: str,
+        target_in: TargetUpdate,
+        user_id: str,
+        *,
+        access: ProjectSet,
     ) -> TargetRead:
-        target = await self._get_target_or_404(target_id)
+        target = await self._get_target_or_404(target_id, access)
 
         if target_in.display_name is not None:
             target.display_name = target_in.display_name
@@ -977,8 +944,8 @@ class TargetService:
 
         return self._to_target_read(target, await self._seed_count(target.id))
 
-    async def delete_target(self, target_id: str) -> None:
-        target = await self._get_target_or_404(target_id)
+    async def delete_target(self, target_id: str, *, access: ProjectSet) -> None:
+        target = await self._get_target_or_404(target_id, access)
 
         running = (
             await self.session.execute(
@@ -1005,7 +972,7 @@ class TargetService:
 
     async def import_targets_csv(
         self,
-        project_slug: str,
+        project: Project,
         file: UploadFile,
         user_id: str,
         organization_names: list[str] | None = None,
@@ -1045,24 +1012,16 @@ class TargetService:
                 detail=f"A CSV import holds at most {MAX_TARGETS_IMPORT} targets.",
             )
 
-        import_request = TargetImportRequest(
-            project_slug=project_slug,
-            targets=targets_data,
-            organization_names=organization_names or [],
-            tag_names=tag_names or [],
+        return await self._import_items(
+            project, targets_data, organization_names or [], tag_names or [], user_id
         )
 
-        return await self.import_targets_structured(import_request, user_id)
-
     async def import_targets_structured(
-        self, import_request: TargetImportRequest, user_id: str
+        self, import_request: TargetImportRequest, user_id: str, *, access: ProjectSet
     ) -> TargetBulkCreateResponse:
-        project = await self._get_project_by_slug(import_request.project_slug)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found.",
-            )
+        project = await project_by_slug(
+            self.session, access, import_request.project_slug
+        )
         return await self._import_items(
             project,
             import_request.targets,
@@ -1071,8 +1030,10 @@ class TargetService:
             user_id,
         )
 
-    async def get_target_detail(self, target_id: str) -> TargetDetailRead:
-        target = await self._get_target_or_404(target_id)
+    async def get_target_detail(
+        self, target_id: str, *, access: ProjectSet
+    ) -> TargetDetailRead:
+        target = await self._get_target_or_404(target_id, access)
 
         whois = None
         if target.whois_record:
@@ -1110,8 +1071,10 @@ class TargetService:
             infostealer=infostealer,
         )
 
-    async def get_target_dns(self, target_id: str) -> TargetDnsDetailResponse:
-        target = await self._get_target_or_404(target_id)
+    async def get_target_dns(
+        self, target_id: str, *, access: ProjectSet
+    ) -> TargetDnsDetailResponse:
+        target = await self._get_target_or_404(target_id, access)
 
         lookup = None
         if target.dns_lookup:
@@ -1125,12 +1088,16 @@ class TargetService:
             lookup=lookup,
         )
 
-    async def get_target_bgp(self, target_id: str) -> TargetBgpDetailResponse:
-        target = await self._get_target_or_404(target_id)
+    async def get_target_bgp(
+        self, target_id: str, *, access: ProjectSet
+    ) -> TargetBgpDetailResponse:
+        target = await self._get_target_or_404(target_id, access)
         return await self._build_bgp_detail(target)
 
-    async def refresh_target_dns(self, target_id: str) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
+    async def refresh_target_dns(
+        self, target_id: str, *, access: ProjectSet
+    ) -> EnrichmentRefreshResponse:
+        target = await self._get_target_or_404(target_id, access)
 
         if target.target_type not in HOSTNAME_TARGET_TYPES:
             raise HTTPException(
@@ -1155,8 +1122,10 @@ class TargetService:
             message=f"DNS lookup queued for {target.target_value}",
         )
 
-    async def refresh_target_whois(self, target_id: str) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
+    async def refresh_target_whois(
+        self, target_id: str, *, access: ProjectSet
+    ) -> EnrichmentRefreshResponse:
+        target = await self._get_target_or_404(target_id, access)
 
         target.whois_status = TaskStatus.PENDING
         target.whois_error = None
@@ -1175,9 +1144,9 @@ class TargetService:
         )
 
     async def refresh_target_infostealer(
-        self, target_id: str
+        self, target_id: str, *, access: ProjectSet
     ) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
+        target = await self._get_target_or_404(target_id, access)
 
         if target.target_type not in HOSTNAME_TARGET_TYPES:
             raise HTTPException(
@@ -1202,8 +1171,10 @@ class TargetService:
             message=f"Infostealer lookup queued for {target.target_value}",
         )
 
-    async def refresh_target_bgp(self, target_id: str) -> EnrichmentRefreshResponse:
-        target = await self._get_target_or_404(target_id)
+    async def refresh_target_bgp(
+        self, target_id: str, *, access: ProjectSet
+    ) -> EnrichmentRefreshResponse:
+        target = await self._get_target_or_404(target_id, access)
 
         if target.target_type not in NETWORK_TARGET_TYPES:
             raise HTTPException(
@@ -1227,7 +1198,8 @@ class TargetService:
             message=f"BGP enrichment queued for {target.target_value}",
         )
 
-    async def _get_target_or_404(self, target_id: str) -> Target:
+    async def _get_target_or_404(self, target_id: str, access: ProjectSet) -> Target:
+        """The target when its project is open to the access, else the 404 an unknown id gets."""
         try:
             UUID(target_id)
         except ValueError as e:
@@ -1239,16 +1211,22 @@ class TargetService:
             select(Target).where(Target.id == target_id)
         )
         target = result.scalar_one_or_none()
-        if not target:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Target not found.",
-            )
+        if target is None or not may_open(access, target.project_id):
+            raise not_found(noun="Target")
         return target
 
-    async def _get_project_by_slug(self, slug: str) -> Project | None:
-        result = await self.session.execute(select(Project).where(Project.slug == slug))
-        return result.scalar_one_or_none()
+    async def _bulk_targets(
+        self, target_ids: list[UUID], access: ProjectSet
+    ) -> list[Target]:
+        """Every named target, or the 404 when one is unknown or outside the access."""
+        wanted = set(target_ids)
+        rows = await self.session.execute(select(Target).where(Target.id.in_(wanted)))
+        targets = list(rows.scalars().all())
+        if len(targets) != len(wanted) or not all(
+            may_open(access, t.project_id) for t in targets
+        ):
+            raise not_found(noun="Target")
+        return targets
 
     async def _check_duplicate_target(self, target_value: str, project_id: str) -> None:
         existing_target = await self.session.execute(

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.export import ExportService
@@ -29,7 +30,7 @@ async def create_export(
     data: ExportCreate,
     current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(data, project_id, current_user.id)
 
@@ -38,7 +39,7 @@ async def create_export(
 async def list_exports(
     _current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID | None, Query(description="One run")] = None,
     target_id: Annotated[UUID | None, Query(description="One target")] = None,
 ):
@@ -50,7 +51,7 @@ async def get_export(
     export_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.get(export_id, project_id)
 
@@ -64,7 +65,7 @@ async def rerun_export(
     export_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.rerun(export_id, project_id)
 
@@ -74,7 +75,7 @@ async def download_export(
     export_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     path, filename = await service.file_path(export_id, project_id)
     media = (
@@ -90,6 +91,6 @@ async def delete_export(
     export_id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ExportService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await service.delete(export_id, project_id)

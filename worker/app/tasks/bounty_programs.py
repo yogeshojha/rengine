@@ -1,14 +1,12 @@
 """Refresh the bug bounty program list and every program's structured scope."""
 
 from celery import shared_task
-from sqlalchemy import and_, exists, func, or_, select, text
-from sqlmodel import col
+from sqlalchemy import func, select, text
 
 from app.database import get_sync_session
 from shared.definitions.bounty_feed import FEEDS_BY_PLATFORM
 from shared.definitions.bounty_programs import (
     PLATFORMS_BY_KEY,
-    BountyEvent,
     BountyPlatform,
     ProgramSource,
     ScopeAccess,
@@ -19,7 +17,6 @@ from shared.definitions.datasets import DatasetKind
 from shared.definitions.notifications import BountyChange, bounty_changes
 from shared.logging import get_logger
 from shared.models.bounty_program import BountyEventRow, BountyProgram
-from shared.models.watch import ProgramWatch
 from shared.services import feed_ledger
 from shared.services.bounty_feed import (
     feed_due,
@@ -28,6 +25,7 @@ from shared.services.bounty_feed import (
     sync_platform,
 )
 from shared.services.bounty_programs import (
+    alert_scopes,
     mark_synced,
     scopes_to_refresh,
     sync_due,
@@ -51,6 +49,7 @@ from shared.services.locks import (
     sync_lock,
 )
 from shared.services.notification_sync import SyncNotificationPublisher
+from shared.services.watch_sync import active_watches
 from shared.utils.datetime import utc_now
 
 logger = get_logger(__name__)
@@ -59,32 +58,7 @@ SCOPE_FAILURE_BUDGET = 25
 ALERT_LIMIT = 40
 
 
-def _alerting(kinds: set[str]):
-    """Changes on followed programs, and every program's out-of-scope moves."""
-    followed = or_(
-        BountyProgram.bookmarked.is_(True),
-        BountyProgram.joined.is_(True),
-        exists().where(ProgramWatch.program_id == BountyProgram.id),
-    )
-    return and_(
-        col(BountyEventRow.kind).in_(sorted(kinds)),
-        or_(
-            BountyEventRow.kind == BountyEvent.WENT_OUT_OF_SCOPE.value,
-            exists().where(BountyProgram.id == BountyEventRow.program_id, followed),
-        ),
-    )
-
-
-def _notify(session, since) -> int:
-    stored = session.execute(
-        text("SELECT bounty_settings FROM instance_settings LIMIT 1")
-    ).scalar_one_or_none()
-    if not notify_enabled(stored):
-        return 0
-    kinds = notify_events(stored)
-    if not kinds:
-        return 0
-    alerting = _alerting(kinds)
+def _publish(session, since, alerting, project_id) -> int:
     counts = dict(
         session.execute(
             select(BountyEventRow.kind, func.count())
@@ -92,6 +66,8 @@ def _notify(session, since) -> int:
             .group_by(BountyEventRow.kind)
         ).all()
     )
+    if not counts:
+        return 0
     rows = (
         session.execute(
             select(BountyEventRow)
@@ -124,11 +100,28 @@ def _notify(session, since) -> int:
             title=payload["title"],
             message=payload["message"],
             metadata=payload.get("metadata"),
+            project_id=project_id,
         )
     except Exception:
         logger.warning("bounty change notification failed", exc_info=True)
         return 0
     return sum(counts.values())
+
+
+def _notify(session, since) -> int:
+    stored = session.execute(
+        text("SELECT bounty_settings FROM instance_settings LIMIT 1")
+    ).scalar_one_or_none()
+    if not notify_enabled(stored):
+        return 0
+    kinds = notify_events(stored)
+    if not kinds:
+        return 0
+    watched = sorted({w.project_id for w in active_watches(session)})
+    return sum(
+        _publish(session, since, alerting, project_id)
+        for project_id, alerting in alert_scopes(kinds, watched)
+    )
 
 
 def _sync_platform(session, provider: BountyProvider, *, scopes: bool) -> dict:

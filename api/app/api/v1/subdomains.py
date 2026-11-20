@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId, check_open, project_of
 from app.api.deps import CurrentUser
 from app.api.scope import WebAssetScope
 from app.core.database import get_session
@@ -20,6 +21,7 @@ from shared.models.asset_query import (
     QueryLeads,
 )
 from shared.models.hosting import HostingComposition
+from shared.models.scan import Scan
 from shared.models.scan_correlation import (
     CorrelationGraph,
     SubdomainCorrelation,
@@ -151,9 +153,12 @@ async def subdomain_search_renders(
 async def subdomain_hosting(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
+    check_open(
+        frozenset({project_id}), await project_of(session, Scan, scan_id), "Scan"
+    )
     return await lead_cache.cached(
         session,
         name="hosting",
@@ -203,11 +208,16 @@ async def subdomain_facets(
 async def subdomain_tech(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
     search: Annotated[str | None, Query(max_length=100)] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 100,
 ):
+    check_open(
+        frozenset({project_id}),
+        await project_of(service.session, Scan, scan_id),
+        "Scan",
+    )
     return await service.tech(project_id, scan_id, search, limit)
 
 
@@ -215,9 +225,14 @@ async def subdomain_tech(
 async def subdomain_insights(
     _current_user: CurrentUser,
     service: Annotated[SubdomainService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
+    check_open(
+        frozenset({project_id}),
+        await project_of(service.session, Scan, scan_id),
+        "Scan",
+    )
     return await lead_cache.cached(
         service.session,
         name="insights",
@@ -281,9 +296,12 @@ async def subdomain_timeline(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     body: TimelineFilter,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
+    check_open(
+        frozenset({project_id}), await project_of(session, Scan, scan_id), "Scan"
+    )
     service = TimelineService(session)
     return await lead_cache.cached(
         session,
@@ -302,9 +320,12 @@ async def subdomain_render_timeline(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     body: RenderFilter,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     scan_id: Annotated[UUID, Query(description="Scan ID")],
 ):
+    check_open(
+        frozenset({project_id}), await project_of(session, Scan, scan_id), "Scan"
+    )
     service = RenderTimelineService(session)
     return await lead_cache.cached(
         session,

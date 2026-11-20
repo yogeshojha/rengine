@@ -46,6 +46,7 @@ class Notification(NotificationBase, table=True):
     __tablename__ = "notifications"
 
     id: int = SQLField(default=None, primary_key=True)
+    uid: uuid.UUID = SQLField(default_factory=uuid.uuid4, unique=True, index=True)
     project_id: uuid.UUID | None = SQLField(default=None, index=True)
     notification_metadata: dict = SQLField(
         default_factory=dict, sa_column=Column(JSONB)
@@ -73,7 +74,7 @@ class NotificationReceipt(SQLModel, table=True):
 
 
 class NotificationRead(NotificationBase):
-    id: int
+    id: uuid.UUID
     project_id: uuid.UUID | None = None
     notification_metadata: dict
     is_read: bool = False

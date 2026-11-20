@@ -58,6 +58,7 @@ async def test_target_reads_refuse_a_target_of_another_project(estate):
         targets_api.get_target_summary(
             target_id=tid,
             _current_user=None,
+            access=None,
             service=TargetSummaryService(s),
             project_id=other,
         ),

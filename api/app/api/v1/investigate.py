@@ -7,9 +7,10 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId, StreamAccess, check_open, not_found, project_of
 from app.api.deps import CurrentUser, StreamUser
 from app.api.v1.events import STREAM_HEADERS
-from app.core.database import get_session
+from app.core.database import async_db_session, get_session
 from app.services.investigate.service import InvestigateService, stream_run
 from shared.models.investigate import (
     InvestigateBrief,
@@ -17,10 +18,10 @@ from shared.models.investigate import (
     InvestigationRead,
     PlanDecision,
 )
+from shared.models.scan import Scan
 
 router = APIRouter(prefix="/investigate", tags=["investigate"])
 Session = Annotated[AsyncSession, Depends(get_session)]
-ProjectId = Annotated[UUID, Query(description="Project ID")]
 
 
 def get_service(session: Session) -> InvestigateService:
@@ -42,7 +43,16 @@ async def brief(
 
 
 @router.post("/run")
-async def run(data: InvestigateRequest, user: StreamUser, project_id: ProjectId):
+async def run(
+    data: InvestigateRequest,
+    user: StreamUser,
+    access: StreamAccess,
+    project_id: Annotated[UUID, Query(description="Project ID")],
+):
+    check_open(access, project_id)
+    async with async_db_session() as session:
+        if await project_of(session, Scan, data.scan_id) != project_id:
+            raise not_found(noun="Scan")
     return StreamingResponse(
         stream_run(user=user, project_id=project_id, request=data),
         media_type="text/event-stream",

@@ -1,9 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.scan_context import ScanContextService
@@ -29,7 +30,7 @@ def get_service(
 async def list_contexts(
     _current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.list(project_id)
 
@@ -39,7 +40,7 @@ async def create_context(
     data: ScanContextCreate,
     current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.create(
         project_id=project_id,
@@ -54,7 +55,7 @@ async def get_context(
     id: UUID,
     _current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.get(id=id, project_id=project_id)
 
@@ -65,7 +66,7 @@ async def update_context(
     data: ScanContextUpdate,
     current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.update(
         id=id, project_id=project_id, data=data, actor=current_user
@@ -77,7 +78,7 @@ async def delete_context(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     await service.delete(id=id, project_id=project_id, actor=current_user)
     return {"deleted": True}
@@ -92,7 +93,7 @@ async def duplicate_context(
     id: UUID,
     current_user: CurrentUser,
     service: Annotated[ScanContextService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.duplicate(
         id=id, project_id=project_id, created_by=current_user.id, actor=current_user

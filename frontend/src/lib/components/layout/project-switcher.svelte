@@ -7,6 +7,9 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+	import FolderLock from '@lucide/svelte/icons/folder-lock';
+	import { auth } from '$lib/stores/auth.svelte';
+	import { mayCreateProjects, NO_PROJECT_ACCESS } from '$lib/config/users';
 	import { projectsStore } from '$lib/stores/projects.svelte';
 	import { capabilitiesStore } from '$lib/stores/capabilities.svelte';
 	import { coerceInstanceMode, MODE_LABELS } from '$lib/config/capabilities';
@@ -23,6 +26,8 @@
 	let isLoading = $derived(projectsStore.isLoading);
 	let loadFailed = $derived(!!projectsStore.loadError && !projectsStore.hasFetched);
 	let modeLabel = $derived(MODE_LABELS[coerceInstanceMode(capabilitiesStore.mode)]);
+
+	let canCreate = $derived(mayCreateProjects(auth.user));
 
 	let showAddModal = $state(false);
 
@@ -60,6 +65,17 @@
 				<div class="grid flex-1 text-start text-sm leading-tight">
 					<span class="truncate font-medium">Projects not loaded</span>
 					<span class="truncate text-xs text-muted-foreground">Retry</span>
+				</div>
+			</Sidebar.MenuButton>
+		{:else if !activeProject && !canCreate}
+			<Sidebar.MenuButton size="lg" aria-disabled="true" tooltipContent={NO_PROJECT_ACCESS.title}>
+				<div
+					class="flex aspect-square size-8 items-center justify-center rounded-lg border border-dashed"
+				>
+					<FolderLock class="size-4 text-muted-foreground" />
+				</div>
+				<div class="grid flex-1 text-start text-sm leading-tight">
+					<span class="truncate font-medium">{NO_PROJECT_ACCESS.title}</span>
 				</div>
 			</Sidebar.MenuButton>
 		{:else if !activeProject}
@@ -118,14 +134,16 @@
 						</DropdownMenu.Item>
 					{/each}
 
-					<DropdownMenu.Separator />
+					{#if canCreate}
+						<DropdownMenu.Separator />
 
-					<DropdownMenu.Item class="gap-2 p-2" onSelect={() => (showAddModal = true)}>
-						<div class="flex size-6 items-center justify-center rounded-md border bg-transparent">
-							<PlusIcon class="size-4" />
-						</div>
-						<span class="text-muted-foreground font-medium">Create project</span>
-					</DropdownMenu.Item>
+						<DropdownMenu.Item class="gap-2 p-2" onSelect={() => (showAddModal = true)}>
+							<div class="flex size-6 items-center justify-center rounded-md border bg-transparent">
+								<PlusIcon class="size-4" />
+							</div>
+							<span class="text-muted-foreground font-medium">Create project</span>
+						</DropdownMenu.Item>
+					{/if}
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		{/if}

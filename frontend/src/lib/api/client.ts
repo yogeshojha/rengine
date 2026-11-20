@@ -1,4 +1,6 @@
 const SESSION_EXPIRED_EVENT = 'auth:session-expired';
+export const PROJECT_LOST_EVENT = 'projects:lost';
+export const PROJECT_NOT_FOUND = 'Project not found.';
 
 export const API_PREFIX = '/api/v1';
 
@@ -95,7 +97,18 @@ function sessionError(result: RefreshResult): ApiError {
 
 async function responseError(response: Response): Promise<ApiError> {
 	const errorData = await response.json().catch(() => ({}));
-	return new ApiError(extractErrorMessage(errorData?.detail, response.status), response.status);
+	const error = new ApiError(
+		extractErrorMessage(errorData?.detail, response.status),
+		response.status
+	);
+	if (
+		error.status === 404 &&
+		error.message === PROJECT_NOT_FOUND &&
+		typeof window !== 'undefined'
+	) {
+		window.dispatchEvent(new CustomEvent(PROJECT_LOST_EVENT));
+	}
+	return error;
 }
 
 /** A validation error lists every failing field; past two, the first stands for the rest. */

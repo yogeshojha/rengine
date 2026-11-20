@@ -1,16 +1,17 @@
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import OptionalProject
 from app.api.deps import CurrentUser
 from app.api.pagination import Page
 from app.core.database import get_session
 from shared.definitions.activity import FEED_EVENTS
 from shared.models.activity_log import ActivityLog, ActivityLogRead
+from shared.services.project_access import ProjectSet, scoped
 
 router = APIRouter(
     prefix="/activity",
@@ -22,19 +23,17 @@ router = APIRouter(
 async def list_activity_logs(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[
-        UUID | None, Query(description="Filter by project ID")
-    ] = None,
+    projects: OptionalProject,
 ):
-    return await apaginate(session, feed_query(project_id))
+    return await apaginate(session, feed_query(projects))
 
 
-def feed_query(project_id: UUID | None):
+def feed_query(projects: ProjectSet):
     """The panel's rows: feed events of targets that still exist."""
     query = select(ActivityLog).where(
         ActivityLog.event_type.in_(FEED_EVENTS),
         or_(ActivityLog.target_id.isnot(None), ActivityLog.target_value.is_(None)),
     )
-    if project_id:
-        query = query.where(ActivityLog.project_id == project_id)
-    return query.order_by(ActivityLog.timestamp.desc())
+    return scoped(query, projects, ActivityLog.project_id).order_by(
+        ActivityLog.timestamp.desc()
+    )

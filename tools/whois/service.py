@@ -2,10 +2,11 @@
 
 import asyncio
 import uuid
+from collections.abc import Collection
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import ColumnElement, delete, exists, select, text, true
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -14,7 +15,9 @@ from shared.definitions.domains import registrable_domain
 from shared.enums.target import HOSTNAME_TARGET_TYPES, TargetType
 from shared.enums.whois import WhoisLookupType
 from shared.logging import get_logger
+from shared.models.target import Target
 from shared.models.whois import WhoisNameserver, WhoisRecord
+from shared.services.project_access import ProjectSet, project_clause
 from shared.utils.datetime import normalize_datetime, utc_now
 from shared.utils.net import is_registry_routable
 from shared.utils.privacy import (
@@ -57,6 +60,19 @@ BOOTSTRAP_MAX_AGE_DAYS = 3
 MAX_CORRELATION_RECORDS = 500
 
 _REGISTRANT_KEY_SQL = registrant_key_sql(WhoisRecord.registrant_name)
+
+
+def record_visible(access: ProjectSet) -> ColumnElement[bool]:
+    """Every record for an administrator, else one a target of an open project holds."""
+    if access is None:
+        return true()
+    return exists(
+        select(Target.id).where(
+            Target.whois_record_id == WhoisRecord.id,
+            project_clause(access, Target.project_id),
+        )
+    )
+
 
 _CAPPED = {
     column.name: column.type.length
@@ -183,6 +199,8 @@ class WhoisService:
         target_type=None,
         store_in_db: bool = True,
         session: AsyncSession | None = None,
+        *,
+        cache_where: ColumnElement[bool] | None = None,
     ) -> WhoisLookupResult:
         """Async WHOIS lookup with optional DB caching."""
         if not query or not query.strip():
@@ -197,7 +215,7 @@ class WhoisService:
         normalized = self.lookup_key(query, target_type)
 
         if store_in_db and session:
-            cached = await self._get_cached_record(session, normalized)
+            cached = await self._get_cached_record(session, normalized, cache_where)
             if cached and self._is_cache_fresh(cached):
                 logger.debug(f"WHOIS cache hit for {normalized}")
                 return WhoisLookupResult(
@@ -208,26 +226,48 @@ class WhoisService:
         response = await asyncio.to_thread(self._fresh_lookup, normalized, target_type)
 
         if store_in_db and session:
-            await self._store_record(session, response, normalized)
+            await self._store_record(session, response, normalized, cache_where)
 
         return WhoisLookupResult(response=response, cache_hit=False)
 
     async def _get_cached_record(
-        self, session: AsyncSession, query_value: str
+        self,
+        session: AsyncSession,
+        query_value: str,
+        where: ColumnElement[bool] | None = None,
     ) -> WhoisRecord | None:
         result = await session.execute(
-            select(WhoisRecord).where(WhoisRecord.query_value == query_value)
+            select(WhoisRecord).where(
+                WhoisRecord.query_value == query_value,
+                true() if where is None else where,
+            )
         )
         return result.scalar_one_or_none()
+
+    async def _held_elsewhere(
+        self,
+        session: AsyncSession,
+        record: WhoisRecord | None,
+        where: ColumnElement[bool] | None,
+    ) -> bool:
+        if record is None or where is None:
+            return False
+        held = await session.scalar(
+            select(WhoisRecord.id).where(WhoisRecord.id == record.id, where)
+        )
+        return held is None
 
     async def _store_record(
         self,
         session: AsyncSession,
         response: WhoisResponse,
         query_value: str,
-    ) -> WhoisRecord:
-        """Store or update a WHOIS record."""
+        where: ColumnElement[bool] | None = None,
+    ) -> WhoisRecord | None:
+        """Store or update a WHOIS record that `where` admits."""
         existing = await self._get_cached_record(session, query_value)
+        if await self._held_elsewhere(session, existing, where):
+            return None
         db_fields = self._prepare_db_fields(response)
         now = utc_now()
 
@@ -257,6 +297,8 @@ class WhoisService:
             existing = await self._get_cached_record(session, query_value)
             if existing is None:
                 raise
+            if await self._held_elsewhere(session, existing, where):
+                return None
             for key, value in db_fields.items():
                 setattr(existing, key, value)
             existing.queried_at = now
@@ -323,10 +365,11 @@ class WhoisService:
         target_type,
         *,
         force: bool = False,
+        projects: Collection[uuid.UUID],
     ) -> WhoisRecord:
         """Get cached record or perform lookup and store (sync)."""
         existing = self.get_cached_record_sync(session, normalized_query)
-        if existing and not force and self._is_cache_fresh(existing):
+        if not force and self._reusable_sync(session, existing, projects):
             return existing
 
         session.execute(
@@ -334,7 +377,7 @@ class WhoisService:
             {"ns": WHOIS_LOCK_NAMESPACE, "q": normalized_query},
         )
         existing = self.get_cached_record_sync(session, normalized_query)
-        if existing and not force and self._is_cache_fresh(existing):
+        if not force and self._reusable_sync(session, existing, projects):
             return existing
 
         response = self.do_lookup(normalized_query, target_type)
@@ -358,6 +401,28 @@ class WhoisService:
                 ns for ns in db_fields["nameservers"] if len(ns) <= _NAMESERVER_WIDTH
             ]
         return db_fields
+
+    def _reusable_sync(
+        self,
+        session: Session,
+        record: WhoisRecord | None,
+        projects: Collection[uuid.UUID],
+    ) -> bool:
+        """A fresh record that a target of each of `projects` already holds."""
+        if record is None or not self._is_cache_fresh(record):
+            return False
+        wanted = set(projects)
+        if not wanted:
+            return True
+        holders = session.scalars(
+            select(Target.project_id)
+            .where(
+                Target.whois_record_id == record.id,
+                Target.project_id.in_(wanted),
+            )
+            .distinct()
+        ).all()
+        return set(holders) == wanted
 
     def _is_cache_fresh(self, record: WhoisRecord) -> bool:
         if not record.queried_at:
@@ -398,7 +463,7 @@ class WhoisService:
     def _reconstruct_response(self, record: WhoisRecord) -> WhoisResponse:
         data = record.parsed_data
         if not data:
-            msg = f"No parsed data stored for record {record.id}"
+            msg = "No parsed data stored for the record."
             raise WhoisLookupError(msg)
 
         match record.lookup_type:
@@ -427,6 +492,8 @@ class WhoisService:
         session: AsyncSession,
         registrant_name: str,
         limit: int = MAX_CORRELATION_RECORDS,
+        *,
+        where: ColumnElement[bool] | None = None,
     ) -> list[WhoisRecord]:
         """Records whose registrant matches by registrant_key."""
         key = registrant_key(registrant_name)
@@ -436,6 +503,7 @@ class WhoisService:
             select(WhoisRecord)
             .where(WhoisRecord.registrant_name != "")
             .where(_REGISTRANT_KEY_SQL.in_([key]))
+            .where(true() if where is None else where)
             .limit(limit)
         )
         return list(result.scalars().all())
@@ -445,11 +513,14 @@ class WhoisService:
         session: AsyncSession,
         registrar_name: str,
         limit: int = MAX_CORRELATION_RECORDS,
+        *,
+        where: ColumnElement[bool] | None = None,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .where(WhoisRecord.registrar_name == registrar_name)
             .where(WhoisRecord.registrar_name != "")
+            .where(true() if where is None else where)
             .limit(limit)
         )
         return list(result.scalars().all())
@@ -459,11 +530,14 @@ class WhoisService:
         session: AsyncSession,
         network_cidr: str,
         limit: int = MAX_CORRELATION_RECORDS,
+        *,
+        where: ColumnElement[bool] | None = None,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .where(WhoisRecord.network_cidr == network_cidr)
             .where(WhoisRecord.network_cidr != "")
+            .where(true() if where is None else where)
             .limit(limit)
         )
         return list(result.scalars().all())
@@ -473,12 +547,15 @@ class WhoisService:
         session: AsyncSession,
         nameserver: str,
         limit: int = MAX_CORRELATION_RECORDS,
+        *,
+        where: ColumnElement[bool] | None = None,
     ) -> list[WhoisRecord]:
         result = await session.execute(
             select(WhoisRecord)
             .join(WhoisNameserver, WhoisNameserver.whois_record_id == WhoisRecord.id)
             .where(WhoisNameserver.nameserver == nameserver.strip().lower())
             .distinct()
+            .where(true() if where is None else where)
             .limit(limit)
         )
         return list(result.scalars().all())

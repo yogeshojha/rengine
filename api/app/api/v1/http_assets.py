@@ -1,9 +1,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.http_asset import HttpAssetService
@@ -26,7 +27,7 @@ async def get_http_asset(
     _current_user: CurrentUser,
     service: Annotated[HttpAssetService, Depends(get_service)],
     asset_id: UUID,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     detail = await service.get(asset_id, project_id)
     if detail is None:

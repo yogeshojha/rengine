@@ -1,9 +1,9 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import Access, ProjectId
 from app.api.capability import require_capability
 from app.api.deps import CurrentUser
 from app.api.scope import TargetFilterDep
@@ -44,7 +44,7 @@ async def dashboard_overview(
     _current_user: CurrentUser,
     service: Annotated[DashboardOverviewService, Depends(get_overview_service)],
     spec: TargetFilterDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
     targets = await resolve_targets(service.session, project_id, spec)
@@ -56,7 +56,7 @@ async def dashboard_window(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     spec: TargetFilterDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
     targets = await resolve_targets(session, project_id, spec)
@@ -68,7 +68,7 @@ async def dashboard_surface_risk(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     spec: TargetFilterDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     targets = await resolve_targets(session, project_id, spec)
     return await SurfaceRiskService(session).rows(project_id, targets)
@@ -78,7 +78,7 @@ async def dashboard_surface_risk(
 async def dashboard_discovery(
     _current_user: CurrentUser,
     service: Annotated[DashboardOverviewService, Depends(get_overview_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.discovery(project_id=project_id)
 
@@ -96,7 +96,7 @@ async def dashboard_activity(
     _current_user: CurrentUser,
     session: Annotated[AsyncSession, Depends(get_session)],
     spec: TargetFilterDep,
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
     programs = await InstanceSettingsService(session).has_capability(
@@ -111,9 +111,10 @@ async def dashboard_activity(
 @router.get("/programs", response_model=DashboardPrograms)
 async def dashboard_programs(
     _current_user: CurrentUser,
+    access: Access,
     session: Annotated[AsyncSession, Depends(get_session)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     window: Annotated[str, Query(description="Change window")] = DEFAULT_WINDOW,
 ):
     await require_capability(session, CAP_BOUNTY_PROGRAMS)
-    return await DashboardActivityService(session).programs(project_id, window)
+    return await DashboardActivityService(session).programs(project_id, window, access)

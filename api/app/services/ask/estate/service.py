@@ -89,6 +89,7 @@ from shared.models.user import User
 from shared.services.ai import AIError, ledger, load_config_async
 from shared.services.ai.agent import CALL, DONE, RESULT, TEXT, AgentEvent, converse
 from shared.services.ai.config import AIConfig
+from shared.services.project_access import ProjectSet, may_open, member_projects
 from shared.utils.datetime import utc_now
 from shared.utils.text import strip_control
 
@@ -133,8 +134,12 @@ FILLER = frozenset(
 BLOCK_NOT_FOUND = "Block not found."
 
 
-def _estate(row: AskThread | None, user_id: uuid.UUID) -> AskThread | None:
+def _estate(
+    row: AskThread | None, user_id: uuid.UUID, access: ProjectSet
+) -> AskThread | None:
     if row is None or row.user_id != user_id:
+        return None
+    if not may_open(access, row.project_id):
         return None
     return row if row.subject == AskSubject.ESTATE.value else None
 
@@ -274,8 +279,10 @@ class EstateService:
         await self.session.refresh(row)
         return await self._read(row)
 
-    async def get(self, user_id: uuid.UUID, thread_id: uuid.UUID) -> AskThread | None:
-        return _estate(await self.session.get(AskThread, thread_id), user_id)
+    async def get(
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
+    ) -> AskThread | None:
+        return _estate(await self.session.get(AskThread, thread_id), user_id, access)
 
     async def messages(self, thread_id: uuid.UUID) -> list[AskMessage]:
         stmt = (
@@ -286,9 +293,9 @@ class EstateService:
         return list((await self.session.execute(stmt)).scalars().all())
 
     async def detail(
-        self, user_id: uuid.UUID, thread_id: uuid.UUID
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
     ) -> EstateThreadDetail | None:
-        row = await self.get(user_id, thread_id)
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             return None
         rows = await self.messages(thread_id)
@@ -297,9 +304,9 @@ class EstateService:
         )
 
     async def blocks(
-        self, user_id: uuid.UUID, thread_id: uuid.UUID
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
     ) -> list[BlockData] | None:
-        row = await self.get(user_id, thread_id)
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             return None
         project_id = row.project_id
@@ -308,9 +315,14 @@ class EstateService:
         return [await blocks.read(self.session, project_id, resolved, b) for b in held]
 
     async def page(
-        self, user_id: uuid.UUID, thread_id: uuid.UUID, block_id: str, offset: int
+        self,
+        user_id: uuid.UUID,
+        thread_id: uuid.UUID,
+        access: ProjectSet,
+        block_id: str,
+        offset: int,
     ) -> BlockData:
-        row = await self.get(user_id, thread_id)
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, THREAD_NOT_FOUND)
         project_id = row.project_id
@@ -335,10 +347,15 @@ class EstateService:
             ) from exc
 
     async def edit(
-        self, user_id: uuid.UUID, thread_id: uuid.UUID, block_id: str, query: str
+        self,
+        user_id: uuid.UUID,
+        thread_id: uuid.UUID,
+        access: ProjectSet,
+        block_id: str,
+        query: str,
     ) -> BlockData:
         """Run a block on a new query and keep it when it runs."""
-        row = await self.get(user_id, thread_id)
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, THREAD_NOT_FOUND)
         project_id, raw_scope = row.project_id, row.scope
@@ -376,8 +393,10 @@ class EstateService:
                 return data
         raise HTTPException(status.HTTP_404_NOT_FOUND, BLOCK_NOT_FOUND)
 
-    async def delete(self, user_id: uuid.UUID, thread_id: uuid.UUID) -> bool:
-        row = await self.get(user_id, thread_id)
+    async def delete(
+        self, user_id: uuid.UUID, thread_id: uuid.UUID, access: ProjectSet
+    ) -> bool:
+        row = await self.get(user_id, thread_id, access)
         if row is None:
             return False
         await self.session.delete(row)
@@ -463,7 +482,7 @@ async def _open(
     session: AsyncSession, user: User, thread_id: uuid.UUID, question: EstateQuestion
 ) -> _Turn | str:
     service = EstateService(session)
-    thread = await service.get(user.id, thread_id)
+    thread = await service.get(user.id, thread_id, await member_projects(session, user))
     if thread is None:
         return THREAD_NOT_FOUND
     cfg = await load_config_async(session)

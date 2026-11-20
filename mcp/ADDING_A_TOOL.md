@@ -86,7 +86,7 @@ ctx.check_target(target_id)  # raise if outside the token's targets
 ```
 
 `mcp/tools/_scope.py` holds the shared helpers: `find_target` and `resolve` read
-a target inside the token's scope, `scan_in_scope` checks a run named by id,
+a target inside the token's scope, `scan_by_id` reads a run named by id inside that scope,
 `project_for` picks the project a project-wide tool acts on, `parse_id` reads a
 UUID argument and `operator` returns the user a change is attributed to. A
 project-wide read passes `ctx.scoped_targets()` to the service it calls.

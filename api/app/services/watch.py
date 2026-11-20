@@ -37,6 +37,7 @@ from shared.definitions.watch import (
     WatchEventKind,
     WatchHostFilter,
     WatchHostState,
+    WatchItem,
     WatchStatus,
     mark_key,
     plan_scope,
@@ -45,6 +46,7 @@ from shared.enums.scan import SCAN_LIVE_STATUSES
 from shared.enums.scan_schedule import ScheduleStatus, ScheduleType
 from shared.models.bounty_program import BountyImportRequest, BountyProgram, BountyScope
 from shared.models.notification_channel import NotificationChannel
+from shared.models.project import Project
 from shared.models.scan import Scan, ScanCreate
 from shared.models.scan_context import ScanContextCreate
 from shared.models.scan_engine import ScanEngine
@@ -78,6 +80,7 @@ from shared.services.asset_query import (
     compile_query,
     parse_query,
 )
+from shared.services.project_access import EVERY_PROJECT, ProjectSet, scoped
 from shared.utils.datetime import utc_now
 from shared.utils.text import counted
 
@@ -938,4 +941,39 @@ class WatchService:
             return StreamStatus()
         return StreamStatus(
             reachable=True, **{k: v for k, v in data.items() if k != "reachable"}
+        )
+
+    async def stream_status_for(self, access: ProjectSet) -> StreamStatus:
+        """The stream status, its counts read from the watches the access opens."""
+        stream = await self.stream_status()
+        if access is EVERY_PROJECT:
+            return stream
+        watches = (
+            await self.session.execute(
+                scoped(
+                    select(ProgramWatch.watch_items, ProgramWatch.last_certificate_at)
+                    .join(Project, Project.id == ProgramWatch.project_id)
+                    .where(
+                        ProgramWatch.status == WatchStatus.ACTIVE.value,
+                        Project.is_active.is_(True),
+                    ),
+                    access,
+                    ProgramWatch.project_id,
+                )
+            )
+        ).all()
+        items = {
+            item
+            for row in watches
+            for entry in row.watch_items or []
+            if (item := WatchItem.from_dict(entry).item)
+        }
+        seen = [row.last_certificate_at for row in watches if row.last_certificate_at]
+        return StreamStatus(
+            running=stream.running and bool(items),
+            reachable=stream.reachable,
+            items=len(items),
+            updated_at=stream.updated_at,
+            last_certificate_at=max(seen, default=None),
+            version=stream.version,
         )

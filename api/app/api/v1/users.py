@@ -14,18 +14,61 @@ from app.core.security import hash_password_async
 from app.core.validation_errors import validation_detail
 from app.utils.validation import validate_password_strength, validate_username
 from shared.logging import get_logger
+from shared.models.project import Project
 from shared.models.scan_engine import ScanEngine
 from shared.models.user import (
     User,
     UserAdminCreate,
     UserAdminUpdate,
+    UserProjects,
     UserRead,
     UserSummary,
 )
+from shared.services.project_access import members_by_user, replace_members
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+async def read_users(session: AsyncSession, users: list[User]) -> list[UserRead]:
+    held = await members_by_user(session, [u.id for u in users])
+    return [
+        UserRead.model_validate(u).model_copy(
+            update={"project_ids": held.get(u.id, [])}
+        )
+        for u in users
+    ]
+
+
+async def _known_projects(session: AsyncSession, project_ids: list[UUID]) -> list[UUID]:
+    wanted = list(dict.fromkeys(project_ids))
+    found = set(
+        (await session.scalars(select(Project.id).where(Project.id.in_(wanted)))).all()
+    )
+    missing = [p for p in wanted if p not in found]
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=validation_detail(
+                ["body", "project_ids"], f"Project {missing[0]} not found."
+            ),
+        )
+    return wanted
+
+
+async def _other_user(session: AsyncSession, user_id: UUID, current_user: User) -> User:
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The signed-in account cannot change its own role or status.",
+        )
+    user = await session.get(User, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
+        )
+    return user
 
 
 @router.get("/{user_id}/summary", response_model=UserSummary)
@@ -52,7 +95,7 @@ async def list_users(
 ):
     query = select(User).order_by(User.created_at).offset(skip).limit(limit)
     result = await session.execute(query)
-    return result.scalars().all()
+    return await read_users(session, list(result.scalars().all()))
 
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
@@ -85,22 +128,28 @@ async def create_user(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"A user with this {field} exists.",
         )
+    project_ids = await _known_projects(session, data.project_ids)
     user = User(
         email=email,
         username=username,
         hashed_password=await hash_password_async(data.password),
         is_superuser=data.is_superuser,
+        can_create_projects=data.can_create_projects,
     )
     session.add(user)
+    await session.flush()
+    await replace_members(session, user.id, project_ids, current_user.id)
     await session.commit()
     await session.refresh(user)
     logger.info(
         "user created",
         user=str(user.id),
         superuser=user.is_superuser,
+        can_create_projects=user.can_create_projects,
+        projects=len(project_ids),
         by=str(current_user.id),
     )
-    return user
+    return (await read_users(session, [user]))[0]
 
 
 @router.patch("/{user_id}", response_model=UserRead)
@@ -110,32 +159,54 @@ async def update_user(
     session: Annotated[AsyncSession, Depends(get_session)],
     current_user: CurrentSuperuser,
 ):
-    if user_id == current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The signed-in account cannot change its own role or status.",
+    user = await _other_user(session, user_id, current_user)
+    moved = {
+        field: value
+        for field, value in (
+            ("is_active", data.is_active),
+            ("is_superuser", data.is_superuser),
+            ("can_create_projects", data.can_create_projects),
         )
-    user = await session.get(User, user_id)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found."
-        )
-    if data.is_active is not None:
-        user.is_active = data.is_active
-    if data.is_superuser is not None:
-        user.is_superuser = data.is_superuser
+        if value is not None and getattr(user, field) != value
+    }
+    for field, value in moved.items():
+        setattr(user, field, value)
     await session.commit()
-    if data.is_active is False:
+    if moved:
         await revoke_user_tokens(user.id)
     logger.info(
         "user updated",
         user=str(user.id),
         active=data.is_active,
         superuser=data.is_superuser,
+        can_create_projects=data.can_create_projects,
         by=str(current_user.id),
     )
     await session.refresh(user)
-    return user
+    return (await read_users(session, [user]))[0]
+
+
+@router.put("/{user_id}/projects", response_model=UserRead)
+async def set_user_projects(
+    user_id: UUID,
+    data: UserProjects,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    current_user: CurrentSuperuser,
+):
+    """Replace the projects a user opens."""
+    user = await _other_user(session, user_id, current_user)
+    project_ids = await _known_projects(session, data.project_ids)
+    moved = await replace_members(session, user.id, project_ids, current_user.id)
+    await session.commit()
+    if moved:
+        await revoke_user_tokens(user.id)
+    logger.info(
+        "user projects set",
+        user=str(user.id),
+        projects=len(project_ids),
+        by=str(current_user.id),
+    )
+    return (await read_users(session, [user]))[0]
 
 
 @router.delete("/{user_id}")

@@ -68,6 +68,7 @@ from shared.services.issue_trackers import (
 from shared.services.issue_tracking import body as bodies
 from shared.services.issue_tracking.plan import OpenIssue, Plan, plan_filing
 from shared.services.issue_tracking.sync import NOT_FOUND
+from shared.services.project_access import ProjectSet, may_open
 from shared.services.scan_resolve import MASK, mask_tail
 from shared.utils.datetime import utc_now
 from shared.utils.net import validate_public_https_url
@@ -497,8 +498,11 @@ _DEFERRED = (Vulnerability.request, Vulnerability.response)
 
 
 class IssueFilingService:
-    def __init__(self, session: AsyncSession, *, admin: bool = False):
+    def __init__(
+        self, session: AsyncSession, *, access: ProjectSet, admin: bool = False
+    ):
         self.session = session
+        self.access = access
         self.admin = admin
 
     async def _selection(
@@ -926,11 +930,13 @@ class IssueFilingService:
         ]
 
     async def list(self, project_id: uuid.UUID) -> list[TrackedIssueRead]:
+        if not may_open(self.access, project_id):
+            raise _missing(_PROJECT_MISSING)
         return await self._list(TrackedIssue.project_id == project_id)
 
     async def _issue(self, id: uuid.UUID) -> TrackedIssue:
         row = await self.session.get(TrackedIssue, id)
-        if row is None:
+        if row is None or not may_open(self.access, row.project_id):
             raise _missing(_ISSUE_MISSING)
         return row
 

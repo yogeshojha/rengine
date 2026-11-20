@@ -1,9 +1,9 @@
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.core.validation_errors import validation_detail
@@ -27,7 +27,7 @@ def get_service(
 async def list_cves(
     _current_user: CurrentUser,
     service: Annotated[CveExposureService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
     q: Annotated[str, Query(max_length=MAX_QUERY, description="CVE filter")] = "",
     page: Annotated[int, Query(ge=1, le=MAX_PAGE)] = 1,
     size: Annotated[int, Query(ge=1, le=200)] = DEFAULT_PAGE_SIZE,
@@ -63,7 +63,7 @@ async def cve_exposure(
     _current_user: CurrentUser,
     service: Annotated[CveExposureService, Depends(get_service)],
     cve: Annotated[str, Path(max_length=30)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     cleaned = cve.strip().upper()
     if not CVE_ID.match(cleaned):

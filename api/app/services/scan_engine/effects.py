@@ -17,6 +17,7 @@ from shared.enums.target import TargetType
 from shared.models.scan_context import ScanContext
 from shared.models.scan_engine import EnginePreviewResult, PreviewResolved
 from shared.models.scan_preview import PreviewPhase, PreviewTool, PreviewToolStatus
+from shared.services.project_access import ProjectSet, may_open
 from shared.services.scan_resolve import merge_engine_context
 from stages.registry import ordered_levels, phases
 
@@ -117,7 +118,9 @@ class _DraftEngine:
         self.transport_overrides = data.transport_overrides
 
 
-async def preview_engine(data, session: AsyncSession) -> EnginePreviewResult:
+async def preview_engine(
+    data, session: AsyncSession, access: ProjectSet
+) -> EnginePreviewResult:
     if data.target_type not in {t.value for t in TargetType}:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -133,7 +136,7 @@ async def preview_engine(data, session: AsyncSession) -> EnginePreviewResult:
                 select(ScanContext).where(ScanContext.id == data.context_id)
             )
         ).scalar_one_or_none()
-        if context is None:
+        if context is None or not may_open(access, context.project_id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Scan context not found."
             )

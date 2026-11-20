@@ -253,6 +253,7 @@ async def test_latest_for_targets_returns_one_run_per_target(estate, now):
     runs = await service.latest_for_targets(
         estate.project_id,
         [estate.targets["example.com"], estate.targets["other.com"]],
+        None,
     )
     by_target = {r.target_id: r for r in runs}
 

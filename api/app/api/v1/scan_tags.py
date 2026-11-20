@@ -1,9 +1,9 @@
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentUser
 from app.core.database import get_session
 from app.services.scan_tags import ScanTagService
@@ -24,7 +24,7 @@ def get_service(session: Annotated[AsyncSession, Depends(get_session)]):
 async def list_scan_tags(
     _current_user: CurrentUser,
     service: Annotated[ScanTagService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.for_project(project_id)
 
@@ -34,7 +34,7 @@ async def assign_scan_tags(
     data: ScanTagChange,
     current_user: CurrentUser,
     service: Annotated[ScanTagService, Depends(get_service)],
-    project_id: Annotated[UUID, Query(description="Project ID")],
+    project_id: ProjectId,
 ):
     return await service.change(
         project_id, data.scan_ids, data.add, data.remove, current_user.id

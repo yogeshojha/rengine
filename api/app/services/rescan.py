@@ -159,6 +159,7 @@ class RescanService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Select at least one asset to rescan.",
             )
+        await self._named_scans(selection, project_id)
         try:
             resolved = await SeedSelectionService(self.session).resolve(
                 selection, project_id
@@ -173,6 +174,22 @@ class RescanService:
                 detail="The selection matched no assets in a completed scan.",
             )
         return resolved
+
+    async def _named_scans(self, selection: SeedSelection, project_id: UUID) -> None:
+        named = {p.scan_id for p in selection.picks if p.scan_id is not None}
+        if selection.query is not None:
+            named.update(selection.query.scan_ids)
+        if not named:
+            return
+        held = await self.session.scalar(
+            select(func.count(Scan.id)).where(
+                Scan.id.in_(named), Scan.project_id == project_id
+            )
+        )
+        if held != len(named):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found."
+            )
 
     @staticmethod
     def _anchor(parent: Scan) -> UUID:

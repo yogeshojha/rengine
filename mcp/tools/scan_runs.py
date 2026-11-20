@@ -16,7 +16,7 @@ from mcp.tools._scope import (
     active_project_ids,
     find_target,
     parse_id,
-    scan_in_scope,
+    scan_by_id,
 )
 from mcp.tools.base import Tool, ToolGroup, ToolInput
 from shared.definitions.surface import SurfaceDimension
@@ -293,13 +293,12 @@ async def _one_run(
     hint: str = "Start one with start_scan.",
 ) -> Scan:
     if scan:
-        row = await ctx.session.get(Scan, parse_id(scan, "scan"))
+        row = await scan_by_id(ctx, parse_id(scan, "scan"))
         if row is None:
             msg = (
                 f"No scan with id {scan!r}. Take the id from start_scan or scan_status."
             )
             raise ToolError(msg)
-        await scan_in_scope(ctx, row)
         return row
 
     found = await find_target(ctx, target or "")

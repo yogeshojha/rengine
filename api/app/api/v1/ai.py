@@ -20,20 +20,28 @@ from shared.models.ai import (
     AiTestRequest,
     AiTestResult,
 )
+from shared.models.user import User
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+
+def _owner(user: User) -> uuid.UUID | None:
+    return None if user.is_superuser else user.id
+
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 
 @router.get("/status", response_model=AiStatus)
 async def ai_status(current_user: CurrentUser, session: Session):
-    return await AiSettingsService(session).status(full=current_user.is_superuser)
+    return await AiSettingsService(session).status(
+        full=current_user.is_superuser, owner=_owner(current_user)
+    )
 
 
 @router.get("/calls", response_model=AiCallPage)
 async def recent_calls(
-    _user: CurrentUser,
+    user: CurrentUser,
     session: Session,
     limit: Annotated[int, Query(ge=1, le=MAX_CALLS_PAGE, description="Rows")] = (
         MAX_CALLS_PAGE
@@ -47,7 +55,9 @@ async def recent_calls(
         ),
     ] = None,
 ):
-    return await AiSettingsService(session).calls(limit, call_cursor(before))
+    return await AiSettingsService(session).calls(
+        limit, call_cursor(before), _owner(user)
+    )
 
 
 @router.get("/catalog", response_model=dict)

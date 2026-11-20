@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, s
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.api.errors import bad_request
 from app.api.scope import EndpointScope
@@ -71,7 +72,6 @@ async def _authenticate(
 
 
 Service = Annotated[ConnectorService, Depends(get_service)]
-ProjectId = Annotated[UUID, Query(description="Project ID")]
 
 
 # ---------- proxy side, connector token ----------

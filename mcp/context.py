@@ -28,6 +28,8 @@ class TokenIdentity:
     issued_by: uuid.UUID | None = None
     # null means every target of the project
     targets: frozenset[uuid.UUID] | None = None
+    # the projects the acting user opens, null for an administrator
+    projects: frozenset[uuid.UUID] | None = None
 
     def allows(self, capability: str) -> bool:
         return capability in self.capabilities
@@ -52,14 +54,18 @@ class ToolContext:
 
     def scoped_projects(self) -> list[uuid.UUID] | None:
         """None means every project."""
-        return None if self.token.project_id is None else [self.token.project_id]
+        pinned, opened = self.token.project_id, self.token.projects
+        if pinned is not None:
+            return [pinned] if opened is None or pinned in opened else []
+        return None if opened is None else sorted(opened)
 
     def scoped_targets(self) -> frozenset[uuid.UUID] | None:
         """None means every target of the scoped projects."""
         return self.token.targets
 
     def check_project(self, project_id: uuid.UUID) -> uuid.UUID:
-        if self.token.project_id is not None and project_id != self.token.project_id:
+        scoped = self.scoped_projects()
+        if scoped is not None and project_id not in scoped:
             msg = "The project is out of scope."
             raise ScopeError(msg)
         return project_id

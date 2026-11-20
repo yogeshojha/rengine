@@ -41,6 +41,10 @@ class ToolContext:
     session: Any
     project_id: uuid.UUID | None = None
 
+    @property
+    def access(self) -> frozenset[uuid.UUID]:
+        return frozenset() if self.project_id is None else frozenset({self.project_id})
+
 
 @dataclass
 class ToolOutcome:

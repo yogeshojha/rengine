@@ -34,6 +34,7 @@ from shared.models.instance_settings import SINGLETON_KEY, InstanceSettings
 from shared.models.oast import OastRead, OastTest, OastUpdate
 from shared.models.vuln_template import VulnTemplate
 from shared.models.vulnerability import Vulnerability
+from shared.services.project_access import EVERY_PROJECT, ProjectSet, scoped
 from shared.utils.datetime import utc_now
 from shared.utils.net import is_public_address
 
@@ -78,10 +79,10 @@ class OastService:
     async def _row(self) -> InstanceSettings:
         return await InstanceSettingsService(self.session).get_or_create()
 
-    async def read(self) -> OastRead:
+    async def read(self, access: ProjectSet) -> OastRead:
         row = await self._row()
         server = normalize_server(row.oast_server)
-        interactions, last_interaction = await self._proven()
+        interactions, last_interaction = await self._proven(access)
         return OastRead(
             mode=row.oast_mode,
             server=server,
@@ -135,7 +136,7 @@ class OastService:
             )
         row.updated_at = utc_now()
         await self.session.commit()
-        return await self.read()
+        return await self.read(EVERY_PROJECT)
 
     async def reset(self) -> OastRead:
         """Back to off: no server, no token, no acknowledgement."""
@@ -148,7 +149,7 @@ class OastService:
         for key in await self._keys():
             await self.session.delete(key)
         await self.session.commit()
-        return await self.read()
+        return await self.read(EVERY_PROJECT)
 
     async def test(self) -> OastTest:
         """Ask the configured server whether it answers."""
@@ -248,14 +249,15 @@ class OastService:
             or 0
         )
 
-    async def _proven(self) -> tuple[int, datetime | None]:
+    async def _proven(self, access: ProjectSet) -> tuple[int, datetime | None]:
         """Findings a callback confirmed, and the newest."""
+        statement = select(
+            func.count(Vulnerability.id),
+            func.max(Vulnerability.discovered_at),
+        ).where(Vulnerability.evidence == Evidence.PROVEN.value)
         row = (
             await self.session.execute(
-                select(
-                    func.count(Vulnerability.id),
-                    func.max(Vulnerability.discovered_at),
-                ).where(Vulnerability.evidence == Evidence.PROVEN.value)
+                scoped(statement, access, Vulnerability.project_id)
             )
         ).one()
         return int(row[0] or 0), row[1]

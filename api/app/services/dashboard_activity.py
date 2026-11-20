@@ -49,6 +49,7 @@ from shared.models.scan import Scan
 from shared.models.target import Target
 from shared.models.threat_intel import ThreatFeed
 from shared.models.watch import ProgramWatch, WatchEvent, WatchHost
+from shared.services.project_access import EVERY_PROJECT, ProjectSet
 from shared.services.scan_scope import census_only
 from shared.utils.datetime import duration_text, utc_now
 from shared.utils.text import plural
@@ -333,7 +334,9 @@ class DashboardActivityService:
             )
         return out
 
-    async def programs(self, project_id: UUID, window: str) -> DashboardPrograms:
+    async def programs(
+        self, project_id: UUID, window: str, access: ProjectSet = EVERY_PROJECT
+    ) -> DashboardPrograms:
         window = window_key(window)
         now = utc_now()
         since = window_since(window, now)
@@ -375,12 +378,16 @@ class DashboardActivityService:
         )
         out.events_in_window = {kind: int(n) for kind, n in in_window.all()}
 
-        out.watches = await self._watches(project_id, days, series_cutoff)
+        out.watches = await self._watches(project_id, days, series_cutoff, access)
         out.browsing = await self._browsing(project_id, days, series_cutoff)
         return out
 
     async def _watches(
-        self, project_id: UUID, days: list[str], series_cutoff: datetime
+        self,
+        project_id: UUID,
+        days: list[str],
+        series_cutoff: datetime,
+        access: ProjectSet,
     ) -> DashboardWatches:
         out = DashboardWatches()
         out.total = int(
@@ -455,10 +462,17 @@ class DashboardActivityService:
                 program_name=program_name,
                 at=host.alerted_at,
             )
-        stream = await WatchService.stream_status()
+        if access is EVERY_PROJECT:
+            stream = await WatchService.stream_status()
+            out.stream_certificates = int(stream.certificates_seen or 0)
+        else:
+            stream = await WatchService(self.session).stream_status_for(
+                frozenset({project_id})
+            )
         out.stream_running = bool(stream.running and stream.reachable)
-        out.stream_certificates = int(stream.certificates_seen or 0)
-        out.last_certificate_at = stream.last_certificate_at
+        out.last_certificate_at = await self.session.scalar(
+            select(func.max(ProgramWatch.last_certificate_at)).where(in_project)
+        )
         return out
 
     async def _browsing(

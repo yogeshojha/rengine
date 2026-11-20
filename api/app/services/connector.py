@@ -22,6 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, array, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import not_found
 from app.config import API_V1_PREFIX, settings
 from app.services import scan_deltas as stored_deltas
 from connectors import auth, handoff
@@ -153,6 +154,12 @@ def _host_matches(host: str, value: str) -> bool:
 
 def _under(column, value: str):
     return or_(column == value, column.endswith(f".{value}"))
+
+
+def _refuse_missing(found: int, ids: list[uuid.UUID], noun: str) -> None:
+    """Refuse a selection holding an id the project does not hold."""
+    if found < len(set(ids)):
+        raise not_found(noun=noun)
 
 
 class ConnectorService:
@@ -1084,12 +1091,16 @@ class ConnectorService:
         items: list[Handoff | None] = []
         items.extend(
             handoff.from_finding(v, link=self._finding_link(v))
-            for v in await self._rows(Vulnerability, body.finding_ids, project_id)
+            for v in await self._rows(
+                Vulnerability, body.finding_ids, project_id, "Finding"
+            )
         )
-        assets = await self._rows(HttpAsset, body.asset_ids, project_id)
+        assets = await self._rows(HttpAsset, body.asset_ids, project_id, "Web asset")
         assets.extend(await self._host_assets(body.host_ids, project_id))
         items.extend(handoff.from_asset(a) for a in assets)
-        endpoints = await self._rows(Endpoint, body.endpoint_ids, project_id)
+        endpoints = await self._rows(
+            Endpoint, body.endpoint_ids, project_id, "Endpoint"
+        )
         if body.filter is not None and scope is not None:
             from app.services.endpoint import EndpointService  # noqa: PLC0415
 
@@ -1118,10 +1129,12 @@ class ConnectorService:
             items.extend(handoff.from_candidate(c) for c in picked)
         return len(items), [item for item in items if item is not None]
 
-    async def _rows(self, model, ids: list[uuid.UUID], project_id: uuid.UUID) -> list:
+    async def _rows(
+        self, model, ids: list[uuid.UUID], project_id: uuid.UUID, noun: str
+    ) -> list:
         if not ids:
             return []
-        return list(
+        rows = list(
             (
                 await self.session.execute(
                     select(model).where(
@@ -1132,6 +1145,8 @@ class ConnectorService:
             .scalars()
             .all()
         )
+        _refuse_missing(len(rows), ids, noun)
+        return rows
 
     async def _host_assets(
         self, host_ids: list[uuid.UUID], project_id: uuid.UUID
@@ -1139,13 +1154,15 @@ class ConnectorService:
         """Every web asset of the chosen hosts, in their own scans."""
         if not host_ids:
             return []
-        pairs = (
+        found = (
             await self.session.execute(
                 select(Subdomain.scan_id, Subdomain.name).where(
                     Subdomain.id.in_(host_ids), Subdomain.project_id == project_id
                 )
             )
         ).all()
+        _refuse_missing(len(found), host_ids, "Web asset")
+        pairs = [(r.scan_id, r.name) for r in found]
         if not pairs:
             return []
         return list(

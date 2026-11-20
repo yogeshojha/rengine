@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.access import ProjectId
 from app.api.deps import CurrentSuperuser, CurrentUser
 from app.core.database import get_session
 from app.services.report import ReportService
@@ -96,7 +97,7 @@ async def set_report_defaults(
 async def list_templates(
     _current_user: CurrentUser,
     session: Session,
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).templates(project_id)
 
@@ -108,7 +109,7 @@ async def create_template(
     current_user: CurrentUser,
     session: Session,
     body: ReportTemplateCreate,
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).create_template(
         body, project_id, current_user.id
@@ -121,7 +122,7 @@ async def update_template(
     session: Session,
     template_id: Annotated[UUID, Path(description="Template")],
     body: ReportTemplateUpdate,
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).update_template(template_id, project_id, body)
 
@@ -131,7 +132,7 @@ async def delete_template(
     _current_user: CurrentUser,
     session: Session,
     template_id: Annotated[UUID, Path(description="Template")],
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     await ReportService(session).delete_template(template_id, project_id)
 
@@ -141,7 +142,7 @@ async def estimate_report(
     _current_user: CurrentUser,
     session: Session,
     body: ReportCreate,
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).estimate(body, project_id)
 
@@ -150,7 +151,7 @@ async def estimate_report(
 async def list_reports(
     _current_user: CurrentUser,
     session: Session,
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).list(project_id)
 
@@ -160,7 +161,7 @@ async def create_report(
     current_user: CurrentUser,
     session: Session,
     body: ReportCreate,
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).create(body, project_id, current_user.id)
 
@@ -170,7 +171,7 @@ async def get_report(
     _current_user: CurrentUser,
     session: Session,
     report_id: Annotated[UUID, Path(description="Report")],
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     service = ReportService(session)
     return service.to_read(await service.get(report_id, project_id))
@@ -185,7 +186,7 @@ async def retry_report(
     _current_user: CurrentUser,
     session: Session,
     report_id: Annotated[UUID, Path(description="Report")],
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     return await ReportService(session).retry(report_id, project_id)
 
@@ -195,7 +196,7 @@ async def download_report(
     _current_user: CurrentUser,
     session: Session,
     report_id: Annotated[UUID, Path(description="Report")],
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
     format: Annotated[
         str, Query(description="Rendered format")
     ] = ReportFormat.PDF.value,
@@ -215,7 +216,7 @@ async def preview_report(
     _current_user: CurrentUser,
     session: Session,
     report_id: Annotated[UUID, Path(description="Report")],
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     service = ReportService(session)
     report = await service.get(report_id, project_id)
@@ -235,6 +236,6 @@ async def delete_report(
     _current_user: CurrentUser,
     session: Session,
     report_id: Annotated[UUID, Path(description="Report")],
-    project_id: Annotated[UUID, Query(description="Project")],
+    project_id: ProjectId,
 ):
     await ReportService(session).delete(report_id, project_id)

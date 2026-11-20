@@ -129,14 +129,34 @@ async def test_positions_count_waiting_scans_in_launch_order(estate, now):
     second = await _scan(estate, "second", now, 2)
     await _scan(estate, "probe", now, 3, config={WATCH_HOST_KEY: "a.example.com"})
 
-    rows = dict(
-        (
-            await estate.session.execute(
-                scan_admission.positions_query([first, second])
-            )
-        ).all()
-    )
+    rows = {
+        row.id: row.place
+        for row in await estate.session.execute(
+            scan_admission.positions_query([first, second], None)
+        )
+    }
     assert rows[second] == rows[first] + 1
+
+
+async def test_a_queue_position_counts_the_scans_the_caller_opens(
+    estate, now, monkeypatch
+):
+    other = await estate.sibling()
+    for i in range(3):
+        await other.scan(
+            "other.example", f"o{i}", at=now + timedelta(minutes=i), status="pending"
+        )
+    ahead = await _scan(estate, "ahead", now, 4)
+    mine = await _scan(estate, "mine", now, 5)
+    monkeypatch.setattr(scan_admission, "resolve", lambda _configured: 0)
+    service = ScanService(estate.session)
+
+    member = await service.queue_positions(
+        [ahead, mine], frozenset({estate.project_id})
+    )
+    assert member == {ahead: 0, mine: 1}
+    admin = await service.queue_positions([ahead, mine], None)
+    assert admin == {ahead: 3, mine: 4}
 
 
 @pytest.mark.parametrize(("slots", "expected"), [(16, 3), (32, 6), (4, 1), (1, 1)])

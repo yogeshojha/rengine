@@ -6,6 +6,8 @@ export interface User {
 	username: string;
 	is_active: boolean;
 	is_superuser: boolean;
+	can_create_projects: boolean;
+	project_ids: string[];
 	created_at: string;
 	updated_at: string | null;
 }
