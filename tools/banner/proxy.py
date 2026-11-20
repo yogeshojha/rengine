@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import socket
 import ssl
+import time
 from urllib.parse import SplitResult, unquote, urlsplit
 
 from shared.services.proxy_resolve import SOCKS_SCHEMES
@@ -37,6 +38,7 @@ def _tls_context() -> ssl.SSLContext:
 
 
 _TLS_CONTEXT = _tls_context()
+_VERIFIED_CONTEXT = ssl.create_default_context()
 
 
 def split_proxy(proxy_url: str) -> SplitResult:
@@ -44,7 +46,15 @@ def split_proxy(proxy_url: str) -> SplitResult:
     return urlsplit(proxy_url if "://" in proxy_url else f"socks5://{proxy_url}")
 
 
-def open_tunnel(proxy_url: str, host: str, port: int, timeout: float) -> socket.socket:
+def open_tunnel(
+    proxy_url: str,
+    host: str,
+    port: int,
+    timeout: float,
+    *,
+    verify: bool = False,
+    deadline: float | None = None,
+) -> socket.socket:
     """A socket already connected to host:port through the proxy."""
     parts = split_proxy(proxy_url)
     scheme = (parts.scheme or "").lower()
@@ -56,17 +66,44 @@ def open_tunnel(proxy_url: str, host: str, port: int, timeout: float) -> socket.
         msg = f"proxy port {declared!r} is not a port number"
         raise ProxyError(msg)
     if scheme in SOCKS_SCHEMES:
-        return _socks5_connect(parts, host, port, timeout)
+        return _socks5_connect(parts, host, port, timeout, deadline)
     if scheme in HTTP_SCHEMES:
-        return _http_connect(parts, scheme, host, port, timeout)
+        context = _VERIFIED_CONTEXT if verify else _TLS_CONTEXT
+        return _http_connect(parts, scheme, host, port, timeout, context, deadline)
     msg = f"{scheme}:// is not a proxy this prober can use"
     raise ProxyError(msg)
 
 
-def _dial(parts: SplitResult, scheme: str, timeout: float) -> socket.socket:
+def _remaining(timeout: float, deadline: float | None) -> float:
+    if deadline is None:
+        return timeout
+    left = deadline - time.monotonic()
+    if left <= 0:
+        raise TimeoutError
+    return min(timeout, left)
+
+
+def _dial(
+    parts: SplitResult, scheme: str, timeout: float, deadline: float | None
+) -> socket.socket:
     return socket.create_connection(
-        (parts.hostname, url_port(parts) or _DEFAULT_PORT[scheme]), timeout=timeout
+        (parts.hostname, url_port(parts) or _DEFAULT_PORT[scheme]),
+        timeout=_remaining(timeout, deadline),
     )
+
+
+def _recv_exact(
+    sock: socket.socket, count: int, timeout: float, deadline: float | None
+) -> bytes:
+    buffer = b""
+    while len(buffer) < count:
+        sock.settimeout(_remaining(timeout, deadline))
+        chunk = sock.recv(count - len(buffer))
+        if not chunk:
+            msg = "the proxy closed the connection during the handshake"
+            raise ProxyError(msg)
+        buffer += chunk
+    return buffer
 
 
 def _credentials(parts: SplitResult) -> tuple[str, str] | None:
@@ -76,30 +113,41 @@ def _credentials(parts: SplitResult) -> tuple[str, str] | None:
 
 
 def _http_connect(
-    parts: SplitResult, scheme: str, host: str, port: int, timeout: float
+    parts: SplitResult,
+    scheme: str,
+    host: str,
+    port: int,
+    timeout: float,
+    context: ssl.SSLContext,
+    deadline: float | None,
 ) -> socket.socket:
-    sock = _dial(parts, scheme, timeout)
+    sock = _dial(parts, scheme, timeout, deadline)
     try:
         if scheme == "https":
-            sock = _TLS_CONTEXT.wrap_socket(sock, server_hostname=parts.hostname)
+            sock.settimeout(_remaining(timeout, deadline))
+            sock = context.wrap_socket(sock, server_hostname=parts.hostname)
         authority = host_port(host, port)
         lines = [f"CONNECT {authority} HTTP/1.1", f"Host: {authority}"]
         credentials = _credentials(parts)
         if credentials is not None:
             raw = f"{credentials[0]}:{credentials[1]}".encode()
             lines.append("Proxy-Authorization: Basic " + base64.b64encode(raw).decode())
+        sock.settimeout(_remaining(timeout, deadline))
         sock.sendall(("\r\n".join([*lines, "", ""])).encode())
-        _read_connect_reply(sock)
+        _read_connect_reply(sock, timeout, deadline)
     except Exception:
         sock.close()
         raise
     return sock
 
 
-def _read_connect_reply(sock: socket.socket) -> None:
+def _read_connect_reply(
+    sock: socket.socket, timeout: float, deadline: float | None
+) -> None:
     """Read the status line and headers without touching the tunnelled bytes."""
     buffer = b""
     while not buffer.endswith(b"\r\n\r\n"):
+        sock.settimeout(_remaining(timeout, deadline))
         chunk = sock.recv(1)
         if not chunk:
             msg = "the proxy closed the connection before answering CONNECT"
@@ -117,20 +165,28 @@ def _read_connect_reply(sock: socket.socket) -> None:
 
 
 def _socks5_connect(
-    parts: SplitResult, host: str, port: int, timeout: float
+    parts: SplitResult,
+    host: str,
+    port: int,
+    timeout: float,
+    deadline: float | None,
 ) -> socket.socket:
-    sock = _dial(parts, "socks5", timeout)
+    sock = _dial(parts, "socks5", timeout, deadline)
+
+    def read(count: int) -> bytes:
+        return _recv_exact(sock, count, timeout, deadline)
+
     try:
         credentials = _credentials(parts)
         methods = [_SOCKS_NO_AUTH] + ([_SOCKS_USERPASS] if credentials else [])
         sock.sendall(bytes([_SOCKS_VERSION, len(methods), *methods]))
-        _, method = sock.recv(2)
+        _, method = read(2)
         if method == _SOCKS_USERPASS and credentials is not None:
             user, password = (value.encode() for value in credentials)
             sock.sendall(
                 bytes([1, len(user)]) + user + bytes([len(password)]) + password
             )
-            if sock.recv(2)[1] != 0:
+            if read(2)[1] != 0:
                 msg = "proxy rejected the credentials"
                 raise ProxyError(msg)
         elif method != _SOCKS_NO_AUTH:
@@ -143,14 +199,14 @@ def _socks5_connect(
             + target
             + port.to_bytes(2, "big")
         )
-        reply = sock.recv(4)
-        if len(reply) < 4 or reply[1] != 0:  # noqa: PLR2004
+        reply = read(4)
+        if reply[1] != 0:
             msg = "proxy refused the connection"
             raise ProxyError(msg)
         length = {_SOCKS_IPV4: 4, _SOCKS_IPV6: 16}.get(reply[3])
         if length is None:
-            length = sock.recv(1)[0]
-        sock.recv(length + 2)
+            length = read(1)[0]
+        read(length + 2)
     except Exception:
         sock.close()
         raise
