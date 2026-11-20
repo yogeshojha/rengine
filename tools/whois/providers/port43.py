@@ -98,7 +98,7 @@ _NS_KEYS = (
     "nameservers hostname",
     "name servers dns",
 )
-_STATUS_KEYS = ("domain status", "flags", "state", "status")
+_STATUS_KEYS = ("domain status", "flags", "status", "state")
 _REGISTRAR_KEYS = (
     "registrar organization",
     "registrar organization name",
@@ -124,9 +124,10 @@ _REGISTRANT_NAME_KEYS = (
     "registrant",
     "org",
 )
-_WITHHELD = ("not shown", "not disclosed", "hidden", "redacted")
+_WITHHELD = ("not shown", "not disclosed", "hidden upon")
 _NOT_REGISTERED = re.compile(
-    r"no match|not found|no entries found|no data found|status:\s*(available|free)\b",
+    r"no match|not found|no entries found|no data found|no object found"
+    r"|not registered|status:\s*(available|free)\b",
     re.I,
 )
 
@@ -151,6 +152,8 @@ _NAMED_OFFSETS = {
 _WITH_URL = re.compile(r"(.*?)\s*\(\s*(https?://\S+)\s*\)")
 _STATUS_CUT = re.compile(r"\s+(?:https?://|\(|- )")
 _HANDLE_KEY = "nic-hdl"
+_REGISTRAR_HANDLE = re.compile(r"[A-Z0-9]+(-[A-Z0-9]+)+")
+_SIGNING_KEYS = ("dnskey", "signing key")
 _DOMAIN_KEYS = ("domain", "domain name", "domainname")
 _BLOCKS = re.compile(r"\n[ \t]*\n")
 
@@ -173,7 +176,7 @@ def _dial(server: str, deadline: float) -> socket.socket:
         infos = socket.getaddrinfo(server, WHOIS_PORT, type=socket.SOCK_STREAM)
     except OSError as e:
         msg = f"{server} does not resolve."
-        raise Port43Error(msg) from e
+        raise _unreachable_error((server, None), msg) from e
     refused: OSError | None = None
     for family, kind, proto, _, address in infos:
         try:
@@ -218,7 +221,7 @@ def _connect(server: str, proxy_url: str | None, deadline: float) -> socket.sock
     except ssl.SSLCertVerificationError as e:
         msg = "The proxy certificate did not verify."
         raise _unreachable_error((server, proxy_url), msg) from e
-    except (ProxyError, OSError) as e:
+    except (ProxyError, OSError, ValueError) as e:
         msg = f"The proxy did not open a connection to {server} on port 43."
         raise _unreachable_error((server, proxy_url), msg) from e
 
@@ -404,11 +407,11 @@ def _disclosed(name: str) -> str:
     return clean_name(name)
 
 
-def _holder(text: str, handle: str) -> str:
+def _holder(text: str, handle: str, key: str = _HANDLE_KEY) -> str:
     """The organization or person a registry handle names."""
     for block in _BLOCKS.split(text):
         fields = parse_fields(block)
-        if handle.lower() in (v.lower() for v in fields.get(_HANDLE_KEY, [])):
+        if handle.lower() in (v.lower() for v in fields.get(key, [])):
             return _first(fields, ("organization", "personname", "name"))
     return ""
 
@@ -423,7 +426,9 @@ def _registrant(fields: dict[str, list[str]], text: str) -> str:
 def _signed(fields: dict[str, list[str]]) -> bool:
     if _first(fields, ("dnssec",)).lower().startswith("signed"):
         return True
-    if _first(fields, ("signed",)).lower() == "yes":
+    if _first(fields, ("signed", "dnssec signed")).lower() == "yes":
+        return True
+    if _first(fields, _SIGNING_KEYS):
         return True
     return any(key == "keys" or key.startswith("keys ") for key in fields)
 
@@ -451,6 +456,8 @@ def to_whoisit_shape(domain: str, server: str, text: str) -> dict[str, Any]:
     with_url = _WITH_URL.fullmatch(registrar)
     if with_url:
         registrar, registrar_url = with_url[1], registrar_url or with_url[2]
+    if _REGISTRAR_HANDLE.fullmatch(registrar):
+        registrar = _holder(text, registrar, "registrar") or registrar
     registrant = _registrant(fields, text)
     entities: dict[str, list[dict[str, Any]]] = {}
     if registrar:

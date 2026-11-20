@@ -419,3 +419,69 @@ def test_a_domain_qualified_date_wins_over_a_contact_date():
     fields = _fields("example.kz", "whois.nic.kz", text)
 
     assert fields["registration_date"] == datetime(1999, 6, 7, 14, 1, 43, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(
+    "line",
+    ["DNSSEC signed: yes", "Dnskey: 257 3 8 AwEAAb", "[Signing Key] 7240 8 2 ( E1 )"],
+)
+def test_a_signed_zone_is_read_in_each_registry_form(line: str):
+    signed = to_whoisit_shape(
+        "example.rs", "whois.example", f"Domain: example.rs\n{line}\n"
+    )
+    unsigned = to_whoisit_shape("example.jp", "whois.example", "[Signing Key]\n")
+
+    assert signed["dnssec"] is True
+    assert unsigned["dnssec"] is False
+
+
+def test_status_codes_win_over_a_state_line():
+    text = (
+        "state: active\ndomain: example.se\n"
+        "status: serverTransferProhibited\nstatus: serverUpdateProhibited\n"
+    )
+    fields = _fields("example.se", "whois.iis.se", text)
+
+    assert fields["domain_status"] == [
+        "serverTransferProhibited",
+        "serverUpdateProhibited",
+    ]
+
+
+def test_a_registrar_handle_is_read_from_its_own_block():
+    text = (
+        "Domain: example.sk\nNameserver: ns1.example.net\n\n"
+        "Domain registrant: mmr-170347\nName: Domain Administrator\n"
+        "Authorised Registrar: EXAM-0292\n\n"
+        "Registrar: EXAM-0292\nName: Example Registrar Limited\n"
+    )
+    fields = _fields("example.sk", "whois.sk-nic.sk", text)
+
+    assert fields["registrar_name"] == "Example Registrar Limited"
+
+
+def test_a_registrar_named_like_a_handle_with_no_block_is_kept():
+    fields = _fields(
+        "example.org", "whois.example", "Domain: example.org\nRegistrar: ACME-1\n"
+    )
+
+    assert fields["registrar_name"] == "ACME-1"
+
+
+@pytest.mark.parametrize(
+    ("registrant", "stored"),
+    [
+        ("Hidden upon user request", ""),
+        ("NOT DISCLOSED!", ""),
+        ("Hidden Valley Ltd", "Hidden Valley Ltd"),
+    ],
+)
+def test_a_placeholder_is_withheld_and_a_name_that_starts_alike_is_kept(
+    registrant: str, stored: str
+):
+    text = (
+        f"Domain: example.tr\nRegistrant: {registrant}\nNameserver: ns1.example.net\n"
+    )
+    fields = _fields("example.tr", "whois.example", text)
+
+    assert fields["registrant_name"] == stored

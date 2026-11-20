@@ -58,6 +58,13 @@ MAX_CORRELATION_RECORDS = 500
 
 _REGISTRANT_KEY_SQL = registrant_key_sql(WhoisRecord.registrant_name)
 
+_CAPPED = {
+    column.name: column.type.length
+    for column in WhoisRecord.__table__.columns
+    if getattr(column.type, "length", None) and column.name != "query_value"
+}
+_NAMESERVER_WIDTH = WhoisNameserver.__table__.c.nameserver.type.length
+
 
 @dataclass(slots=True)
 class WhoisLookupResult:
@@ -341,6 +348,15 @@ class WhoisService:
         for key, value in db_fields.items():
             if isinstance(value, datetime):
                 db_fields[key] = normalize_datetime(value)
+            elif (
+                key in _CAPPED and isinstance(value, str) and len(value) > _CAPPED[key]
+            ):
+                logger.warning("whois value over its column width dropped", field=key)
+                db_fields[key] = ""
+        if db_fields.get("nameservers"):
+            db_fields["nameservers"] = [
+                ns for ns in db_fields["nameservers"] if len(ns) <= _NAMESERVER_WIDTH
+            ]
         return db_fields
 
     def _is_cache_fresh(self, record: WhoisRecord) -> bool:

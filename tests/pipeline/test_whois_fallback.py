@@ -163,11 +163,19 @@ def test_a_query_that_is_not_a_domain_is_refused(domain: str):
         port43.lookup_domain(domain)
 
 
-def test_an_unregistered_domain_is_named(registry):
+@pytest.mark.parametrize(
+    "reply",
+    [
+        b"Domain:\texample.be\nStatus:\tAVAILABLE\n",
+        b"Domain Name: example.be\nDomain Status: No Object Found\n",
+        b"Domain: example.be\nStatus: Not Registered, and may be available if valid\n",
+    ],
+)
+def test_an_unregistered_domain_is_named(registry, reply: bytes):
     def answers(query: str) -> bytes:
         if query == "be":
             return b"refer: whois.dns.be\n"
-        return b"Domain:\texample.be\nStatus:\tAVAILABLE\n"
+        return reply
 
     registry(answers)
 
@@ -363,3 +371,52 @@ def test_a_proxy_that_trickles_its_reply_is_cut_at_the_deadline(monkeypatch):
         server.close()
     assert time.monotonic() - started < 2
     thread.join(timeout=10)
+
+
+def test_a_proxy_value_error_is_a_proxy_failure(monkeypatch):
+    def tunnel(*_args, **_kwargs):
+        msg = "bytes must be in range(0, 256)"
+        raise ValueError(msg)
+
+    monkeypatch.setattr(port43, "open_tunnel", tunnel)
+
+    with pytest.raises(port43.Port43Error, match="The proxy did not open a connection"):
+        port43.whois_server_for("be", "socks5://127.0.0.1:1080")
+
+
+def test_a_name_that_does_not_resolve_is_not_resolved_again_at_once(monkeypatch):
+    resolutions: list[str] = []
+
+    def resolve(host, *_args, **_kwargs):
+        resolutions.append(host)
+        raise socket.gaierror
+
+    monkeypatch.setattr(socket, "getaddrinfo", resolve)
+
+    for _ in range(3):
+        with pytest.raises(port43.Port43Error, match="does not resolve"):
+            port43._query("whois.dns.be", "example.be")
+
+    assert resolutions == ["whois.dns.be"]
+
+
+def test_a_value_over_its_column_width_is_not_stored(monkeypatch):
+    reply = (
+        f"Domain Name: example.be\nRegistry Domain ID: {'d' * 250}\n"
+        f"Registrar: {'r' * 679}\nName Server: ns1.example.net\n"
+        f"Name Server: {'n' * 600}.example.net\n"
+    )
+
+    def lookup(domain, proxy_url=None):
+        return port43.to_whoisit_shape(domain, "whois.dns.be", reply)
+
+    monkeypatch.setattr(port43, "lookup_domain", lookup)
+    service = WhoisService()
+    service._provider = _Rdap(RDAPUnsupportedError("no rdap"))
+
+    fields = service._prepare_db_fields(service.lookup_domain("example.be"))
+
+    assert fields["handle"] == ""
+    assert fields["registrar_name"] == ""
+    assert fields["nameservers"] == ["ns1.example.net"]
+    assert fields["name"] == "example.be"
